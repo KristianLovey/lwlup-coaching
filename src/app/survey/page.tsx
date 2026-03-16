@@ -5,20 +5,20 @@ import { ArrowLeft, ArrowRight, Send, Check, ChevronRight } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────────────
 type FormData = {
-  full_name: string; email: string; age: string; gender: string; bodyweight: string
+  full_name: string; email: string; phone_number: string; age: string; gender: string; bodyweight: string
   experience: string; days_per_week: string; has_competed: string
   squat: string; bench: string; deadlift: string
   goals: string; injuries: string; additional: string
 }
 
 const EMPTY: FormData = {
-  full_name: '', email: '', age: '', gender: '', bodyweight: '',
+  full_name: '', email: '', phone_number: '', age: '', gender: '', bodyweight: '',
   experience: '', days_per_week: '', has_competed: '',
   squat: '', bench: '', deadlift: '',
   goals: '', injuries: '', additional: '',
 }
 
-const STEPS = ['OSOBNO', 'TRENING', 'MAKSIMALI', 'CILJEVI']
+const STEPS = ['OSOBNO', 'TRENING', 'PRs', 'CILJEVI']
 
 // ── Animated number counter ────────────────────────────────────────
 function Counter({ value, suffix = '' }: { value: number; suffix?: string }) {
@@ -306,6 +306,10 @@ export default function SurveyPage() {
                   <div>
                     <label style={lbl('email')}>Email adresa</label>
                     <input name="email" type="email" style={inp('email')} value={form.email} onChange={e => set('email', e.target.value)} placeholder="tvoj@email.com" {...ff} />
+                  </div>
+                  <div>
+                    <label style={lbl('phone_number')}>Telefon</label>
+                    <input name="phone_number" type="tel" style={inp('phone_number')} value={form.phone_number} onChange={e => set('phone_number', e.target.value)} placeholder="091 234 567" {...ff} />
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                     <div>

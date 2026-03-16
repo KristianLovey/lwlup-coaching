@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const {
-      full_name, email, age, gender, bodyweight,
+      full_name, email, phone_number, age, gender, bodyweight,
       experience, days_per_week, has_competed,
       squat, bench, deadlift,
       goals, injuries, additional
