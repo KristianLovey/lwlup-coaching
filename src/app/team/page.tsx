@@ -174,7 +174,7 @@ export default function TeamPage() {
               <span style={{ color: 'rgba(255,255,255,0.3)' }}>TEAM</span>
             </h1>
             <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.5)', maxWidth: '700px', margin: '0 auto 60px', lineHeight: 1.8 }}>
-              Naši atleti su srce i duša LWLUP-a. Od nacionalnih prvaka do europskih natjecatelja, svaki član donosi jedinstvenu predanost i neumornu želju za napretkom.
+              Naši atleti su srce i duša LWL UP-a. Od nacionalnih prvaka do europskih natjecatelja, svaki član donosi jedinstvenu predanost i neumornu želju za napretkom.
             </p>
 
             {/* Filter buttons — identični originalu */}
@@ -331,13 +331,13 @@ export default function TeamPage() {
           <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.5)', maxWidth: '600px', margin: '0 auto 50px', lineHeight: 1.8 }}>
             Tražiš zajednicu koja te razumije i sistem koji radi? Pridruži se LWLUP-u.
           </p>
-          <Link href="/training" style={{ textDecoration: 'none' }}>
+          <Link href="/survey" style={{ textDecoration: 'none' }}>
             <button className="join-button" style={{
               padding: '20px 60px', background: '#fff', color: '#000', border: 'none',
               fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.25em', cursor: 'pointer',
               transition: '0.4s', position: 'relative', overflow: 'hidden'
             }}>
-              <span style={{ position: 'relative', zIndex: 2 }}>POČNI TRENIRATI</span>
+              <span style={{ position: 'relative', zIndex: 2 }}>Postani član</span>
             </button>
           </Link>
         </div>

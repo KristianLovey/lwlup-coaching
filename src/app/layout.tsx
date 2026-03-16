@@ -2,8 +2,11 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'LWLUP — Coaching System',
-  description: 'Elite powerlifting coaching. LWL UP.',
+  title: 'LWL UP Powerlifting',
+  description: 'Vodeći powerlifting klub u regiji.',
+  icons: {
+    icon: '/slike/logopng.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

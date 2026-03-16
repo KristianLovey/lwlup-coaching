@@ -4,80 +4,141 @@ import { Instagram, Facebook } from 'lucide-react'
 
 export default function Footer() {
   return (
-    <footer style={{ padding: '80px 60px', background: '#000', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-      <div className="footer-inner" style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    <footer style={{ background: '#000', borderTop: '1px solid rgba(255,255,255,0.06)', fontFamily: 'var(--fm)', position: 'relative', overflow: 'hidden' }}>
 
-        {/* Brand */}
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-            <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '40px' }} />
-            <span style={{ fontFamily: 'var(--fd)', fontSize: '1.5rem', letterSpacing: '0.2em' }}>LWL UP</span>
-          </div>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', maxWidth: '300px', lineHeight: 1.6 }}>
-            Vodeći powerlifting klub u regiji. Specijalizirani za razvoj snage i vrhunsku pripremu sportaša.
-          </p>
-        </div>
+      {/* Big background wordmark */}
+      <div style={{ position: 'absolute', bottom: '60px', left: '50%', transform: 'translateX(-50%)', fontFamily: 'var(--fd)', fontSize: 'clamp(6rem,14vw,16rem)', fontWeight: 800, letterSpacing: '-0.02em', color: 'rgba(255,255,255,0.03)', whiteSpace: 'nowrap', pointerEvents: 'none', userSelect: 'none', lineHeight: 1 }}>
+        LWL UP
+      </div>
 
-        {/* Links */}
-        <div className="footer-nav-row" style={{ display: 'flex', gap: '80px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <span style={{ fontSize: '0.7rem', color: '#fff', letterSpacing: '0.2em', fontWeight: 800 }}>NAVIGACIJA</span>
-            {([
-              ['O klubu',  '/#club'],
-              ['Trener',   '/#coach'],
-              ['Sustav',   '/#system'],
-              ['Tim',      '/team'],
-              ['Upitnik',  '/survey'],
-            ] as [string, string][]).map(([label, href]) => (
-              <Link
-                key={label}
-                href={href}
-                className="footer-link"
-                style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', transition: '0.3s' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
+
+
+      {/* Main footer content */}
+      <div style={{ padding: '64px 60px 56px', maxWidth: '1400px', margin: '0 auto' }}>
+        <div className="footer-inner" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr', gap: '60px', alignItems: 'start' }}>
+
+          {/* Brand col */}
+          <div>
+            <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '70px', marginBottom: '24px', display: 'block' }} />
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.82rem', lineHeight: 1.75, margin: '0 0 28px', maxWidth: '260px' }}>
+              Vodeći powerlifting klub u regiji. Specijalizirani za razvoj snage i vrhunsku pripremu sportaša za natjecanja na svim razinama.
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <a
+                href="https://www.instagram.com/lwlup/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-social-btn"
+                style={{ width: '36px', height: '36px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', transition: 'all 0.25s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#fff'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}
               >
-                {label}
-              </Link>
-            ))}
+                <Instagram size={14} />
+              </a>
+              <a
+                href="#"
+                className="footer-social-btn"
+                style={{ width: '36px', height: '36px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', transition: 'all 0.25s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#fff'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}
+              >
+                <Facebook size={14} />
+              </a>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <span style={{ fontSize: '0.7rem', color: '#fff', letterSpacing: '0.2em', fontWeight: 800 }}>SOCIJALNO</span>
-            <a
-              href="https://www.instagram.com/lwlup/"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', transition: '0.3s' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
-            >
-              <Instagram size={14} /> Instagram
-            </a>
-            <a
-              href="#"
-              style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', transition: '0.3s' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
-            >
-              <Facebook size={14} /> Facebook
-            </a>
+          {/* Nav col */}
+          <div>
+            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '24px', fontWeight: 700 }}>NAVIGACIJA</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {([
+                ['O klubu',  '/#club'],
+                ['Trener',   '/#coach'],
+                ['Sustav',   '/#system'],
+                ['Tim',      '/team'],
+                ['Trening',  '/training'],
+              ] as [string, string][]).map(([label, href]) => (
+                <Link
+                  key={label}
+                  href={href}
+                  className="footer-link"
+                  style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.45)', textDecoration: 'none', transition: 'all 0.25s', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.paddingLeft = '6px' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; e.currentTarget.style.paddingLeft = '0' }}
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
           </div>
+
+          {/* Club col */}
+          <div>
+            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '24px', fontWeight: 700 }}>KLUB</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {([
+                ['Upitnik',       '/survey'],
+                ['Natjecanja',    '/#info'],
+                ['Squat',         '/#info'],
+                ['Bench Press',   '/#info'],
+                ['Deadlift',      '/#info'],
+              ] as [string, string][]).map(([label, href]) => (
+                <Link
+                  key={label}
+                  href={href}
+                  className="footer-link"
+                  style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.45)', textDecoration: 'none', transition: 'all 0.25s' }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.paddingLeft = '6px' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; e.currentTarget.style.paddingLeft = '0' }}
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Stats col */}
+          <div>
+            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '24px', fontWeight: 700 }}>BROJKE</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+              {[
+                { val: '10+',  label: 'Aktivnih atleta' },
+                { val: '12',   label: 'Državnih rekorda' },
+                { val: '6',    label: 'Europskih nastupa' },
+                { val: '2023', label: 'Godina osnivanja' },
+              ].map((s, i) => (
+                <div key={i} style={{ padding: '14px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <span style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1 }}>{s.val}</span>
+                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em' }}>{s.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
       </div>
 
-      {/* Copyright */}
-      <div style={{ maxWidth: '1400px', margin: '60px auto 0', paddingTop: '30px', borderTop: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.15)', fontSize: '0.7rem', textAlign: 'center' }}>
-        © 2026 LWLUP POWERLIFTING. ALL RIGHTS RESERVED.
+      {/* Bottom bar */}
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '20px 60px' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.15)', letterSpacing: '0.1em' }}>
+            © 2026 LWL UP POWERLIFTING. ALL RIGHTS RESERVED. DESIGNED BY [KIZOCODE]
+          </span>
+          <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.15)', letterSpacing: '0.1em' }}>
+            DESIGNED BY <span style={{ color: 'rgba(255,255,255,0.3)' }}>KIZOCODE</span>
+          </span>
+        </div>
       </div>
 
       <style>{`
-        .footer-link:hover { color: #fff !important; transform: translateX(5px); }
-
+        .footer-link { transition: color 0.25s, padding-left 0.25s !important; }
+        @media (max-width: 1024px) {
+          .footer-inner { grid-template-columns: 1fr 1fr !important; gap: 40px !important; }
+        }
         @media (max-width: 768px) {
-          .footer-inner { flex-direction: column !important; gap: 40px !important; padding: 0 !important; }
-          footer { padding: 60px 20px !important; }
-          .footer-nav-row { gap: 40px !important; }
+          .footer-inner { grid-template-columns: 1fr !important; gap: 36px !important; }
+          footer > div { padding-left: 20px !important; padding-right: 20px !important; }
+          footer > div:first-child { padding-left: 20px !important; padding-right: 20px !important; }
         }
       `}</style>
     </footer>
