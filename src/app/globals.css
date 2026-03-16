@@ -1,0 +1,172 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg:    #050505;
+  --s1:    #0c0c0c;
+  --s2:    #121212;
+  --s3:    #1a1a1a;
+  --s4:    #222222;
+  --s5:    #2a2a2a;
+  --b1:    #1c1c1c;
+  --b2:    #282828;
+  --b3:    #383838;
+  --b4:    #505050;
+  --w:     #ffffff;
+  --w2:    #f0f0f0;
+  --w3:    #a0a0a0;
+  --w4:    #606060;
+  --w5:    #303030;
+  --danger:  #ff4444;
+  --success: #44ff99;
+  --warn:    #ffaa44;
+  --accent:  #ffffff;
+
+  --fd: 'Bebas Neue', 'Arial Black', sans-serif;
+  --fm: 'IBM Plex Mono', monospace;
+  --fb: 'Inter', system-ui, sans-serif;
+
+  --glow: 0 0 40px rgba(255,255,255,0.03);
+  --card-shadow: 0 4px 24px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  background: var(--bg);
+  color: var(--w);
+  font-family: var(--fb);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--b3); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--b4); }
+
+/* ── Inputs ── */
+input, select, textarea {
+  font-family: var(--fm);
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  color: var(--w);
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--b4);
+  background: var(--s4);
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.04);
+}
+input::placeholder, textarea::placeholder { color: var(--w4); }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input[type="number"] { -moz-appearance: textfield; }
+input[type="date"] { color-scheme: dark; }
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn  { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes slideIn  { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes spin     { to { transform: rotate(360deg); } }
+@keyframes pulse    { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+@keyframes shimmer  { 0% { background-position:-200% 0; } 100% { background-position:200% 0; } }
+@keyframes glow-pulse {
+  0%,100% { box-shadow: 0 0 0 rgba(255,255,255,0); }
+  50%      { box-shadow: 0 0 30px rgba(255,255,255,0.06); }
+}
+
+.fade-up  { animation: fadeUp  0.28s cubic-bezier(.16,1,.3,1) both; }
+.fade-in  { animation: fadeIn  0.2s  ease both; }
+.scale-in { animation: scaleIn 0.22s cubic-bezier(.16,1,.3,1) both; }
+.slide-in { animation: slideIn 0.22s cubic-bezier(.16,1,.3,1) both; }
+
+.stagger > *:nth-child(1)  { animation-delay: 0.00s; }
+.stagger > *:nth-child(2)  { animation-delay: 0.05s; }
+.stagger > *:nth-child(3)  { animation-delay: 0.10s; }
+.stagger > *:nth-child(4)  { animation-delay: 0.15s; }
+.stagger > *:nth-child(5)  { animation-delay: 0.20s; }
+.stagger > *:nth-child(n+6){ animation-delay: 0.24s; }
+
+/* ── Skeleton ── */
+.skeleton {
+  background: linear-gradient(90deg, var(--s2) 25%, var(--s3) 50%, var(--s2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: 3px;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--fm); font-size: 0.7rem; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  cursor: pointer; border: none; padding: 9px 18px;
+  transition: all 0.15s; white-space: nowrap; user-select: none;
+}
+.btn:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+.btn-white  { background: #fff; color: #000; }
+.btn-white:hover { background: #e8e8e8; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,255,255,0.15); }
+.btn-white:active { transform: translateY(0); box-shadow: none; }
+
+.btn-ghost  { background: transparent; color: var(--w3); border: 1px solid var(--b2); }
+.btn-ghost:hover { background: var(--s3); color: var(--w); border-color: var(--b3); }
+
+.btn-icon { background: transparent; border: none; color: var(--w4); padding: 6px; cursor: pointer; display: flex; align-items: center; transition: color 0.12s, transform 0.1s; }
+.btn-icon:hover { color: var(--w); transform: scale(1.1); }
+
+/* ── Card ── */
+.card {
+  background: var(--s1);
+  border: 1px solid var(--b1);
+  box-shadow: var(--card-shadow);
+}
+.card-hover { transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s; }
+.card-hover:hover { border-color: var(--b3); transform: translateY(-1px); box-shadow: 0 8px 32px rgba(0,0,0,0.7); }
+
+/* ── Tag / Pill ── */
+.tag {
+  display: inline-block; padding: 3px 10px;
+  font-family: var(--fm); font-size: 0.6rem; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  background: var(--s3); border: 1px solid var(--b2);
+  color: var(--w4);
+}
+
+/* ── Typography ── */
+.mono-label {
+  font-family: var(--fm); font-size: 0.62rem; font-weight: 500;
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--w4);
+}
+.mono-sm { font-family: var(--fm); font-size: 0.75rem; color: var(--w3); }
+
+/* ── Left border accent ── */
+.lift-squat     { border-left: 2px solid rgba(255,255,255,0.9); }
+.lift-bench     { border-left: 2px solid rgba(255,255,255,0.9); }
+.lift-deadlift  { border-left: 2px solid rgba(255,255,255,0.9); }
+.lift-accessory { border-left: 2px solid rgba(255,255,255,0.2); }
+
+/* ── Set row ── */
+.set-row { transition: background 0.1s; }
+.set-row:hover { background: rgba(255,255,255,0.025); }
+
+/* ── Divider ── */
+.divider { height: 1px; background: var(--b1); width: 100%; }
+
+
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0.7); }
+  70% { transform: scale(1.2); box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+}
