@@ -1,7 +1,9 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Instagram, Facebook, Zap, Shield, Target, Award } from 'lucide-react'
+import { Zap, Shield, Target, Award } from 'lucide-react'
+import Navbar from '@/app/components/Navbar'
+import Footer from '@/app/components/Footer'
 
 const SLIDES = [
   { src: '/slike/20251220-IMG_0729.jpg', quote: 'DISCIPLINA JE MOST IZMEĐU CILJA I USPJEHA.', sub: 'Dosljednost pobjeđuje talent svaki put.' },
@@ -27,49 +29,37 @@ const FEATURES = [
 ]
 
 const LIFT_DETAILS = {
+  // IMG_1882.jpg — atleta s šipkom stoji uspravno, centriran u kadru
   SQUAT: {
     img: '/slike/squat.jpg',
     points: [
-      // Šipka vidljiva na ramenima/trapezijusu atleta — gornji dio torza, oko 28% visine slike
-      { top: '28%', left: '52%', label: 'POLOŽAJ ŠIPKE', desc: 'High bar — šipka leži na gornjem trapezijusu. Uspravniji torzo, duži ROM. Low bar — stražnji deltoid, manji ROM, više aktivacije stražnje lančane.' },
-      // Belt vidljiv u sredini atleta, oko struka — ~50% visine slike
-      { top: '44%', left: '46%', label: 'BRACE & BELT', desc: 'Maksimalni intraabdominalni tlak kroz cijeli descent i ascent. Belt nije zamjena za aktivan brace — pojačava ga.' },
-      // Koljena su vidljiva u dnu squata, oko 68-72% visine
-      { top: '65%', left: '43%', label: 'DUBINA & KOLJENA', desc: 'Kuk mora proći ispod vrha koljena za valjan lift prema IPF pravilima. Koljena prate smjer prstiju.' },
-      // Stopala atleta na podu — oko 88% visine slike
-      { top: '85%', left: '48%', label: 'STOPALA', desc: 'Tripod foot — ravnomjerna težina kroz petu, vanjski rub i prednji dio. Peta ne smije se podizati.' }
+      { top: '25%', left: '50%', label: 'POLOŽAJ ŠIPKE', desc: 'High bar — šipka leži na gornjem trapezijusu. Uspravniji torzo, duži ROM. Low bar — stražnji deltoid, manji ROM, više aktivacije stražnje lančane.' },
+      { top: '46%', left: '50%', label: 'BRACE & BELT', desc: 'Maksimalni intraabdominalni tlak kroz cijeli descent i ascent. Belt nije zamjena za aktivan brace — pojačava ga.' },
+      { top: '67%', left: '46%', label: 'DUBINA & KOLJENA', desc: 'Kuk mora proći ispod vrha koljena za valjan lift prema IPF pravilima. Koljena prate smjer prstiju.' },
+      { top: '88%', left: '48%', label: 'STOPALA', desc: 'Tripod foot — ravnomjerna težina kroz petu, vanjski rub i prednji dio. Peta ne smije se podizati.' }
     ]
   },
+  // IMG_1904.jpg — atleta leži horizontalno na klupi, bench press
+  // Slika je landscape, atleta zauzima sredinu od ~15% do ~90% visine
   'BENCH PRESS': {
     img: '/slike/bench.jpg',
     points: [
-      // Šipka i hvat ruku — vidljivo u gornjem dijelu slike (~25% visine), ruke drže šipku
-      { top: '25%', left: '36%', label: 'HVAT & ŠIPKA', desc: 'Širina hvata određuje kut lakta. Šipka se spušta na donji dio prsa. Zapešća ravna, ne savinuta.' },
-      // Prsa / gornja leđa atleta koji leži — oko 40% visine slike
-      { top: '63%', left: '26%', label: 'GORNJA LEĐA', desc: 'Lopatice povučene i spuštene (retraction & depression) — stabilna baza za potisak. Smanjuje ROM.' },
-      // Glava i vrat — vidljivo u gornjem dijelu slike, oko 20-25% visine
-      { top: '55%', left: '10%', label: 'GLAVA & VRAT', desc: 'Glava ravna, vrat u neutralnom položaju. Održavanje stabilnosti tijela.' },
-      // Belt / trbuh atleta — vidljivo oko 50% visine
-      { top: '50%', left: '44%', label: 'ARCH & BELT', desc: 'Luk u donjem dijelu leđa omogućava leg drive. Belt pritisnuta na klupu zajedno s gornjim leđima.' },
-      // Stražnjica na klupi — oko 58% visine slike
-      { top: '63%', left: '56%', label: 'GLUTEUS NA KLUPI', desc: 'Stražnjica mora ostati na klupi cijelo vrijeme — kritično za IPF pravila i prijenos sile iz nogu.' },
-      // Stopala / noge atleta — pri dnu slike, ~78% visine
-      { top: '92%', left: '80%', label: 'LEG DRIVE', desc: 'Stopala ravno u pod — aktivno guranje stvara lanac napetosti kroz cijelo tijelo i stabilizira lift.' },
+      { top: '20%', left: '38%', label: 'HVAT & ŠIPKA', desc: 'Širina hvata određuje kut lakta. Šipka se spušta na donji dio prsa. Zapešća ravna, ne savinuta.' },
+      { top: '42%', left: '26%', label: 'GORNJA LEĐA', desc: 'Lopatice povučene i spuštene (retraction & depression) — stabilna baza za potisak. Smanjuje ROM.' },
+      { top: '50%', left: '42%', label: 'ARCH', desc: 'Luk u donjem dijelu leđa omogućava leg drive. Što je veći luk, kraći je put šipke.' },
+      { top: '58%', left: '56%', label: 'GLUTEUS NA KLUPI', desc: 'Stražnjica mora ostati na klupi cijelo vrijeme — kritično za IPF pravila i prijenos sile iz nogu.' },
+      { top: '78%', left: '72%', label: 'LEG DRIVE', desc: 'Stopala ravno u pod — aktivno guranje stvara lanac napetosti kroz cijelo tijelo i stabilizira lift.' },
     ]
   },
+  // IMG_2006.jpg — atleta u lockoutu deadlifta, centriran, portretna slika
   DEADLIFT: {
     img: '/slike/deadlift.jpg',
     points: [
-      // Ramena atleta u lockoutu — pri vrhu slike, oko 22% visine
-      { top: '28%', left: '29%', label: 'LOCKOUT', desc: 'Puna ekstenzija kuka i koljena. Ramena iza šipke, ne hiperprekstenzija. Brada neutralno.' },
-      // Belt vidljiv na trbuhu atleta — oko 42% visine slike
-      { top: '43%', left: '45%', label: 'BRACE & BELT', desc: 'Maksimalni intraabdominalni tlak od početka do kraja lifta. Belt pojačava ali ne zamjenjuje brace.' },
-      // Ruke/hvat na šipki — vidljivo oko 55% visine slike
-      { top: '60%', left: '56%', label: 'HVAT', desc: 'Mixed grip ili hook grip za maksimalan grip. Šipka drži se u proksimalnoj palmarnoj brazdi, ne u prstima.' },
-      // Šipka uz potkoljenice / koljena — oko 68% visine slike
-      { top: '68%', left: '40%', label: 'ŠIPKA UZ TIJELO', desc: 'Šipka klizi uz potkoljenice i natkoljenice cijeli put gore. Odmak od tijela = gubitak poluge i rizik ozljede.' },
-      // Stance
-      { top: '9%', left: '56%', label: 'STANCE', desc: 'Najčešći stance-ovi koji lifteri koriste su sumo i conventional.' }
+      { top: '22%', left: '38%', label: 'LOCKOUT', desc: 'Puna ekstenzija kuka i koljena. Ramena iza šipke, ne hiperprekstenzija. Brada neutralno.' },
+      { top: '40%', left: '42%', label: 'BRACE & BELT', desc: 'Maksimalni intraabdominalni tlak od početka do kraja lifta. Belt pojačava ali ne zamjenjuje brace.' },
+      { top: '57%', left: '45%', label: 'HVAT', desc: 'Mixed grip ili hook grip za maksimalan grip. Šipka drži se u proksimalnoj palmarnoj brazdi, ne u prstima.' },
+      { top: '68%', left: '44%', label: 'ŠIPKA UZ TIJELO', desc: 'Šipka klizi uz potkoljenice i natkoljenice cijeli put gore. Odmak od tijela = gubitak poluge i rizik ozljede.' },
+      { top: '87%', left: '44%', label: 'STANCE', desc: 'Conventional — uži stance, ruke izvan nogu. Sumo — širi stance, ruke između nogu. Odabir ovisi o anatomiji.' }
     ]
   }
 }
@@ -159,7 +149,6 @@ function useReveal() {
 
 export default function Landing() {
   const [slide, setSlide] = useState(0)
-  const [scrollY, setScrollY] = useState(0)
   const [ready, setReady] = useState(false)
   const timerRef = useRef<any>(null)
   const [activeLift, setActiveLift] = useState<keyof typeof LIFT_DETAILS | null>(null)
@@ -174,9 +163,7 @@ export default function Landing() {
   useEffect(() => {
     setReady(true)
     timerRef.current = setInterval(() => setSlide(s => (s + 1) % SLIDES.length), 6000)
-    const onScroll = () => setScrollY(window.scrollY)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => { clearInterval(timerRef.current); window.removeEventListener('scroll', onScroll) }
+    return () => clearInterval(timerRef.current)
   }, [])
 
   const goSlide = (i: number) => {
@@ -185,50 +172,12 @@ export default function Landing() {
     timerRef.current = setInterval(() => setSlide(s => (s + 1) % SLIDES.length), 6000)
   }
 
-  const navSolid = scrollY > 80
-
   return (
     <div style={{ background: '#050505', color: '#fff', overflowX: 'hidden', fontFamily: 'var(--fm)', position: 'relative' }}>
 
       <NetworkCanvas />
 
-      {/* ══ NAVBAR ═══════════════════════════════════════════════ */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '80px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 60px',
-        background: navSolid ? 'rgba(5,5,5,0.97)' : 'transparent',
-        borderBottom: navSolid ? '1px solid rgba(255,255,255,0.08)' : '1px solid transparent',
-        backdropFilter: navSolid ? 'blur(20px)' : 'none',
-        transition: 'all 0.5s cubic-bezier(.4,0,.2,1)',
-      }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '15px', textDecoration: 'none', color: '#fff' }}>
-          <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '60px', width: 'auto', transition: 'transform 0.3s' }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1) rotate(-2deg)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1) rotate(0deg)'}
-          />
-        </Link>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
-          {[['O KLUBU', '#club'], ['POWERLIFTING', '#info'], ['OSNIVAČ', '#coach'], ['SUSTAV', '#system'], ['TIM', 'team']].map(([l, h]) => (
-            <a key={l} href={h} style={{ fontSize: '0.7rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)', textDecoration: 'none', transition: 'all 0.3s', fontWeight: 600 }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.transform = 'translateY(0)' }}
-            >{l}</a>
-          ))}
-          <Link href="/survey" style={{ textDecoration: 'none' }}>
-            <button style={{
-              padding: '12px 28px', background: 'transparent', color: '#fff',
-              border: '1px solid rgba(255,255,255,0.5)', cursor: 'pointer',
-              fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.15em', transition: 'all 0.3s',
-              borderRadius: '2px', display: 'flex', alignItems: 'center', gap: '8px'
-            }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; e.currentTarget.style.borderColor = '#fff' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)' }}
-            >PRIDRUŽI SE <ArrowRight size={14} strokeWidth={3} /></button>
-          </Link>
-        </div>
-      </nav>
+      <Navbar variant="transparent" />
 
       {/* ══ HERO ══════════════════════════════════════════════════ */}
       <section style={{ position: 'relative', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
@@ -259,7 +208,7 @@ export default function Landing() {
             </div>
 
             {/* CTA buttons */}
-            <div style={{ display: 'flex', gap: '16px', marginTop: '50px' }}>
+            <div className="hero-cta-row" style={{ display: 'flex', gap: '16px', marginTop: '50px' }}>
               <Link href="/survey" style={{ textDecoration: 'none' }}>
                 <button className="cta-primary" style={{
                   padding: '22px 60px', background: '#fff', color: '#000', border: '1px solid #fff',
@@ -296,7 +245,7 @@ export default function Landing() {
 
       {/* ══ STATS ═════════════════════════════════════════════════ */}
       <section style={{ background: '#050505', position: 'relative', zIndex: 10 }}>
-        <div ref={statsReveal.ref} style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        <div ref={statsReveal.ref} className="stat-grid" style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           {STATS.map((s, i) => (
             <div key={i} className="stat-card" style={{
               padding: '80px 40px', textAlign: 'center',
@@ -317,18 +266,25 @@ export default function Landing() {
 
       {/* ══ MODAL ZA DETALJE LIFTA ════════════════════════════════ */}
       {activeLift && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', background: 'rgba(0,0,0,0.98)', backdropFilter: 'blur(15px)', animation: 'fadeIn 0.3s ease' }}
+        <div className="modal-outer" style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px', background: 'rgba(0,0,0,0.96)', backdropFilter: 'blur(20px)', animation: 'fadeIn 0.3s ease' }}
           onClick={() => setActiveLift(null)}>
-          <div style={{ width: '100%', maxWidth: '1200px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', position: 'relative', display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', overflow: 'hidden', boxShadow: '0 50px 100px rgba(0,0,0,0.5)', borderRadius: '8px', animation: 'slideUp 0.5s cubic-bezier(0.16,1,0.3,1)' }}
+          <div className="modal-inner" style={{ width: '100%', maxWidth: '1080px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', position: 'relative', display: 'grid', gridTemplateColumns: '1fr 400px', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.7)', animation: 'slideUp 0.5s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
             onClick={e => e.stopPropagation()}>
-            <button onClick={() => setActiveLift(null)} style={{ position: 'absolute', top: '30px', right: '30px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 20px', cursor: 'pointer', zIndex: 10, fontSize: '0.7rem', letterSpacing: '0.2em', transition: '0.3s' }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#fff' }}
-            >ZATVORI</button>
-            <div style={{ position: 'relative', height: '80vh', background: '#000' }}>
-              <img src={LIFT_DETAILS[activeLift].img} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }} alt={activeLift} />
+
+            {/* ── LEFT: slika s hotspotima ── */}
+            <div className="modal-img-side" style={{ position: 'relative', background: '#000', overflow: 'auto' }}>
+              <img src={LIFT_DETAILS[activeLift].img}
+                style={{ 
+                  width: '100%', height: 'auto', display: 'block', opacity: 0.8,
+                  objectPosition: activeLift === 'BENCH PRESS' ? 'center center' : 'center top',
+                }}
+                alt={activeLift}
+              />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.88) 100%)' }} />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, transparent 70%, #0a0a0a 100%)' }} />
+
               {LIFT_DETAILS[activeLift].points.map((p, i) => (
-                <div key={i} style={{ position: 'absolute', top: p.top, left: p.left, transform: 'translate(-50%, -50%)' }}
+                <div key={i} style={{ position: 'absolute', top: p.top, left: p.left, transform: 'translate(-50%, -50%)', zIndex: 3 }}
                   onMouseEnter={() => setHoveredHotspot(i)} onMouseLeave={() => setHoveredHotspot(null)}>
                   <div className="hotspot" style={{ transform: hoveredHotspot === i ? 'scale(1.3)' : 'scale(1)', transition: '0.3s' }}>
                     <div className="hotspot-core" />
@@ -337,15 +293,40 @@ export default function Landing() {
                   </div>
                 </div>
               ))}
+
+              <div style={{ position: 'absolute', bottom: '32px', left: '36px', zIndex: 4 }}>
+                <div style={{ fontSize: '0.55rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>TEHNIČKA ANALIZA</div>
+                <div className="modal-lift-name" style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.8rem, 4vw, 4.2rem)', fontWeight: 700, lineHeight: 0.9, textShadow: '0 4px 24px rgba(0,0,0,0.5)' }}>{activeLift}</div>
+              </div>
             </div>
-            <div style={{ padding: '80px 60px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.5em', marginBottom: '10px' }}>TEHNIČKA ANALIZA</div>
-              <h3 style={{ fontFamily: 'var(--fd)', fontSize: '4.5rem', marginBottom: '50px', lineHeight: 1 }}>{activeLift}</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+
+            {/* ── RIGHT: panel s listom ── */}
+            <div className="modal-text-side" style={{ display: 'flex', flexDirection: 'column', borderLeft: '1px solid rgba(255,255,255,0.07)', position: 'sticky', top: 0, height: '90vh', overflowY: 'auto' }}>
+              <div style={{ padding: '22px 28px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+                <div style={{ fontSize: '0.55rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>KLJUČNE TOČKE</div>
+                <button onClick={() => setActiveLift(null)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.45)', padding: '6px 14px', cursor: 'pointer', fontSize: '0.58rem', letterSpacing: '0.2em', transition: '0.2s', fontFamily: 'var(--fm)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; e.currentTarget.style.borderColor = '#fff' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)' }}
+                >✕ ZATVORI</button>
+              </div>
+              <div style={{ overflowY: 'auto', flex: 1 }}>
                 {LIFT_DETAILS[activeLift].points.map((p, i) => (
-                  <div key={i} style={{ borderLeft: hoveredHotspot === i ? '2px solid #fff' : '1px solid rgba(255,255,255,0.1)', paddingLeft: '25px', transition: 'all 0.3s', opacity: hoveredHotspot === null || hoveredHotspot === i ? 1 : 0.3 }}>
-                    <div style={{ fontSize: '0.7rem', letterSpacing: '0.2em', color: '#fff', marginBottom: '12px', fontWeight: 700 }}>{p.label}</div>
-                    <p style={{ fontSize: '1rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.5)', fontWeight: 300 }}>{p.desc}</p>
+                  <div key={i}
+                    onMouseEnter={() => setHoveredHotspot(i)}
+                    onMouseLeave={() => setHoveredHotspot(null)}
+                    style={{
+                      padding: '20px 28px', transition: 'all 0.2s', cursor: 'default',
+                      borderBottom: i < LIFT_DETAILS[activeLift].points.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                      background: hoveredHotspot === i ? 'rgba(255,255,255,0.04)' : 'transparent',
+                      opacity: hoveredHotspot === null || hoveredHotspot === i ? 1 : 0.3,
+                      display: 'flex', gap: '14px', alignItems: 'flex-start',
+                    }}
+                  >
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', flexShrink: 0, marginTop: '2px', background: hoveredHotspot === i ? '#fff' : 'transparent', border: `1px solid ${hoveredHotspot === i ? '#fff' : 'rgba(255,255,255,0.2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: 800, color: hoveredHotspot === i ? '#000' : 'rgba(255,255,255,0.35)', transition: 'all 0.2s' }}>{i + 1}</div>
+                    <div>
+                      <div style={{ fontSize: '0.63rem', letterSpacing: '0.22em', fontWeight: 700, color: hoveredHotspot === i ? '#fff' : 'rgba(255,255,255,0.7)', marginBottom: '6px', transition: 'color 0.2s', fontFamily: 'var(--fm)' }}>{p.label}</div>
+                      <p style={{ fontSize: '0.75rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.38)', margin: 0, fontWeight: 300 }}>{p.desc}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -357,11 +338,11 @@ export default function Landing() {
       {/* ══ BIG THREE ═════════════════════════════════════════════ */}
       <section id="info" style={{ padding: '150px 60px', background: '#080808' }}>
         <div ref={bigThreeReveal.ref} style={{ maxWidth: '1400px', margin: '0 auto', opacity: bigThreeReveal.visible ? 1 : 0, transform: bigThreeReveal.visible ? 'none' : 'translateY(40px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '80px' }}>
+          <div className="big-three-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '80px' }}>
             <h2 style={{ fontFamily: 'var(--fd)', fontSize: '6rem', lineHeight: 0.9 }}>THE BIG<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>THREE</span></h2>
             <p style={{ maxWidth: '400px', color: 'rgba(255,255,255,0.5)', fontSize: '1.1rem' }}>Kliknite na disciplinu za dubinsku tehničku analizu i biomehaničke ključne točke.</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '25px', height: '600px' }}>
+          <div className="big-three-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '25px', height: '600px' }}>
             {(['SQUAT', 'BENCH PRESS', 'DEADLIFT'] as const).map((lift, idx) => (
               <div key={lift} onClick={() => setActiveLift(lift)} className="lift-card" style={{ position: 'relative', cursor: 'pointer', overflow: 'hidden', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)', animationDelay: `${idx * 0.15}s` }}>
                 <img src={LIFT_DETAILS[lift].img} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(1) brightness(0.4)', transition: 'transform 1s cubic-bezier(0.16, 1, 0.3, 1), filter 0.6s' }} className="lift-img" alt={lift} />
@@ -381,9 +362,9 @@ export default function Landing() {
 
       {/* ══ ABOUT CLUB ════════════════════════════════════════════ */}
       <section id="club" style={{ padding: '180px 60px', maxWidth: '1400px', margin: '0 auto' }}>
-        <div ref={clubReveal.ref} style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '100px', alignItems: 'center', opacity: clubReveal.visible ? 1 : 0, transform: clubReveal.visible ? 'none' : 'translateX(-40px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
+        <div ref={clubReveal.ref} className="club-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '100px', alignItems: 'center', opacity: clubReveal.visible ? 1 : 0, transform: clubReveal.visible ? 'none' : 'translateX(-40px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
           <div style={{ position: 'relative' }}>
-            <div style={{ position: 'absolute', top: '-60px', left: '-40px', fontSize: '12rem', fontFamily: 'var(--fd)', color: 'rgba(255,255,255,0.03)', zIndex: -1 }}>01</div>
+            <div className="club-section-num" style={{ position: 'absolute', top: '-60px', left: '-40px', fontSize: '12rem', fontFamily: 'var(--fd)', color: 'rgba(255,255,255,0.03)', zIndex: -1 }}>01</div>
             <h2 style={{ fontFamily: 'var(--fd)', fontSize: '6rem', lineHeight: 0.9, marginBottom: '40px' }}>
               STVORENI<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>U ŽELJEZU</span>
             </h2>
@@ -399,7 +380,7 @@ export default function Landing() {
               ))}
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="club-img-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             <div className="club-image" style={{ height: '400px', overflow: 'hidden', borderRadius: '4px', marginTop: '40px' }}>
               <img src="/slike/IMG_1844.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: '0.8s' }} className="club-img" alt="Club" />
             </div>
@@ -412,7 +393,7 @@ export default function Landing() {
 
       {/* ══ COACH ═════════════════════════════════════════════════ */}
       <section id="coach" style={{ background: '#0a0a0a', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '150px 60px' }}>
-        <div ref={coachReveal.ref} style={{ maxWidth: '1300px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '100px', alignItems: 'center', opacity: coachReveal.visible ? 1 : 0, transform: coachReveal.visible ? 'none' : 'translateX(40px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
+        <div ref={coachReveal.ref} className="coach-grid" style={{ maxWidth: '1300px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '100px', alignItems: 'center', opacity: coachReveal.visible ? 1 : 0, transform: coachReveal.visible ? 'none' : 'translateX(40px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
           <div style={{ position: 'relative' }}>
             <div className="coach-image-wrapper" style={{ overflow: 'hidden', borderRadius: '4px' }}>
               <img src="/slike/walter.png" alt="Walter Smajlović" style={{ width: '100%', height: 'auto', filter: 'brightness(0.9) grayscale(0.2)', transition: 'transform 0.8s' }} className="coach-img" />
@@ -441,13 +422,13 @@ export default function Landing() {
       </section>
 
       {/* ══ SYSTEM ════════════════════════════════════════════════ */}
-      <section id="system" style={{ background: '#0a0a0a', padding: '150px 0' }}>
+      <section id="system" className="system-section" style={{ background: '#0a0a0a', padding: '150px 0' }}>
         <div ref={systemReveal.ref} style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 60px' }}>
           <div style={{ textAlign: 'center', marginBottom: '100px', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>
             <h2 style={{ fontFamily: 'var(--fd)', fontSize: '5rem', marginBottom: '20px' }}>DIGITALNI COACHING</h2>
             <p style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em' }}>VAŠ TRENER U VAŠEM DŽEPU, 24/7.</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '30px' }}>
+          <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '30px' }}>
             {FEATURES.map((f, i) => (
               <div key={i} className="feature-card" style={{
                 background: '#050505', padding: '50px 30px', border: '1px solid rgba(255,255,255,0.05)',
@@ -471,8 +452,8 @@ export default function Landing() {
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 0 }}>
           <img src="/slike/IMG_1886-2.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.15) grayscale(1)', animation: 'slowZoom 20s ease-in-out infinite alternate' }} alt="Legacy" />
         </div>
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(5rem, 15vw, 12rem)', lineHeight: 0.8, marginBottom: '40px', animation: 'textGlow 3s ease-in-out infinite' }}>
+        <div style={{ position: 'relative', zIndex: 1, padding: '0 20px' }}>
+          <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3.5rem, 15vw, 12rem)', lineHeight: 0.8, marginBottom: '40px', animation: 'textGlow 3s ease-in-out infinite' }}>
             BECOME<br /> A LEGACY
           </h2>
           <Link href="/survey" style={{ textDecoration: 'none' }}>
@@ -489,45 +470,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ══ FOOTER ════════════════════════════════════════════════ */}
-      <footer style={{ padding: '80px 60px', background: '#000', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-              <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '40px' }} />
-              <span style={{ fontFamily: 'var(--fd)', fontSize: '1.5rem', letterSpacing: '0.2em' }}>LWL UP</span>
-            </div>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', maxWidth: '300px', lineHeight: 1.6 }}>
-              Vodeći powerlifting klub u regiji. Specijalizirani za razvoj snage i vrhunsku pripremu sportaša.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '80px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <span style={{ fontSize: '0.7rem', color: '#fff', letterSpacing: '0.2em', fontWeight: 800 }}>NAVIGACIJA</span>
-              {[['O klubu', '#club'], ['Trener', '#coach'], ['Sustav', '#system'], ['Upitnik', '/survey']].map(([l, h]) => (
-                <a key={l} href={h} className="footer-link" style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', transition: '0.3s' }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
-                >{l}</a>
-              ))}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <span style={{ fontSize: '0.7rem', color: '#fff', letterSpacing: '0.2em', fontWeight: 800 }}>SOCIJALNO</span>
-              <a href="#" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', transition: '0.3s' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
-              ><Instagram size={14} /> Instagram</a>
-              <a href="#" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', transition: '0.3s' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
-              ><Facebook size={14} /> Facebook</a>
-            </div>
-          </div>
-        </div>
-        <div style={{ maxWidth: '1400px', margin: '60px auto 0', paddingTop: '30px', borderTop: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.15)', fontSize: '0.7rem', textAlign: 'center' }}>
-          © 2026 LWLUP POWERLIFTING. ALL RIGHTS RESERVED.
-        </div>
-      </footer>
+      <Footer />
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700&display=swap');
@@ -583,7 +526,6 @@ export default function Landing() {
         .cta-final-button:hover span { color: #000; }
 
         /* FOOTER */
-        .footer-link:hover { color: #fff !important; transform: translateX(5px); }
 
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
@@ -591,6 +533,87 @@ export default function Landing() {
         @keyframes textGlow { 0%, 100% { text-shadow: 0 0 20px rgba(255,255,255,0.1); } 50% { text-shadow: 0 0 60px rgba(255,255,255,0.3); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ══════════════════════════════════════════
+           MOBILE — sve ispod 768px
+        ══════════════════════════════════════════ */
+        @media (max-width: 768px) {
+
+          /* ── Navbar ── */
+          nav { padding: 0 20px !important; height: 64px !important; }
+          .nav-links { display: none !important; }
+
+          /* ── Hero ── */
+          section[style*="height: '100vh'"] { height: 100svh !important; }
+
+          /* ── Stats: 2x2 grid ── */
+          .stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .stat-card { padding: 40px 20px !important; }
+          .stat-card:nth-child(2) { border-right: none !important; }
+          .stat-card:nth-child(3) { border-right: 1px solid rgba(255,255,255,0.1) !important; }
+
+          /* ── Big Three: 1 stupac ── */
+          .big-three-grid { grid-template-columns: 1fr !important; height: auto !important; gap: 16px !important; }
+          .big-three-header { flex-direction: column !important; gap: 20px !important; align-items: flex-start !important; }
+          .big-three-header h2 { font-size: 3.5rem !important; }
+          .big-three-header p { max-width: 100% !important; }
+          .lift-card { height: 280px !important; }
+
+          /* ── Modal: full screen ── */
+          .modal-outer { padding: 0 !important; align-items: flex-end !important; }
+          .modal-inner {
+            grid-template-columns: 1fr !important;
+            max-height: 95svh !important;
+            border-radius: 12px 12px 0 0 !important;
+            overflow-y: auto !important;
+          }
+          .modal-img-side { height: 55vw !important; min-height: 220px !important; max-height: 320px !important; }
+          .modal-text-side { padding: 24px 20px !important; max-height: none !important; position: static !important; height: auto !important; }
+          .modal-lift-name { font-size: 2.2rem !important; }
+
+          /* ── Club section ── */
+          .club-grid { grid-template-columns: 1fr !important; gap: 40px !important; padding: 80px 20px !important; }
+          .club-img-grid { grid-template-columns: 1fr 1fr !important; }
+          .club-img-grid > div { height: 220px !important; margin-top: 0 !important; }
+          .club-section-num { display: none !important; }
+
+          /* ── Coach section ── */
+          .coach-grid { grid-template-columns: 1fr !important; gap: 40px !important; padding: 80px 20px !important; }
+          .coach-badge { left: 16px !important; right: 16px !important; padding: 12px 20px !important; }
+          .coach-badge div:first-child { font-size: 1.1rem !important; }
+
+          /* ── System / Features: 1 stupac ── */
+          .features-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .system-section { padding: 80px 20px !important; }
+
+          /* ── CTA ── */
+          .cta-final-button { padding: 20px 40px !important; font-size: 0.8rem !important; }
+
+          /* ── Footer ── */
+          .footer-inner { flex-direction: column !important; gap: 40px !important; padding: 60px 20px !important; }
+          .footer-nav-row { gap: 40px !important; }
+
+          /* ── General padding ── */
+          section { padding-left: 20px !important; padding-right: 20px !important; }
+        }
+
+        /* ══════════════════════════════════════════
+           SMALL MOBILE — ispod 480px
+        ══════════════════════════════════════════ */
+        @media (max-width: 480px) {
+          .stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .stat-card { padding: 30px 12px !important; }
+          .stat-value { font-size: 3rem !important; }
+
+          .hero-cta-row { flex-direction: column !important; align-items: center !important; width: 100% !important; }
+          .hero-cta-row a, .hero-cta-row button { width: 100% !important; text-align: center !important; justify-content: center !important; }
+
+          .modal-inner { max-height: 100svh !important; border-radius: 0 !important; }
+          .modal-img-side { height: 50vw !important; }
+
+          .club-img-grid > div { height: 160px !important; }
+          .features-grid { grid-template-columns: 1fr !important; }
+        }
       `}</style>
     </div>
   )
