@@ -8,11 +8,9 @@ type FormData = {
   full_name: string; email: string; phone_number: string; age: string; gender: string; bodyweight: string
   experience: string; days_per_week: string; has_competed: string
   squat: string; bench: string; deadlift: string
-  // Advanced only
   training_style: string; program_history: string; session_duration: string
   nutrition_quality: string; supplements: string; equipment: string
   recovery_habits: string; coaching_history: string
-  // Goals
   goals: string; injuries: string; additional: string
 }
 
@@ -26,12 +24,61 @@ const EMPTY: FormData = {
   goals: '', injuries: '', additional: '',
 }
 
-// Steps change based on experience level
 const BASE_STEPS = ['OSOBNO', 'TRENING', 'PRs', 'CILJEVI']
 const ADVANCED_STEPS = ['OSOBNO', 'TRENING', 'PRs', 'NAPREDNI', 'CILJEVI']
 
-// ── Animated number counter ────────────────────────────────────────
-function Counter({ value, suffix = '' }: { value: number; suffix?: string }) {
+// ── Validation helpers ─────────────────────────────────────────────
+const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim())
+const isValidPhone = (v: string) => !v.trim() || /^[0-9\s\+\-\(\)]{6,20}$/.test(v.trim())
+
+// Parse comma-or-dot decimal string → number
+const parseWeight = (v: string): number => {
+  const normalized = v.replace(',', '.')
+  return parseFloat(normalized)
+}
+
+// Check lift value: must be > 0 and a multiple of 0.5
+const isValidLift = (v: string): boolean => {
+  if (!v.trim()) return false
+  const n = parseWeight(v)
+  if (isNaN(n) || n <= 0) return false
+  return Math.round(n * 2) === n * 2 // multiple of 0.5
+}
+
+// Allow only digits, one comma or dot, max one decimal place that's 0 or 5
+const filterLiftInput = (raw: string): string => {
+  // Allow digits, comma, dot — strip everything else
+  let v = raw.replace(/[^0-9.,]/g, '')
+  // Only one decimal separator
+  const firstComma = v.indexOf(',')
+  const firstDot = v.indexOf('.')
+  if (firstComma !== -1 && firstDot !== -1) {
+    // Keep whichever came first, remove the other
+    if (firstComma < firstDot) v = v.replace(/\./g, '')
+    else v = v.replace(/,/g, '')
+  }
+  // Max one separator
+  const sep = v.includes(',') ? ',' : v.includes('.') ? '.' : null
+  if (sep) {
+    const parts = v.split(sep)
+    v = parts[0] + sep + (parts.slice(1).join(''))
+    // Max 1 decimal digit
+    if (parts[1] !== undefined) v = parts[0] + sep + parts[1].slice(0, 1)
+  }
+  return v
+}
+
+// Compute total respecting 0.5 increments
+const computeTotal = (s: string, b: string, d: string): number | null => {
+  if (!s || !b || !d) return null
+  const vals = [parseWeight(s), parseWeight(b), parseWeight(d)]
+  if (vals.some(isNaN)) return null
+  const t = vals.reduce((a, c) => a + c, 0)
+  return Math.round(t * 2) / 2 // round to nearest 0.5
+}
+
+// ── Animated counter ───────────────────────────────────────────────
+function Counter({ value }: { value: number }) {
   const [display, setDisplay] = useState(0)
   const prev = useRef(0)
   useEffect(() => {
@@ -43,13 +90,16 @@ function Counter({ value, suffix = '' }: { value: number; suffix?: string }) {
     const tick = (now: number) => {
       const t = Math.min((now - startTime) / duration, 1)
       const ease = 1 - Math.pow(1 - t, 3)
-      setDisplay(Math.round(start + diff * ease))
+      const raw = start + diff * ease
+      // Display in 0.5 increments
+      setDisplay(Math.round(raw * 2) / 2)
       if (t < 1) requestAnimationFrame(tick)
       else prev.current = value
     }
     requestAnimationFrame(tick)
   }, [value])
-  return <>{display}{suffix}</>
+  // Show .5 only if needed
+  return <>{display % 1 === 0 ? display : display.toFixed(1).replace('.', ',')}</>
 }
 
 export default function SurveyPage() {
@@ -61,12 +111,49 @@ export default function SurveyPage() {
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
   const [focused, setFocused] = useState<string | null>(null)
+  // Field-level errors
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormData, string>>>({})
   const contentRef = useRef<HTMLDivElement>(null)
 
   const isAdvanced = form.experience === 'Napredni'
   const STEPS = isAdvanced ? ADVANCED_STEPS : BASE_STEPS
 
-  const set = (k: keyof FormData, v: string) => setForm(p => ({ ...p, [k]: v }))
+  const set = (k: keyof FormData, v: string) => {
+    setForm(p => ({ ...p, [k]: v }))
+    // Clear error on change
+    if (fieldErrors[k]) setFieldErrors(p => ({ ...p, [k]: undefined }))
+  }
+
+  const setLift = (k: keyof FormData, raw: string) => {
+    set(k, filterLiftInput(raw))
+  }
+
+  // Validate step 0 fields and return whether valid
+  const validateStep0 = (): boolean => {
+    const errs: Partial<Record<keyof FormData, string>> = {}
+    if (!form.full_name.trim()) errs.full_name = 'Unesi ime i prezime'
+    if (!form.email.trim()) errs.email = 'Unesi email adresu'
+    else if (!isValidEmail(form.email)) errs.email = 'Email nije ispravan (npr. ime@domena.com)'
+    if (form.phone_number && !isValidPhone(form.phone_number)) errs.phone_number = 'Telefon smije sadržavati samo brojeve'
+    if (!form.age.trim() || isNaN(Number(form.age)) || Number(form.age) < 10 || Number(form.age) > 100) errs.age = 'Unesi ispravnu dob'
+    if (!form.gender) errs.gender = 'Odaberi spol'
+    if (!form.bodyweight.trim() || isNaN(Number(form.bodyweight)) || Number(form.bodyweight) <= 0) errs.bodyweight = 'Unesi ispravnu težinu'
+    setFieldErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
+  const validateStep2 = (): boolean => {
+    const errs: Partial<Record<keyof FormData, string>> = {}
+    ;(['squat', 'bench', 'deadlift'] as const).forEach(k => {
+      if (!form[k].trim()) {
+        errs[k] = 'Unesi vrijednost'
+      } else if (!isValidLift(form[k])) {
+        errs[k] = 'Mora biti > 0, u koracima od 0,5 kg'
+      }
+    })
+    setFieldErrors(errs)
+    return Object.keys(errs).length === 0
+  }
 
   const canNext = () => {
     if (step === 0) return !!(form.full_name && form.email && form.age && form.gender && form.bodyweight)
@@ -78,6 +165,11 @@ export default function SurveyPage() {
 
   const navigate = (newStep: number) => {
     if (animating) return
+    // Run validation before proceeding forward
+    if (newStep > step) {
+      if (step === 0 && !validateStep0()) return
+      if (step === 2 && !validateStep2()) return
+    }
     setDir(newStep > step ? 1 : -1)
     setAnimating(true)
     setTimeout(() => {
@@ -89,11 +181,16 @@ export default function SurveyPage() {
   const submit = async () => {
     setSending(true)
     setError('')
+    // Normalise comma decimals to dots before sending
+    const payload = { ...form }
+    ;(['squat', 'bench', 'deadlift', 'bodyweight'] as const).forEach(k => {
+      payload[k] = payload[k].replace(',', '.')
+    })
     try {
       const res = await fetch('/api/survey', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) throw new Error()
       setSent(true)
@@ -104,28 +201,30 @@ export default function SurveyPage() {
     }
   }
 
-  const total = form.squat && form.bench && form.deadlift
-    ? Number(form.squat) + Number(form.bench) + Number(form.deadlift)
-    : 0
-
-  // Actual step content index (accounts for advanced step insertion)
-  const contentStep = step // same index, but we render different content
+  const totalVal = computeTotal(form.squat, form.bench, form.deadlift)
+  const totalDisplay = totalVal !== null ? totalVal : 0
 
   // ── Shared styles ────────────────────────────────────────────────
-  const inp = (name: string): React.CSSProperties => ({
+  const inp = (name: string, hasError?: boolean): React.CSSProperties => ({
     width: '100%', background: 'transparent', border: 'none',
-    borderBottom: `1px solid ${focused === name ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.12)'}`,
+    borderBottom: `1px solid ${hasError ? 'rgba(255,80,80,0.8)' : focused === name ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.12)'}`,
     color: '#fff', fontSize: '1rem', padding: '14px 0', outline: 'none',
     transition: 'border-color 0.25s', fontFamily: "'Barlow', sans-serif",
     boxSizing: 'border-box', letterSpacing: '0.02em',
   })
 
-  const lbl = (name: string): React.CSSProperties => ({
+  const lbl = (name: string, hasError?: boolean): React.CSSProperties => ({
     display: 'block', fontSize: '0.58rem', letterSpacing: '0.4em',
-    color: focused === name ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)',
+    color: hasError ? 'rgba(255,100,100,0.9)' : focused === name ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)',
     marginBottom: '10px', fontWeight: 600, transition: 'color 0.25s',
     fontFamily: "'Barlow', sans-serif", textTransform: 'uppercase',
   })
+
+  const errMsg = (msg?: string) => msg ? (
+    <div style={{ fontSize: '0.65rem', color: 'rgba(255,100,100,0.85)', marginTop: '6px', letterSpacing: '0.04em', fontFamily: "'Barlow',sans-serif" }}>
+      ↑ {msg}
+    </div>
+  ) : null
 
   const ff = {
     onFocus: (e: React.FocusEvent<any>) => setFocused(e.target.name),
@@ -176,12 +275,14 @@ export default function SurveyPage() {
           Tvoja prijava je uspješno zaprimljena.<br />
           Javit ćemo ti se u najkraćem mogućem roku i dogovoriti sljedeće korake.
         </p>
-        {total > 0 && (
+        {totalVal !== null && totalVal > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '48px' }}>
-            {[['SQUAT', form.squat], ['BENCH', form.bench], ['DEAD', form.deadlift], ['TOTAL', String(total)]].map(([l, v]) => (
+            {[['SQUAT', form.squat], ['BENCH', form.bench], ['DEAD', form.deadlift], ['TOTAL', String(totalVal)]].map(([l, v]) => (
               <div key={l} style={{ padding: '20px 12px', background: '#060606', textAlign: 'center' }}>
                 <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>{l}</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: "'Barlow Condensed',sans-serif" }}>{v}<span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginLeft: '2px' }}>kg</span></div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: "'Barlow Condensed',sans-serif" }}>
+                  {v.replace('.', ',')}<span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginLeft: '2px' }}>kg</span>
+                </div>
               </div>
             ))}
           </div>
@@ -233,18 +334,11 @@ export default function SurveyPage() {
             <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.8, marginBottom: '48px' }}>
               Ispuni kratki upitnik. Javit ćemo ti se i dogovoriti sve detalje.
             </p>
-
-            {/* Step indicators */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
               {STEPS.map((s, i) => (
                 <div key={s + i} style={{ display: 'flex', alignItems: 'stretch', gap: '16px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{
-                      width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                      background: i < step ? '#fff' : i === step ? 'rgba(255,255,255,0.12)' : 'transparent',
-                      border: i === step ? '1px solid rgba(255,255,255,0.5)' : i < step ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                      transition: 'all 0.4s',
-                    }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: i < step ? '#fff' : i === step ? 'rgba(255,255,255,0.12)' : 'transparent', border: i === step ? '1px solid rgba(255,255,255,0.5)' : i < step ? 'none' : '1px solid rgba(255,255,255,0.1)', transition: 'all 0.4s' }}>
                       {i < step
                         ? <Check size={12} color="#000" strokeWidth={3} />
                         : <span style={{ fontSize: '0.6rem', fontWeight: 800, color: i === step ? '#fff' : 'rgba(255,255,255,0.2)', fontFamily: "'Barlow',sans-serif" }}>{i + 1}</span>
@@ -265,11 +359,11 @@ export default function SurveyPage() {
             </div>
           </div>
 
-          {total > 0 && (
+          {totalDisplay > 0 && (
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '24px', animation: 'fadeUp 0.4s ease' }}>
               <div style={{ fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', marginBottom: '8px' }}>TVOJ TOTAL</div>
               <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: '3.5rem', fontWeight: 800, lineHeight: 1 }}>
-                <Counter value={total} /><span style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.3)', marginLeft: '6px' }}>kg</span>
+                <Counter value={totalDisplay} /><span style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.3)', marginLeft: '6px' }}>kg</span>
               </div>
             </div>
           )}
@@ -306,34 +400,53 @@ export default function SurveyPage() {
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                   <div>
-                    <label style={lbl('full_name')}>Puno ime</label>
-                    <input name="full_name" style={inp('full_name')} value={form.full_name} onChange={e => set('full_name', e.target.value)} placeholder="Ime i prezime" {...ff} />
+                    <label style={lbl('full_name', !!fieldErrors.full_name)}>Puno ime</label>
+                    <input name="full_name" style={inp('full_name', !!fieldErrors.full_name)} value={form.full_name} onChange={e => set('full_name', e.target.value)} placeholder="Ime i prezime" {...ff} />
+                    {errMsg(fieldErrors.full_name)}
                   </div>
                   <div>
-                    <label style={lbl('email')}>Email adresa</label>
-                    <input name="email" type="email" style={inp('email')} value={form.email} onChange={e => set('email', e.target.value)} placeholder="tvoj@email.com" {...ff} />
+                    <label style={lbl('email', !!fieldErrors.email)}>Email adresa</label>
+                    <input name="email" type="email" style={inp('email', !!fieldErrors.email)} value={form.email} onChange={e => set('email', e.target.value)} placeholder="tvoj@email.com" {...ff} />
+                    {errMsg(fieldErrors.email)}
                   </div>
                   <div>
-                    <label style={lbl('phone_number')}>Telefon</label>
-                    <input name="phone_number" type="tel" style={inp('phone_number')} value={form.phone_number} onChange={e => set('phone_number', e.target.value)} placeholder="091 234 567" {...ff} />
+                    <label style={lbl('phone_number', !!fieldErrors.phone_number)}>Telefon</label>
+                    <input name="phone_number" type="tel" style={inp('phone_number', !!fieldErrors.phone_number)} value={form.phone_number}
+                      onChange={e => {
+                        // Allow only digits, spaces, +, -, ()
+                        const v = e.target.value.replace(/[^0-9\s\+\-\(\)]/g, '')
+                        set('phone_number', v)
+                      }}
+                      placeholder="091 234 567" {...ff} />
+                    {errMsg(fieldErrors.phone_number)}
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                     <div>
-                      <label style={lbl('age')}>Dob</label>
-                      <input name="age" type="number" style={inp('age')} value={form.age} onChange={e => set('age', e.target.value)} placeholder="24" {...ff} />
+                      <label style={lbl('age', !!fieldErrors.age)}>Dob</label>
+                      <input name="age" type="number" style={inp('age', !!fieldErrors.age)} value={form.age}
+                        onChange={e => {
+                          const v = e.target.value.replace(/[^0-9]/g, '')
+                          set('age', v)
+                        }}
+                        placeholder="24" {...ff} />
+                      {errMsg(fieldErrors.age)}
                     </div>
                     <div>
-                      <label style={lbl('bodyweight')}>Težina (kg)</label>
-                      <input name="bodyweight" type="number" style={inp('bodyweight')} value={form.bodyweight} onChange={e => set('bodyweight', e.target.value)} placeholder="83" {...ff} />
+                      <label style={lbl('bodyweight', !!fieldErrors.bodyweight)}>Težina (kg)</label>
+                      <input name="bodyweight" style={inp('bodyweight', !!fieldErrors.bodyweight)} value={form.bodyweight}
+                        onChange={e => set('bodyweight', filterLiftInput(e.target.value))}
+                        placeholder="83" {...ff} />
+                      {errMsg(fieldErrors.bodyweight)}
                     </div>
                   </div>
                   <div>
-                    <label style={lbl('gender')}>Spol</label>
+                    <label style={lbl('gender', !!fieldErrors.gender)}>Spol</label>
                     <div style={{ display: 'flex', gap: '10px', marginTop: '6px', flexWrap: 'wrap' }}>
                       {['Muško', 'Žensko', 'Drugo'].map(g => (
                         <button key={g} onClick={() => set('gender', g)} style={chipBtn(g, form.gender)}>{g}</button>
                       ))}
                     </div>
+                    {errMsg(fieldErrors.gender)}
                   </div>
                 </div>
               </div>
@@ -411,26 +524,43 @@ export default function SurveyPage() {
                 <h2 style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 'clamp(2.4rem,5vw,3.8rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '16px', letterSpacing: '-0.01em' }}>
                   TVOJE<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>BROJKE</span>
                 </h2>
-                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.35)', marginBottom: '40px', lineHeight: 1.7 }}>
+                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', lineHeight: 1.7 }}>
                   Unesi procijenjene 1RM maksimale ili zadnji težak set.
                 </p>
+                <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.2)', marginBottom: '36px', letterSpacing: '0.05em' }}>
+                  Decimale upiši zarezom — npr. <span style={{ color: 'rgba(255,255,255,0.4)' }}>142,5</span>
+                </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-                  {[{ key: 'squat', label: 'Squat' }, { key: 'bench', label: 'Bench Press' }, { key: 'deadlift', label: 'Deadlift' }].map(f => (
-                    <div key={f.key} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '20px', alignItems: 'end' }}>
-                      <div>
-                        <label style={lbl(f.key)}>{f.label}</label>
-                        <input name={f.key} type="number" style={inp(f.key)}
-                          value={(form as any)[f.key]} onChange={e => set(f.key as keyof FormData, e.target.value)}
-                          placeholder="0" {...ff} />
+                  {([
+                    { key: 'squat', label: 'Squat' },
+                    { key: 'bench', label: 'Bench Press' },
+                    { key: 'deadlift', label: 'Deadlift' },
+                  ] as { key: keyof FormData; label: string }[]).map(f => (
+                    <div key={f.key}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '20px', alignItems: 'end' }}>
+                        <div>
+                          <label style={lbl(f.key, !!fieldErrors[f.key])}>{f.label}</label>
+                          <input
+                            name={f.key}
+                            inputMode="decimal"
+                            style={inp(f.key, !!fieldErrors[f.key])}
+                            value={form[f.key]}
+                            onChange={e => setLift(f.key, e.target.value)}
+                            placeholder="0"
+                            {...ff}
+                          />
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)', paddingBottom: '14px', letterSpacing: '0.1em' }}>KG</div>
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)', paddingBottom: '14px', letterSpacing: '0.1em' }}>KG</div>
+                      {errMsg(fieldErrors[f.key])}
                     </div>
                   ))}
-                  {total > 0 && (
+
+                  {totalVal !== null && totalVal > 0 && (
                     <div style={{ marginTop: '8px', padding: '20px 24px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', animation: 'fadeUp 0.3s ease' }}>
                       <div style={{ fontSize: '0.6rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.3)' }}>TOTAL</div>
                       <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: '2.2rem', fontWeight: 800 }}>
-                        <Counter value={total} /><span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)', marginLeft: '6px' }}>kg</span>
+                        <Counter value={totalDisplay} /><span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)', marginLeft: '6px' }}>kg</span>
                       </div>
                     </div>
                   )}
@@ -438,20 +568,16 @@ export default function SurveyPage() {
               </div>
             )}
 
-            {/* ── STEP 3: NAPREDNI (only if advanced) ──────── */}
+            {/* ── STEP 3: NAPREDNI ─────────────────────────── */}
             {step === 3 && isAdvanced && (
               <div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                  <h2 style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 'clamp(2.4rem,5vw,3.8rem)', fontWeight: 800, lineHeight: 0.9, letterSpacing: '-0.01em', margin: 0 }}>
-                    NAPREDNIJI<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>PROFIL</span>
-                  </h2>
-                </div>
+                <h2 style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 'clamp(2.4rem,5vw,3.8rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '16px', letterSpacing: '-0.01em', margin: '0 0 16px' }}>
+                  NAPREDNIJI<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>PROFIL</span>
+                </h2>
                 <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.35)', marginBottom: '40px', lineHeight: 1.7 }}>
                   Budući da imaš iskustva, želimo znati više kako bismo program što bolje prilagodili.
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
-
-                  {/* Tip treninga */}
                   <div>
                     <label style={lbl('training_style')}>Kakav tip treninga si dosad radio/la?</label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
@@ -480,16 +606,10 @@ export default function SurveyPage() {
                       ))}
                     </div>
                   </div>
-
-                  {/* Programi */}
                   <div>
                     <label style={lbl('program_history')}>Koji programi / treneri su te oblikovali?</label>
-                    <input name="program_history" style={inp('program_history')} value={form.program_history}
-                      onChange={e => set('program_history', e.target.value)}
-                      placeholder="npr. Sheiko, Juggernaut, Nučec, Sam..." {...ff} />
+                    <input name="program_history" style={inp('program_history')} value={form.program_history} onChange={e => set('program_history', e.target.value)} placeholder="npr. Sheiko, Juggernaut, Nučec, Sam..." {...ff} />
                   </div>
-
-                  {/* Trajanje sesije */}
                   <div>
                     <label style={lbl('session_duration')}>Koliko traje tipična sesija?</label>
                     <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
@@ -498,8 +618,6 @@ export default function SurveyPage() {
                       ))}
                     </div>
                   </div>
-
-                  {/* Prehrana */}
                   <div>
                     <label style={lbl('nutrition_quality')}>Kako bi ocijenio/la svoju prehranu?</label>
                     <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
@@ -513,16 +631,10 @@ export default function SurveyPage() {
                       ))}
                     </div>
                   </div>
-
-                  {/* Suplementi */}
                   <div>
                     <label style={lbl('supplements')}>Koje suplemente koristiš?</label>
-                    <input name="supplements" style={inp('supplements')} value={form.supplements}
-                      onChange={e => set('supplements', e.target.value)}
-                      placeholder="npr. Kreatin, protein, kofein, vitamini..." {...ff} />
+                    <input name="supplements" style={inp('supplements')} value={form.supplements} onChange={e => set('supplements', e.target.value)} placeholder="npr. Kreatin, protein, kofein, vitamini..." {...ff} />
                   </div>
-
-                  {/* Oprema */}
                   <div>
                     <label style={lbl('equipment')}>Oprema koju koristiš / imaš</label>
                     <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
@@ -532,29 +644,16 @@ export default function SurveyPage() {
                         return (
                           <button key={eq} onClick={() => {
                             const current = form.equipment.split(',').map(s => s.trim()).filter(Boolean)
-                            if (eq === 'Ništa') {
-                              set('equipment', isSelected ? '' : 'Ništa')
-                            } else {
-                              const next = isSelected
-                                ? current.filter(x => x !== eq && x !== 'Ništa')
-                                : [...current.filter(x => x !== 'Ništa'), eq]
+                            if (eq === 'Ništa') { set('equipment', isSelected ? '' : 'Ništa') }
+                            else {
+                              const next = isSelected ? current.filter(x => x !== eq && x !== 'Ništa') : [...current.filter(x => x !== 'Ništa'), eq]
                               set('equipment', next.join(', '))
                             }
-                          }} style={{
-                            padding: '10px 18px',
-                            background: isSelected ? '#fff' : 'rgba(255,255,255,0.04)',
-                            color: isSelected ? '#000' : 'rgba(255,255,255,0.55)',
-                            border: `1px solid ${isSelected ? '#fff' : 'rgba(255,255,255,0.1)'}`,
-                            cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700,
-                            letterSpacing: '0.08em', transition: 'all 0.2s',
-                            fontFamily: "'Barlow', sans-serif",
-                          }}>{eq}</button>
+                          }} style={{ padding: '10px 18px', background: isSelected ? '#fff' : 'rgba(255,255,255,0.04)', color: isSelected ? '#000' : 'rgba(255,255,255,0.55)', border: `1px solid ${isSelected ? '#fff' : 'rgba(255,255,255,0.1)'}`, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.08em', transition: 'all 0.2s', fontFamily: "'Barlow', sans-serif" }}>{eq}</button>
                         )
                       })}
                     </div>
                   </div>
-
-                  {/* Recovery */}
                   <div>
                     <label style={lbl('recovery_habits')}>Recovery navike</label>
                     <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
@@ -566,21 +665,11 @@ export default function SurveyPage() {
                             const current = form.recovery_habits.split(',').map(s => s.trim()).filter(Boolean)
                             const next = isSelected ? current.filter(x => x !== r) : [...current, r]
                             set('recovery_habits', next.join(', '))
-                          }} style={{
-                            padding: '10px 16px',
-                            background: isSelected ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.03)',
-                            color: isSelected ? '#fff' : 'rgba(255,255,255,0.45)',
-                            border: `1px solid ${isSelected ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                            cursor: 'pointer', fontSize: '0.76rem', fontWeight: 600,
-                            letterSpacing: '0.05em', transition: 'all 0.2s',
-                            fontFamily: "'Barlow', sans-serif",
-                          }}>{r}</button>
+                          }} style={{ padding: '10px 16px', background: isSelected ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.03)', color: isSelected ? '#fff' : 'rgba(255,255,255,0.45)', border: `1px solid ${isSelected ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.08)'}`, cursor: 'pointer', fontSize: '0.76rem', fontWeight: 600, letterSpacing: '0.05em', transition: 'all 0.2s', fontFamily: "'Barlow', sans-serif" }}>{r}</button>
                         )
                       })}
                     </div>
                   </div>
-
-                  {/* Coaching history */}
                   <div>
                     <label style={lbl('coaching_history')}>Jesi li imao/la trenera dosad?</label>
                     <div style={{ display: 'flex', gap: '10px', marginTop: '8px', flexWrap: 'wrap' }}>
@@ -589,7 +678,6 @@ export default function SurveyPage() {
                       ))}
                     </div>
                   </div>
-
                 </div>
               </div>
             )}
@@ -614,13 +702,7 @@ export default function SurveyPage() {
                       <textarea name={f.key} value={(form as any)[f.key]}
                         onChange={e => set(f.key as keyof FormData, e.target.value)}
                         placeholder={f.ph} rows={3}
-                        style={{
-                          width: '100%', background: 'transparent', resize: 'vertical',
-                          border: `1px solid ${focused === f.key ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
-                          color: '#fff', padding: '14px 16px', fontSize: '0.9rem', outline: 'none',
-                          fontFamily: "'Barlow',sans-serif", lineHeight: 1.7, transition: 'border-color 0.25s',
-                          boxSizing: 'border-box', marginTop: '8px',
-                        }}
+                        style={{ width: '100%', background: 'transparent', resize: 'vertical', border: `1px solid ${focused === f.key ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, color: '#fff', padding: '14px 16px', fontSize: '0.9rem', outline: 'none', fontFamily: "'Barlow',sans-serif", lineHeight: 1.7, transition: 'border-color 0.25s', boxSizing: 'border-box', marginTop: '8px' }}
                         onFocus={() => setFocused(f.key)} onBlur={() => setFocused(null)}
                       />
                     </div>
@@ -632,38 +714,18 @@ export default function SurveyPage() {
 
           {/* ── NAVIGATION ──────────────────────────────────── */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '56px', maxWidth: '540px' }}>
-            <button onClick={() => navigate(step - 1)} style={{
-              display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)',
-              padding: '13px 22px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700,
-              letterSpacing: '0.2em', fontFamily: "'Barlow',sans-serif", transition: 'all 0.2s',
-              visibility: step === 0 ? 'hidden' : 'visible',
-            }}
+            <button onClick={() => navigate(step - 1)} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', padding: '13px 22px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.2em', fontFamily: "'Barlow',sans-serif", transition: 'all 0.2s', visibility: step === 0 ? 'hidden' : 'visible' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
             ><ArrowLeft size={13} /> NATRAG</button>
 
             {step < STEPS.length - 1 ? (
-              <button onClick={() => canNext() && navigate(step + 1)} style={{
-                display: 'flex', alignItems: 'center', gap: '10px',
-                background: canNext() ? '#fff' : 'rgba(255,255,255,0.06)',
-                color: canNext() ? '#000' : 'rgba(255,255,255,0.2)',
-                border: 'none', padding: '15px 36px', cursor: canNext() ? 'pointer' : 'not-allowed',
-                fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.2em',
-                fontFamily: "'Barlow',sans-serif", transition: 'all 0.25s',
-              }}
+              <button onClick={() => canNext() && navigate(step + 1)} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: canNext() ? '#fff' : 'rgba(255,255,255,0.06)', color: canNext() ? '#000' : 'rgba(255,255,255,0.2)', border: 'none', padding: '15px 36px', cursor: canNext() ? 'pointer' : 'not-allowed', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.2em', fontFamily: "'Barlow',sans-serif", transition: 'all 0.25s' }}
                 onMouseEnter={e => { if (canNext()) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 30px rgba(255,255,255,0.18)' } }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
               >DALJE <ArrowRight size={13} /></button>
             ) : (
-              <button onClick={submit} disabled={sending} style={{
-                display: 'flex', alignItems: 'center', gap: '10px',
-                background: sending ? 'rgba(255,255,255,0.08)' : '#fff',
-                color: sending ? 'rgba(255,255,255,0.3)' : '#000',
-                border: 'none', padding: '15px 40px', cursor: sending ? 'not-allowed' : 'pointer',
-                fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.2em',
-                fontFamily: "'Barlow',sans-serif", transition: 'all 0.25s',
-              }}
+              <button onClick={submit} disabled={sending} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: sending ? 'rgba(255,255,255,0.08)' : '#fff', color: sending ? 'rgba(255,255,255,0.3)' : '#000', border: 'none', padding: '15px 40px', cursor: sending ? 'not-allowed' : 'pointer', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.2em', fontFamily: "'Barlow',sans-serif", transition: 'all 0.25s' }}
                 onMouseEnter={e => { if (!sending) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 35px rgba(255,255,255,0.2)' } }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
               >

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 
-// ── helpers ──────────────────────────────────────────────────────
-const val = (v: string | undefined) => v && v.trim() ? v.trim() : '—'
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+// ── helpers ───────────────────────────────────────────────────────
+const val = (v: string | undefined) => (v && v.trim() ? v.trim() : '—')
 const total = (s: string, b: string, d: string) => {
   const n = [s, b, d].map(Number)
   return n.every(Boolean) ? n.reduce((a, c) => a + c, 0) : null
@@ -27,11 +29,12 @@ function section(title: string, rows: string) {
 }
 
 function liftBox(label: string, kg: string) {
+  const hasVal = kg && kg !== '—'
   return `
     <td style="width:25%;padding:0">
       <div style="padding:20px 12px;text-align:center;background:#111;border-right:1px solid #1a1a1a">
         <div style="font-size:9px;letter-spacing:0.3em;color:#555;margin-bottom:8px;font-weight:700">${label}</div>
-        <div style="font-size:26px;font-weight:800;color:#fff;line-height:1">${val(kg)}<span style="font-size:11px;color:#444;margin-left:3px">${kg && kg !== '—' ? 'kg' : ''}</span></div>
+        <div style="font-size:26px;font-weight:800;color:#fff;line-height:1">${val(kg)}${hasVal ? '<span style="font-size:11px;color:#444;margin-left:3px">kg</span>' : ''}</div>
       </div>
     </td>`
 }
@@ -44,7 +47,7 @@ function buildEmail(data: Record<string, string>): string {
     row('Puno ime', val(data.full_name)) +
     row('Email', val(data.email)) +
     row('Telefon', val(data.phone_number)) +
-    row('Dob', val(data.age) + (data.age ? ' god.' : '')) +
+    row('Dob', data.age ? `${data.age} god.` : '—') +
     row('Spol', val(data.gender)) +
     row('Tjelesna težina', data.bodyweight ? `${data.bodyweight} kg` : '—')
 
@@ -71,18 +74,14 @@ function buildEmail(data: Record<string, string>): string {
 
   return `<!DOCTYPE html>
 <html lang="hr">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Nova prijava — ${val(data.full_name)}</title>
-</head>
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
 <body style="margin:0;padding:0;background:#050505;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
 
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#050505;padding:40px 20px">
 <tr><td align="center">
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px">
 
-  <!-- ── HEADER ───────────────────────────────────────────────── -->
+  <!-- HEADER -->
   <tr>
     <td style="padding-bottom:32px;border-bottom:1px solid #111">
       <table width="100%" cellpadding="0" cellspacing="0">
@@ -94,7 +93,7 @@ function buildEmail(data: Record<string, string>): string {
           </td>
           <td align="right" valign="top">
             <div style="display:inline-block;padding:6px 14px;background:#111;border:1px solid #222;font-size:10px;letter-spacing:0.2em;color:${isAdvanced ? '#c0a060' : '#666'};font-weight:700">
-              ${isAdvanced ? '★ NAPREDNI' : data.experience?.toUpperCase() || 'POČETNIK'}
+              ${isAdvanced ? '★ NAPREDNI' : (data.experience?.toUpperCase() || 'POČETNIK')}
             </div>
           </td>
         </tr>
@@ -102,7 +101,7 @@ function buildEmail(data: Record<string, string>): string {
     </td>
   </tr>
 
-  <!-- ── IDENTITY ─────────────────────────────────────────────── -->
+  <!-- IDENTITY -->
   <tr>
     <td style="padding:32px 0 24px">
       <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.01em">${val(data.full_name)}</div>
@@ -113,7 +112,7 @@ function buildEmail(data: Record<string, string>): string {
     </td>
   </tr>
 
-  <!-- ── LIFTS ─────────────────────────────────────────────────── -->
+  <!-- LIFTS -->
   ${(data.squat || data.bench || data.deadlift) ? `
   <tr>
     <td style="padding-bottom:24px">
@@ -128,13 +127,13 @@ function buildEmail(data: Record<string, string>): string {
               <div style="font-size:9px;letter-spacing:0.3em;color:#555;margin-bottom:8px;font-weight:700">TOTAL</div>
               <div style="font-size:26px;font-weight:800;color:#fff;line-height:1">${tot}<span style="font-size:11px;color:#444;margin-left:3px">kg</span></div>
             </div>
-          </td>` : `<td></td>`}
+          </td>` : '<td></td>'}
         </tr>
       </table>
     </td>
   </tr>` : ''}
 
-  <!-- ── SECTIONS ──────────────────────────────────────────────── -->
+  <!-- SECTIONS -->
   <tr>
     <td>
       ${section('Osobni podaci', personalRows)}
@@ -144,7 +143,7 @@ function buildEmail(data: Record<string, string>): string {
     </td>
   </tr>
 
-  <!-- ── FOOTER ────────────────────────────────────────────────── -->
+  <!-- FOOTER -->
   <tr>
     <td style="padding-top:32px;border-top:1px solid #111">
       <table width="100%" cellpadding="0" cellspacing="0">
@@ -173,30 +172,24 @@ function buildEmail(data: Record<string, string>): string {
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json()
-
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    })
-
     const tot = total(data.squat, data.bench, data.deadlift)
     const subject = `Nova prijava — ${val(data.full_name)}${tot ? ` · ${tot}kg total` : ''}${data.experience === 'Napredni' ? ' ★' : ''}`
 
-    await transporter.sendMail({
-      from: `"LWLUP Forma" <${process.env.SMTP_USER}>`,
-      to: process.env.CONTACT_EMAIL,
+    const { error } = await resend.emails.send({
+      from: 'LWLUP Forma <onboarding@resend.dev>', // zamijeni s tvojom domenom kad verificiraš
+      to: process.env.CONTACT_EMAIL!,
       subject,
       html: buildEmail(data),
     })
 
+    if (error) {
+      console.error('Resend error:', error)
+      return NextResponse.json({ error: 'Mail failed' }, { status: 500 })
+    }
+
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error('Survey email error:', err)
+    console.error('Survey route error:', err)
     return NextResponse.json({ error: 'Mail failed' }, { status: 500 })
   }
 }
