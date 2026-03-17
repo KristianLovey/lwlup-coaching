@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Trophy, TrendingUp, Award, Instagram } from 'lucide-react'
+import Footer from '@/app/components/Footer'
 
 const TEAM_MEMBERS = [
   {
@@ -333,7 +334,7 @@ export default function TeamPage() {
           </p>
           <Link href="/survey" style={{ textDecoration: 'none' }}>
             <button className="join-button" style={{
-              padding: '20px 60px', background: '#fff', color: '#000', border: 'none',
+              padding: '20px 60px', background: '#fff', color: '#666363', border: 'none',
               fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.25em', cursor: 'pointer',
               transition: '0.4s', position: 'relative', overflow: 'hidden'
             }}>
@@ -343,18 +344,7 @@ export default function TeamPage() {
         </div>
       </section>
 
-      {/* ══ FOOTER ══════════════════════════════════════════════ */}
-      <footer style={{ padding: '60px 60px 40px', background: '#000', borderTop: '1px solid rgba(255,255,255,0.05)', position: 'relative', zIndex: 1 }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', marginBottom: '20px' }}>
-            <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '35px' }} />
-            <span style={{ fontFamily: 'var(--fd)', fontSize: '1.3rem', letterSpacing: '0.2em' }}>LWL UP</span>
-          </div>
-          <p style={{ color: 'rgba(255,255,255,0.15)', fontSize: '0.7rem', marginTop: '30px' }}>
-            © 2026 LWLUP POWERLIFTING. ALL RIGHTS RESERVED.
-          </p>
-        </div>
-      </footer>
+      <Footer />
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700&display=swap');
