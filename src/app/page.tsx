@@ -16,17 +16,17 @@ const SLIDES = [
 ]
 
 const STATS = [
-  { val: '10+',  label: 'ATLETA U SUSTAVU',    icon: <Target size={18} /> },
-  { val: '12',   label: 'DRŽAVNIH REKORDA',     icon: <Award size={18} /> },
+  { val: '10+',  label: 'LIFTERI U SUSTAVU',    icon: <Target size={18} /> },
+  { val: '12',   label: 'DRŽAVNI REKORDI',     icon: <Award size={18} /> },
   { val: '6',    label: 'EUROPSKA NATJECANJA',  icon: <Zap size={18} /> },
   { val: '2023', label: 'TRADICIJA SNAGE',      icon: <Shield size={18} /> },
 ]
 
 const FEATURES = [
-  { sym: '01', title: 'ZNANOST IZA TRENINGA',  desc: 'Nema nagađanja. Koristimo RPE skale i periodizaciju temeljenu na znanosti za maksimalni hipertrofijski i neurološki transfer snage.' },
-  { sym: '02', title: 'ANALIZA TEHNIKE',        desc: 'Direct feedback sustav. Tvoj video izvedbe analiziramo do detalja kako bismo eliminirali slabe točke i spriječili ozljede.' },
-  { sym: '03', title: 'ADAPTIVNI BLOKOVI',      desc: 'Tvoj život nije linearan, pa nije ni trening. Prilagođavamo trening tvom oporavku, stresu i snazi.' },
-  { sym: '04', title: 'EKSPORT ZA NATJECANJE',  desc: 'Sve tvoje brojke spremne za peaking. Vizualiziraj napredak kroz grafove i izvezi podatke za arhivu.' },
+  { sym: '01', title: 'ZNANOST IZA TRENINGA',  desc: 'Nema nagađanja. Uz pomoć RPE tablica i metodološkog sastavljanja treninga, određujemo optimalne treninge za tvoj napredak.' },
+  { sym: '02', title: 'ANALIZA TEHNIKE',        desc: 'Izravni povrat informacija. Tvoj video izvedbe analiziramo kako bismo eliminirali slabe točke, spriječili ozljede i unaprijedili tehniku.' },
+  { sym: '03', title: 'ADAPTIVNI BLOKOVI',      desc: 'Tvoj život nije linearan, a tako nije ni trening. Radimo prilagodbe ovisno o tvom oporavku, stresu i snazi.' },
+  { sym: '04', title: 'EKSPORT ZA NATJECANJE',  desc: 'Sve tvoje brojke spremne za peaking. Vizualiziraj napredak putem grafova i izvezi podatke za arhivu.' },
 ]
 
 // ── Canvas network background ──────────────────────────────────────
@@ -191,7 +191,7 @@ export default function Landing() {
               STVORENI<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>U ŽELJEZU</span>
             </h2>
             <p style={{ fontSize: '1.2rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.7)', marginBottom: '30px', maxWidth: '600px' }}>
-              LWL UP nije samo klub. To je zajednica snage gdje natjecatelji ruše granice ljudskog potencijala. Od osnutka 2023., podigli smo standarde powerliftinga u regiji. Klub je osnovan od strane Waltera Smajlovića i Luke Grežine s ciljem okupljanja ljudi s istim ciljem; podići što veći total. Iako smo iz različitih dijelova Hrvatske, centar kluba je u Zagrebu s glavnim okupljalištem u Gyms4you Kvaternik plaza. Tamo može doći družiti se i trenirati s ostalim članovima kluba.
+              LWL UP nije samo klub- to je zajednica snage u kojoj natjecatelji ruše granice ljudskog potencijala. Klub su 2023. godine osnovali Walter Smajlović i Luka Grežina radi okupljanja ljudi s istim ciljem; postićišto veći total. Od tada podižemo standarde powerliftinga u Hrvatskoj.
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginTop: '50px' }}>
               {[
@@ -225,20 +225,20 @@ export default function Landing() {
             </div>
             <div className="coach-badge" style={{ position: 'absolute', bottom: '20px', left: '20px', background: '#fff', color: '#000', padding: '15px 30px', transition: '0.4s' }}>
               <div style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', fontWeight: 900 }}>WALTER SMAJLOVIĆ</div>
-              <div style={{ fontSize: '0.6rem', letterSpacing: '0.1em', fontWeight: 700 }}>HEAD COACH & OSNIVAČ</div>
+              <div style={{ fontSize: '0.6rem', letterSpacing: '0.1em', fontWeight: 700 }}>GLAVNI TRENER & OSNIVAČ</div>
             </div>
           </div>
           <div>
             <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '20px' }}>PREDSTAVNIK KLUBA</div>
-            <h2 style={{ fontFamily: 'var(--fd)', fontSize: '4.5rem', lineHeight: 1, marginBottom: '30px' }}>THE MAN<br />BEHIND THE BAR</h2>
+            <h2 style={{ fontFamily: 'var(--fd)', fontSize: '4.5rem', lineHeight: 1, marginBottom: '30px' }}>ČOVJEK<br />IZA ŠIPKE</h2>
             <p style={{ color: 'rgba(255,255,255,0.5)', lineHeight: 1.9, fontSize: '1.1rem', marginBottom: '30px' }}>
-              Walter Smajlović je izgradio LWL UP na temeljima beskompromisnog rada. S višegodišnjim iskustvom u kompetitivnom powerliftingu, Walter je razvio sustav koji eliminira nagađanje i maksimizira snagu svakog pojedinca.
+              Walter Smajlović izgradio je LWL UP na temeljima beskompromisnog rada. Zahvaljujući svom višegodišnjem iskustvu u kompetitivnom powerliftingu, Walter je razvio sustav koji uklanja pogreške i maksimizira snagu svakog pojedinca.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               {[
-                'Certified Powerlifting Coach',
+                'Powerlifting trener',
                 'Višestruki državni prvak i međunarodni natjecatelj',
-                'Mentor za 10+ aktivnih atleta',
+                'Mentor za 10+ aktivnih natjecatelja',
                 'Nadimak: Gica',
               ].map((item, i) => (
                 <div key={i} className="achievement-item" style={{ display: 'flex', alignItems: 'center', gap: '15px', color: 'rgba(255,255,255,0.8)', transition: '0.3s' }}>
@@ -277,7 +277,7 @@ export default function Landing() {
         </div>
         <div style={{ position: 'relative', zIndex: 1, padding: '0 20px' }}>
           <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3.5rem, 15vw, 12rem)', lineHeight: 0.8, marginBottom: '40px', animation: 'textGlow 3s ease-in-out infinite' }}>
-            BECOME<br /> A LEGACY
+            OSTAVI<br /> SVOJ TRAG
           </h2>
           <Link href="/survey" style={{ textDecoration: 'none' }}>
             <button className="cta-final-button" style={{ padding: '25px 80px', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.6)', fontSize: '1rem', fontWeight: 900, letterSpacing: '0.3em', cursor: 'pointer', transition: '0.4s', position: 'relative', overflow: 'hidden', fontFamily: 'var(--fm)' }}>

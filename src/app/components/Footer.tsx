@@ -102,7 +102,7 @@ export default function Footer() {
             <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '24px', fontWeight: 700 }}>BROJKE</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
               {[
-                { val: '10+',  label: 'Aktivnih atleta' },
+                { val: '10+',  label: 'Aktivnih natjecatelja' },
                 { val: '12',   label: 'Državnih rekorda' },
                 { val: '6',    label: 'Europskih nastupa' },
                 { val: '2023', label: 'Godina osnivanja' },

@@ -228,7 +228,7 @@ export default function SurveyPage() {
           <div>
             <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '40px' }}>PRISTUP PROGRAMU</div>
             <h1 style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 'clamp(2.2rem,3.5vw,3.2rem)', fontWeight: 800, lineHeight: 0.92, marginBottom: '32px', letterSpacing: '-0.01em' }}>
-              POSTANI<br />DIO<br /><span style={{ color: 'rgba(255,255,255,0.2)' }}>LWLUP</span>
+              POSTANI DIO<br /><span style={{ color: 'rgba(255,255,255,0.2)' }}>LWL UP<br />TIMA</span>
             </h1>
             <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.8, marginBottom: '48px' }}>
               Ispuni kratki upitnik. Javit ćemo ti se i dogovoriti sve detalje.

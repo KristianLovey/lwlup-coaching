@@ -12,10 +12,10 @@ const LIFT_DETAILS = {
       cue: 'Chest up. Knees out. Drive.',
     },
     points: [
-      { top: '25%', left: '50%', label: 'POLOŽAJ ŠIPKE', desc: 'High bar — šipka leži na gornjem trapezijusu. Uspravniji torzo, duži ROM. Low bar — stražnji deltoid, manji ROM, više aktivacije stražnje lančane.' },
-      { top: '46%', left: '50%', label: 'BRACE & BELT', desc: 'Maksimalni intraabdominalni tlak kroz cijeli descent i ascent. Belt nije zamjena za aktivan brace — pojačava ga.' },
-      { top: '67%', left: '46%', label: 'DUBINA & KOLJENA', desc: 'Kuk mora proći ispod vrha koljena za valjan lift prema IPF pravilima. Koljena prate smjer prstiju.' },
-      { top: '88%', left: '48%', label: 'STOPALA', desc: 'Tripod foot — ravnomjerna težina kroz petu, vanjski rub i prednji dio. Peta ne smije se podizati.' },
+      { top: '33%', left: '50%', label: 'POLOŽAJ ŠIPKE', desc: 'High bar — šipka leži na gornjem trapezu. Uspravniji torzo, duži ROM. Low bar — stražnji deltoid, manji ROM, više aktivacije posterior chaina.' },
+      { top: '46%', left: '45%', label: 'BRACE & BELT', desc: 'Maksimalni intraabdominalni tlak kroz cijeli pokret. Belt nije zamjena za aktivan brace, on ga pojačava.' },
+      { top: '62%', left: '44%', label: 'DUBINA & KOLJENA', desc: 'Kuk mora proći ispod vrha koljena za "good lift" prema IPF pravilima. Koljena prate smjer prstiju.' },
+      { top: '76%', left: '48%', label: 'STOPALA', desc: 'Tripod foot — ravnomjerna težina kroz petu, vanjski rub i prednji dio stopala. Peta se ne smije podizati.' },
     ],
   },
   'BENCH PRESS': {
@@ -23,16 +23,16 @@ const LIFT_DETAILS = {
     orientation: 'landscape' as const,
     meta: {
       num: '02',
-      sub: 'Horizontalni potisak gornjeg tijela',
+      sub: 'Horizontalni potisak s klupe',
       muscles: 'Pectoralis · Triceps · Prednji deltoid',
       cue: 'Arch. Leg drive. Stay tight.',
     },
     points: [
-      { top: '20%', left: '38%', label: 'HVAT & ŠIPKA', desc: 'Širina hvata određuje kut lakta. Šipka se spušta na donji dio prsa. Zapešća ravna, ne savinuta.' },
-      { top: '42%', left: '26%', label: 'GORNJA LEĐA', desc: 'Lopatice povučene i spuštene (retraction & depression) — stabilna baza za potisak. Smanjuje ROM.' },
-      { top: '50%', left: '42%', label: 'ARCH', desc: 'Luk u donjem dijelu leđa omogućava leg drive. Što je veći luk, kraći je put šipke.' },
-      { top: '58%', left: '56%', label: 'GLUTEUS NA KLUPI', desc: 'Stražnjica mora ostati na klupi cijelo vrijeme — kritično za IPF pravila i prijenos sile iz nogu.' },
-      { top: '78%', left: '72%', label: 'LEG DRIVE', desc: 'Stopala ravno u pod — aktivno guranje stvara lanac napetosti kroz cijelo tijelo i stabilizira lift.' },
+      { top: '26%', left: '42%', label: 'HVAT & ŠIPKA', desc: 'Širina hvata određuje kut lakta. Šipka se spušta na donji dio prsa. Zapešća ravna, ne savinuta.' },
+      { top: '60%', left: '30%', label: 'LEĐA I GLAVA', desc: 'Lopatice povučene i spuštene (retraction & depression), glava na klupi tijekom cijelog pokreta - stabilna baza za potisak.' },
+      { top: '50%', left: '47%', label: 'ARCH', desc: 'Luk u donjem dijelu leđa omogućava leg drive. Što je veći luk, kraći je put šipke.' },
+      { top: '60%', left: '53%', label: 'GLUTEUS NA KLUPI', desc: 'Stražnjica mora ostati na klupi cijelo vrijeme — kritično za IPF pravila i prijenos sile iz nogu.' },
+      { top: '80%', left: '67%', label: 'LEG DRIVE', desc: 'Stopala ravno u pod — aktivno guranje stvara lanac napetosti kroz cijelo tijelo i stabilizira lift.' },
     ],
   },
   DEADLIFT: {
@@ -45,11 +45,11 @@ const LIFT_DETAILS = {
       cue: 'Push floor away. Bar stays close.',
     },
     points: [
-      { top: '22%', left: '38%', label: 'LOCKOUT', desc: 'Puna ekstenzija kuka i koljena. Ramena iza šipke, ne hiperprekstenzija. Brada neutralno.' },
-      { top: '40%', left: '42%', label: 'BRACE & BELT', desc: 'Maksimalni intraabdominalni tlak od početka do kraja lifta. Belt pojačava ali ne zamjenjuje brace.' },
-      { top: '57%', left: '45%', label: 'HVAT', desc: 'Mixed grip ili hook grip za maksimalan grip. Šipka drži se u proksimalnoj palmarnoj brazdi, ne u prstima.' },
-      { top: '68%', left: '44%', label: 'ŠIPKA UZ TIJELO', desc: 'Šipka klizi uz potkoljenice i natkoljenice cijeli put gore. Odmak od tijela = gubitak poluge i rizik ozljede.' },
-      { top: '87%', left: '44%', label: 'STANCE', desc: 'Conventional — uži stance, ruke izvan nogu. Sumo — širi stance, ruke između nogu. Odabir ovisi o anatomiji.' },
+      { top: '34%', left: '30%', label: 'LOCKOUT', desc: 'Puna ekstenzija kuka i koljena. Ramena iza šipke, ne hiperekstenzija. Brada neutralno, pogled ravno.' },
+      { top: '45%', left: '44%', label: 'BRACE & BELT', desc: 'Maksimalni intraabdominalni tlak od početka do kraja lifta. Belt pojačava, ali ne zamjenjuje brace.' },
+      { top: '57%', left: '58%', label: 'HVAT', desc: 'Mixed grip ili hook grip za maksimalni hvat. Šipka se drži u u dlanu, ne u prstima. Šipka se samo pridržava, ne stišće se' },
+      { top: '60%', left: '34%', label: 'ŠIPKA UZ TIJELO', desc: 'Šipka klizi uz potkoljenice i natkoljenice cijelim pokretom. Odmak od tijela = gubitak poluge i rizik ozljede.' },
+      { top: '75%', left: '56%', label: 'STANCE', desc: 'Conventional — uži stance, ruke izvan nogu. Sumo — širi stance, ruke između nogu. Odabir ovisi o anatomiji, tehnici i dominantnijim mišićnim skupinama.' },
     ],
   },
 } as const
@@ -287,12 +287,49 @@ export default function BigThree() {
           ref={ref}
           style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 60px', opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(40px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}
         >
+          {/* ── Powerlifting opis ──────────────────────────────── */}
+          <div style={{ marginTop: '80px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '72px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', alignItems: 'start' }}>
+            <div>
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.5em', color: 'rgba(255, 255, 255, 0.49)', marginBottom: '20px', fontFamily: 'var(--fm)' }}>ŠTO JE POWERLIFTING?</div>
+              <h3 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,3.5vw,3.2rem)', fontWeight: 800, lineHeight: 0.9, margin: '0 0 28px', letterSpacing: '-0.02em' }}>
+                SPORT<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>APSOLUTNE SNAGE</span>
+              </h3>
+              <p style={{ fontSize: '1.15rem', lineHeight: 1.85, color: 'rgba(255,255,255,0.75)', margin: 0, fontWeight: 300 }}>
+                Powerlifting je sport u kojemu se natjecatelji bore za što veći ukupni  <em style={{ color: 'rgba(255,255,255,0.75)', fontStyle: 'normal' }}>total.</em> To je zbroj tri discipline: čučanj, bench press i mrtvo dizanje. Svaki natjecatelj ima tri pokušaja po liftu, a pobjeđuje onaj koji podigne najveću ukupnu težinu u svojoj kategoriji, tvz. total. Kako bi se pokušaj smatrao "good liftom", natjecatelj mora zadovljiti minimalno 2 od 3 sudca i tako postići barem 2 "white lighta". U suprotnom, pokušaj je "no lift", bez obzira na to koliko je težak bio.
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+              {[
+                { num: '01', title: 'PRIJE SVEGA, TEHNIKA', desc: 'Svaki lift mora biti izveden prema strogim IPF pravilima — dubina čučnja, pauza na klupi, lockout u mrtvom, itd.' },
+                { num: '02', title: 'KATEGORIJE PO TEŽINI', desc: 'Natjecatelji se dijele prema tjelesnoj težini i spolu, s posebnim kategorijama za mlade, seniore i veterane.' },
+                { num: '03', title: 'TOTAL KAO MJERA', desc: 'Jedan loš lift može srušiti cijelo natjecanje. Strategija odabira kilaže jednako je bitna kao i sama snaga.' },
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: '20px', padding: '20px 0', borderBottom: i < 2 ? '1px solid rgba(255, 255, 255, 0.45)' : 'none', alignItems: 'flex-start' }}>
+                  <div style={{ fontSize: '0.6rem', letterSpacing: '0.15em', color: 'rgba(255, 255, 255, 0.47)', fontFamily: 'var(--fd)', fontWeight: 800, paddingTop: '3px', flexShrink: 0 }}>{item.num}</div>
+                  <div>
+                    <div style={{ fontSize: '0.68rem', letterSpacing: '0.25em', fontWeight: 700, color: 'rgba(255,255,255,0.85)', marginBottom: '6px', fontFamily: 'var(--fm)' }}>{item.title}</div>
+                    <p style={{ fontSize: '0.88rem', lineHeight: 1.75, color: 'rgba(255,255,255,0.55)', margin: 0, fontWeight: 300 }}>{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <br />
+          <br />
+          <br />
+          <br />
+          <br />
+          <br />
+          <br />
+          <br />
+
           {/* Header */}
           <div className="big-three-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '72px' }}>
             <div>
               <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.2)', marginBottom: '16px', fontFamily: 'var(--fm)' }}>DISCIPLINA / TEHNIKA</div>
               <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3.5rem,6vw,6rem)', lineHeight: 0.88, margin: 0 }}>
-                THE BIG<br /><span style={{ color: 'rgba(255,255,255,0.18)' }}>THREE</span>
+                SVETO<br /><span style={{ color: 'rgba(255,255,255,0.18)' }}>TROJSTVO</span>
               </h2>
             </div>
             <p style={{ maxWidth: '320px', color: 'rgba(255,255,255,0.35)', fontSize: '0.9rem', lineHeight: 1.8, textAlign: 'right' }}>
@@ -346,33 +383,7 @@ export default function BigThree() {
             })}
           </div>
 
-          {/* ── Powerlifting opis ──────────────────────────────── */}
-          <div style={{ marginTop: '80px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '72px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', alignItems: 'start' }}>
-            <div>
-              <div style={{ fontSize: '0.58rem', letterSpacing: '0.5em', color: 'rgba(255, 255, 255, 0.49)', marginBottom: '20px', fontFamily: 'var(--fm)' }}>ŠTO JE POWERLIFTING?</div>
-              <h3 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,3.5vw,3.2rem)', fontWeight: 800, lineHeight: 0.9, margin: '0 0 28px', letterSpacing: '-0.02em' }}>
-                SPORT<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>APSOLUTNE SNAGE</span>
-              </h3>
-              <p style={{ fontSize: '1.15rem', lineHeight: 1.85, color: 'rgba(255,255,255,0.75)', margin: 0, fontWeight: 300 }}>
-                Powerlifting je snažnjački sport u kojemu se natjecatelji bore za što veći ukupni  <em style={{ color: 'rgba(255,255,255,0.75)', fontStyle: 'normal' }}>total</em> koji je zbroj tri discipline: čučanj, bench press i mrtvo dizanje. Svaki natjecatelj ima tri pokušaja po liftu, a pobjeđuje onaj tko podigne najveću ukupnu težinu u svojoj kategoriji. Kako bi se pokušaj smatrao good liftom natjecatelj mora zadovljiti minimalno 2 od 3 sudca i tako postići bar 2 "white lighta". U suprotnom je pokušaj no lift, bez obzira na to koliko je težak bio.
-              </p>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-              {[
-                { num: '01', title: 'TEHNIKA IZNAD SVEGA', desc: 'Svaki lift mora biti izveden prema strogim IPF pravilima — dubina čučnja, pauza na klupi, lockout u mrtvom, itd.' },
-                { num: '02', title: 'KATEGORIJE PO TEŽINI', desc: 'Natjecatelji se dijele prema tjelesnoj težini i spolu, s posebnim kategorijama za mlade, seniore i veterane.' },
-                { num: '03', title: 'TOTAL KAO MJERA', desc: 'Jedan loš lift može srušiti cijelo natjecanje. Strategija odabira kilaže jednako je bitna kao i sama snaga.' },
-              ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', gap: '20px', padding: '20px 0', borderBottom: i < 2 ? '1px solid rgba(255, 255, 255, 0.45)' : 'none', alignItems: 'flex-start' }}>
-                  <div style={{ fontSize: '0.6rem', letterSpacing: '0.15em', color: 'rgba(255, 255, 255, 0.47)', fontFamily: 'var(--fd)', fontWeight: 800, paddingTop: '3px', flexShrink: 0 }}>{item.num}</div>
-                  <div>
-                    <div style={{ fontSize: '0.68rem', letterSpacing: '0.25em', fontWeight: 700, color: 'rgba(255,255,255,0.85)', marginBottom: '6px', fontFamily: 'var(--fm)' }}>{item.title}</div>
-                    <p style={{ fontSize: '0.88rem', lineHeight: 1.75, color: 'rgba(255,255,255,0.55)', margin: 0, fontWeight: 300 }}>{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          
 
         </div>
       </section>
