@@ -316,14 +316,14 @@ function ExerciseRow({
 
         {/* Sets */}
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em', marginBottom: '3px' }}>SERI</div>
+          <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em', marginBottom: '3px' }}>SETS</div>
           <EditableField value={we.planned_sets} placeholder="3" type="number" small
             onSave={v => onUpdate(we.id, { planned_sets: Number(v) || 1 })} />
         </div>
 
         {/* Reps */}
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em', marginBottom: '3px' }}>PONOV</div>
+          <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em', marginBottom: '3px' }}>REPS</div>
           <EditableField value={we.planned_reps} placeholder="5" small
             onSave={v => onUpdate(we.id, { planned_reps: v })} />
         </div>

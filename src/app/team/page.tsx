@@ -210,9 +210,9 @@ export default function TeamPage() {
               transform: statsReveal.visible ? 'none' : 'translateY(25px)',
               transitionDelay: `${i * 0.08}s`, transitionDuration: '0.7s',
             }}>
-              <div style={{ color: 'rgba(255,255,255,0.2)', marginBottom: '15px', display: 'flex', justifyContent: 'center' }}>{stat.icon}</div>
+              <div style={{ color: 'rgba(255, 255, 255, 0.99)', marginBottom: '15px', display: 'flex', justifyContent: 'center' }}>{stat.icon}</div>
               <div style={{ fontFamily: 'var(--fd)', fontSize: '3.5rem', marginBottom: '10px' }}>{stat.value}</div>
-              <div style={{ fontSize: '0.65rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)' }}>{stat.label}</div>
+              <div style={{ fontSize: '0.65rem', letterSpacing: '0.25em', color: 'rgba(255, 255, 255, 1)' }}>{stat.label}</div>
             </div>
           ))}
         </div>

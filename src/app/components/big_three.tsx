@@ -329,7 +329,7 @@ export default function BigThree() {
             <div>
               <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.2)', marginBottom: '16px', fontFamily: 'var(--fm)' }}>DISCIPLINA / TEHNIKA</div>
               <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3.5rem,6vw,6rem)', lineHeight: 0.88, margin: 0 }}>
-                SVETO<br /><span style={{ color: 'rgba(255,255,255,0.18)' }}>TROJSTVO</span>
+                SBD<br /><span style={{ color: 'rgba(255,255,255,0.18)' }}>LIFTS</span>
               </h2>
             </div>
             <p style={{ maxWidth: '320px', color: 'rgba(255,255,255,0.35)', fontSize: '0.9rem', lineHeight: 1.8, textAlign: 'right' }}>

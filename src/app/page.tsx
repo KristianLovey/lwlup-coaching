@@ -266,7 +266,7 @@ export default function Landing() {
                 {s.icon}
               </div>
               <div className="stat-value" style={{ fontFamily: 'var(--fd)', fontSize: '4.5rem', lineHeight: 1, marginBottom: '10px' }}>{s.val}</div>
-              <div style={{ fontSize: '0.65rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)' }}>{s.label}</div>
+              <div style={{ fontSize: '0.65rem', letterSpacing: '0.25em', color: 'rgba(255, 255, 255, 1)' }}>{s.label}</div>
             </div>
           ))}
         </div>
