@@ -207,7 +207,7 @@ export default function SurveyPage() {
   // ── Shared styles ────────────────────────────────────────────────
   const inp = (name: string, hasError?: boolean): React.CSSProperties => ({
     width: '100%', background: 'transparent', border: 'none',
-    borderBottom: `1px solid ${hasError ? 'rgba(255,80,80,0.8)' : focused === name ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.12)'}`,
+    borderBottom: `1px solid ${hasError ? 'rgba(255,80,80,0.8)' : focused === name ? '#fff' : 'rgba(255,255,255,0.22)'}`,
     color: '#fff', fontSize: '1rem', padding: '14px 0', outline: 'none',
     transition: 'border-color 0.25s', fontFamily: "'Barlow', sans-serif",
     boxSizing: 'border-box', letterSpacing: '0.02em',
@@ -215,7 +215,7 @@ export default function SurveyPage() {
 
   const lbl = (name: string, hasError?: boolean): React.CSSProperties => ({
     display: 'block', fontSize: '0.58rem', letterSpacing: '0.4em',
-    color: hasError ? 'rgba(255,100,100,0.9)' : focused === name ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)',
+    color: hasError ? 'rgba(255,100,100,0.9)' : focused === name ? '#fff' : 'rgba(255,255,255,0.55)',
     marginBottom: '10px', fontWeight: 600, transition: 'color 0.25s',
     fontFamily: "'Barlow', sans-serif", textTransform: 'uppercase',
   })
@@ -234,8 +234,8 @@ export default function SurveyPage() {
   const chipBtn = (val: string, current: string, wide = false): React.CSSProperties => ({
     padding: wide ? '12px 28px' : '11px 20px',
     background: current === val ? '#fff' : 'rgba(255,255,255,0.04)',
-    color: current === val ? '#000' : 'rgba(255,255,255,0.55)',
-    border: `1px solid ${current === val ? '#fff' : 'rgba(255,255,255,0.1)'}`,
+    color: current === val ? '#000' : 'rgba(255,255,255,0.7)',
+    border: `1px solid ${current === val ? '#fff' : 'rgba(255,255,255,0.18)'}`,
     cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700,
     letterSpacing: '0.08em', transition: 'all 0.2s',
     fontFamily: "'Barlow', sans-serif",
@@ -254,7 +254,8 @@ export default function SurveyPage() {
   // ── Success screen ───────────────────────────────────────────────
   if (sent) return (
     <div style={{ minHeight: '100vh', background: '#060606', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Barlow', sans-serif", overflow: 'hidden', position: 'relative' }}>
-      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
+      <div className="star-field" />
+      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
       <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 24px', maxWidth: '560px', animation: 'successIn 0.8s cubic-bezier(0.16,1,0.3,1)' }}>
         <div style={{ position: 'relative', width: '100px', height: '100px', margin: '0 auto 48px' }}>
           <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
@@ -267,11 +268,11 @@ export default function SurveyPage() {
               style={{ animation: 'drawCheck 0.5s 0.6s cubic-bezier(0.16,1,0.3,1) both' }} />
           </svg>
         </div>
-        <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.25)', marginBottom: '20px' }}>PRIJAVA ZAPRIMLJENA</div>
+        <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.45)', marginBottom: '20px' }}>PRIJAVA ZAPRIMLJENA</div>
         <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 'clamp(3rem,8vw,5rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '24px', letterSpacing: '-0.01em' }}>
           DOBRODOŠAO<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>U SUSTAV</span>
         </h1>
-        <p style={{ color: 'rgba(255,255,255,0.45)', lineHeight: 1.8, marginBottom: '48px', fontSize: '1rem' }}>
+        <p style={{ color: 'rgba(255,255,255,0.65)', lineHeight: 1.8, marginBottom: '48px', fontSize: '1rem' }}>
           Tvoja prijava je uspješno zaprimljena.<br />
           Javit ćemo ti se u najkraćem mogućem roku i dogovoriti sljedeće korake.
         </p>
@@ -307,11 +308,13 @@ export default function SurveyPage() {
   // ── Main form ────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: '#060606', color: '#fff', fontFamily: "'Barlow', sans-serif", position: 'relative', overflowX: 'hidden' }}>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none' }} />
-      <div style={{ position: 'fixed', top: '30%', right: '-10%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,255,255,0.025) 0%,transparent 70%)', zIndex: 0, pointerEvents: 'none' }} />
+      <div className="star-field" />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px)', backgroundSize: '48px 48px', pointerEvents: 'none' }} />
+      <div style={{ position: 'fixed', top: '20%', right: '-5%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,255,255,0.04) 0%,transparent 70%)', zIndex: 0, pointerEvents: 'none' }} />
+      <div style={{ position: 'fixed', bottom: '-10%', left: '-5%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,255,255,0.02) 0%,transparent 70%)', zIndex: 0, pointerEvents: 'none' }} />
 
       {/* NAVBAR */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(20px,5vw,60px)', background: 'rgba(6,6,6,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(20px,5vw,60px)', background: 'rgba(6,6,6,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.4)' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
           <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '60px' }} />
         </Link>
@@ -325,13 +328,13 @@ export default function SurveyPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'clamp(200px,28vw,340px) 1fr', minHeight: '100vh', position: 'relative', zIndex: 1 }}>
 
         {/* LEFT SIDEBAR */}
-        <div style={{ borderRight: '1px solid rgba(255,255,255,0.06)', padding: '100px 40px 60px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'rgba(255,255,255,0.01)', position: 'sticky', top: 0, height: '100vh', overflow: 'hidden' }}>
+        <div style={{ borderRight: '1px solid rgba(255,255,255,0.1)', padding: '100px 40px 60px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', position: 'sticky', top: 0, height: '100vh', overflow: 'hidden' }}>
           <div>
-            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '40px' }}>PRISTUP PROGRAMU</div>
+            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.45)', marginBottom: '40px' }}>PRISTUP PROGRAMU</div>
             <h1 style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 'clamp(2.2rem,3.5vw,3.2rem)', fontWeight: 800, lineHeight: 0.92, marginBottom: '32px', letterSpacing: '-0.01em' }}>
               POSTANI DIO<br /><span style={{ color: 'rgba(255,255,255,0.2)' }}>LWL UP<br />TIMA</span>
             </h1>
-            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.8, marginBottom: '48px' }}>
+            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, marginBottom: '48px' }}>
               Ispuni kratki upitnik. Javit ćemo ti se i dogovoriti sve detalje.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
@@ -349,7 +352,7 @@ export default function SurveyPage() {
                     )}
                   </div>
                   <div style={{ paddingBottom: i < STEPS.length - 1 ? '32px' : '0', paddingTop: '4px' }}>
-                    <div style={{ fontSize: '0.65rem', letterSpacing: '0.25em', fontWeight: 700, color: i === step ? '#fff' : i < step ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.15)', transition: 'color 0.4s' }}>
+                    <div style={{ fontSize: '0.65rem', letterSpacing: '0.25em', fontWeight: 700, color: i === step ? '#fff' : i < step ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)', transition: 'color 0.4s' }}>
                       {s}
                       {s === 'NAPREDNI' && <span style={{ marginLeft: '8px', fontSize: '0.5rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.07)', padding: '2px 6px' }}>EXTRA</span>}
                     </div>
@@ -360,8 +363,8 @@ export default function SurveyPage() {
           </div>
 
           {totalDisplay > 0 && (
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '24px', animation: 'fadeUp 0.4s ease' }}>
-              <div style={{ fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', marginBottom: '8px' }}>TVOJ TOTAL</div>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: '24px', animation: 'fadeUp 0.4s ease' }}>
+              <div style={{ fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>TVOJ TOTAL</div>
               <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: '3.5rem', fontWeight: 800, lineHeight: 1 }}>
                 <Counter value={totalDisplay} /><span style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.3)', marginLeft: '6px' }}>kg</span>
               </div>
@@ -375,10 +378,10 @@ export default function SurveyPage() {
           {/* Progress bar */}
           <div style={{ marginBottom: '48px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.25)', fontWeight: 600 }}>
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
                 {String(step + 1).padStart(2, '0')} / {String(STEPS.length).padStart(2, '0')}
               </div>
-              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }}>
+              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.12)' }}>
                 <div style={{ height: '100%', width: `${((step + 1) / STEPS.length) * 100}%`, background: '#fff', transition: '0.6s cubic-bezier(0.16,1,0.3,1)' }} />
               </div>
             </div>
@@ -396,7 +399,7 @@ export default function SurveyPage() {
             {step === 0 && (
               <div>
                 <h2 style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 'clamp(2.4rem,5vw,3.8rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '48px', letterSpacing: '-0.01em' }}>
-                  UPOZNAJMO<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>SE</span>
+                  UPOZNAJMO<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>SE</span>
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                   <div>
@@ -470,7 +473,7 @@ export default function SurveyPage() {
                         <button key={val} onClick={() => set('experience', val)} style={{
                           padding: '16px 20px', textAlign: 'left',
                           background: form.experience === val ? 'rgba(255,255,255,0.07)' : 'transparent',
-                          border: `1px solid ${form.experience === val ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.08)'}`,
+                          border: `1px solid ${form.experience === val ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)'}`,
                           cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Barlow',sans-serif",
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         }}
@@ -479,14 +482,14 @@ export default function SurveyPage() {
                         >
                           <div>
                             <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff', marginBottom: '3px' }}>{val}</div>
-                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)' }}>{sub}</div>
+                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)' }}>{sub}</div>
                           </div>
                           {form.experience === val && <Check size={16} color="rgba(255,255,255,0.6)" />}
                         </button>
                       ))}
                     </div>
                     {form.experience === 'Napredni' && (
-                      <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.05em', animation: 'fadeUp 0.3s ease' }}>
+                      <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', letterSpacing: '0.05em', animation: 'fadeUp 0.3s ease' }}>
                         ↓ Dodat ćemo ti dodatni korak s naprednijim pitanjima
                       </div>
                     )}
@@ -574,7 +577,7 @@ export default function SurveyPage() {
                 <h2 style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 'clamp(2.4rem,5vw,3.8rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '16px', letterSpacing: '-0.01em', margin: '0 0 16px' }}>
                   NAPREDNIJI<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>PROFIL</span>
                 </h2>
-                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.35)', marginBottom: '40px', lineHeight: 1.7 }}>
+                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginBottom: '40px', lineHeight: 1.7 }}>
                   Budući da imaš iskustva, želimo znati više kako bismo program što bolje prilagodili.
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
@@ -665,7 +668,7 @@ export default function SurveyPage() {
                             const current = form.recovery_habits.split(',').map(s => s.trim()).filter(Boolean)
                             const next = isSelected ? current.filter(x => x !== r) : [...current, r]
                             set('recovery_habits', next.join(', '))
-                          }} style={{ padding: '10px 16px', background: isSelected ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.03)', color: isSelected ? '#fff' : 'rgba(255,255,255,0.45)', border: `1px solid ${isSelected ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.08)'}`, cursor: 'pointer', fontSize: '0.76rem', fontWeight: 600, letterSpacing: '0.05em', transition: 'all 0.2s', fontFamily: "'Barlow', sans-serif" }}>{r}</button>
+                          }} style={{ padding: '10px 16px', background: isSelected ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.03)', color: isSelected ? '#fff' : 'rgba(255,255,255,0.65)', border: `1px solid ${isSelected ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.18)'}`, cursor: 'pointer', fontSize: '0.76rem', fontWeight: 600, letterSpacing: '0.05em', transition: 'all 0.2s', fontFamily: "'Barlow', sans-serif" }}>{r}</button>
                         )
                       })}
                     </div>
@@ -688,7 +691,7 @@ export default function SurveyPage() {
                 <h2 style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 'clamp(2.4rem,5vw,3.8rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '16px', letterSpacing: '-0.01em' }}>
                   TVOJI<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>CILJEVI</span>
                 </h2>
-                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.35)', marginBottom: '40px', lineHeight: 1.7 }}>
+                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginBottom: '40px', lineHeight: 1.7 }}>
                   Ovo je opcionalno — ali što više znaš nam reći, bolje možemo prilagoditi program.
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -702,7 +705,7 @@ export default function SurveyPage() {
                       <textarea name={f.key} value={(form as any)[f.key]}
                         onChange={e => set(f.key as keyof FormData, e.target.value)}
                         placeholder={f.ph} rows={3}
-                        style={{ width: '100%', background: 'transparent', resize: 'vertical', border: `1px solid ${focused === f.key ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, color: '#fff', padding: '14px 16px', fontSize: '0.9rem', outline: 'none', fontFamily: "'Barlow',sans-serif", lineHeight: 1.7, transition: 'border-color 0.25s', boxSizing: 'border-box', marginTop: '8px' }}
+                        style={{ width: '100%', background: 'transparent', resize: 'vertical', border: `1px solid ${focused === f.key ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.18)'}`, color: '#fff', padding: '14px 16px', fontSize: '0.9rem', outline: 'none', fontFamily: "'Barlow',sans-serif", lineHeight: 1.7, transition: 'border-color 0.25s', boxSizing: 'border-box', marginTop: '8px' }}
                         onFocus={() => setFocused(f.key)} onBlur={() => setFocused(null)}
                       />
                     </div>
@@ -749,7 +752,7 @@ export default function SurveyPage() {
         @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #060606; }
-        input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.12); }
+        input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.2); }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
         textarea { color: rgba(255,255,255,0.85) !important; }
         @keyframes stepOutLeft  { from{opacity:1;transform:translateX(0)}    to{opacity:0;transform:translateX(-40px)} }

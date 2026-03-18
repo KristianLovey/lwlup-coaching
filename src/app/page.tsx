@@ -159,17 +159,17 @@ function NetworkCanvas() {
           const dist = Math.sqrt(dx * dx + dy * dy)
           if (dist < 160) {
             ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y)
-            ctx.strokeStyle = `rgba(255,255,255,${0.06 * (1 - dist / 160)})`; ctx.lineWidth = 0.5; ctx.stroke()
+            ctx.strokeStyle = `rgba(255,255,255,${0.12 * (1 - dist / 160)})`; ctx.lineWidth = 0.7; ctx.stroke()
           }
         }
       }
-      nodes.forEach(n => { ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fill() })
+      nodes.forEach(n => { ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fill() })
       animId = requestAnimationFrame(draw)
     }
     draw()
     return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize) }
   }, [])
-  return <canvas ref={canvasRef} style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.6 }} />
+  return <canvas ref={canvasRef} id="network-canvas" style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.9 }} />
 }
 
 // ── Scroll reveal ──────────────────────────────────────────────────
@@ -209,6 +209,8 @@ export default function Landing() {
   return (
     <div style={{ background: '#050505', color: '#fff', overflowX: 'hidden', fontFamily: 'var(--fm)', position: 'relative' }}>
 
+      {/* Static CSS star field — visible even when canvas is loading */}
+      <div className="star-field" />
       <NetworkCanvas />
       <Navbar variant="transparent" />
       <ScrollToTop />
@@ -266,7 +268,7 @@ export default function Landing() {
                 {s.icon}
               </div>
               <div className="stat-value" style={{ fontFamily: 'var(--fd)', fontSize: '4.5rem', lineHeight: 1, marginBottom: '10px' }}>{s.val}</div>
-              <div style={{ fontSize: '0.65rem', letterSpacing: '0.25em', color: 'rgba(255, 255, 255, 1)' }}>{s.label}</div>
+              <div style={{ fontSize: '0.65rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)' }}>{s.label}</div>
             </div>
           ))}
         </div>

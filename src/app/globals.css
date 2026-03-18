@@ -4,11 +4,36 @@
 :root {
   --fm: 'Space Grotesk', sans-serif;
   --fd: 'Space Grotesk', sans-serif;
+
+  /* ── Global text opacity scale ─────────────────────────────────
+     Koristimo ove varijable umjesto hardcoded rgba vrijednosti
+     da je lako mijenjati "brightness" cijele stranice odjednom  */
+  --text-primary:   rgba(255,255,255,1);
+  --text-secondary: rgba(255,255,255,0.75);
+  --text-muted:     rgba(255,255,255,0.5);
+  --text-faint:     rgba(255,255,255,0.3);
+  --text-ghost:     rgba(255,255,255,0.15);
+
+  /* Border shades */
+  --border-bright:  rgba(255,255,255,0.18);
+  --border-normal:  rgba(255,255,255,0.1);
+  --border-subtle:  rgba(255,255,255,0.06);
 }
 
 html { scroll-behavior: smooth; }
 body { margin: 0; background: #050505; color: #fff; }
 ::selection { background: #fff; color: #000; }
+
+/* ── Global typography bumps ─────────────────────────────────────
+   Svaki <p> koji ne dobije eksplicitnu boju dobiva bolji kontrast */
+p { color: var(--text-secondary); }
+h1, h2, h3, h4, h5 { color: var(--text-primary); }
+
+/* ── Stat labels / small caps tekst ─────────────────────────────── */
+.stat-label, .section-eyebrow {
+  color: var(--text-muted) !important;
+  letter-spacing: 0.4em;
+}
 
 /* ── CTA Primary ─────────────────────────────────────────────────── */
 .cta-primary:hover {
@@ -19,7 +44,7 @@ body { margin: 0; background: #050505; color: #fff; }
 }
 
 /* ── Stats ───────────────────────────────────────────────────────── */
-.stat-card:hover { background: rgba(255,255,255,0.03); transform: translateY(-5px); }
+.stat-card:hover { background: rgba(255,255,255,0.04); transform: translateY(-5px); }
 .stat-card:hover .stat-icon { color: #fff !important; transform: scale(1.2); }
 .stat-card:hover .stat-value { text-shadow: 0 0 20px rgba(255,255,255,0.3); }
 
@@ -28,29 +53,15 @@ body { margin: 0; background: #050505; color: #fff; }
   animation: fadeInUp 0.7s ease-out backwards;
   transition: border-color 0.4s;
 }
-.bt-card:hover {
-  border-color: rgba(255,255,255,0.2) !important;
-}
-.bt-num-col {
-  transition: background 0.4s;
-}
-.bt-card:hover .bt-num-col {
-  background: rgba(255,255,255,0.03) !important;
-}
-.bt-num {
-  transition: color 0.4s;
-}
-.bt-card:hover .bt-num {
-  color: rgba(255,255,255,0.5) !important;
-}
-.bt-lift-name {
-  transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
-}
-.bt-card:hover .bt-lift-name {
-  transform: translateX(8px);
-}
+.bt-card:hover { border-color: rgba(255,255,255,0.22) !important; }
+.bt-num-col { transition: background 0.4s; }
+.bt-card:hover .bt-num-col { background: rgba(255,255,255,0.04) !important; }
+.bt-num { transition: color 0.4s; }
+.bt-card:hover .bt-num { color: rgba(255,255,255,0.55) !important; }
+.bt-lift-name { transition: transform 0.5s cubic-bezier(0.16,1,0.3,1); }
+.bt-card:hover .bt-lift-name { transform: translateX(8px); }
 .bt-img {
-  filter: grayscale(0.7) brightness(0.4);
+  filter: grayscale(0.6) brightness(0.45);
   transition: transform 0.9s cubic-bezier(0.16,1,0.3,1), filter 0.5s;
 }
 .bt-card:hover .bt-img {
@@ -62,38 +73,33 @@ body { margin: 0; background: #050505; color: #fff; }
   transform: translateX(-10px);
   transition: opacity 0.4s cubic-bezier(0.16,1,0.3,1), transform 0.4s cubic-bezier(0.16,1,0.3,1);
 }
-.bt-card:hover .bt-explore {
-  opacity: 1;
-  transform: translateX(0);
-}
-.bt-explore-line {
-  width: 40px;
-  height: 1px;
-  background: #fff;
-  transition: width 0.4s;
-  flex-shrink: 0;
-}
-.bt-card:hover .bt-explore-line {
-  width: 60px;
-}
+.bt-card:hover .bt-explore { opacity: 1; transform: translateX(0); }
+.bt-explore-line { width: 40px; height: 1px; background: #fff; transition: width 0.4s; flex-shrink: 0; }
+.bt-card:hover .bt-explore-line { width: 60px; }
 
 /* ── Hotspots ────────────────────────────────────────────────────── */
 .hotspot { position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
 .hotspot-core { width: 8px; height: 8px; background: #fff; border-radius: 50%; z-index: 2; box-shadow: 0 0 15px rgba(255,255,255,0.8); }
 .hotspot-ring { position: absolute; width: 100%; height: 100%; border: 1px solid #fff; border-radius: 50%; animation: pulse 2s infinite; }
-.hotspot-label { position: absolute; top: 100%; left: 50%; white-space: nowrap; font-size: 0.6rem; letter-spacing: 0.2em; color: #fff; margin-top: 10px; transition: 0.3s; pointer-events: none; background: rgba(0,0,0,0.8); padding: 5px 10px; border: 1px solid rgba(255,255,255,0.2); }
+.hotspot-label { position: absolute; top: 100%; left: 50%; white-space: nowrap; font-size: 0.6rem; letter-spacing: 0.2em; color: #fff; margin-top: 10px; transition: 0.3s; pointer-events: none; background: rgba(0,0,0,0.85); padding: 5px 10px; border: 1px solid rgba(255,255,255,0.25); }
 
 /* ── Club ────────────────────────────────────────────────────────── */
 .club-image:hover .club-img { transform: scale(1.1); }
 .info-card:hover { transform: translateY(-5px); }
+.info-card h4 { color: var(--text-primary) !important; }
+.info-card p  { color: var(--text-muted) !important; }
 
 /* ── Coach ───────────────────────────────────────────────────────── */
 .coach-image-wrapper:hover .coach-img { transform: scale(1.05); }
 .coach-badge:hover { transform: translateY(-5px); }
+.achievement-item { color: var(--text-secondary) !important; }
 .achievement-item:hover { transform: translateX(10px); color: #fff !important; }
 
 /* ── Features ────────────────────────────────────────────────────── */
+.feature-card { transition: 0.4s cubic-bezier(.16,1,.3,1); }
+.feature-card p { color: var(--text-muted) !important; }
 .feature-card:hover { transform: translateY(-10px); border-color: rgba(255,255,255,0.2) !important; background: #080808 !important; }
+.feature-card:hover p { color: var(--text-secondary) !important; }
 .feature-card:hover .feature-number { color: rgba(255,255,255,0.15) !important; transform: scale(1.2); }
 
 /* ── CTA Final ───────────────────────────────────────────────────── */
@@ -102,6 +108,58 @@ body { margin: 0; background: #050505; color: #fff; }
 .cta-final-button:hover { color: #000 !important; border-color: #fff; }
 .cta-final-button:hover span { color: #000; }
 
+/* ── Star/node background canvas boost ──────────────────────────── */
+#network-canvas { opacity: 1 !important; }
+
+/* ── Decorative star field (CSS, ne ovisi o canvasu) ────────────── */
+.star-field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.5px 1.5px at 15% 20%, rgba(255,255,255,0.55) 0%, transparent 100%),
+    radial-gradient(1px 1px   at 72% 8%,  rgba(255,255,255,0.4)  0%, transparent 100%),
+    radial-gradient(2px 2px   at 38% 55%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 88% 42%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px   at 6%  78%, rgba(255,255,255,0.3)  0%, transparent 100%),
+    radial-gradient(2.5px 2.5px at 55% 88%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px   at 92% 68%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 30% 92%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px   at 63% 34%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(2px 2px   at 80% 15%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px   at 44% 70%, rgba(255,255,255,0.3)  0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 20% 45%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px   at 97% 90%, rgba(255,255,255,0.4)  0%, transparent 100%),
+    radial-gradient(2px 2px   at 50% 12%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 10% 60%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px   at 76% 75%, rgba(255,255,255,0.3)  0%, transparent 100%),
+    radial-gradient(2px 2px   at 33% 30%, rgba(255,255,255,0.4)  0%, transparent 100%),
+    radial-gradient(1px 1px   at 68% 50%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 85% 28%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px   at 25% 82%, rgba(255,255,255,0.3)  0%, transparent 100%);
+  animation: starTwinkle 8s ease-in-out infinite alternate;
+}
+
+/* Drugi sloj zvijezda — offset pozicije za gušći raspored */
+.star-field::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px   at 42% 15%, rgba(255,255,255,0.4)  0%, transparent 100%),
+    radial-gradient(2px 2px   at 58% 60%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 18% 35%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px   at 82% 52%, rgba(255,255,255,0.3)  0%, transparent 100%),
+    radial-gradient(2px 2px   at 4%  48%, rgba(255,255,255,0.5)  0%, transparent 100%),
+    radial-gradient(1px 1px   at 95% 22%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 70% 85%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px   at 46% 95%, rgba(255,255,255,0.3)  0%, transparent 100%),
+    radial-gradient(2px 2px   at 12% 5%,  rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px   at 60% 25%, rgba(255,255,255,0.35) 0%, transparent 100%);
+  animation: starTwinkle 6s ease-in-out infinite alternate-reverse;
+}
+
 /* ── Keyframes ───────────────────────────────────────────────────── */
 @keyframes fadeInUp   { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes pulse      { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
@@ -109,6 +167,13 @@ body { margin: 0; background: #050505; color: #fff; }
 @keyframes textGlow   { 0%, 100% { text-shadow: 0 0 20px rgba(255,255,255,0.1); } 50% { text-shadow: 0 0 60px rgba(255,255,255,0.3); } }
 @keyframes fadeIn     { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp    { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideDown  { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes starTwinkle {
+  0%   { opacity: 0.6; }
+  50%  { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ══════════════════════════════════════════
    MOBILE — ispod 768px
@@ -117,13 +182,11 @@ body { margin: 0; background: #050505; color: #fff; }
   nav { padding: 0 20px !important; height: 64px !important; }
   .nav-links { display: none !important; }
 
-  /* Stats 2×2 */
   .stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
   .stat-card { padding: 40px 20px !important; }
   .stat-card:nth-child(2) { border-right: none !important; }
   .stat-card:nth-child(3) { border-right: 1px solid rgba(255,255,255,0.1) !important; }
 
-  /* Big Three: hide image column, narrow number col */
   .bt-card { grid-template-columns: 48px 1fr !important; }
   .bt-card > div:last-child { display: none !important; }
   .bt-card > div:nth-child(2) { padding: 32px 24px !important; }
@@ -131,35 +194,27 @@ body { margin: 0; background: #050505; color: #fff; }
   .big-three-header { flex-direction: column !important; gap: 16px !important; align-items: flex-start !important; }
   .big-three-header p { text-align: left !important; max-width: 100% !important; }
 
-  /* Modal full screen */
   .modal-outer { padding: 0 !important; align-items: flex-end !important; }
   .modal-inner { grid-template-columns: 1fr !important; max-height: 95svh !important; border-radius: 12px 12px 0 0 !important; overflow-y: auto !important; }
   .modal-img-side { height: 55vw !important; min-height: 220px !important; max-height: 320px !important; }
   .modal-text-side { padding: 24px 20px !important; max-height: none !important; position: static !important; height: auto !important; }
   .modal-lift-name { font-size: 2.2rem !important; }
 
-  /* Club */
   .club-grid { grid-template-columns: 1fr !important; gap: 40px !important; padding: 80px 20px !important; }
   .club-img-grid { grid-template-columns: 1fr 1fr !important; }
   .club-img-grid > div { height: 220px !important; margin-top: 0 !important; }
   .club-section-num { display: none !important; }
 
-  /* Coach */
   .coach-grid { grid-template-columns: 1fr !important; gap: 40px !important; padding: 80px 20px !important; }
   .coach-badge { left: 16px !important; right: 16px !important; padding: 12px 20px !important; }
   .coach-badge div:first-child { font-size: 1.1rem !important; }
 
-  /* Features */
   .features-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
   .system-section { padding: 80px 20px !important; }
-
-  /* CTA */
   .cta-final-button { padding: 20px 40px !important; font-size: 0.8rem !important; }
 
-  /* Footer */
   .footer-inner { flex-direction: column !important; gap: 40px !important; padding: 60px 20px !important; }
   .footer-nav-row { gap: 40px !important; }
-
   section { padding-left: 20px !important; padding-right: 20px !important; }
 }
 
