@@ -79,9 +79,8 @@ export default function Footer() {
               {([
                 ['Upitnik',       '/survey'],
                 ['Natjecanja',    '/#info'],
-                ['Squat',         '/#info'],
-                ['Bench Press',   '/#info'],
-                ['Deadlift',      '/#info'],
+                ['Powerlifting',  '/#info'],
+                
               ] as [string, string][]).map(([label, href]) => (
                 <Link
                   key={label}
@@ -122,10 +121,10 @@ export default function Footer() {
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '20px 60px' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.15)', letterSpacing: '0.1em' }}>
-            © 2026 LWL UP POWERLIFTING. ALL RIGHTS RESERVED. DESIGNED BY [KIZOCODE]
+            © 2026 LWL UP POWERLIFTING. ALL RIGHTS RESERVED.
           </span>
           <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.15)', letterSpacing: '0.1em' }}>
-            DESIGNED BY <span style={{ color: 'rgba(255,255,255,0.3)' }}>KIZOCODE</span>
+            DESIGNED BY <span style={{ color: 'rgba(255,255,255,0.3)' }}>[NexusCortex]</span>
           </span>
         </div>
       </div>

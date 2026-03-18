@@ -7,11 +7,11 @@ import Footer from '@/app/components/Footer'
 import BigThree from '@/app/components/big_three'
 
 const SLIDES = [
-  { src: '/slike/20251220-IMG_0729.jpg', quote: 'DISCIPLINA JE MOST IZMEĐU CILJA I USPJEHA.', sub: 'Dosljednost pobjeđuje talent svaki put.' },
-  { src: '/slike/20251220-IMG_0943.jpg', quote: 'SNAGA SE NE MJERI SAMO KILOGRAMIMA.', sub: 'Gradi karakter kroz svaki teški set.' },
-  { src: '/slike/IMG_0063.jpg', quote: 'VAŠA JEDINA KONKURENCIJA STE VI OD JUČER.', sub: 'Postani najbolja verzija sebe.' },
-  { src: '/slike/IMG_1844.jpg', quote: 'BOL JE PRIVREMENA, PONOS JE VJEČAN.', sub: 'Svako ponavljanje te približava vrhu.' },
-  { src: '/slike/IMG_1886-2.jpg', quote: 'NE POSTOJE PREČACI DO ISTINSKE SNAGE.', sub: 'Samo rad, znoj i precizno programiranje.' },
+  { src: '/slike/20251220-IMG_0729.jpg', quote: 'STRENGTH DOES NOT COME FROM THE BODY, BUT FROM THE WILL.', sub: 'Arnold Schwarzenegger' },
+  { src: '/slike/20251220-IMG_0943.jpg', quote: 'THE IRON NEVER LIES TO YOU.', sub: 'Henry Rollins' },
+  { src: '/slike/IMG_0063.jpg', quote: 'HATE ME OR LOVE ME, YOU WATCHED. THAT\'S ALL YOU COULD DO.', sub: 'Russel Orhii.' },
+  { src: '/slike/IMG_1844.jpg', quote: 'JUST THE BAR.', sub: 'Crannon.' },
+  { src: '/slike/IMG_1886-2.jpg', quote: 'AKO NE DIGNES P**** SI.', sub: 'Oliver Ozvačić.' },
   { src: '/slike/IMG_1890.jpg', quote: 'STVARAJ REZULTATE, NE ISPRIKE.', sub: 'Tvoj put do pobjedničkog postolja počinje ovdje.' },
 ]
 
