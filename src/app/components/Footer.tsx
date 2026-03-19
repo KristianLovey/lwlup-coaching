@@ -52,10 +52,10 @@ export default function Footer() {
             <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '24px', fontWeight: 700 }}>NAVIGACIJA</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {([
+                ['Powerlifting',      '/#info'],
                 ['O klubu',  '/#club'],
                 ['Trener',   '/#coach'],
                 ['Sustav',   '/#system'],
-                ['Tim',      '/team'],
                 ['Trening',  '/training'],
               ] as [string, string][]).map(([label, href]) => (
                 <Link
@@ -78,8 +78,8 @@ export default function Footer() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {([
                 ['Upitnik',       '/survey'],
-                ['Natjecanja',    '/#info'],
-                ['Powerlifting',  '/#info'],
+                ['Natjecanja',    '/competitions'],
+                ['LWL UP Tim',    '/team'],
                 
               ] as [string, string][]).map(([label, href]) => (
                 <Link

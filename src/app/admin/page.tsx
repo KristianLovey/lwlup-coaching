@@ -1,949 +1,1113 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { useState, useEffect, useRef } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Plus, ChevronRight, ChevronDown, ChevronUp, Trash2,
-  Save, LogOut, Users, Calendar, Dumbbell, X, Check,
-  ArrowLeft, Edit2, AlertCircle
+  Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
+  GripVertical, Loader2, LogOut, User, Settings, Zap, Home,
+  BarChart2, FolderOpen, Copy, MessageSquare, Shield, Users,
+  TrendingUp, AlertCircle, X, Edit3, ChevronLeft, Bell, Eye
 } from 'lucide-react'
 
+const supabase = createClient()
+
 // ── Types ──────────────────────────────────────────────────────────
-type Athlete = { id: string; full_name: string; role: string }
-type Exercise = { id: string; name: string; category: string }
+type Exercise = {
+  id: string
+  name: string
+  category: string
+  notes: string | null
+}
+
 type WorkoutExercise = {
+  id: string
+  workout_id: string
   exercise_id: string
-  exercise_name?: string
   exercise_order: number
   planned_sets: number
-  planned_reps: string
-  planned_weight_kg: number
-  planned_rpe: number
-  planned_rest_seconds: number
-  notes: string
+  planned_reps: string | null
+  planned_weight_kg: number | null
+  planned_rpe: number | null
+  planned_rest_seconds: number | null
+  planned_tempo: string | null
+  actual_sets: number | null
+  actual_reps: string | null
+  actual_weight_kg: number | null
+  actual_rpe: number | null
+  notes: string | null
+  completed: boolean
+  exercise?: Exercise
 }
-type WorkoutDraft = {
+
+type Workout = {
+  id: string
+  week_id: string
+  athlete_id: string
   day_name: string
   workout_date: string
-  exercises: WorkoutExercise[]
+  completed: boolean
+  notes: string | null
+  overall_rpe: number | null
+  duration_minutes: number | null
+  workout_exercises?: WorkoutExercise[]
 }
-type WeekDraft = {
+
+type Week = {
+  id: string
+  block_id: string
   week_number: number
   start_date: string
   end_date: string
-  workouts: WorkoutDraft[]
+  notes: string | null
+  workouts?: Workout[]
 }
 
-// ── Step indicator ─────────────────────────────────────────────────
-const STEPS = ['ATLET', 'BLOK', 'TJEDNI', 'TRENINZI', 'PREGLED']
-
-// ── Helpers ────────────────────────────────────────────────────────
-const today = () => new Date().toISOString().split('T')[0]
-const addDays = (date: string, days: number) => {
-  const d = new Date(date)
-  d.setDate(d.getDate() + days)
-  return d.toISOString().split('T')[0]
+type Block = {
+  id: string
+  athlete_id: string
+  name: string
+  start_date: string
+  end_date: string
+  goal: string | null
+  status: 'active' | 'completed' | 'planned'
+  notes: string | null
+  weeks?: Week[]
 }
-const fmt = (d: string) => new Date(d).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: 'numeric' })
 
-// ── Empty workout factory ──────────────────────────────────────────
-const newWorkout = (dayName: string, date: string): WorkoutDraft => ({
-  day_name: dayName,
-  workout_date: date,
-  exercises: []
-})
+type AthleteNote = {
+  id: string
+  athlete_id: string
+  admin_id: string
+  content: string
+  created_at: string
+}
 
-const newExercise = (): WorkoutExercise => ({
-  exercise_id: '',
-  exercise_order: 1,
-  planned_sets: 3,
-  planned_reps: '8',
-  planned_weight_kg: 0,
-  planned_rpe: 8,
-  planned_rest_seconds: 180,
-  notes: ''
-})
+type AthleteProfile = {
+  id: string
+  full_name: string
+  email?: string
+  role: string
+  created_at: string
+  blocks?: Block[]
+  notes?: AthleteNote[]
+}
 
-// ══════════════════════════════════════════════════════════════════
-export default function AdminPage() {
-  const router = useRouter()
+// ── Inline editable field ──────────────────────────────────────────
+function EditableField({
+  value, placeholder, onSave, type = 'text', small = false
+}: {
+  value: string | number | null
+  placeholder: string
+  onSave: (v: string) => void
+  type?: string
+  small?: boolean
+}) {
+  const [editing, setEditing] = useState(false)
+  const [val, setVal] = useState(String(value ?? ''))
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  // Global state
-  const [step, setStep] = useState(0)
-  const [athletes, setAthletes] = useState<Athlete[]>([])
-  const [exercises, setExercises] = useState<Exercise[]>([])
-  const [selectedAthlete, setSelectedAthlete] = useState<Athlete | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState('')
-  const [savedSuccess, setSavedSuccess] = useState(false)
-  const [adminName, setAdminName] = useState('')
+  useEffect(() => { if (editing) inputRef.current?.focus() }, [editing])
+  useEffect(() => { setVal(String(value ?? '')) }, [value])
 
-  // Block draft
-  const [blockName, setBlockName] = useState('')
-  const [blockGoal, setBlockGoal] = useState('')
-  const [blockStart, setBlockStart] = useState(today())
-  const [blockWeekCount, setBlockWeekCount] = useState(4)
+  const commit = () => { setEditing(false); onSave(val) }
 
-  // Weeks draft
-  const [weeks, setWeeks] = useState<WeekDraft[]>([])
-
-  // Active workout being edited
-  const [activeWeekIdx, setActiveWeekIdx] = useState(0)
-  const [activeWorkoutIdx, setActiveWorkoutIdx] = useState(0)
-  const [expandedExercise, setExpandedExercise] = useState<number | null>(null)
-  const [exerciseSearch, setExerciseSearch] = useState('')
-  const [showExercisePicker, setShowExercisePicker] = useState(false)
-
-  // ── Load data ────────────────────────────────────────────────────
-  useEffect(() => {
-    const init = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/auth'); return }
-
-      // Check admin
-      const { data: profile } = await supabase
-        .from('profiles').select('role, full_name').eq('id', user.id).single()
-      if (profile?.role !== 'admin') { router.push('/training'); return }
-      setAdminName(profile.full_name || 'Admin')
-
-      // Load all athletes (non-admin)
-      const { data: aths } = await supabase
-        .from('profiles')
-        .select('id, full_name, role')
-        .neq('role', 'admin')
-        .order('full_name')
-      setAthletes(aths || [])
-
-      // Load exercises
-      const { data: exs } = await supabase
-        .from('exercises')
-        .select('id, name, category')
-        .order('category').order('name')
-      setExercises(exs || [])
-    }
-    init()
-  }, [])
-
-  // ── Generate weeks when block params change ──────────────────────
-  const generateWeeks = () => {
-    const generated: WeekDraft[] = []
-    for (let i = 0; i < blockWeekCount; i++) {
-      const weekStart = addDays(blockStart, i * 7)
-      const weekEnd = addDays(weekStart, 6)
-      generated.push({
-        week_number: i + 1,
-        start_date: weekStart,
-        end_date: weekEnd,
-        workouts: [
-          newWorkout('Trening A', addDays(weekStart, 0)),
-          newWorkout('Trening B', addDays(weekStart, 2)),
-          newWorkout('Trening C', addDays(weekStart, 4)),
-        ]
-      })
-    }
-    setWeeks(generated)
-  }
-
-  // ── Save everything to Supabase ──────────────────────────────────
-  const saveAll = async () => {
-    if (!selectedAthlete) return
-    setSaving(true)
-    setSaveError('')
-
-    try {
-      const supabase = createClient()
-
-      // 1. Create block
-      const blockEnd = addDays(blockStart, blockWeekCount * 7 - 1)
-      const { data: block, error: blockError } = await supabase
-        .from('blocks')
-        .insert({
-          athlete_id: selectedAthlete.id,
-          name: blockName,
-          goal: blockGoal,
-          start_date: blockStart,
-          end_date: blockEnd,
-          status: 'active'
-        })
-        .select('id').single()
-
-      if (blockError) throw blockError
-
-      // 2. Create weeks + workouts + exercises
-      for (const week of weeks) {
-        const { data: weekRow, error: weekError } = await supabase
-          .from('weeks')
-          .insert({
-            block_id: block.id,
-            week_number: week.week_number,
-            start_date: week.start_date,
-            end_date: week.end_date,
-          })
-          .select('id').single()
-
-        if (weekError) throw weekError
-
-        for (const workout of week.workouts) {
-          if (workout.exercises.length === 0) continue // skip empty workouts
-
-          const { data: workoutRow, error: workoutError } = await supabase
-            .from('workouts')
-            .insert({
-              week_id: weekRow.id,
-              athlete_id: selectedAthlete.id,
-              day_name: workout.day_name,
-              workout_date: workout.workout_date,
-              completed: false
-            })
-            .select('id').single()
-
-          if (workoutError) throw workoutError
-
-          // Insert exercises
-          const exerciseRows = workout.exercises.map((ex, idx) => ({
-            workout_id: workoutRow.id,
-            exercise_id: ex.exercise_id,
-            exercise_order: idx + 1,
-            planned_sets: ex.planned_sets,
-            planned_reps: ex.planned_reps,
-            planned_weight_kg: ex.planned_weight_kg,
-            planned_rpe: ex.planned_rpe,
-            planned_rest_seconds: ex.planned_rest_seconds,
-            notes: ex.notes || null
-          }))
-
-          const { error: exError } = await supabase
-            .from('workout_exercises')
-            .insert(exerciseRows)
-
-          if (exError) throw exError
-        }
-      }
-
-      setSavedSuccess(true)
-    } catch (err: any) {
-      setSaveError(err.message || 'Greška pri spremanju')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const logout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/auth')
-  }
-
-  // ── Current workout being edited ─────────────────────────────────
-  const currentWorkout = weeks[activeWeekIdx]?.workouts[activeWorkoutIdx]
-
-  const updateExercise = (idx: number, field: keyof WorkoutExercise, value: any) => {
-    setWeeks(prev => {
-      const next = structuredClone(prev)
-      next[activeWeekIdx].workouts[activeWorkoutIdx].exercises[idx] = {
-        ...next[activeWeekIdx].workouts[activeWorkoutIdx].exercises[idx],
-        [field]: value
-      }
-      return next
-    })
-  }
-
-  const addExercise = (ex: Exercise) => {
-    setWeeks(prev => {
-      const next = structuredClone(prev)
-      const exList = next[activeWeekIdx].workouts[activeWorkoutIdx].exercises
-      exList.push({ ...newExercise(), exercise_id: ex.id, exercise_name: ex.name, exercise_order: exList.length + 1 })
-      return next
-    })
-    setShowExercisePicker(false)
-    setExerciseSearch('')
-  }
-
-  const removeExercise = (idx: number) => {
-    setWeeks(prev => {
-      const next = structuredClone(prev)
-      next[activeWeekIdx].workouts[activeWorkoutIdx].exercises.splice(idx, 1)
-      return next
-    })
-  }
-
-  const filteredExercises = exercises.filter(e =>
-    e.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
-    e.category.toLowerCase().includes(exerciseSearch.toLowerCase())
+  if (editing) return (
+    <input
+      ref={inputRef}
+      type={type}
+      value={val}
+      onChange={e => setVal(e.target.value)}
+      onBlur={commit}
+      onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
+      style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', padding: small ? '3px 8px' : '5px 10px', fontSize: small ? '0.72rem' : '0.85rem', outline: 'none', width: '100%', fontFamily: 'var(--fm)', minWidth: '60px' }}
+    />
   )
 
-  // Group exercises by category for picker
-  const exercisesByCategory = filteredExercises.reduce((acc, ex) => {
-    if (!acc[ex.category]) acc[ex.category] = []
-    acc[ex.category].push(ex)
-    return acc
-  }, {} as Record<string, Exercise[]>)
+  return (
+    <span
+      onClick={() => setEditing(true)}
+      style={{ cursor: 'text', color: value ? '#fff' : 'rgba(255,255,255,0.2)', fontSize: small ? '0.72rem' : '0.85rem', fontFamily: 'var(--fm)', borderBottom: '1px dashed rgba(255,255,255,0.15)', paddingBottom: '1px', transition: 'color 0.2s' }}
+      title="Klikni za uređivanje"
+    >
+      {value ?? placeholder}
+    </span>
+  )
+}
 
-  const S = { // shared styles
-    input: {
-      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-      color: '#fff', padding: '10px 14px', fontSize: '0.9rem', outline: 'none',
-      fontFamily: "'DM Mono', monospace", width: '100%', boxSizing: 'border-box' as const,
-      transition: 'border-color 0.2s',
-    },
-    label: {
-      display: 'block' as const, fontSize: '0.58rem', letterSpacing: '0.3em',
-      color: 'rgba(255,255,255,0.35)', marginBottom: '8px', fontWeight: 700,
-      fontFamily: "'DM Mono', monospace",
-    },
-    btnPrimary: {
-      padding: '14px 32px', background: '#fff', color: '#000', border: 'none',
-      fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.2em', cursor: 'pointer',
-      fontFamily: "'DM Mono', monospace", transition: 'all 0.2s',
-    },
-    btnSecondary: {
-      padding: '10px 22px', background: 'transparent', color: 'rgba(255,255,255,0.6)',
-      border: '1px solid rgba(255,255,255,0.15)', fontSize: '0.65rem', fontWeight: 700,
-      letterSpacing: '0.2em', cursor: 'pointer', fontFamily: "'DM Mono', monospace",
-      transition: 'all 0.2s',
-    },
-    card: {
-      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-      padding: '30px',
+// ── Exercise Picker ────────────────────────────────────────────────
+function ExercisePicker({ exercises, onSelect, onClose }: { exercises: Exercise[]; onSelect: (ex: Exercise) => void; onClose: () => void }) {
+  const [q, setQ] = useState('')
+  const [selectedCat, setSelectedCat] = useState<string | null>(null)
+  const cats = Array.from(new Set(exercises.map(e => e.category))).sort()
+  const filtered = exercises.filter(e => e.name.toLowerCase().includes(q.toLowerCase()) && (!selectedCat || e.category === selectedCat))
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.96)', backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }} onClick={onClose}>
+      <div style={{ width: '100%', maxWidth: '680px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', maxHeight: '80vh' }} onClick={e => e.stopPropagation()}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: '0.6rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>ODABERI VJEŽBU</div>
+          <button onClick={onClose} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', padding: '5px 14px', cursor: 'pointer', fontSize: '0.6rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>✕ ZATVORI</button>
+        </div>
+        <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '10px 16px' }}>
+            <Search size={14} color="rgba(255,255,255,0.3)" />
+            <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Pretraži vježbe..." style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.9rem', width: '100%', fontFamily: 'var(--fm)' }} />
+          </div>
+        </div>
+        <div style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button onClick={() => setSelectedCat(null)} style={{ padding: '5px 14px', fontSize: '0.65rem', letterSpacing: '0.12em', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--fm)', background: !selectedCat ? '#fff' : 'transparent', color: !selectedCat ? '#000' : 'rgba(255,255,255,0.4)', border: `1px solid ${!selectedCat ? '#fff' : 'rgba(255,255,255,0.1)'}` }}>SVE</button>
+          {cats.map(c => <button key={c} onClick={() => setSelectedCat(c === selectedCat ? null : c)} style={{ padding: '5px 14px', fontSize: '0.65rem', letterSpacing: '0.12em', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--fm)', background: selectedCat === c ? '#fff' : 'transparent', color: selectedCat === c ? '#000' : 'rgba(255,255,255,0.4)', border: `1px solid ${selectedCat === c ? '#fff' : 'rgba(255,255,255,0.1)'}` }}>{c}</button>)}
+        </div>
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {filtered.map(ex => (
+            <div key={ex.id} onClick={() => { onSelect(ex); onClose() }} style={{ padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer', transition: 'background 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <div>
+                <div style={{ fontSize: '0.9rem', color: '#fff', fontWeight: 600, fontFamily: 'var(--fm)' }}>{ex.name}</div>
+                <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>{ex.category}</div>
+              </div>
+              <Plus size={14} color="rgba(255,255,255,0.3)" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Exercise Row ───────────────────────────────────────────────────
+function ExerciseRow({ we, onUpdate, onDelete }: { we: WorkoutExercise; onUpdate: (id: string, data: Partial<WorkoutExercise>) => void; onDelete: (id: string) => void }) {
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <div style={{ border: '1px solid rgba(255,255,255,0.06)', marginBottom: '4px', background: 'rgba(255,255,255,0.02)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 60px 80px 80px 60px 32px', gap: '8px', alignItems: 'center', padding: '10px 12px' }}>
+        <GripVertical size={14} color="rgba(255,255,255,0.15)" style={{ cursor: 'grab' }} />
+        <div>
+          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)' }}>{we.exercise?.name ?? '—'}</div>
+          <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>{we.exercise?.category}</div>
+        </div>
+        {[
+          { label: 'SETS', key: 'planned_sets' as keyof WorkoutExercise, type: 'number' },
+          { label: 'REPS', key: 'planned_reps' as keyof WorkoutExercise, type: 'text' },
+          { label: 'KG', key: 'planned_weight_kg' as keyof WorkoutExercise, type: 'number' },
+          { label: 'RPE', key: 'planned_rpe' as keyof WorkoutExercise, type: 'number' },
+        ].map(f => (
+          <div key={f.key} style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em', marginBottom: '3px' }}>{f.label}</div>
+            <EditableField value={we[f.key] as string | number | null} placeholder="—" type={f.type} small
+              onSave={v => onUpdate(we.id, { [f.key]: f.type === 'number' ? (v ? Number(v) : null) : (v || null) })} />
+          </div>
+        ))}
+        <button onClick={() => onDelete(we.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '4px', transition: 'color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onMouseEnter={e => e.currentTarget.style.color = '#ff4444'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}>
+          <Trash2 size={13} />
+        </button>
+      </div>
+      <button onClick={() => setExpanded(!expanded)} style={{ width: '100%', background: 'transparent', border: 'none', borderTop: '1px solid rgba(255,255,255,0.04)', padding: '5px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.2)', fontSize: '0.58rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}
+        onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}>
+        {expanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}{expanded ? 'SAKRIJ' : 'VIŠE'}
+      </button>
+      {expanded && (
+        <div style={{ padding: '12px 12px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+          {[{ label: 'TEMPO', key: 'planned_tempo' as keyof WorkoutExercise, placeholder: '3010' }, { label: 'ODMOR (sek)', key: 'planned_rest_seconds' as keyof WorkoutExercise, placeholder: '90', type: 'number' }, { label: 'NAPOMENA', key: 'notes' as keyof WorkoutExercise, placeholder: 'Bilješka...' }].map(f => (
+            <div key={f.key}>
+              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em', marginBottom: '6px' }}>{f.label}</div>
+              <EditableField value={we[f.key] as string | number | null} placeholder={f.placeholder} type={f.type} onSave={v => onUpdate(we.id, { [f.key]: v || null })} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Workout Card ───────────────────────────────────────────────────
+function WorkoutCard({ workout, exercises, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }:
+  { workout: Workout; exercises: Exercise[]; onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void; onAddExercise: (workoutId: string, ex: Exercise) => void; onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const [showPicker, setShowPicker] = useState(false)
+  const exCount = workout.workout_exercises?.length ?? 0
+
+  return (
+    <>
+      <div style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => setOpen(!open)}>
+          <div style={{ width: '4px', alignSelf: 'stretch', background: workout.completed ? '#27ae60' : 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
+          <div style={{ flex: 1, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ color: 'rgba(255,255,255,0.3)', transition: 'transform 0.3s', transform: open ? 'rotate(90deg)' : 'none' }}><ChevronRight size={14} /></div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)' }} onClick={e => e.stopPropagation()}>
+                <EditableField value={workout.day_name} placeholder="Dan treninga" onSave={v => onUpdateWorkout(workout.id, { day_name: v })} />
+              </div>
+              <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.25)', marginTop: '2px' }}>{workout.workout_date} · {exCount} vježbi</div>
+            </div>
+            <div onClick={e => { e.stopPropagation(); onUpdateWorkout(workout.id, { completed: !workout.completed }) }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', border: `1px solid ${workout.completed ? '#27ae60' : 'rgba(255,255,255,0.1)'}`, cursor: 'pointer', background: workout.completed ? 'rgba(39,174,96,0.1)' : 'transparent' }}>
+              {workout.completed ? <Check size={11} color="#27ae60" /> : <div style={{ width: '11px', height: '11px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '2px' }} />}
+              <span style={{ fontSize: '0.58rem', letterSpacing: '0.2em', color: workout.completed ? '#27ae60' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{workout.completed ? 'GOTOVO' : 'ODRADITI'}</span>
+            </div>
+            <div onClick={e => { e.stopPropagation(); onDeleteWorkout(workout.id) }} style={{ color: 'rgba(255,255,255,0.15)', cursor: 'pointer', padding: '4px' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#ff4444'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.15)'}>
+              <Trash2 size={13} />
+            </div>
+          </div>
+        </div>
+        {open && (
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '14px' }}>
+            {(workout.workout_exercises?.length ?? 0) > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 60px 80px 80px 60px 32px', gap: '8px', padding: '0 12px 8px' }}>
+                {['', 'VJEŽBA', 'SERI', 'PONOV', 'KG', 'RPE', ''].map((h, i) => (
+                  <div key={i} style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.2em', textAlign: i > 1 ? 'center' : 'left', fontFamily: 'var(--fm)' }}>{h}</div>
+                ))}
+              </div>
+            )}
+            {workout.workout_exercises?.map(we => <ExerciseRow key={we.id} we={we} onUpdate={onUpdateExercise} onDelete={onDeleteExercise} />)}
+            <button onClick={() => setShowPicker(true)} style={{ width: '100%', marginTop: '8px', padding: '10px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.68rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', transition: 'all 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)' }}>
+              <Plus size={12} /> DODAJ VJEŽBU
+            </button>
+          </div>
+        )}
+      </div>
+      {showPicker && <ExercisePicker exercises={exercises} onSelect={ex => onAddExercise(workout.id, ex)} onClose={() => setShowPicker(false)} />}
+    </>
+  )
+}
+
+// ── Week Panel ─────────────────────────────────────────────────────
+function WeekPanel({ week, exercises, onDeleteWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }:
+  { week: Week; exercises: Exercise[]; onDeleteWeek: (id: string) => void; onAddWorkout: (weekId: string) => void; onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void; onAddExercise: (workoutId: string, ex: Exercise) => void; onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void }) {
+  const [open, setOpen] = useState(true)
+  const completedCount = week.workouts?.filter(w => w.completed).length ?? 0
+  const totalCount = week.workouts?.length ?? 0
+
+  return (
+    <div style={{ marginBottom: '12px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.015)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.06)' : 'none' }} onClick={() => setOpen(!open)}>
+        <div style={{ fontFamily: 'var(--fd)', fontSize: '0.75rem', fontWeight: 800, color: 'rgba(255,255,255,0.2)', minWidth: '32px' }}>W{week.week_number}</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '0.88rem', color: '#fff', fontWeight: 700, fontFamily: 'var(--fm)' }}>Tjedan {week.week_number}</span>
+            <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.25)' }}>{week.start_date} — {week.end_date}</span>
+          </div>
+          {totalCount > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '5px' }}>
+              <div style={{ height: '2px', width: '60px', background: 'rgba(255,255,255,0.08)', position: 'relative' }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${(completedCount / totalCount) * 100}%`, background: '#27ae60', transition: 'width 0.6s' }} />
+              </div>
+              <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>{completedCount}/{totalCount}</span>
+            </div>
+          )}
+        </div>
+        <div style={{ color: 'rgba(255,255,255,0.25)', transition: 'transform 0.3s', transform: open ? 'rotate(90deg)' : 'none' }}><ChevronRight size={14} /></div>
+        <div onClick={e => { e.stopPropagation(); onDeleteWeek(week.id) }} style={{ color: 'rgba(255,255,255,0.15)', cursor: 'pointer', padding: '4px' }}
+          onMouseEnter={e => e.currentTarget.style.color = '#ff4444'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.15)'}>
+          <Trash2 size={13} />
+        </div>
+      </div>
+      {open && (
+        <div style={{ padding: '14px' }}>
+          {week.workouts?.map(w => <WorkoutCard key={w.id} workout={w} exercises={exercises} onUpdateWorkout={onUpdateWorkout} onDeleteWorkout={onDeleteWorkout} onAddExercise={onAddExercise} onUpdateExercise={onUpdateExercise} onDeleteExercise={onDeleteExercise} />)}
+          <button onClick={() => onAddWorkout(week.id)} style={{ width: '100%', padding: '10px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.65rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.color = '#fff' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)' }}>
+            <Plus size={12} /> DODAJ DAN
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Duplicate Block Modal ──────────────────────────────────────────
+function DuplicateModal({ block, athletes, onConfirm, onClose }:
+  { block: Block; athletes: AthleteProfile[]; onConfirm: (targetAthleteId: string, newName: string) => void; onClose: () => void }) {
+  const [targetId, setTargetId] = useState('')
+  const [newName, setNewName] = useState(`${block.name} (kopija)`)
+  const others = athletes.filter(a => a.id !== block.athlete_id && a.role === 'lifter')
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }} onClick={onClose}>
+      <div style={{ width: '100%', maxWidth: '480px', background: '#0d0d10', border: '1px solid rgba(255,255,255,0.12)', padding: '32px', animation: 'slideUp 0.3s ease' }} onClick={e => e.stopPropagation()}>
+        <div style={{ fontSize: '0.55rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.25)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>DUPLICIRAJ BLOK</div>
+        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)', marginBottom: '28px' }}>{block.name}</div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px', fontFamily: 'var(--fm)' }}>NAZIV KOPIJE</div>
+          <input value={newName} onChange={e => setNewName(e.target.value)}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '12px 16px', fontSize: '0.9rem', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
+        </div>
+
+        <div style={{ marginBottom: '28px' }}>
+          <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px', fontFamily: 'var(--fm)' }}>KOPIRAJ NA LIFTAČA</div>
+          {others.length === 0 ? (
+            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', fontFamily: 'var(--fm)', padding: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>Nema drugih liftača.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
+              {others.map(a => (
+                <button key={a.id} onClick={() => setTargetId(a.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: targetId === a.id ? 'rgba(255,255,255,0.07)' : 'transparent', border: `1px solid ${targetId === a.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, color: '#fff', flexShrink: 0, fontFamily: 'var(--fm)' }}>
+                    {a.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', fontFamily: 'var(--fm)' }}>{a.full_name}</div>
+                  {targetId === a.id && <Check size={13} color="#4ade80" style={{ marginLeft: 'auto' }} />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>ODUSTANI</button>
+          <button onClick={() => { if (targetId && newName) { onConfirm(targetId, newName); onClose() } }}
+            disabled={!targetId || !newName}
+            style={{ flex: 1, padding: '12px', background: targetId && newName ? '#fff' : 'rgba(255,255,255,0.1)', border: 'none', color: targetId && newName ? '#000' : 'rgba(255,255,255,0.2)', cursor: targetId && newName ? 'pointer' : 'not-allowed', fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}>
+            <Copy size={12} style={{ display: 'inline', marginRight: '6px' }} />DUPLICIRAJ
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Athlete Detail Panel ───────────────────────────────────────────
+function AthletePanel({
+  athlete, exercises, allAthletes, adminId, onBack, onRefresh
+}: {
+  athlete: AthleteProfile
+  exercises: Exercise[]
+  allAthletes: AthleteProfile[]
+  adminId: string
+  onBack: () => void
+  onRefresh: () => void
+}) {
+  const [block, setBlock] = useState<Block | null>(null)
+  const [allBlocks, setAllBlocks] = useState<Block[]>([])
+  const [notes, setNotes] = useState<AthleteNote[]>([])
+  const [newNote, setNewNote] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [loadingBlock, setLoadingBlock] = useState(false)
+  const [activeTab, setActiveTab] = useState<'program' | 'stats' | 'notes'>('program')
+  const [duplicateBlock, setDuplicateBlock] = useState<Block | null>(null)
+  const [showBlockMenu, setShowBlockMenu] = useState(false)
+
+  const initials = athlete.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
+  const totalWorkouts = block?.weeks?.flatMap(w => w.workouts ?? []).length ?? 0
+  const completedWorkouts = block?.weeks?.flatMap(w => w.workouts ?? []).filter(w => w.completed).length ?? 0
+  const totalEx = block?.weeks?.flatMap(w => w.workouts ?? []).flatMap(w => w.workout_exercises ?? []).length ?? 0
+  const progress = totalWorkouts > 0 ? Math.round((completedWorkouts / totalWorkouts) * 100) : 0
+
+  useEffect(() => { loadData() }, [athlete.id])
+
+  const loadData = async () => {
+    setLoadingBlock(true)
+    // Load blocks
+    const { data: blocksData } = await supabase.from('blocks').select('id, name, status, start_date, end_date, goal, notes, athlete_id').eq('athlete_id', athlete.id).order('created_at', { ascending: false })
+    setAllBlocks((blocksData ?? []) as Block[])
+
+    // Load active block with full data
+    const { data: activeBlock } = await supabase
+      .from('blocks')
+      .select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))')
+      .eq('athlete_id', athlete.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (activeBlock) {
+      activeBlock.weeks?.sort((a: Week, b: Week) => a.week_number - b.week_number)
+      activeBlock.weeks?.forEach((w: Week) => {
+        w.workouts?.sort((a: Workout, b: Workout) => a.workout_date.localeCompare(b.workout_date))
+        w.workouts?.forEach((wo: Workout) => wo.workout_exercises?.sort((a: WorkoutExercise, b: WorkoutExercise) => a.exercise_order - b.exercise_order))
+      })
+      setBlock(activeBlock)
+    } else {
+      setBlock(null)
     }
+
+    // Load notes
+    const { data: notesData } = await supabase.from('athlete_notes').select('*').eq('athlete_id', athlete.id).order('created_at', { ascending: false })
+    setNotes((notesData ?? []) as AthleteNote[])
+    setLoadingBlock(false)
   }
 
-  // ══════════════════════════════════════════════════════════════════
-  // RENDER
-  // ══════════════════════════════════════════════════════════════════
+  const switchBlock = async (blockId: string) => {
+    setLoadingBlock(true)
+    const { data } = await supabase.from('blocks').select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))').eq('id', blockId).single()
+    if (data) {
+      data.weeks?.sort((a: Week, b: Week) => a.week_number - b.week_number)
+      data.weeks?.forEach((w: Week) => {
+        w.workouts?.sort((a: Workout, b: Workout) => a.workout_date.localeCompare(b.workout_date))
+        w.workouts?.forEach((wo: Workout) => wo.workout_exercises?.sort((a: WorkoutExercise, b: WorkoutExercise) => a.exercise_order - b.exercise_order))
+      })
+      setBlock(data)
+    }
+    setShowBlockMenu(false)
+    setLoadingBlock(false)
+  }
+
+  const createBlock = async () => {
+    const name = prompt('Naziv novog bloka:')
+    if (!name?.trim()) return
+    setSaving(true)
+    const today = new Date()
+    const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
+    const { data } = await supabase.from('blocks').insert({
+      athlete_id: athlete.id, name: name.trim(),
+      start_date: today.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
+      status: 'active',
+    }).select('*').single()
+    if (data) {
+      setAllBlocks(b => [{ ...data, weeks: [] } as Block, ...b])
+      setBlock({ ...data, weeks: [] } as Block)
+    }
+    setSaving(false)
+  }
+
+  const addWeek = async () => {
+    if (!block) return
+    setSaving(true)
+    const existingWeeks = block.weeks ?? []
+    const weekNum = existingWeeks.length + 1
+    const lastEnd = existingWeeks.length > 0 ? new Date(existingWeeks[existingWeeks.length - 1].end_date) : new Date(block.start_date)
+    const startDate = new Date(lastEnd); if (existingWeeks.length > 0) startDate.setDate(startDate.getDate() + 1)
+    const endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 6)
+    const { data, error } = await supabase.from('weeks').insert({ block_id: block.id, week_number: weekNum, start_date: startDate.toISOString().split('T')[0], end_date: endDate.toISOString().split('T')[0] }).select('*').single()
+    if (!error && data) setBlock(b => b ? { ...b, weeks: [...(b.weeks ?? []), { ...data, workouts: [] }] } : b)
+    setSaving(false)
+  }
+
+  const deleteWeek = async (weekId: string) => {
+    await supabase.from('weeks').delete().eq('id', weekId)
+    setBlock(b => b ? { ...b, weeks: b.weeks?.filter(w => w.id !== weekId) } : b)
+  }
+
+  const addWorkout = async (weekId: string) => {
+    setSaving(true)
+    const week = block?.weeks?.find(w => w.id === weekId)
+    if (!week) return
+    const existingDays = week.workouts?.length ?? 0
+    const workoutDate = new Date(week.start_date); workoutDate.setDate(workoutDate.getDate() + existingDays)
+    const { data, error } = await supabase.from('workouts').insert({ week_id: weekId, athlete_id: athlete.id, day_name: `Dan ${existingDays + 1}`, workout_date: workoutDate.toISOString().split('T')[0], completed: false }).select('*').single()
+    if (!error && data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? { ...w, workouts: [...(w.workouts ?? []), { ...data, workout_exercises: [] }] } : w) } : b)
+    setSaving(false)
+  }
+
+  const updateWorkout = async (workoutId: string, data: Partial<Workout>) => {
+    await supabase.from('workouts').update(data).eq('id', workoutId)
+    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, ...data } : wo) })) } : b)
+  }
+
+  const deleteWorkout = async (workoutId: string) => {
+    await supabase.from('workouts').delete().eq('id', workoutId)
+    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.filter(wo => wo.id !== workoutId) })) } : b)
+  }
+
+  const addExercise = async (workoutId: string, ex: Exercise) => {
+    setSaving(true)
+    const workout = block?.weeks?.flatMap(w => w.workouts ?? []).find(w => w.id === workoutId)
+    const order = (workout?.workout_exercises?.length ?? 0) + 1
+    const { data, error } = await supabase.from('workout_exercises').insert({ workout_id: workoutId, exercise_id: ex.id, exercise_order: order, planned_sets: 3, planned_reps: '5' }).select('*, exercise:exercises(*)').single()
+    if (!error && data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, workout_exercises: [...(wo.workout_exercises ?? []), data] } : wo) })) } : b)
+    setSaving(false)
+  }
+
+  const updateExercise = async (weId: string, data: Partial<WorkoutExercise>) => {
+    await supabase.from('workout_exercises').update(data).eq('id', weId)
+    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.map(we => we.id === weId ? { ...we, ...data } : we) })) })) } : b)
+  }
+
+  const deleteExercise = async (weId: string) => {
+    await supabase.from('workout_exercises').delete().eq('id', weId)
+    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.filter(we => we.id !== weId) })) })) } : b)
+  }
+
+  const addNote = async () => {
+    if (!newNote.trim()) return
+    const { data, error } = await supabase.from('athlete_notes').insert({ athlete_id: athlete.id, admin_id: adminId, content: newNote.trim() }).select('*').single()
+    if (!error && data) { setNotes(n => [data as AthleteNote, ...n]); setNewNote('') }
+  }
+
+  const deleteNote = async (noteId: string) => {
+    await supabase.from('athlete_notes').delete().eq('id', noteId)
+    setNotes(n => n.filter(x => x.id !== noteId))
+  }
+
+  const duplicateBlockTo = async (targetAthleteId: string, newName: string) => {
+    if (!duplicateBlock) return
+    setSaving(true)
+    // Create new block
+    const { data: newBlock } = await supabase.from('blocks').insert({
+      athlete_id: targetAthleteId, name: newName,
+      start_date: duplicateBlock.start_date, end_date: duplicateBlock.end_date,
+      status: 'planned', goal: duplicateBlock.goal
+    }).select('*').single()
+    if (!newBlock) { setSaving(false); return }
+    // Duplicate weeks and workouts
+    for (const week of (duplicateBlock.weeks ?? [])) {
+      const { data: newWeek } = await supabase.from('weeks').insert({ block_id: newBlock.id, week_number: week.week_number, start_date: week.start_date, end_date: week.end_date }).select('*').single()
+      if (!newWeek) continue
+      for (const workout of (week.workouts ?? [])) {
+        const { data: newWorkout } = await supabase.from('workouts').insert({ week_id: newWeek.id, athlete_id: targetAthleteId, day_name: workout.day_name, workout_date: workout.workout_date, completed: false, notes: workout.notes }).select('*').single()
+        if (!newWorkout) continue
+        for (const we of (workout.workout_exercises ?? [])) {
+          await supabase.from('workout_exercises').insert({ workout_id: newWorkout.id, exercise_id: we.exercise_id, exercise_order: we.exercise_order, planned_sets: we.planned_sets, planned_reps: we.planned_reps, planned_weight_kg: we.planned_weight_kg, planned_rpe: we.planned_rpe, planned_tempo: we.planned_tempo, planned_rest_seconds: we.planned_rest_seconds })
+        }
+      }
+    }
+    setSaving(false)
+    alert('Blok uspješno dupliciran!')
+    onRefresh()
+  }
+
   return (
-    <div style={{ minHeight: '100vh', background: '#060606', color: '#fff', fontFamily: "'DM Mono', monospace" }}>
-
-      {/* ══ NAVBAR ════════════════════════════════════════════════ */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '64px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 40px', background: 'rgba(6,6,6,0.98)',
-        borderBottom: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(20px)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '38px' }} />
-          <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
-          <div>
-            <div style={{ fontSize: '0.55rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.25)' }}>ADMIN PANEL</div>
-            <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>{adminName}</div>
+    <div style={{ animation: 'fadeUp 0.4s ease' }}>
+      {/* Back + Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '32px' }}>
+        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', padding: '8px 16px', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', transition: 'all 0.2s' }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#fff'; e.currentTarget.style.color = '#fff' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}>
+          <ChevronLeft size={13} /> NAZAD
+        </button>
+        <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(255,255,255,0.15) 0%,rgba(255,255,255,0.05) 100%)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fm)', flexShrink: 0 }}>{initials}</div>
+        <div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)', lineHeight: 1 }}>{athlete.full_name}</div>
+          <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.2em', marginTop: '4px' }}>
+            {athlete.email} · <span style={{ color: '#4ade80' }}>LIFTER</span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button onClick={() => router.push('/training')} style={{ ...S.btnSecondary, padding: '8px 16px', fontSize: '0.6rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Users size={12} /> ATLETI
-          </button>
-          <button onClick={logout} style={{ ...S.btnSecondary, padding: '8px 16px', fontSize: '0.6rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <LogOut size={12} /> ODJAVA
-          </button>
+        {/* Quick stats */}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          {[{ val: allBlocks.length, label: 'BLOKOVA' }, { val: totalWorkouts, label: 'TRENINGA' }, { val: `${progress}%`, label: 'NAPREDAK' }].map((s, i) => (
+            <div key={i} style={{ padding: '12px 20px', background: '#08080a', textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', fontWeight: 800, color: '#fff' }}>{s.val}</div>
+              <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.25em', marginTop: '3px' }}>{s.label}</div>
+            </div>
+          ))}
         </div>
-      </nav>
+      </div>
 
-      {/* ══ STEP BAR ══════════════════════════════════════════════ */}
-      <div style={{
-        position: 'fixed', top: '64px', left: 0, right: 0, zIndex: 99,
-        background: '#060606', borderBottom: '1px solid rgba(255,255,255,0.06)',
-        padding: '0 40px', display: 'flex', alignItems: 'center', height: '52px', gap: '0',
-      }}>
-        {STEPS.map((s, i) => (
-          <div key={s} style={{ display: 'flex', alignItems: 'center' }}>
-            <button
-              onClick={() => i < step && setStep(i)}
-              style={{
-                background: 'none', border: 'none', cursor: i < step ? 'pointer' : 'default',
-                display: 'flex', alignItems: 'center', gap: '8px', padding: '0 16px',
-                fontFamily: "'DM Mono', monospace",
-              }}
-            >
-              <div style={{
-                width: '22px', height: '22px', borderRadius: '50%', display: 'flex',
-                alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 800,
-                background: i < step ? '#fff' : i === step ? 'rgba(255,255,255,0.15)' : 'transparent',
-                border: i === step ? '1px solid rgba(255,255,255,0.4)' : i < step ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                color: i < step ? '#000' : i === step ? '#fff' : 'rgba(255,255,255,0.3)',
-                transition: '0.3s',
-              }}>
-                {i < step ? <Check size={11} /> : i + 1}
-              </div>
-              <span style={{
-                fontSize: '0.6rem', letterSpacing: '0.2em', fontWeight: 700,
-                color: i === step ? '#fff' : i < step ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)',
-                transition: '0.3s',
-              }}>{s}</span>
-            </button>
-            {i < STEPS.length - 1 && (
-              <div style={{ width: '30px', height: '1px', background: i < step ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)' }} />
-            )}
-          </div>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '0', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '28px' }}>
+        {([['program', 'PROGRAM'], ['stats', 'STATISTIKE'], ['notes', 'BILJEŠKE']] as [string, string][]).map(([tab, label]) => (
+          <button key={tab} onClick={() => setActiveTab(tab as any)}
+            style={{ padding: '12px 24px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700, color: activeTab === tab ? '#fff' : 'rgba(255,255,255,0.3)', borderBottom: `2px solid ${activeTab === tab ? '#fff' : 'transparent'}`, transition: 'all 0.2s', marginBottom: '-1px' }}>
+            {label}
+          </button>
         ))}
       </div>
 
-      {/* ══ MAIN ══════════════════════════════════════════════════ */}
-      <div style={{ paddingTop: '130px', maxWidth: '1100px', margin: '0 auto', padding: '150px 40px 80px' }}>
-
-        {/* ── STEP 0: ODABIR ATLETA ─────────────────────────────── */}
-        {step === 0 && (
-          <div>
-            <div style={{ marginBottom: '50px' }}>
-              <div style={{ fontSize: '0.6rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px' }}>KORAK 1/5</div>
-              <h1 style={{ fontSize: '3.5rem', fontWeight: 700, lineHeight: 1, marginBottom: '12px' }}>ODABERI<br/><span style={{ color: 'rgba(255,255,255,0.25)' }}>ATLETA</span></h1>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>Za kojeg atleta kreiraš novi trening blok?</p>
+      {/* PROGRAM TAB */}
+      {activeTab === 'program' && (
+        <div>
+          {/* Block bar */}
+          <div style={{ position: 'relative', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <button onClick={() => setShowBlockMenu(!showBlockMenu)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px', background: 'transparent', border: 'none', cursor: 'pointer', flex: 1, textAlign: 'left', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+                <FolderOpen size={14} color="rgba(255,255,255,0.3)" />
+                <div>
+                  <div style={{ fontSize: '0.5rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginBottom: '2px' }}>AKTIVNI BLOK</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)' }}>{block?.name ?? 'Nema bloka'}</div>
+                </div>
+                <ChevronDown size={13} color="rgba(255,255,255,0.3)" style={{ marginLeft: 'auto', transform: showBlockMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+              </button>
+              {block && (
+                <button onClick={() => setDuplicateBlock(block)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: '0.62rem', letterSpacing: '0.18em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', flexShrink: 0 }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'transparent' }}>
+                  <Copy size={12} /> DUPLICIRAJ
+                </button>
+              )}
+              <button onClick={createBlock} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: '0.62rem', letterSpacing: '0.18em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', flexShrink: 0 }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'transparent' }}>
+                <Plus size={12} /> NOVI BLOK
+              </button>
+              {saving && <div style={{ padding: '0 14px', display: 'flex', alignItems: 'center', borderLeft: '1px solid rgba(255,255,255,0.06)' }}><Loader2 size={12} color="rgba(255,255,255,0.3)" style={{ animation: 'spin 1s linear infinite' }} /></div>}
             </div>
 
-            {athletes.length === 0 ? (
-              <div style={{ ...S.card, textAlign: 'center', padding: '60px' }}>
-                <AlertCircle size={32} style={{ color: 'rgba(255,255,255,0.2)', marginBottom: '16px' }} />
-                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>Nema atleta u sustavu. Dodaj atleta kroz Supabase Auth.</p>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-                {athletes.map(a => (
-                  <div
-                    key={a.id}
-                    onClick={() => setSelectedAthlete(a)}
-                    style={{
-                      ...S.card,
-                      cursor: 'pointer', transition: 'all 0.25s',
-                      borderColor: selectedAthlete?.id === a.id ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.08)',
-                      background: selectedAthlete?.id === a.id ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
-                    }}
-                    onMouseEnter={e => { if (selectedAthlete?.id !== a.id) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' } }}
-                    onMouseLeave={e => { if (selectedAthlete?.id !== a.id) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' } }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '6px' }}>{a.full_name}</div>
-                        <div style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>{a.role}</div>
-                      </div>
-                      {selectedAthlete?.id === a.id && (
-                        <div style={{ width: '24px', height: '24px', background: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Check size={13} color="#000" />
-                        </div>
-                      )}
+            {showBlockMenu && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, background: '#0f0f12', border: '1px solid rgba(255,255,255,0.1)', borderTop: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.5)', maxHeight: '280px', overflowY: 'auto' }}>
+                {allBlocks.map(b => (
+                  <button key={b.id} onClick={() => switchBlock(b.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px', background: b.id === block?.id ? 'rgba(255,255,255,0.04)' : 'transparent', border: 'none', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.04)', textAlign: 'left', transition: 'background 0.15s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                    onMouseLeave={e => e.currentTarget.style.background = b.id === block?.id ? 'rgba(255,255,255,0.04)' : 'transparent'}>
+                    <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.status === 'active' ? '#4ade80' : b.status === 'completed' ? '#60a5fa' : 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', fontFamily: 'var(--fm)' }}>{b.name}</div>
+                      <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', marginTop: '1px' }}>{b.start_date} — {b.end_date}</div>
                     </div>
-                  </div>
+                    {b.id === block?.id && <Check size={12} color="#4ade80" />}
+                  </button>
                 ))}
               </div>
             )}
-
-            <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => selectedAthlete && setStep(1)}
-                disabled={!selectedAthlete}
-                style={{ ...S.btnPrimary, opacity: selectedAthlete ? 1 : 0.3, display: 'flex', alignItems: 'center', gap: '10px' }}
-              >
-                DALJE <ChevronRight size={14} />
-              </button>
-            </div>
+            {showBlockMenu && <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowBlockMenu(false)} />}
           </div>
-        )}
 
-        {/* ── STEP 1: BLOK INFO ─────────────────────────────────── */}
-        {step === 1 && (
-          <div>
-            <div style={{ marginBottom: '50px' }}>
-              <div style={{ fontSize: '0.6rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px' }}>KORAK 2/5 · {selectedAthlete?.full_name}</div>
-              <h1 style={{ fontSize: '3.5rem', fontWeight: 700, lineHeight: 1, marginBottom: '12px' }}>NOVI<br/><span style={{ color: 'rgba(255,255,255,0.25)' }}>BLOK</span></h1>
+          {loadingBlock ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '60px 0', color: 'rgba(255,255,255,0.3)' }}>
+              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+              <span style={{ fontSize: '0.75rem', letterSpacing: '0.2em' }}>UČITAVANJE...</span>
             </div>
-
-            <div style={{ ...S.card, maxWidth: '600px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-
-                <div>
-                  <label style={S.label}>NAZIV BLOKA</label>
-                  <input style={S.input} value={blockName} onChange={e => setBlockName(e.target.value)}
-                    placeholder="npr. Hypertrophy Block 1"
-                    onFocus={e => e.target.style.borderColor = 'rgba(255,255,255,0.4)'}
-                    onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
-                  />
-                </div>
-
-                <div>
-                  <label style={S.label}>CILJ BLOKA</label>
-                  <input style={S.input} value={blockGoal} onChange={e => setBlockGoal(e.target.value)}
-                    placeholder="npr. Povećanje volumena i radnog kapaciteta"
-                    onFocus={e => e.target.style.borderColor = 'rgba(255,255,255,0.4)'}
-                    onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                  <div>
-                    <label style={S.label}>POČETAK</label>
-                    <input type="date" style={S.input} value={blockStart} onChange={e => setBlockStart(e.target.value)}
-                      onFocus={e => e.target.style.borderColor = 'rgba(255,255,255,0.4)'}
-                      onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
-                    />
-                  </div>
-                  <div>
-                    <label style={S.label}>BROJ TJEDANA</label>
-                    <select style={{ ...S.input, cursor: 'pointer' }} value={blockWeekCount} onChange={e => setBlockWeekCount(Number(e.target.value))}>
-                      {[2, 3, 4, 5, 6, 8, 10, 12].map(n => (
-                        <option key={n} value={n} style={{ background: '#1a1a1a' }}>{n} tjedna</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Preview */}
-                <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px' }}>PREGLED</div>
-                  <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>
-                    {fmt(blockStart)} → {fmt(addDays(blockStart, blockWeekCount * 7 - 1))}
-                    <span style={{ color: 'rgba(255,255,255,0.3)', marginLeft: '12px' }}>· {blockWeekCount * 3} treninga</span>
-                  </div>
-                </div>
-
-              </div>
+          ) : !block ? (
+            <div style={{ textAlign: 'center', padding: '60px 0' }}>
+              <div style={{ fontFamily: 'var(--fd)', fontSize: '3rem', opacity: 0.1, marginBottom: '12px' }}>00</div>
+              <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '24px' }}>NEMA AKTIVNOG BLOKA</div>
+              <button onClick={createBlock} style={{ padding: '12px 28px', background: '#fff', border: 'none', color: '#000', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700 }}>+ KREIRAJ PRVI BLOK</button>
             </div>
-
-            <div style={{ marginTop: '40px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button onClick={() => setStep(0)} style={{ ...S.btnSecondary, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ArrowLeft size={12} /> NATRAG
-              </button>
-              <button
-                onClick={() => { generateWeeks(); setStep(2) }}
-                disabled={!blockName}
-                style={{ ...S.btnPrimary, opacity: blockName ? 1 : 0.3, display: 'flex', alignItems: 'center', gap: '10px' }}
-              >
-                GENERIRAJ TJEDNE <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 2: TJEDNI PREGLED ────────────────────────────── */}
-        {step === 2 && (
-          <div>
-            <div style={{ marginBottom: '40px' }}>
-              <div style={{ fontSize: '0.6rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px' }}>KORAK 3/5 · {selectedAthlete?.full_name}</div>
-              <h1 style={{ fontSize: '3.5rem', fontWeight: 700, lineHeight: 1, marginBottom: '12px' }}>
-                TJEDNI<br/><span style={{ color: 'rgba(255,255,255,0.25)' }}>STRUKTURA</span>
-              </h1>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>Podesi nazive i datume treninga po tjednima.</p>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {weeks.map((week, wi) => (
-                <div key={wi} style={{ ...S.card }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <div style={{ fontSize: '1.4rem', fontWeight: 700 }}>TJEDAN {week.week_number}</div>
-                      <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>
-                        {fmt(week.start_date)} — {fmt(week.end_date)}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setWeeks(prev => {
-                          const next = structuredClone(prev)
-                          next[wi].workouts.push(newWorkout(`Trening ${String.fromCharCode(65 + next[wi].workouts.length)}`, addDays(week.start_date, next[wi].workouts.length * 2)))
-                          return next
-                        })
-                      }}
-                      style={{ ...S.btnSecondary, padding: '8px 16px', fontSize: '0.6rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <Plus size={12} /> TRENING
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
-                    {week.workouts.map((wo, woi) => (
-                      <div key={woi} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', padding: '16px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                          <input
-                            value={wo.day_name}
-                            onChange={e => setWeeks(prev => { const next = structuredClone(prev); next[wi].workouts[woi].day_name = e.target.value; return next })}
-                            style={{ ...S.input, padding: '6px 10px', fontSize: '0.8rem', width: 'auto', flex: 1, marginRight: '8px' }}
-                          />
-                          <button onClick={() => setWeeks(prev => { const next = structuredClone(prev); next[wi].workouts.splice(woi, 1); return next })}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '6px', transition: '0.2s' }}
-                            onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,80,80,0.7)'}
-                            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                        <input
-                          type="date"
-                          value={wo.workout_date}
-                          onChange={e => setWeeks(prev => { const next = structuredClone(prev); next[wi].workouts[woi].workout_date = e.target.value; return next })}
-                          style={{ ...S.input, padding: '6px 10px', fontSize: '0.75rem' }}
-                        />
-                        <div style={{ marginTop: '8px', fontSize: '0.6rem', color: 'rgba(255,255,255,0.25)' }}>
-                          {wo.exercises.length} vježbi
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ marginTop: '40px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button onClick={() => setStep(1)} style={{ ...S.btnSecondary, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ArrowLeft size={12} /> NATRAG
-              </button>
-              <button onClick={() => setStep(3)} style={{ ...S.btnPrimary, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                DODAJ VJEŽBE <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 3: VJEŽBE ────────────────────────────────────── */}
-        {step === 3 && (
-          <div>
-            <div style={{ marginBottom: '30px' }}>
-              <div style={{ fontSize: '0.6rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px' }}>KORAK 4/5 · {selectedAthlete?.full_name}</div>
-              <h1 style={{ fontSize: '3rem', fontWeight: 700, lineHeight: 1, marginBottom: '12px' }}>
-                VJEŽBE<br/><span style={{ color: 'rgba(255,255,255,0.25)' }}>PO TRENINZIMA</span>
-              </h1>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '24px', alignItems: 'start' }}>
-
-              {/* Left: week/workout selector */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {weeks.map((week, wi) => (
-                  <div key={wi}>
-                    <div style={{ fontSize: '0.58rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.25)', padding: '10px 12px 6px', fontWeight: 700 }}>
-                      TJEDAN {week.week_number}
-                    </div>
-                    {week.workouts.map((wo, woi) => {
-                      const isActive = activeWeekIdx === wi && activeWorkoutIdx === woi
-                      return (
-                        <button key={woi} onClick={() => { setActiveWeekIdx(wi); setActiveWorkoutIdx(woi); setExpandedExercise(null) }} style={{
-                          width: '100%', textAlign: 'left', padding: '12px 16px',
-                          background: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
-                          border: '1px solid', borderColor: isActive ? 'rgba(255,255,255,0.2)' : 'transparent',
-                          cursor: 'pointer', transition: '0.2s', fontFamily: "'DM Mono', monospace",
-                          marginBottom: '4px',
-                        }}
-                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
-                          onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
-                        >
-                          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: isActive ? '#fff' : 'rgba(255,255,255,0.6)', marginBottom: '3px' }}>{wo.day_name}</div>
-                          <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>{fmt(wo.workout_date)} · {wo.exercises.length} vj.</div>
-                        </button>
-                      )
-                    })}
-                  </div>
-                ))}
-              </div>
-
-              {/* Right: exercise editor */}
-              {currentWorkout && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '4px' }}>{currentWorkout.day_name}</h3>
-                      <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em' }}>{fmt(currentWorkout.workout_date)}</div>
-                    </div>
-                    <button
-                      onClick={() => setShowExercisePicker(true)}
-                      style={{ ...S.btnPrimary, padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}
-                    >
-                      <Plus size={14} /> DODAJ VJEŽBU
-                    </button>
-                  </div>
-
-                  {currentWorkout.exercises.length === 0 ? (
-                    <div style={{ ...S.card, textAlign: 'center', padding: '60px', borderStyle: 'dashed' }}>
-                      <Dumbbell size={28} style={{ color: 'rgba(255,255,255,0.15)', marginBottom: '12px' }} />
-                      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', margin: 0 }}>
-                        Klikni "DODAJ VJEŽBU" za početak
-                      </p>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {currentWorkout.exercises.map((ex, ei) => (
-                        <div key={ei} style={{
-                          border: '1px solid', borderColor: expandedExercise === ei ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)',
-                          background: expandedExercise === ei ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
-                          transition: '0.2s',
-                        }}>
-                          {/* Exercise header */}
-                          <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }}
-                            onClick={() => setExpandedExercise(expandedExercise === ei ? null : ei)}
-                          >
-                            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.25)', fontWeight: 700, width: '24px' }}>{String(ei + 1).padStart(2, '0')}</div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '3px' }}>{ex.exercise_name || 'Nepoznata vježba'}</div>
-                              <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em' }}>
-                                {ex.planned_sets}×{ex.planned_reps} · {ex.planned_weight_kg}kg · RPE {ex.planned_rpe}
-                              </div>
-                            </div>
-                            <button onClick={e => { e.stopPropagation(); removeExercise(ei) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '4px', transition: '0.2s' }}
-                              onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,80,80,0.7)'}
-                              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                            <div style={{ color: 'rgba(255,255,255,0.3)' }}>
-                              {expandedExercise === ei ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                            </div>
-                          </div>
-
-                          {/* Expanded fields */}
-                          {expandedExercise === ei && (
-                            <div style={{ padding: '0 20px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                              <div style={{ paddingTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '14px' }}>
-                                {[
-                                  { key: 'planned_sets', label: 'SETOVI', type: 'number' },
-                                  { key: 'planned_reps', label: 'PONAVLJANJA', type: 'text' },
-                                  { key: 'planned_weight_kg', label: 'KILAŽA (kg)', type: 'number' },
-                                  { key: 'planned_rpe', label: 'RPE', type: 'number' },
-                                  { key: 'planned_rest_seconds', label: 'ODMOR (s)', type: 'number' },
-                                ].map(f => (
-                                  <div key={f.key}>
-                                    <label style={S.label}>{f.label}</label>
-                                    <input
-                                      type={f.type}
-                                      value={(ex as any)[f.key]}
-                                      onChange={e => updateExercise(ei, f.key as keyof WorkoutExercise, f.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value)}
-                                      style={{ ...S.input, padding: '8px 12px', fontSize: '0.85rem' }}
-                                      onFocus={e => e.target.style.borderColor = 'rgba(255,255,255,0.4)'}
-                                      onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                              <div style={{ marginTop: '14px' }}>
-                                <label style={S.label}>NAPOMENA ZA ATLETA</label>
-                                <input
-                                  value={ex.notes}
-                                  onChange={e => updateExercise(ei, 'notes', e.target.value)}
-                                  placeholder="Tehnika, fokus, uputa..."
-                                  style={{ ...S.input, padding: '8px 12px', fontSize: '0.85rem' }}
-                                  onFocus={e => e.target.style.borderColor = 'rgba(255,255,255,0.4)'}
-                                  onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+          ) : (
+            <>
+              {(block.weeks?.length ?? 0) === 0 && (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '16px' }}>BLOK JE PRAZAN — DODAJ TJEDAN</div>
               )}
-            </div>
-
-            <div style={{ marginTop: '40px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button onClick={() => setStep(2)} style={{ ...S.btnSecondary, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ArrowLeft size={12} /> NATRAG
-              </button>
-              <button onClick={() => setStep(4)} style={{ ...S.btnPrimary, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                PREGLED <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 4: PREGLED & SAVE ────────────────────────────── */}
-        {step === 4 && (
-          <div>
-            <div style={{ marginBottom: '40px' }}>
-              <div style={{ fontSize: '0.6rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px' }}>KORAK 5/5 · FINALNI PREGLED</div>
-              <h1 style={{ fontSize: '3.5rem', fontWeight: 700, lineHeight: 1, marginBottom: '12px' }}>
-                PREGLED<br/><span style={{ color: 'rgba(255,255,255,0.25)' }}>& SPREMI</span>
-              </h1>
-            </div>
-
-            {savedSuccess ? (
-              // Success state
-              <div style={{ ...S.card, textAlign: 'center', padding: '80px', borderColor: 'rgba(100,255,100,0.3)', background: 'rgba(100,255,100,0.05)' }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(100,255,100,0.15)', border: '1px solid rgba(100,255,100,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                  <Check size={28} color="rgba(100,255,100,0.9)" />
-                </div>
-                <h2 style={{ fontSize: '2rem', marginBottom: '12px', color: 'rgba(100,255,100,0.9)' }}>BLOK KREIRAN!</h2>
-                <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '40px' }}>
-                  Trening program za {selectedAthlete?.full_name} je uspješno dodan.
-                </p>
-                <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-                  <button onClick={() => { setStep(0); setSelectedAthlete(null); setBlockName(''); setBlockGoal(''); setWeeks([]); setSavedSuccess(false) }}
-                    style={{ ...S.btnPrimary }}>
-                    NOVI BLOK
-                  </button>
-                  <button onClick={() => router.push('/training')} style={{ ...S.btnSecondary }}>
-                    NA TRENING
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Summary */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
-                  <div style={S.card}>
-                    <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '16px' }}>BLOK INFO</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {[
-                        ['ATLET', selectedAthlete?.full_name],
-                        ['NAZIV', blockName],
-                        ['CILJ', blockGoal || '—'],
-                        ['TRAJANJE', `${fmt(blockStart)} → ${fmt(addDays(blockStart, blockWeekCount * 7 - 1))}`],
-                        ['TJEDNA', blockWeekCount],
-                      ].map(([k, v]) => (
-                        <div key={k as string} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                          <span style={{ color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em', fontSize: '0.65rem' }}>{k}</span>
-                          <span style={{ color: '#fff', fontWeight: 600 }}>{v}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={S.card}>
-                    <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '16px' }}>STATISTIKA</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {[
-                        ['UKUPNO TJEDANA', weeks.length],
-                        ['UKUPNO TRENINGA', weeks.reduce((a, w) => a + w.workouts.filter(wo => wo.exercises.length > 0).length, 0)],
-                        ['UKUPNO VJEŽBI', weeks.reduce((a, w) => a + w.workouts.reduce((b, wo) => b + wo.exercises.length, 0), 0)],
-                      ].map(([k, v]) => (
-                        <div key={k as string} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                          <span style={{ color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em', fontSize: '0.65rem' }}>{k}</span>
-                          <span style={{ fontSize: '1.4rem', fontWeight: 700 }}>{v}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Week breakdown */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '30px' }}>
-                  {weeks.map((week, wi) => (
-                    <div key={wi} style={{ ...S.card, padding: '20px 30px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>TJEDAN {week.week_number}</span>
-                          <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>{fmt(week.start_date)} — {fmt(week.end_date)}</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {week.workouts.filter(wo => wo.exercises.length > 0).map((wo, woi) => (
-                            <div key={woi} style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
-                              {wo.day_name} <span style={{ color: 'rgba(255,255,255,0.4)' }}>({wo.exercises.length})</span>
-                            </div>
-                          ))}
-                          {week.workouts.filter(wo => wo.exercises.length > 0).length === 0 && (
-                            <span style={{ fontSize: '0.65rem', color: 'rgba(255,80,80,0.6)' }}>Nema vježbi</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {saveError && (
-                  <div style={{ padding: '16px', background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.2)', color: 'rgba(255,80,80,0.9)', fontSize: '0.8rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <AlertCircle size={16} /> {saveError}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                  <button onClick={() => setStep(3)} style={{ ...S.btnSecondary, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <ArrowLeft size={12} /> NATRAG
-                  </button>
-                  <button
-                    onClick={saveAll}
-                    disabled={saving}
-                    style={{ ...S.btnPrimary, display: 'flex', alignItems: 'center', gap: '10px', opacity: saving ? 0.7 : 1, minWidth: '180px', justifyContent: 'center' }}
-                  >
-                    {saving ? (
-                      <>
-                        <div style={{ width: '14px', height: '14px', border: '2px solid rgba(0,0,0,0.3)', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                        SPREMA...
-                      </>
-                    ) : (
-                      <><Save size={14} /> SPREMI BLOK</>
-                    )}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-      </div>
-
-      {/* ══ EXERCISE PICKER MODAL ═════════════════════════════════ */}
-      {showExercisePicker && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.95)',
-          backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '40px', animation: 'fadeIn 0.2s ease',
-        }} onClick={() => setShowExercisePicker(false)}>
-          <div style={{
-            width: '100%', maxWidth: '700px', background: '#0a0a0a',
-            border: '1px solid rgba(255,255,255,0.1)', maxHeight: '80vh',
-            display: 'flex', flexDirection: 'column', animation: 'slideUp 0.3s ease',
-          }} onClick={e => e.stopPropagation()}>
-
-            {/* Header */}
-            <div style={{ padding: '24px 30px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: '0.7rem', letterSpacing: '0.3em', fontWeight: 700 }}>ODABERI VJEŽBU</div>
-              <button onClick={() => setShowExercisePicker(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' }}>
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Search */}
-            <div style={{ padding: '16px 30px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-              <input
-                autoFocus
-                value={exerciseSearch}
-                onChange={e => setExerciseSearch(e.target.value)}
-                placeholder="Pretraži vježbe..."
-                style={{ ...S.input, padding: '10px 14px' }}
-              />
-            </div>
-
-            {/* Exercise list */}
-            <div style={{ overflowY: 'auto', flex: 1, padding: '10px 0' }}>
-              {Object.entries(exercisesByCategory).map(([cat, exList]) => (
-                <div key={cat}>
-                  <div style={{ padding: '10px 30px 6px', fontSize: '0.58rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.25)', fontWeight: 700 }}>{cat}</div>
-                  {exList.map(ex => (
-                    <button key={ex.id} onClick={() => addExercise(ex)} style={{
-                      width: '100%', textAlign: 'left', padding: '12px 30px',
-                      background: 'transparent', border: 'none', cursor: 'pointer',
-                      color: '#fff', fontSize: '0.9rem', transition: '0.15s',
-                      fontFamily: "'DM Mono', monospace", display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <span>{ex.name}</span>
-                      <Plus size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
-                    </button>
-                  ))}
-                </div>
+              {block.weeks?.map(week => (
+                <WeekPanel key={week.id} week={week} exercises={exercises} onDeleteWeek={deleteWeek} onAddWorkout={addWorkout} onUpdateWorkout={updateWorkout} onDeleteWorkout={deleteWorkout} onAddExercise={addExercise} onUpdateExercise={updateExercise} onDeleteExercise={deleteExercise} />
               ))}
-              {Object.keys(exercisesByCategory).length === 0 && (
-                <div style={{ padding: '40px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>
-                  Nema rezultata za "{exerciseSearch}"
-                </div>
-              )}
+              <button onClick={addWeek} style={{ width: '100%', padding: '16px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '0.68rem', letterSpacing: '0.3em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)' }}>
+                <Plus size={13} /> DODAJ TJEDAN {block.weeks ? `${block.weeks.length + 1}` : '1'}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* STATS TAB */}
+      {activeTab === 'stats' && (
+        <div style={{ animation: 'fadeUp 0.3s ease' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '24px' }}>
+            {[
+              { val: allBlocks.length, label: 'UKUPNO BLOKOVA', sub: `${allBlocks.filter(b => b.status === 'active').length} aktivnih` },
+              { val: totalWorkouts, label: 'TRENINGA U BLOKU', sub: `${completedWorkouts} završenih` },
+              { val: totalEx, label: 'VJEŽBI U BLOKU', sub: 'planirano' },
+            ].map((s, i) => (
+              <div key={i} style={{ padding: '28px 24px', background: '#08080a', textAlign: 'center' }}>
+                <div style={{ fontFamily: 'var(--fd)', fontSize: '2.5rem', fontWeight: 800, color: '#fff', lineHeight: 1, marginBottom: '6px' }}>{s.val}</div>
+                <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.28em', marginBottom: '4px' }}>{s.label}</div>
+                <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)' }}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Progress bar */}
+          <div style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)' }}>NAPREDAK AKTIVNOG BLOKA</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)' }}>{progress}%</div>
             </div>
+            <div style={{ height: '6px', background: 'rgba(255,255,255,0.07)' }}>
+              <div style={{ height: '100%', width: `${progress}%`, background: progress > 66 ? '#4ade80' : progress > 33 ? '#facc15' : '#f87171', transition: 'width 1s cubic-bezier(0.16,1,0.3,1)' }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+              <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.25)' }}>{completedWorkouts} završeno</span>
+              <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.25)' }}>{totalWorkouts - completedWorkouts} preostalo</span>
+            </div>
+          </div>
+
+          {/* All blocks list */}
+          <div style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>SVI BLOKOVI</div>
+            {allBlocks.length === 0 ? (
+              <div style={{ padding: '24px', color: 'rgba(255,255,255,0.2)', fontSize: '0.8rem', textAlign: 'center' }}>Nema blokova.</div>
+            ) : allBlocks.map(b => (
+              <div key={b.id} style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: b.status === 'active' ? '#4ade80' : b.status === 'completed' ? '#60a5fa' : 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', fontFamily: 'var(--fm)' }}>{b.name}</div>
+                  <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>{b.start_date} — {b.end_date}</div>
+                </div>
+                <div style={{ fontSize: '0.6rem', color: b.status === 'active' ? '#4ade80' : b.status === 'completed' ? '#60a5fa' : 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700 }}>{b.status.toUpperCase()}</div>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
+      {/* NOTES TAB */}
+      {activeTab === 'notes' && (
+        <div style={{ animation: 'fadeUp 0.3s ease' }}>
+          {/* New note */}
+          <div style={{ marginBottom: '20px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
+            <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>NOVA BILJEŠKA ZA LIFTAČA</div>
+            <textarea
+              value={newNote}
+              onChange={e => setNewNote(e.target.value)}
+              placeholder="Upiši bilješku, feedback, ili uputu..."
+              style={{ width: '100%', minHeight: '100px', background: 'transparent', border: 'none', padding: '16px 18px', color: '#fff', fontSize: '0.88rem', fontFamily: 'var(--fm)', outline: 'none', resize: 'vertical', boxSizing: 'border-box', lineHeight: 1.6 }}
+            />
+            <div style={{ padding: '10px 14px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={addNote} disabled={!newNote.trim()} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 20px', background: newNote.trim() ? '#fff' : 'rgba(255,255,255,0.06)', border: 'none', color: newNote.trim() ? '#000' : 'rgba(255,255,255,0.2)', cursor: newNote.trim() ? 'pointer' : 'not-allowed', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}>
+                <MessageSquare size={12} /> POŠALJI BILJEŠKU
+              </button>
+            </div>
+          </div>
+
+          {/* Notes list */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {notes.length === 0 ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', letterSpacing: '0.15em', border: '1px dashed rgba(255,255,255,0.08)' }}>Nema bilješki za ovog liftača.</div>
+            ) : notes.map(note => (
+              <div key={note.id} style={{ padding: '16px 18px', border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)', position: 'relative' }}>
+                <div style={{ fontSize: '0.88rem', color: '#fff', lineHeight: 1.6, fontFamily: 'var(--fm)', marginBottom: '10px' }}>{note.content}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>{new Date(note.created_at).toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                  <button onClick={() => deleteNote(note.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.15)', transition: 'color 0.2s', padding: '4px' }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#ff4444'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.15)'}>
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {duplicateBlock && (
+        <DuplicateModal block={duplicateBlock} athletes={allAthletes} onConfirm={duplicateBlockTo} onClose={() => setDuplicateBlock(null)} />
+      )}
+    </div>
+  )
+}
+
+// ── Main Admin Page ────────────────────────────────────────────────
+export default function AdminPage() {
+  const [adminName, setAdminName] = useState('')
+  const [adminId, setAdminId] = useState('')
+  const [athletes, setAthletes] = useState<AthleteProfile[]>([])
+  const [exercises, setExercises] = useState<Exercise[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedAthlete, setSelectedAthlete] = useState<AthleteProfile | null>(null)
+  const [searchQ, setSearchQ] = useState('')
+  const [managingUsers, setManagingUsers] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+
+  const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
+
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true)
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError || !user) {
+          setError('Nisi prijavljen/a.')
+          setLoading(false)
+          return
+        }
+
+        setAdminId(user.id)
+
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name, role')
+          .eq('id', user.id)
+          .single()
+
+        // Debug: log what we got
+        console.log('Profile data:', profile, 'Profile error:', profileError)
+
+        if (profileError) {
+          setError(`Greška čitanja profila: ${profileError.message}. Provjeri RLS policies na tablici profiles.`)
+          setLoading(false)
+          return
+        }
+
+        if (!profile) {
+          setError('Profil ne postoji u bazi.')
+          setLoading(false)
+          return
+        }
+
+        if (profile.role !== 'admin') {
+          setError(`Pristup odbijen — tvoja rola je "${profile.role}", treba biti "admin".`)
+          setLoading(false)
+          return
+        }
+
+        setAdminName(profile.full_name ?? 'Admin')
+
+        const { data: exData } = await supabase.from('exercises').select('*').order('category').order('name')
+        setExercises(exData ?? [])
+
+        await loadAthletes()
+      } catch (e: any) {
+        setError(`Neočekivana greška: ${e?.message ?? String(e)}`)
+      } finally {
+        setLoading(false)
+      }
+    }
+    init()
+  }, [])
+
+  const loadAthletes = async () => {
+    // Load all profiles with lifter or other roles
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, role, created_at')
+      .neq('role', 'admin')
+      .order('full_name')
+
+    if (data) {
+      // Load emails from auth.users - NOTE: requires service role in production
+      // For now we use profile data only
+      const withBlocks = await Promise.all(data.map(async (p) => {
+        const { data: blocks } = await supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', p.id)
+        const { data: notes } = await supabase.from('athlete_notes').select('id').eq('athlete_id', p.id)
+        return { ...p, blocks: blocks ?? [], notes: notes ?? [] } as AthleteProfile
+      }))
+      setAthletes(withBlocks)
+    }
+  }
+
+  const updateRole = async (athleteId: string, newRole: string) => {
+    await supabase.from('profiles').update({ role: newRole }).eq('id', athleteId)
+    setAthletes(a => a.map(x => x.id === athleteId ? { ...x, role: newRole } : x))
+  }
+
+  const deleteUser = async (athleteId: string) => {
+    if (!confirm('Jesi li siguran/na? Ovo će obrisati sve podatke korisnika.')) return
+    // Note: In production, use admin API or edge function to delete auth user
+    await supabase.from('profiles').delete().eq('id', athleteId)
+    setAthletes(a => a.filter(x => x.id !== athleteId))
+    if (selectedAthlete?.id === athleteId) setSelectedAthlete(null)
+  }
+
+  const filteredAthletes = athletes.filter(a =>
+    a.full_name?.toLowerCase().includes(searchQ.toLowerCase())
+  )
+
+  const totalAthletes = athletes.length
+  const activeBlocks = athletes.reduce((s, a) => s + ((a.blocks as Block[])?.filter(b => b.status === 'active').length ?? 0), 0)
+  const totalNotes = athletes.reduce((s, a) => s + ((a.notes as any[])?.length ?? 0), 0)
+
+  if (loading) return (
+    <div style={{ background: '#08080a', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', fontFamily: 'var(--fm)' }}>
+      <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} />
+      <span style={{ fontSize: '0.8rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)' }}>UČITAVANJE ADMIN PANELA...</span>
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+    </div>
+  )
+
+  if (error) return (
+    <div style={{ background: '#08080a', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px', fontFamily: 'var(--fm)', padding: '40px' }}>
+      <AlertCircle size={32} color="#ff4444" />
+      <div style={{ fontSize: '0.9rem', color: '#ff7070', textAlign: 'center', maxWidth: '520px', lineHeight: 1.7 }}>{error}</div>
+      <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+        <button onClick={() => window.location.reload()}
+          style={{ padding: '10px 20px', background: '#fff', border: 'none', color: '#000', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700 }}>
+          POKUŠAJ PONOVO
+        </button>
+        <Link href="/" style={{ padding: '10px 20px', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.4)', fontSize: '0.7rem', letterSpacing: '0.2em', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>← POČETNA</Link>
+      </div>
+      <div style={{ marginTop: '8px', padding: '14px 18px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', maxWidth: '520px' }}>
+        Otvori F12 → Console za više detalja o grešci.
+      </div>
+    </div>
+  )
+
+  return (
+    <div style={{ background: '#08080a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', position: 'relative' }}>
+
+      {/* BG */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
+        <div style={{ position: 'absolute', top: '-150px', right: '-150px', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(220,38,38,0.04) 0%,transparent 70%)' }} />
+        <div style={{ position: 'absolute', bottom: '-100px', left: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,255,255,0.02) 0%,transparent 70%)' }} />
+      </div>
+
+      {/* NAV */}
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, height: '64px', display: 'flex', alignItems: 'center', background: 'rgba(10,10,12,0.98)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', height: '100%', padding: '0 20px', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+            <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '40px' }} />
+          </Link>
+          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', height: '100%', padding: '0 20px', borderRight: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.3)', fontSize: '0.65rem', letterSpacing: '0.2em', fontWeight: 700 }}
+            onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#fff'} onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.3)'}>
+            <Home size={13} /> POČETNA
+          </Link>
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+          <Shield size={13} color="#ef4444" />
+          <span style={{ fontFamily: 'var(--fd)', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.7)' }}>ADMIN PANEL</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 20px', borderLeft: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef4444', boxShadow: '0 0 8px #ef4444' }} />
+            <div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#fff' }}>{adminName}</div>
+              <div style={{ fontSize: '0.5rem', color: '#ef4444', letterSpacing: '0.15em' }}>ADMINISTRATOR</div>
+            </div>
+          </div>
+          <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '100%', padding: '0 20px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: '0.62rem', letterSpacing: '0.2em', fontWeight: 700, transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ff5555'; e.currentTarget.style.background = 'rgba(255,60,60,0.06)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'transparent' }}>
+            <LogOut size={13} /> ODJAVA
+          </button>
+        </div>
+      </nav>
+
+      {/* MAIN */}
+      <div style={{ paddingTop: '64px', position: 'relative', zIndex: 1 }}>
+
+        {selectedAthlete ? (
+          /* ─── ATHLETE DETAIL VIEW ─── */
+          <div style={{ padding: '48px 60px 100px', maxWidth: '1300px', margin: '0 auto' }}>
+            <AthletePanel
+              athlete={selectedAthlete}
+              exercises={exercises}
+              allAthletes={athletes}
+              adminId={adminId}
+              onBack={() => setSelectedAthlete(null)}
+              onRefresh={loadAthletes}
+            />
+          </div>
+        ) : (
+          /* ─── DASHBOARD ─── */
+          <div style={{ padding: '48px 60px 100px', maxWidth: '1400px', margin: '0 auto' }}>
+
+            {/* Hero */}
+            <div style={{ marginBottom: '48px', animation: 'fadeUp 0.6s ease' }}>
+              <div style={{ fontSize: '0.52rem', letterSpacing: '0.6em', color: 'rgba(255,255,255,0.2)', marginBottom: '10px' }}>LWLUP · UPRAVLJANJE LIFTAČIMA</div>
+              <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,4.5vw,4.5rem)', fontWeight: 800, lineHeight: 0.88, margin: '0 0 28px', letterSpacing: '-0.02em' }}>
+                ADMIN<br /><span style={{ color: 'rgba(255,255,255,0.15)' }}>PANEL</span>
+              </h1>
+
+              {/* Summary stats */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.09)', maxWidth: '600px' }}>
+                {[
+                  { val: totalAthletes, label: 'LIFTAČA', color: '#fff' },
+                  { val: activeBlocks, label: 'AKT. BLOKOVA', color: '#4ade80' },
+                  { val: athletes.reduce((s, a) => s + ((a.blocks as Block[])?.length ?? 0), 0), label: 'UK. BLOKOVA', color: '#fff' },
+                  { val: totalNotes, label: 'BILJEŠKI', color: '#facc15' },
+                ].map((s, i) => (
+                  <div key={i} style={{ padding: '18px 20px', background: '#08080a', textAlign: 'center' }}>
+                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.val}</div>
+                    <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.25em', marginTop: '4px' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Search + manage */}
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '28px', alignItems: 'center' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '10px 16px', maxWidth: '360px' }}>
+                <Search size={14} color="rgba(255,255,255,0.3)" />
+                <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Pretraži liftače..."
+                  style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.88rem', width: '100%', fontFamily: 'var(--fm)' }} />
+              </div>
+              <button onClick={() => setManagingUsers(!managingUsers)}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: managingUsers ? 'rgba(239,68,68,0.1)' : 'transparent', border: `1px solid ${managingUsers ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)'}`, color: managingUsers ? '#ef4444' : 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}>
+                <Settings size={13} /> {managingUsers ? 'ZATVORI UPRAVLJANJE' : 'UPRAVLJAJ KORISNICIMA'}
+              </button>
+            </div>
+
+            {/* Athlete circles grid */}
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ fontSize: '0.52rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '20px', fontFamily: 'var(--fm)' }}>LIFTAČI — KLIKNI NA PROFIL ZA UREĐIVANJE</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+                {filteredAthletes.length === 0 && (
+                  <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.8rem', padding: '40px 0' }}>Nema liftača.</div>
+                )}
+                {filteredAthletes.map(athlete => {
+                  const initials = athlete.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
+                  const activeBlock = (athlete.blocks as Block[])?.find(b => b.status === 'active')
+                  const blockCount = (athlete.blocks as Block[])?.length ?? 0
+                  const noteCount = (athlete.notes as any[])?.length ?? 0
+
+                  return (
+                    <div key={athlete.id} style={{ position: 'relative', animation: 'fadeUp 0.4s ease' }}>
+                      {/* Card */}
+                      <div
+                        onClick={() => !managingUsers && setSelectedAthlete(athlete)}
+                        style={{ width: '160px', padding: '20px 16px 16px', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', cursor: managingUsers ? 'default' : 'pointer', transition: 'all 0.25s', textAlign: 'center', position: 'relative' }}
+                        onMouseEnter={e => { if (!managingUsers) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' } }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.background = 'rgba(255,255,255,0.025)' }}
+                      >
+                        {/* Avatar circle */}
+                        <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(255,255,255,0.12) 0%,rgba(255,255,255,0.04) 100%)', border: '2px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fm)', margin: '0 auto 12px', position: 'relative' }}>
+                          {initials}
+                          {/* Active indicator */}
+                          {activeBlock && <div style={{ position: 'absolute', bottom: '2px', right: '2px', width: '10px', height: '10px', borderRadius: '50%', background: '#4ade80', border: '2px solid #08080a', boxShadow: '0 0 6px #4ade80' }} />}
+                        </div>
+
+                        {/* Name */}
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)', marginBottom: '4px', lineHeight: 1.2 }}>{athlete.full_name}</div>
+
+                        {/* Active block name */}
+                        <div style={{ fontSize: '0.58rem', color: activeBlock ? '#4ade80' : 'rgba(255,255,255,0.2)', letterSpacing: '0.08em', marginBottom: '12px', minHeight: '16px' }}>
+                          {activeBlock ? activeBlock.name : 'Nema ak. bloka'}
+                        </div>
+
+                        {/* Micro stats */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: 'rgba(255,255,255,0.06)' }}>
+                          <div style={{ padding: '6px', background: '#08080a', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)' }}>{blockCount}</div>
+                            <div style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em' }}>BLOKOVA</div>
+                          </div>
+                          <div style={{ padding: '6px', background: '#08080a', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: noteCount > 0 ? '#facc15' : '#fff', fontFamily: 'var(--fd)' }}>{noteCount}</div>
+                            <div style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em' }}>BILJEŠKI</div>
+                          </div>
+                        </div>
+
+                        {/* Manage overlay */}
+                        {managingUsers && (
+                          <div style={{ marginTop: '10px', display: 'flex', gap: '4px' }}>
+                            <select
+                              value={athlete.role}
+                              onChange={e => { e.stopPropagation(); updateRole(athlete.id, e.target.value) }}
+                              style={{ flex: 1, background: '#0d0d10', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', padding: '5px 8px', fontSize: '0.6rem', fontFamily: 'var(--fm)', cursor: 'pointer', outline: 'none' }}
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <option value="lifter">lifter</option>
+                              <option value="admin">admin</option>
+                            </select>
+                            <button onClick={e => { e.stopPropagation(); deleteUser(athlete.id) }}
+                              style={{ padding: '5px 8px', background: 'rgba(255,60,60,0.08)', border: '1px solid rgba(255,60,60,0.2)', color: '#ff7070', cursor: 'pointer', transition: 'all 0.2s' }}
+                              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,60,60,0.18)'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,60,60,0.08)'}>
+                              <Trash2 size={11} />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* View arrow */}
+                        {!managingUsers && (
+                          <div style={{ position: 'absolute', top: '10px', right: '10px', opacity: 0, transition: 'opacity 0.2s' }} className="view-arrow">
+                            <Eye size={12} color="rgba(255,255,255,0.4)" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #060606; }
-        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-        input[type=date]::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.3); cursor: pointer; }
-        select option { background: #1a1a1a; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        @keyframes fadeIn   { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes slideDown{ from { opacity: 0; transform: translateY(-10px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes slideUp  { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes fadeUp   { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes spin     { to { transform: rotate(360deg) } }
+        div:hover .view-arrow { opacity: 1 !important; }
+        @media (max-width: 768px) {
+          div[style*="padding: '48px 60px'"] { padding: 24px 20px 80px !important; }
+        }
       `}</style>
     </div>
   )

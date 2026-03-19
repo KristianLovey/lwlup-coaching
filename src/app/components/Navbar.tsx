@@ -9,11 +9,12 @@ type NavbarProps = {
 }
 
 const NAV_LINKS: [string, string][] = [
-  ['O KLUBU',      '#club'],
   ['POWERLIFTING', '#info'],
+  ['O KLUBU',      '#club'],
   ['OSNIVAČ',      '#coach'],
   ['SUSTAV',       '#system'],
   ['TIM',          '/team'],
+  ['NATJECANJA',   '/competitions'],
 ]
 
 export default function Navbar({ variant = 'transparent', backLink }: NavbarProps) {
