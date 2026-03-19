@@ -7,7 +7,6 @@ import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
 import BigThree from '@/app/components/big_three'
 
-// Lottie — no SSR
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
 
 const SLIDES = [
@@ -19,149 +18,82 @@ const SLIDES = [
   { src: '/slike/IMG_1890.jpg', quote: 'STVARAJ REZULTATE, NE ISPRIKE.', sub: 'Tvoj put do pobjedničkog postolja počinje ovdje.' },
 ]
 
-// ── Custom SVG stat icons ──────────────────────────────────────────
 const StatIcons = {
-  lifters: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="9" cy="7" r="3" />
-      <circle cx="17" cy="8" r="2.5" />
-      <path d="M1 21v-2a5 5 0 0 1 5-5h6a5 5 0 0 1 5 5v2" />
-      <path d="M17 14a4 4 0 0 1 4 4v2" />
-    </svg>
-  ),
-  records: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </svg>
-  ),
-  europe: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="2" y1="12" x2="22" y2="12" />
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-    </svg>
-  ),
-  year: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  ),
+  lifters: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="3" /><circle cx="17" cy="8" r="2.5" /><path d="M1 21v-2a5 5 0 0 1 5-5h6a5 5 0 0 1 5 5v2" /><path d="M17 14a4 4 0 0 1 4 4v2" /></svg>),
+  records: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>),
+  europe: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>),
+  year: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>),
 }
 
 const STATS = [
-  { val: '10+',  label: 'LIFTERI U SUSTAVU',   icon: StatIcons.lifters },
-  { val: '12',   label: 'DRŽAVNI REKORDI',     icon: StatIcons.records },
-  { val: '6',    label: 'EUROPSKA NATJECANJA', icon: StatIcons.europe  },
-  { val: '2023', label: 'GODINA OSNIVANJA',    icon: StatIcons.year    },
+  { val: '10+',  label: 'LIFTERI',              icon: StatIcons.lifters },
+  { val: '12',   label: 'DRŽAVNI REKORDI',      icon: StatIcons.records },
+  { val: '6',    label: 'EUROPSKA NATJECANJA',  icon: StatIcons.europe  },
+  { val: '2023', label: 'OSNOVANO',             icon: StatIcons.year    },
 ]
 
 const FEATURES = [
-  { sym: '01', title: 'ZNANOST IZA TRENINGA',  desc: 'Nema nagađanja. Uz pomoć RPE tablica i metodološkog sastavljanja treninga, određujemo optimalne treninge za tvoj napredak.' },
-  { sym: '02', title: 'ANALIZA TEHNIKE',        desc: 'Izravni povrat informacija. Tvoj video izvedbe analiziramo kako bismo eliminirali slabe točke, spriječili ozljede i unaprijedili tehniku.' },
-  { sym: '03', title: 'ADAPTIVNI BLOKOVI',      desc: 'Tvoj život nije linearan, a tako nije ni trening. Radimo prilagodbe ovisno o tvom oporavku, stresu i snazi.' },
-  { sym: '04', title: 'EKSPORT ZA NATJECANJE',  desc: 'Sve tvoje brojke spremne za peaking. Vizualiziraj napredak putem grafova i izvezi podatke za arhivu.' },
+  { sym: '01', title: 'ZNANOST IZA TRENINGA',   desc: 'Nema nagađanja. Uz pomoć RPE tablica i metodološkog sastavljanja treninga, određujemo optimalne treninge za tvoj napredak.' },
+  { sym: '02', title: 'ANALIZA TEHNIKE',         desc: 'Izravni povrat informacija. Tvoj video izvedbe analiziramo kako bismo eliminirali slabe točke, spriječili ozljede i unaprijedili tehniku.' },
+  { sym: '03', title: 'ADAPTIVNI BLOKOVI',       desc: 'Tvoj život nije linearan, a tako nije ni trening. Radimo prilagodbe ovisno o tvom oporavku, stresu i snazi.' },
+  { sym: '04', title: 'EKSPORT ZA NATJECANJE',   desc: 'Sve tvoje brojke spremne za peaking. Vizualiziraj napredak putem grafova i izvezi podatke za arhivu.' },
 ]
 
-// ── Scroll-to-top with Lottie ──────────────────────────────────────
+const FOUNDERS = [
+  {
+    name: 'WALTER SMAJLOVIĆ',
+    role: 'GLAVNI TRENER & SUOSNIVAČ',
+    nickname: 'Gica',
+    img: '/slike/walter.png',
+    bio: 'Walter Smajlović izgradio je LWL UP na temeljima beskompromisnog rada. Zahvaljujući svom višegodišnjem iskustvu u kompetitivnom powerliftingu, razvio je sustav koji uklanja pogreške i maksimizira snagu svakog pojedinca.',
+    achievements: ['Powerlifting trener & višestruki državni prvak', '10x Državni prvak, 4+ državnih rekorda', 'European Open 2025 – 10. mjesto', 'Mentor za 10+ aktivnih natjecatelja'],
+    imgLeft: true,
+  },
+  {
+    name: 'LUKA GREŽINA',
+    role: 'PODPREDSJEDNIK & SUOSNIVAČ',
+    nickname: null,
+    img: '/slike/luka-g.jpg',
+    bio: 'Luka Grežina jedan je od stupova LWL UP-a. Uz ulogu podpredsjednika, aktivni je natjecatelj i trener koji svakodnevno prenosi znanje i iskustvo na mlađe generacije liftača u klubu.',
+    achievements: ['2x Državni prvak u M-120kg kategoriji', 'Aktivni natjecatelj i trener', 'Total: 747.5kg | GLP: 87.21', 'Suosnivač LWL UP-a 2023. godine'],
+    imgLeft: false,
+  },
+]
+
 function ScrollToTop() {
   const [visible, setVisible] = useState(false)
-  const [hovered, setHovered] = useState(false)
   const [animData, setAnimData] = useState<object | null>(null)
   const lottieRef = useRef<any>(null)
-
+  useEffect(() => { fetch('/animations/scroll-top.json').then(r => r.json()).then(setAnimData).catch(() => {}) }, [])
   useEffect(() => {
-    fetch('/animations/scroll-top.json')
-      .then(r => r.json())
-      .then(setAnimData)
-      .catch(() => {})
+    const fn = () => setVisible(window.scrollY > 400)
+    window.addEventListener('scroll', fn, { passive: true })
+    return () => window.removeEventListener('scroll', fn)
   }, [])
-
-  useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 400)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  const handleEnter = () => {
-    setHovered(true)
-    lottieRef.current?.play()
-  }
-  const handleLeave = () => {
-    setHovered(false)
-    lottieRef.current?.stop()
-  }
-
   return (
-    <button
-      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      onMouseEnter={handleEnter}
-      onMouseLeave={handleLeave}
-      title="Natrag na vrh"
-      style={{
-        position: 'fixed', bottom: '40px', right: '40px', zIndex: 500,
-        width: '52px', height: '52px',
-        background: '#fff', border: 'none', cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'scale(1) translateY(0)' : 'scale(0.85) translateY(12px)',
-        transition: 'opacity 0.4s cubic-bezier(0.16,1,0.3,1), transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s',
-        pointerEvents: visible ? 'auto' : 'none',
-        boxShadow: hovered ? '0 10px 36px rgba(255,255,255,0.25)' : '0 4px 16px rgba(0,0,0,0.5)',
-      }}
-    >
-      {animData ? (
-        <Lottie
-          lottieRef={lottieRef}
-          animationData={animData}
-          loop={true}
-          autoplay={false}
-          style={{ width: '30px', height: '30px' }}
-        />
-      ) : (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round">
-          <polyline points="18 15 12 9 6 15" />
-        </svg>
-      )}
+    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      onMouseEnter={() => lottieRef.current?.play()} onMouseLeave={() => lottieRef.current?.stop()}
+      style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 500, width: '48px', height: '48px', background: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: visible ? 1 : 0, transform: visible ? 'scale(1)' : 'scale(0.8)', transition: 'all 0.4s cubic-bezier(0.16,1,0.3,1)', pointerEvents: visible ? 'auto' : 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
+      {animData ? <Lottie lottieRef={lottieRef} animationData={animData} loop autoplay={false} style={{ width: '28px', height: '28px' }} /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15" /></svg>}
     </button>
   )
 }
 
-// ── Canvas network background ──────────────────────────────────────
 function NetworkCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')!
-    let animId: number
+    const canvas = canvasRef.current; if (!canvas) return
+    const ctx = canvas.getContext('2d')!; let animId: number
     const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight }
-    resize()
-    window.addEventListener('resize', resize)
-    const NODES = 60
-    const nodes = Array.from({ length: NODES }, () => ({
-      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
-      r: Math.random() * 1.5 + 0.5,
-    }))
+    resize(); window.addEventListener('resize', resize)
+    const NODES = 50
+    const nodes = Array.from({ length: NODES }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3, r: Math.random() * 1.5 + 0.5 }))
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      nodes.forEach(n => {
-        n.x += n.vx; n.y += n.vy
-        if (n.x < 0 || n.x > canvas.width) n.vx *= -1
-        if (n.y < 0 || n.y > canvas.height) n.vy *= -1
-      })
-      for (let i = 0; i < NODES; i++) {
-        for (let j = i + 1; j < NODES; j++) {
-          const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < 160) {
-            ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y)
-            ctx.strokeStyle = `rgba(255,255,255,${0.12 * (1 - dist / 160)})`; ctx.lineWidth = 0.7; ctx.stroke()
-          }
-        }
+      nodes.forEach(n => { n.x += n.vx; n.y += n.vy; if (n.x < 0 || n.x > canvas.width) n.vx *= -1; if (n.y < 0 || n.y > canvas.height) n.vy *= -1 })
+      for (let i = 0; i < NODES; i++) for (let j = i + 1; j < NODES; j++) {
+        const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y, dist = Math.sqrt(dx * dx + dy * dy)
+        if (dist < 160) { ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y); ctx.strokeStyle = `rgba(255,255,255,${0.1 * (1 - dist / 160)})`; ctx.lineWidth = 0.7; ctx.stroke() }
       }
       nodes.forEach(n => { ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fill() })
       animId = requestAnimationFrame(draw)
@@ -169,29 +101,68 @@ function NetworkCanvas() {
     draw()
     return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize) }
   }, [])
-  return <canvas ref={canvasRef} id="network-canvas" style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.9 }} />
+  return <canvas ref={canvasRef} style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.9 }} />
 }
 
-// ── Scroll reveal ──────────────────────────────────────────────────
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
   useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true) }, { threshold: 0.15 })
+    const fallback = setTimeout(() => setVisible(true), 900)
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setVisible(true); clearTimeout(fallback) } },
+      { threshold: 0, rootMargin: '0px 0px -40px 0px' }
+    )
     if (ref.current) obs.observe(ref.current)
-    return () => obs.disconnect()
+    return () => { obs.disconnect(); clearTimeout(fallback) }
   }, [])
   return { ref, visible }
+}
+
+function FounderRow({ founder, index }: { founder: typeof FOUNDERS[0]; index: number }) {
+  const { ref, visible } = useReveal()
+  const imgLeft = founder.imgLeft
+  return (
+    <div ref={ref} className={`founder-row${imgLeft ? '' : ' founder-row-reverse'}`}
+      style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(30px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)', transitionDelay: `${index * 0.1}s` }}>
+      <div className="founder-img-wrap">
+        <img src={founder.img} alt={founder.name} className="founder-img"
+          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', filter: 'brightness(0.85) grayscale(0.15)', transition: 'transform 0.8s' }} />
+        <div style={{ position: 'absolute', inset: 0, background: imgLeft ? 'linear-gradient(to bottom right, transparent 65%, #0a0a0a 100%)' : 'linear-gradient(to bottom left, transparent 65%, #0a0a0a 100%)' }} />
+        <div style={{ position: 'absolute', bottom: '20px', left: imgLeft ? '24px' : 'auto', right: !imgLeft ? '24px' : 'auto', fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,6vw,6rem)', fontWeight: 800, color: 'rgba(255,255,255,0.06)', lineHeight: 1, userSelect: 'none' }}>
+          0{index + 1}
+        </div>
+      </div>
+      <div className="founder-text-wrap">
+        <div style={{ position: 'absolute', top: '-10px', right: imgLeft ? '16px' : 'auto', left: !imgLeft ? '16px' : 'auto', fontFamily: 'var(--fd)', fontSize: 'clamp(6rem,12vw,14rem)', fontWeight: 800, color: 'rgba(255,255,255,0.025)', lineHeight: 1, userSelect: 'none', pointerEvents: 'none' }}>
+          0{index + 1}
+        </div>
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.3)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>{founder.role}</div>
+          <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.8rem, 3.5vw, 3.2rem)', lineHeight: 0.92, marginBottom: founder.nickname ? '8px' : '24px', letterSpacing: '-0.01em' }}>{founder.name}</h2>
+          {founder.nickname && <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', marginBottom: '24px', fontStyle: 'italic' }}>"{founder.nickname}"</div>}
+          <div style={{ width: '36px', height: '2px', background: '#fff', marginBottom: '24px', opacity: 0.7 }} />
+          <p style={{ color: 'rgba(255,255,255,0.5)', lineHeight: 1.85, fontSize: '0.92rem', marginBottom: '28px', maxWidth: '460px' }}>{founder.bio}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {founder.achievements.map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', color: 'rgba(255,255,255,0.7)' }}>
+                <div style={{ width: '4px', height: '4px', background: '#fff', flexShrink: 0, marginTop: '8px', opacity: 0.4 }} />
+                <span style={{ fontSize: '0.85rem', lineHeight: 1.5 }}>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function Landing() {
   const [slide, setSlide] = useState(0)
   const [ready, setReady] = useState(false)
   const timerRef = useRef<any>(null)
-
   const statsReveal  = useReveal()
   const clubReveal   = useReveal()
-  const coachReveal  = useReveal()
   const systemReveal = useReveal()
 
   useEffect(() => {
@@ -208,15 +179,13 @@ export default function Landing() {
 
   return (
     <div style={{ background: '#050505', color: '#fff', overflowX: 'hidden', fontFamily: 'var(--fm)', position: 'relative' }}>
-
-      {/* Static CSS star field — visible even when canvas is loading */}
       <div className="star-field" />
       <NetworkCanvas />
       <Navbar variant="transparent" />
       <ScrollToTop />
 
       {/* ══ HERO ══════════════════════════════════════════════════ */}
-      <section style={{ position: 'relative', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <section style={{ position: 'relative', height: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
         {SLIDES.map((s, i) => (
           <div key={i} style={{ position: 'absolute', inset: 0, opacity: i === slide ? 1 : 0, transition: 'opacity 1.5s ease-in-out', zIndex: 0 }}>
             <img src={s.src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.25) saturate(0.7)', transform: i === slide ? 'scale(1.05)' : 'scale(1)', transition: 'transform 8s ease-out' }} />
@@ -226,49 +195,52 @@ export default function Landing() {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 60%, #050505 100%)', zIndex: 1 }} />
 
         <div style={{ position: 'relative', zIndex: 2, width: '100%', padding: '0 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <img src="/slike/logopng.png" alt="LWLUP Logo" style={{ width: 'clamp(280px, 40vw, 550px)', height: 'auto', marginBottom: '30px', filter: 'drop-shadow(0 0 40px rgba(255,255,255,0.15))' }} />
-            <div style={{ maxWidth: '850px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <p style={{ fontSize: 'clamp(1.1rem, 2.2vw, 1.6rem)', color: '#fff', fontStyle: 'italic', letterSpacing: '0.02em', fontWeight: 300, marginBottom: '10px', transition: 'all 0.8s' }}>
+          <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', width: '100%', maxWidth: '600px' }}>
+            <img src="/slike/logopng.png" alt="LWLUP Logo" style={{ width: 'clamp(180px, 50vw, 480px)', height: 'auto', marginBottom: '28px', filter: 'drop-shadow(0 0 40px rgba(255,255,255,0.15))' }} />
+
+            {/* Quote — ograničena širina da ne prelama prerano */}
+            <div style={{ width: '100%', maxWidth: '520px' }}>
+              <p style={{ fontSize: 'clamp(0.85rem, 2.8vw, 1.4rem)', color: '#fff', fontStyle: 'italic', letterSpacing: '0.02em', fontWeight: 300, marginBottom: '8px', transition: 'all 0.8s', lineHeight: 1.55 }}>
                 "{SLIDES[slide].quote}"
               </p>
-              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.75rem', letterSpacing: '0.4em', textTransform: 'uppercase' }}>
-                {SLIDES[slide].sub}
+              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 'clamp(0.58rem, 1.8vw, 0.72rem)', letterSpacing: '0.38em', textTransform: 'uppercase', marginBottom: '0' }}>
+                — {SLIDES[slide].sub}
               </p>
             </div>
-            <div className="hero-cta-row" style={{ display: 'flex', gap: '16px', marginTop: '50px' }}>
+
+            {/* CTA gumbi */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '40px', width: '100%', maxWidth: '300px' }}>
               <Link href="/survey" style={{ textDecoration: 'none' }}>
-                <button className="cta-primary" style={{ padding: '22px 60px', background: '#fff', color: '#000', border: '1px solid #fff', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.25em', cursor: 'pointer', transition: 'all 0.35s', position: 'relative', overflow: 'hidden', fontFamily: 'var(--fm)' }}>
-                  <span style={{ position: 'relative', zIndex: 2 }}>ZAPOČNI TRANSFORMACIJU</span>
+                <button className="btn-primary-cta" style={{ width: '100%', padding: '17px 24px', background: '#fff', color: '#000', border: '1px solid #fff', fontSize: 'clamp(0.68rem, 2.2vw, 0.85rem)', fontWeight: 800, letterSpacing: '0.2em', cursor: 'pointer', transition: 'all 0.35s', fontFamily: 'var(--fm)' }}>
+                  ZAPOČNI TRANSFORMACIJU
                 </button>
               </Link>
               <Link href="/training" style={{ textDecoration: 'none' }}>
-                <button style={{ padding: '22px 40px', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', fontSize: '0.9rem', fontWeight: 700, letterSpacing: '0.2em', cursor: 'pointer', transition: 'all 0.3s', fontFamily: 'var(--fm)' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'transparent' }}
-                >TRENING →</button>
+                <button className="btn-secondary-cta" style={{ width: '100%', padding: '15px 24px', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', fontSize: 'clamp(0.68rem, 2.2vw, 0.85rem)', fontWeight: 700, letterSpacing: '0.2em', cursor: 'pointer', transition: 'all 0.3s', fontFamily: 'var(--fm)' }}>
+                  TRENING →
+                </button>
               </Link>
             </div>
           </div>
         </div>
 
-        <div style={{ position: 'absolute', bottom: '50px', display: 'flex', gap: '10px', zIndex: 3 }}>
+        {/* Slideshow dots */}
+        <div style={{ position: 'absolute', bottom: '32px', display: 'flex', gap: '8px', zIndex: 3 }}>
           {SLIDES.map((_, i) => (
-            <div key={i} onClick={() => goSlide(i)} style={{ cursor: 'pointer', width: i === slide ? 30 : 8, height: 3, background: i === slide ? '#fff' : 'rgba(255,255,255,0.2)', transition: 'all 0.6s' }} />
+            <div key={i} onClick={() => goSlide(i)} style={{ cursor: 'pointer', width: i === slide ? 24 : 7, height: 3, background: i === slide ? '#fff' : 'rgba(255,255,255,0.2)', transition: 'all 0.6s' }} />
           ))}
         </div>
       </section>
 
       {/* ══ STATS ═════════════════════════════════════════════════ */}
       <section style={{ background: '#050505', position: 'relative', zIndex: 10 }}>
-        <div ref={statsReveal.ref} className="stat-grid" style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        <div ref={statsReveal.ref} style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderTop: '1px solid rgba(255,255,255,0.1)' }} className="stats-grid">
           {STATS.map((s, i) => (
-            <div key={i} className="stat-card" style={{ padding: '80px 40px', textAlign: 'center', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.1)' : 'none', transition: 'all 0.4s', cursor: 'pointer', opacity: statsReveal.visible ? 1 : 0, transform: statsReveal.visible ? 'none' : 'translateY(30px)', transitionDelay: `${i * 0.1}s`, transitionDuration: '0.7s' }}>
-              <div className="stat-icon" style={{ color: 'rgba(255,255,255,0.2)', marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
-                {s.icon}
-              </div>
-              <div className="stat-value" style={{ fontFamily: 'var(--fd)', fontSize: '4.5rem', lineHeight: 1, marginBottom: '10px' }}>{s.val}</div>
-              <div style={{ fontSize: '0.65rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)' }}>{s.label}</div>
+            <div key={i} className="stat-card"
+              style={{ padding: 'clamp(40px,6vw,80px) clamp(16px,3vw,40px)', textAlign: 'center', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.1)' : 'none', cursor: 'pointer', opacity: statsReveal.visible ? 1 : 0, transform: statsReveal.visible ? 'none' : 'translateY(30px)', transition: `opacity 0.7s ${i * 0.1}s, transform 0.7s ${i * 0.1}s, background 0.4s, border-color 0.4s` }}>
+              <div className="stat-icon" style={{ color: 'rgba(255,255,255,0.2)', marginBottom: '16px', display: 'flex', justifyContent: 'center', transition: 'color 0.4s' }}>{s.icon}</div>
+              <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,6vw,4.5rem)', lineHeight: 1, marginBottom: '10px' }}>{s.val}</div>
+              <div style={{ fontSize: 'clamp(0.5rem,1.5vw,0.65rem)', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.4)', transition: 'color 0.4s' }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -278,79 +250,74 @@ export default function Landing() {
       <BigThree />
 
       {/* ══ ABOUT CLUB ════════════════════════════════════════════ */}
-      <section id="club" style={{ padding: '180px 60px', maxWidth: '1400px', margin: '0 auto' }}>
-        <div ref={clubReveal.ref} className="club-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '100px', alignItems: 'center', opacity: clubReveal.visible ? 1 : 0, transform: clubReveal.visible ? 'none' : 'translateX(-40px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
-          <div style={{ position: 'relative' }}>
-            <div className="club-section-num" style={{ position: 'absolute', top: '-60px', left: '-40px', fontSize: '12rem', fontFamily: 'var(--fd)', color: 'rgba(255,255,255,0.03)', zIndex: -1 }}>01</div>
-            <h2 style={{ fontFamily: 'var(--fd)', fontSize: '6rem', lineHeight: 0.9, marginBottom: '40px' }}>
-              STVORENI<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>U ŽELJEZU</span>
-            </h2>
-            <p style={{ fontSize: '1.2rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.7)', marginBottom: '30px', maxWidth: '600px' }}>
-              LWL UP nije samo klub- to je zajednica snage u kojoj natjecatelji ruše granice ljudskog potencijala. Klub su 2023. godine osnovali Walter Smajlović i Luka Grežina radi okupljanja ljudi s istim ciljem; postićišto veći total. Od tada podižemo standarde powerliftinga u Hrvatskoj.
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginTop: '50px' }}>
-              {[['Zajednica', 'Treniramo zajedno, natječemo se zajedno, rastemo zajedno.'], ['Stručnost', 'Svaka serija ima svrhu. Svaki postotak je izračunat.']].map(([t, d]) => (
-                <div key={t} className="info-card" style={{ transition: '0.3s', cursor: 'pointer' }}>
-                  <h4 style={{ color: '#fff', fontSize: '1.1rem', marginBottom: '10px' }}>{t}</h4>
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>{d}</p>
-                </div>
-              ))}
+      <section id="club" style={{ padding: 'clamp(80px,12vw,180px) clamp(20px,5vw,60px)', maxWidth: '1400px', margin: '0 auto' }}>
+        <div ref={clubReveal.ref} style={{ opacity: clubReveal.visible ? 1 : 0, transform: clubReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
+          <div className="club-grid">
+            <div style={{ position: 'relative' }}>
+              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,8vw,6rem)', lineHeight: 0.9, marginBottom: 'clamp(20px,4vw,40px)' }}>
+                STVORENI<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>U ŽELJEZU</span>
+              </h2>
+              <p style={{ fontSize: 'clamp(0.9rem,2.5vw,1.2rem)', lineHeight: 1.8, color: 'rgba(255,255,255,0.7)', marginBottom: '24px' }}>
+                LWL UP nije samo klub — to je zajednica snage u kojoj natjecatelji ruše granice ljudskog potencijala. Klub su 2023. godine osnovali Walter Smajlović i Luka Grežina radi okupljanja ljudi s istim ciljem; postići što veći total. Od tada podižemo standarde powerliftinga u Hrvatskoj.
+              </p>
+              <div className="club-info-cards">
+                {[['Zajednica', 'Treniramo zajedno, natječemo se zajedno, rastemo zajedno.'], ['Stručnost', 'Svaka serija ima svrhu. Svaki postotak je izračunat.']].map(([t, d]) => (
+                  <div key={t} className="info-card" style={{ cursor: 'pointer', transition: '0.3s' }}>
+                    <h4 style={{ color: '#fff', fontSize: 'clamp(0.95rem,2vw,1.1rem)', marginBottom: '8px' }}>{t}</h4>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.8rem,1.8vw,0.9rem)' }}>{d}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="club-img-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            <div className="club-image" style={{ height: '400px', overflow: 'hidden', borderRadius: '4px', marginTop: '40px' }}>
-              <img src="/slike/IMG_1844.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: '0.8s' }} className="club-img" alt="Club" />
-            </div>
-            <div className="club-image" style={{ height: '400px', overflow: 'hidden', borderRadius: '4px' }}>
-              <img src="/slike/IMG_1890.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: '0.8s' }} className="club-img" alt="Club" />
+            <div className="club-images">
+              <div style={{ height: 'clamp(200px,35vw,400px)', overflow: 'hidden', borderRadius: '4px', marginTop: 'clamp(0px,4vw,40px)' }}>
+                <img src="/slike/IMG_1844.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: '0.8s' }} alt="Club" className="club-img" />
+              </div>
+              <div style={{ height: 'clamp(200px,35vw,400px)', overflow: 'hidden', borderRadius: '4px' }}>
+                <img src="/slike/IMG_1890.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: '0.8s' }} alt="Club" className="club-img" />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ══ COACH ═════════════════════════════════════════════════ */}
-      <section id="coach" style={{ background: '#0a0a0a', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '150px 60px' }}>
-        <div ref={coachReveal.ref} className="coach-grid" style={{ maxWidth: '1300px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '100px', alignItems: 'center', opacity: coachReveal.visible ? 1 : 0, transform: coachReveal.visible ? 'none' : 'translateX(40px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
-          <div style={{ position: 'relative' }}>
-            <div className="coach-image-wrapper" style={{ overflow: 'hidden', borderRadius: '4px' }}>
-              <img src="/slike/walter.png" alt="Walter Smajlović" style={{ width: '100%', height: 'auto', filter: 'brightness(0.9) grayscale(0.2)', transition: 'transform 0.8s' }} className="coach-img" />
+      {/* ══ FOUNDERS ══════════════════════════════════════════════ */}
+      <section id="coach" style={{ background: '#0a0a0a', borderTop: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: 'clamp(60px,10vw,100px) clamp(20px,5vw,60px) clamp(40px,6vw,60px)' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.25)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>OSNIVAČI KLUBA</div>
+              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5.5rem)', lineHeight: 0.88, margin: 0, letterSpacing: '-0.02em' }}>
+                LJUDI IZA<br /><span style={{ color: 'rgba(255,255,255,0.2)' }}>ŠIPKE</span>
+              </h2>
             </div>
-            <div className="coach-badge" style={{ position: 'absolute', bottom: '20px', left: '20px', background: '#fff', color: '#000', padding: '15px 30px', transition: '0.4s' }}>
-              <div style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', fontWeight: 900 }}>WALTER SMAJLOVIĆ</div>
-              <div style={{ fontSize: '0.6rem', letterSpacing: '0.1em', fontWeight: 700 }}>GLAVNI TRENER & OSNIVAČ</div>
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '20px' }}>PREDSTAVNIK KLUBA</div>
-            <h2 style={{ fontFamily: 'var(--fd)', fontSize: '4.5rem', lineHeight: 1, marginBottom: '30px' }}>ČOVJEK<br />IZA ŠIPKE</h2>
-            <p style={{ color: 'rgba(255,255,255,0.5)', lineHeight: 1.9, fontSize: '1.1rem', marginBottom: '30px' }}>
-              Walter Smajlović izgradio je LWL UP na temeljima beskompromisnog rada. Zahvaljujući svom višegodišnjem iskustvu u kompetitivnom powerliftingu, Walter je razvio sustav koji uklanja pogreške i maksimizira snagu svakog pojedinca.
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 'clamp(0.8rem,2vw,0.9rem)', lineHeight: 1.8, maxWidth: '380px', marginBottom: '8px' }}>
+              LWL UP počinje s dvojicom natjecatelja koji su 2023. godine odlučili da Hrvatska zaslužuje bolji powerlifting.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              {['Powerlifting trener', 'Višestruki državni prvak i međunarodni natjecatelj', 'Mentor za 10+ aktivnih natjecatelja', 'Nadimak: Gica'].map((item, i) => (
-                <div key={i} className="achievement-item" style={{ display: 'flex', alignItems: 'center', gap: '15px', color: 'rgba(255,255,255,0.8)', transition: '0.3s' }}>
-                  <Zap size={14} color="#fff" />
-                  <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{item}</span>
-                </div>
-              ))}
-            </div>
           </div>
+        </div>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          {FOUNDERS.map((founder, i) => (
+            <div key={founder.name} style={{ borderBottom: i < FOUNDERS.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
+              <FounderRow founder={founder} index={i} />
+            </div>
+          ))}
         </div>
       </section>
 
       {/* ══ SYSTEM ════════════════════════════════════════════════ */}
-      <section id="system" className="system-section" style={{ background: '#0a0a0a', padding: '150px 0' }}>
-        <div ref={systemReveal.ref} style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 60px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '100px', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>
-            <h2 style={{ fontFamily: 'var(--fd)', fontSize: '5rem', marginBottom: '20px' }}>ONLINE COACHING</h2>
-            <p style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em' }}>TRENER U VAŠEM DŽEPU, 24/7.</p>
+      <section id="system" style={{ background: '#0a0a0a', padding: 'clamp(80px,12vw,150px) clamp(20px,5vw,60px)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div ref={systemReveal.ref} style={{ maxWidth: '1400px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 'clamp(48px,8vw,100px)', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>
+            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,7vw,5rem)', marginBottom: '16px' }}>ONLINE COACHING</h2>
+            <p style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', fontSize: 'clamp(0.6rem,2vw,0.85rem)' }}>TRENER U VAŠEM DŽEPU, 24/7.</p>
           </div>
-          <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '30px' }}>
+          <div className="features-grid">
             {FEATURES.map((f, i) => (
-              <div key={i} className="feature-card" style={{ background: '#050505', padding: '50px 30px', border: '1px solid rgba(255,255,255,0.05)', transition: '0.4s cubic-bezier(.16,1,.3,1)', position: 'relative', overflow: 'hidden', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(40px)', transitionDelay: `${i * 0.1}s`, transitionDuration: '0.7s' }}>
-                <div className="feature-number" style={{ fontSize: '3rem', fontFamily: 'var(--fd)', color: 'rgba(255,255,255,0.05)', position: 'absolute', top: '10px', right: '20px', transition: '0.4s' }}>{f.sym}</div>
-                <h3 style={{ fontSize: '1.2rem', letterSpacing: '0.1em', marginBottom: '20px', color: '#fff' }}>{f.title}</h3>
-                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', lineHeight: 1.8 }}>{f.desc}</p>
+              <div key={i} className="feature-card" style={{ background: '#050505', padding: 'clamp(28px,4vw,50px) clamp(20px,3vw,30px)', border: '1px solid rgba(255,255,255,0.05)', transition: '0.4s cubic-bezier(.16,1,.3,1)', position: 'relative', overflow: 'hidden', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(40px)', transitionDelay: `${i * 0.1}s`, transitionDuration: '0.7s' }}>
+                <div style={{ fontSize: 'clamp(1.8rem,4vw,3rem)', fontFamily: 'var(--fd)', color: 'rgba(255,255,255,0.05)', position: 'absolute', top: '10px', right: '16px', transition: 'color 0.4s' }}>{f.sym}</div>
+                <h3 style={{ fontSize: 'clamp(0.85rem,2vw,1.2rem)', letterSpacing: '0.1em', marginBottom: '16px', color: '#fff' }}>{f.title}</h3>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.78rem,1.8vw,0.85rem)', lineHeight: 1.8 }}>{f.desc}</p>
               </div>
             ))}
           </div>
@@ -358,16 +325,16 @@ export default function Landing() {
       </section>
 
       {/* ══ CTA ═══════════════════════════════════════════════════ */}
-      <section style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', position: 'relative' }}>
+      <section style={{ height: 'clamp(60vh,80vh,80vh)', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', position: 'relative' }}>
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 0 }}>
           <img src="/slike/IMG_1886-2.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.15) grayscale(1)', animation: 'slowZoom 20s ease-in-out infinite alternate' }} alt="Legacy" />
         </div>
         <div style={{ position: 'relative', zIndex: 1, padding: '0 20px' }}>
-          <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3.5rem, 15vw, 12rem)', lineHeight: 0.8, marginBottom: '40px', animation: 'textGlow 3s ease-in-out infinite' }}>
-            OSTAVI<br /> SVOJ TRAG
+          <h2 className="cta-glow-text" style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,12vw,12rem)', lineHeight: 0.85, marginBottom: 'clamp(24px,4vw,40px)' }}>
+            OSTAVI<br />SVOJ TRAG
           </h2>
           <Link href="/survey" style={{ textDecoration: 'none' }}>
-            <button className="cta-final-button" style={{ padding: '25px 80px', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.6)', fontSize: '1rem', fontWeight: 900, letterSpacing: '0.3em', cursor: 'pointer', transition: '0.4s', position: 'relative', overflow: 'hidden', fontFamily: 'var(--fm)' }}>
+            <button className="btn-cta-final" style={{ padding: 'clamp(16px,2.5vw,25px) clamp(32px,6vw,80px)', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.6)', fontSize: 'clamp(0.75rem,2.5vw,1rem)', fontWeight: 900, letterSpacing: '0.3em', cursor: 'pointer', transition: 'all 0.4s', fontFamily: 'var(--fm)', position: 'relative', overflow: 'hidden' }}>
               <span style={{ position: 'relative', zIndex: 2 }}>PRIDRUŽI SE TIMU</span>
             </button>
           </Link>
@@ -375,6 +342,113 @@ export default function Landing() {
       </section>
 
       <Footer />
+
+      <style>{`
+        /* ══ STAT CARDS — hover s osvjetljenjem ══════════════════ */
+        .stat-card {
+          transition: background 0.35s, transform 0.35s;
+        }
+        .stat-card:hover {
+          background: rgba(255,255,255,0.04) !important;
+          transform: translateY(-4px);
+        }
+        .stat-card:hover .stat-icon {
+          color: rgba(255,255,255,0.6) !important;
+        }
+        .stat-card:hover > div:last-child {
+          color: rgba(255,255,255,0.65) !important;
+        }
+
+        /* ══ HERO BUTTONS ═════════════════════════════════════════ */
+        .btn-primary-cta:hover {
+          background: #000 !important;
+          color: #fff !important;
+          border-color: rgba(255,255,255,0.5) !important;
+          transform: translateY(-2px);
+          box-shadow: 0 8px 32px rgba(255,255,255,0.1);
+        }
+        .btn-secondary-cta:hover {
+          border-color: rgba(255,255,255,0.7) !important;
+          background: rgba(255,255,255,0.06) !important;
+          transform: translateY(-2px);
+        }
+
+        /* ══ FOOTER CTA ═══════════════════════════════════════════ */
+        .btn-cta-final::before {
+          content: '';
+          position: absolute; inset: 0;
+          background: #fff;
+          transform: scaleX(0);
+          transform-origin: right;
+          transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
+          z-index: 1;
+        }
+        .btn-cta-final:hover::before { transform: scaleX(1); transform-origin: left; }
+        .btn-cta-final:hover { color: #000 !important; border-color: #fff !important; box-shadow: 0 0 60px rgba(255,255,255,0.15); }
+        .btn-cta-final:hover span { color: #000; }
+
+        /* ══ GLOW TEXT ════════════════════════════════════════════ */
+        .cta-glow-text {
+          text-shadow: 0 0 40px rgba(255,255,255,0.08);
+          animation: textGlow 3s ease-in-out infinite;
+        }
+
+        /* ══ HOVER OSTALO ═════════════════════════════════════════ */
+        .info-card:hover h4 { color: rgba(255,255,255,0.7) !important; }
+        .founder-img:hover  { transform: scale(1.04) !important; }
+        .club-img:hover     { transform: scale(1.05) !important; }
+        .feature-card:hover { transform: translateY(-6px) !important; border-color: rgba(255,255,255,0.15) !important; }
+
+        /* ══ GRID LAYOUTS ═════════════════════════════════════════ */
+        .founder-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          min-height: 560px;
+        }
+        .founder-row-reverse .founder-img-wrap { order: 2; }
+        .founder-row-reverse .founder-text-wrap { order: 1; }
+        .founder-img-wrap  { position: relative; overflow: hidden; min-height: 400px; }
+        .founder-text-wrap {
+          padding: clamp(40px,7vw,80px) clamp(24px,5vw,72px);
+          background: #0a0a0a;
+          display: flex; flex-direction: column; justify-content: center;
+          position: relative; overflow: hidden;
+          border-left: 1px solid rgba(255,255,255,0.07);
+        }
+        .founder-row-reverse .founder-text-wrap { border-left: none; border-right: 1px solid rgba(255,255,255,0.07); }
+
+        .club-grid        { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: clamp(40px,6vw,100px); align-items: center; }
+        .club-info-cards  { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px,3vw,30px); margin-top: clamp(24px,4vw,50px); }
+        .club-images      { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(10px,2vw,20px); }
+        .features-grid    { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(12px,2vw,30px); }
+
+        /* ══ KEYFRAMES ════════════════════════════════════════════ */
+        @keyframes slowZoom { from { transform: scale(1); } to { transform: scale(1.08); } }
+        @keyframes textGlow {
+          0%,100% { text-shadow: 0 0 40px rgba(255,255,255,0.08), 0 0 80px rgba(255,255,255,0.03); }
+          50%      { text-shadow: 0 0 60px rgba(255,255,255,0.2), 0 0 120px rgba(255,255,255,0.1), 0 0 200px rgba(255,255,255,0.05); }
+        }
+
+        /* ══ MOBILE ═══════════════════════════════════════════════ */
+        @media (max-width: 768px) {
+          .founder-row { grid-template-columns: 1fr !important; min-height: unset; }
+          .founder-row-reverse .founder-img-wrap { order: 1; }
+          .founder-row-reverse .founder-text-wrap { order: 2; }
+          .founder-img-wrap { min-height: 280px; }
+          .founder-text-wrap { border-left: none !important; border-right: none !important; border-top: 1px solid rgba(255,255,255,0.07); }
+          .club-grid       { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .club-images     { grid-template-columns: 1fr 1fr !important; }
+          .club-info-cards { grid-template-columns: 1fr !important; }
+          .features-grid   { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+          .stats-grid      { grid-template-columns: 1fr 1fr !important; }
+          .stats-grid > div:nth-child(2) { border-right: none !important; }
+          .stats-grid > div:nth-child(3) { border-top: 1px solid rgba(255,255,255,0.1); }
+          .stats-grid > div:nth-child(4) { border-top: 1px solid rgba(255,255,255,0.1); border-right: none !important; }
+        }
+        @media (max-width: 480px) {
+          .features-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   )
 }

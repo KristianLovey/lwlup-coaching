@@ -18,8 +18,9 @@ const NAV_LINKS: [string, string][] = [
 ]
 
 export default function Navbar({ variant = 'transparent', backLink }: NavbarProps) {
-  const [scrollY, setScrollY]   = useState(0)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [scrollY, setScrollY]       = useState(0)
+  const [menuOpen, setMenuOpen]     = useState(false)
+  const [hoveredLink, setHoveredLink] = useState<string | null>(null)
 
   useEffect(() => {
     if (variant !== 'transparent') return
@@ -62,7 +63,7 @@ export default function Navbar({ variant = 'transparent', backLink }: NavbarProp
           />
         </Link>
 
-        {/* Desktop right */}
+        {/* Desktop links */}
         <div className="nav-desktop">
           {backLink ? (
             <Link href={backLink.href}
@@ -90,17 +91,28 @@ export default function Navbar({ variant = 'transparent', backLink }: NavbarProp
           )}
         </div>
 
-        {/* Mobile hamburger */}
+        {/* Hamburger */}
         <button className="nav-hamburger"
           onClick={() => setMenuOpen(o => !o)}
           aria-label={menuOpen ? 'Zatvori izbornik' : 'Otvori izbornik'}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', padding: '8px', zIndex: 1 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', padding: '8px', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.3s' }}
+          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
+          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
         >
-          {menuOpen ? <X size={24} /> : <Menu size={24} />}
+          {/* Custom animated hamburger lines */}
+          {menuOpen ? (
+            <X size={24} />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', width: '24px' }}>
+              <div style={{ height: '2px', background: '#fff', width: '100%', transition: 'all 0.3s' }} />
+              <div style={{ height: '2px', background: '#fff', width: '70%', transition: 'all 0.3s' }} />
+              <div style={{ height: '2px', background: '#fff', width: '100%', transition: 'all 0.3s' }} />
+            </div>
+          )}
         </button>
       </nav>
 
-      {/* Mobile full-screen menu */}
+      {/* Mobile menu overlay */}
       <div style={{
         position: 'fixed', top: '64px', left: 0, right: 0, bottom: 0, zIndex: 199,
         background: '#050505',
@@ -112,30 +124,46 @@ export default function Navbar({ variant = 'transparent', backLink }: NavbarProp
         transition: 'opacity 0.25s ease',
         visibility: menuOpen ? 'visible' : 'hidden',
       }}>
-        {/* Nav links — veliki font */}
+        {/* Nav links */}
         <div style={{ flex: 1 }}>
           {NAV_LINKS.map(([label, href], i) => (
             <a key={label} href={href}
               onClick={() => setMenuOpen(false)}
+              // Use React state for hover — onMouseEnter/Leave works on touch devices too
+              onMouseEnter={() => setHoveredLink(label)}
+              onMouseLeave={() => setHoveredLink(null)}
               style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 fontSize: 'clamp(1.8rem, 7vw, 2.4rem)',
                 fontFamily: 'var(--fd)', fontWeight: 700, letterSpacing: '0.04em',
-                color: '#fff', textDecoration: 'none',
+                color: hoveredLink === label ? 'rgba(255,255,255,0.45)' : '#fff',
+                textDecoration: 'none',
                 padding: '18px 0',
                 borderBottom: '1px solid rgba(255,255,255,0.07)',
                 opacity: menuOpen ? 1 : 0,
-                transform: menuOpen ? 'translateX(0)' : 'translateX(-16px)',
-                transition: `opacity 0.35s ${i * 0.06 + 0.05}s ease, transform 0.35s ${i * 0.06 + 0.05}s ease`,
+                transform: menuOpen
+                  ? (hoveredLink === label ? 'translateX(8px)' : 'translateX(0)')
+                  : 'translateX(-16px)',
+                transition: `
+                  opacity 0.35s ${i * 0.06 + 0.05}s ease,
+                  transform 0.35s ${i * 0.06 + 0.05}s ease,
+                  color 0.2s ease
+                `,
               }}
             >
               {label}
-              <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>→</span>
+              <span style={{
+                fontSize: '1rem',
+                color: hoveredLink === label ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)',
+                fontFamily: 'var(--fm)',
+                transform: hoveredLink === label ? 'translateX(4px)' : 'translateX(0)',
+                transition: 'all 0.2s ease',
+              }}>→</span>
             </a>
           ))}
         </div>
 
-        {/* CTA + back link na dnu */}
+        {/* CTA na dnu */}
         <div style={{
           marginTop: '40px',
           opacity: menuOpen ? 1 : 0,
@@ -143,34 +171,45 @@ export default function Navbar({ variant = 'transparent', backLink }: NavbarProp
           transition: `opacity 0.35s ${NAV_LINKS.length * 0.06 + 0.1}s ease, transform 0.35s ${NAV_LINKS.length * 0.06 + 0.1}s ease`,
         }}>
           <Link href="/survey" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
-            <button style={{
-              width: '100%', padding: '18px', background: '#fff', color: '#000',
-              border: 'none', fontSize: '0.85rem', fontWeight: 800,
-              letterSpacing: '0.25em', cursor: 'pointer', fontFamily: 'var(--fm)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-            }}>
+            <button
+              style={{
+                width: '100%', padding: '18px', background: '#fff', color: '#000',
+                border: 'none', fontSize: '0.85rem', fontWeight: 800,
+                letterSpacing: '0.25em', cursor: 'pointer', fontFamily: 'var(--fm)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                transition: 'all 0.25s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.border = '1px solid rgba(255,255,255,0.4)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; e.currentTarget.style.border = 'none' }}
+            >
               PRIDRUŽI SE <ArrowRight size={14} strokeWidth={3} />
             </button>
           </Link>
 
           {backLink && (
             <Link href={backLink.href} onClick={() => setMenuOpen(false)}
-              style={{ display: 'flex', justifyContent: 'center', marginTop: '20px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '0.72rem', letterSpacing: '0.2em' }}
+              style={{ display: 'flex', justifyContent: 'center', marginTop: '20px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '0.72rem', letterSpacing: '0.2em', transition: 'color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#fff'}
+              onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.35)'}
             >← {backLink.label}</Link>
           )}
+
+          {/* Social / bottom info */}
+          <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>LWLUP © 2025</span>
+            <span style={{ fontSize: '0.6rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>ZAGREB, HR</span>
+          </div>
         </div>
       </div>
 
       <style>{`
-        /* Desktop */
         @media (min-width: 769px) {
-          .nav-desktop  { display: flex !important; }
+          .nav-desktop   { display: flex !important; }
           .nav-hamburger { display: none !important; }
         }
-        /* Mobile */
         @media (max-width: 768px) {
           nav { padding: 0 20px !important; height: 64px !important; }
-          .nav-desktop  { display: none !important; }
+          .nav-desktop   { display: none !important; }
           .nav-hamburger { display: flex !important; }
         }
       `}</style>
