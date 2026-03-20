@@ -17,8 +17,12 @@ type WorkoutExercise = {
   id: string; workout_id: string; exercise_id: string; exercise_order: number
   planned_sets: number; planned_reps: string | null; planned_weight_kg: number | null
   planned_rpe: number | null; planned_rest_seconds: number | null; planned_tempo: string | null
+  target_rpe: number | null        // admin sets target RPE for this exercise
+  coach_note: string | null        // admin's note/instruction for the exercise
   actual_sets: number | null; actual_reps: string | null; actual_weight_kg: number | null
-  actual_rpe: number | null; notes: string | null; completed: boolean; exercise?: Exercise
+  actual_rpe: number | null
+  actual_note: string | null       // lifter's own note after completing
+  notes: string | null; completed: boolean; exercise?: Exercise
 }
 type Workout = {
   id: string; week_id: string; athlete_id: string; day_name: string; workout_date: string
@@ -251,74 +255,189 @@ function ExercisePicker({ exercises, onSelect, onClose }: {
   )
 }
 
-// ─── EXERCISE ROW — editorial table style ─────────────────────────
-function ExerciseRow({ we, onUpdate, onDelete }: {
-  we: WorkoutExercise; onUpdate: (id: string, data: Partial<WorkoutExercise>) => void; onDelete: (id: string) => void
+// ─── EXERCISE ROW ─────────────────────────────────────────────────
+// isAdmin=true  → edits planned_ + target_rpe + coach_note + delete
+// isAdmin=false → reads planned_, edits actual_ + actual_note + completed
+function ExerciseRow({ we, isAdmin, onUpdate, onDelete }: {
+  we: WorkoutExercise; isAdmin: boolean
+  onUpdate: (id: string, data: Partial<WorkoutExercise>) => void
+  onDelete: (id: string) => void
 }) {
   const [expanded, setExpanded] = useState(false)
+  const save = (field: keyof WorkoutExercise, val: string, isNum = false) =>
+    onUpdate(we.id, { [field]: isNum ? (val ? Number(val) : null) : (val || null) })
+
+  // ── RPE comparison helper ───────────────────────────────────────
+  const rpeColor = (actual: number | null, target: number | null) => {
+    if (!actual || !target) return '#e0e0e0'
+    const diff = actual - target
+    if (diff <= 0) return '#4ade80'       // at or below target → green
+    if (diff === 1) return '#facc15'      // 1 over → yellow
+    return '#f87171'                      // 2+ over → red
+  }
+
   return (
     <div className="ex-row-wrap">
-      {/* Main row — clean table line */}
-      <div className="ex-row-main" style={{ display: 'grid', gridTemplateColumns: '28px 1fr 72px 80px 80px 64px 28px', gap: '0', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <div className="ex-col-grip" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', borderRight: '1px solid rgba(255,255,255,0.1)', padding: '0 6px' }}>
-          <GripVertical size={12} color="#555" style={{ cursor: 'grab' }} />
+      {/* ── Main row ── */}
+      <div className="ex-row-main" style={{ display: 'grid', gridTemplateColumns: '28px 1fr 64px 72px 80px 64px 28px', alignItems: 'stretch', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+
+        {/* Grip (admin only) */}
+        <div className="ex-col-grip" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.08)', padding: '0 4px' }}>
+          {isAdmin
+            ? <GripVertical size={12} color="#555" style={{ cursor: 'grab' }} />
+            : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={we.completed ? '#4ade80' : '#555'} strokeWidth="2.5">
+                {we.completed
+                  ? <><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></>
+                  : <circle cx="12" cy="12" r="8"/>}
+              </svg>
+          }
         </div>
+
         {/* Exercise name */}
-        <div style={{ padding: '14px 16px', borderRight: '1px solid rgba(255,255,255,0.1)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--fm)', letterSpacing: '0.01em' }}>{we.exercise?.name ?? '—'}</span>
+        <div style={{ padding: '13px 14px', borderRight: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '3px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#f0f0f0', fontFamily: 'var(--fm)' }}>{we.exercise?.name ?? '—'}</span>
+          </div>
+          {/* Coach note — always visible to lifter as instruction */}
+          {we.coach_note && (
+            <div style={{ fontSize: '0.62rem', color: '#f59e0b', letterSpacing: '0.04em', paddingLeft: '18px', lineHeight: 1.4 }}>
+              ↳ {we.coach_note}
+            </div>
+          )}
+        </div>
+
+        {/* SETS */}
+        <div className="ex-col-sets" style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ padding: '5px 8px 3px', fontSize: '0.44rem', color: '#666', letterSpacing: '0.2em', textAlign: 'center' }}>SERI</div>
+          <div style={{ padding: '4px 8px 10px', textAlign: 'center' }}>
+            {isAdmin
+              ? <EditableField value={we.planned_sets} placeholder="3" type="number" small onSave={v => save('planned_sets', v, true)} />
+              : <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e0e0e0', fontFamily: 'var(--fm)' }}>{we.planned_sets ?? '—'}</span>
+            }
           </div>
         </div>
-        {/* Metric cells */}
-        {[
-          { label: 'SERI', key: 'planned_sets' as keyof WorkoutExercise, type: 'number', cls: '' },
-          { label: 'PONOV', key: 'planned_reps' as keyof WorkoutExercise, cls: '' },
-          { label: 'KG', key: 'planned_weight_kg' as keyof WorkoutExercise, type: 'number', cls: 'ex-col-kg' },
-          { label: 'RPE', key: 'planned_rpe' as keyof WorkoutExercise, type: 'number', cls: 'ex-col-rpe' },
-        ].map(f => (
-          <div key={String(f.key)} className={f.cls} style={{ padding: '14px 12px', textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.1)' }}>
-            <EditableField value={we[f.key] as string | number | null} placeholder="—" type={f.type} small
-              onSave={v => onUpdate(we.id, { [f.key]: f.type === 'number' ? (v ? Number(v) : null) : (v || null) })} />
+
+        {/* REPS */}
+        <div className="ex-col-reps" style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ padding: '5px 8px 3px', fontSize: '0.44rem', color: '#666', letterSpacing: '0.2em', textAlign: 'center' }}>PONOV</div>
+          <div style={{ padding: '4px 8px 10px', textAlign: 'center' }}>
+            {isAdmin
+              ? <EditableField value={we.planned_reps} placeholder="5" small onSave={v => save('planned_reps', v)} />
+              : <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e0e0e0', fontFamily: 'var(--fm)' }}>{we.planned_reps ?? '—'}</span>
+            }
           </div>
-        ))}
-        {/* Delete */}
+        </div>
+
+        {/* KG — lifter fills actual, admin fills planned */}
+        <div className="ex-col-kg" style={{ borderRight: '1px solid rgba(255,255,255,0.08)', background: isAdmin ? 'transparent' : 'rgba(56,100,255,0.04)' }}>
+          <div style={{ padding: '5px 8px 3px', fontSize: '0.44rem', color: isAdmin ? '#666' : '#6b8cff', letterSpacing: '0.2em', textAlign: 'center' }}>
+            {isAdmin ? 'KG PLAN' : 'KG ODIG'}
+          </div>
+          <div style={{ padding: '4px 8px 10px', textAlign: 'center' }}>
+            {isAdmin
+              ? <EditableField value={we.planned_weight_kg} placeholder="—" type="number" small onSave={v => save('planned_weight_kg', v, true)} />
+              : <>
+                  {we.planned_weight_kg && (
+                    <div style={{ fontSize: '0.52rem', color: '#555', marginBottom: '3px' }}>{we.planned_weight_kg}kg plan</div>
+                  )}
+                  <EditableField value={we.actual_weight_kg} placeholder="upiši" type="number" small onSave={v => save('actual_weight_kg', v, true)} />
+                </>
+            }
+          </div>
+        </div>
+
+        {/* RPE — admin sets target, lifter fills actual */}
+        <div className="ex-col-rpe" style={{ borderRight: '1px solid rgba(255,255,255,0.08)', background: isAdmin ? 'transparent' : 'rgba(250,204,21,0.04)' }}>
+          <div style={{ padding: '5px 8px 3px', fontSize: '0.44rem', color: isAdmin ? '#666' : '#facc15', letterSpacing: '0.2em', textAlign: 'center' }}>
+            {isAdmin ? 'RPE CILJ' : 'RPE ODIJ'}
+          </div>
+          <div style={{ padding: '4px 8px 10px', textAlign: 'center' }}>
+            {isAdmin
+              ? <EditableField value={we.target_rpe ?? we.planned_rpe} placeholder="—" type="number" small onSave={v => save('target_rpe', v, true)} />
+              : <>
+                  {we.target_rpe && (
+                    <div style={{ fontSize: '0.52rem', color: '#888', marginBottom: '3px' }}>cilj: {we.target_rpe}</div>
+                  )}
+                  <div style={{ color: rpeColor(we.actual_rpe, we.target_rpe ?? we.planned_rpe) }}>
+                    <EditableField value={we.actual_rpe} placeholder="upiši" type="number" small onSave={v => save('actual_rpe', v, true)} />
+                  </div>
+                </>
+            }
+          </div>
+        </div>
+
+        {/* Delete (admin) or complete toggle (lifter) */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <button onClick={() => onDelete(we.id)} className="icon-btn-danger" style={{ margin: '0' }}>
-            <Trash2 size={11} />
-          </button>
+          {isAdmin
+            ? <button onClick={() => onDelete(we.id)} className="icon-btn-danger"><Trash2 size={11} /></button>
+            : <button
+                onClick={() => onUpdate(we.id, { completed: !we.completed })}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: we.completed ? '#4ade80' : '#444', padding: '4px', transition: 'color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                title={we.completed ? 'Označi kao neodrađeno' : 'Označi kao odrađeno'}
+              >
+                <Check size={13} />
+              </button>
+          }
         </div>
       </div>
-      {/* Expand */}
+
+      {/* ── Expanded details ── */}
       {expanded && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0', borderBottom: '1px solid rgba(255,255,255,0.1)', background: '#0a0a10' }}>
-          {[
-            { label: 'TEMPO', key: 'planned_tempo' as keyof WorkoutExercise, ph: '3010' },
-            { label: 'ODMOR (sek)', key: 'planned_rest_seconds' as keyof WorkoutExercise, ph: '90', type: 'number' },
-            { label: 'NAPOMENA', key: 'notes' as keyof WorkoutExercise, ph: 'Bilješka...' },
-          ].map((f, fi) => (
-            <div key={String(f.key)} style={{ padding: '10px 16px', borderRight: fi < 2 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
-              <div style={{ fontSize: '0.48rem', color: '#555', letterSpacing: '0.2em', marginBottom: '5px' }}>{f.label}</div>
-              <EditableField value={we[f.key] as string | number | null} placeholder={f.ph} type={f.type}
-                onSave={v => onUpdate(we.id, { [f.key]: v || null })} />
+        <div style={{ background: '#080810', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          {isAdmin ? (
+            /* Admin: tempo, odmor, coach_note */
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0' }}>
+              {[
+                { label: 'TEMPO', key: 'planned_tempo' as keyof WorkoutExercise, ph: '3010' },
+                { label: 'ODMOR (sek)', key: 'planned_rest_seconds' as keyof WorkoutExercise, ph: '90', type: 'number' },
+                { label: 'BILJEŠKA TRENERA', key: 'coach_note' as keyof WorkoutExercise, ph: 'Uputa za liftača...' },
+              ].map((f, fi) => (
+                <div key={String(f.key)} style={{ padding: '10px 14px', borderRight: fi < 2 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
+                  <div style={{ fontSize: '0.46rem', color: '#666', letterSpacing: '0.2em', marginBottom: '5px' }}>{f.label}</div>
+                  <EditableField value={we[f.key] as string | number | null} placeholder={f.ph} type={f.type}
+                    onSave={v => save(f.key, v)} />
+                </div>
+              ))}
             </div>
-          ))}
+          ) : (
+            /* Lifter: planned info (read-only) + actual_note */
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0' }}>
+              <div style={{ padding: '10px 14px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ fontSize: '0.46rem', color: '#666', letterSpacing: '0.2em', marginBottom: '5px' }}>TEMPO / ODMOR</div>
+                <div style={{ fontSize: '0.78rem', color: '#aaa' }}>
+                  {we.planned_tempo || '—'} · {we.planned_rest_seconds ? `${we.planned_rest_seconds}s` : '—'}
+                </div>
+              </div>
+              <div style={{ padding: '10px 14px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ fontSize: '0.46rem', color: '#facc15', letterSpacing: '0.2em', marginBottom: '5px' }}>BILJEŠKA TRENERA</div>
+                <div style={{ fontSize: '0.78rem', color: '#facc15', lineHeight: 1.5 }}>
+                  {we.coach_note || <span style={{ color: '#444' }}>—</span>}
+                </div>
+              </div>
+              <div style={{ padding: '10px 14px' }}>
+                <div style={{ fontSize: '0.46rem', color: '#6b8cff', letterSpacing: '0.2em', marginBottom: '5px' }}>MOJA BILJEŠKA</div>
+                <EditableField value={we.actual_note} placeholder="Upiši dojam..." onSave={v => save('actual_note', v)} />
+              </div>
+            </div>
+          )}
         </div>
       )}
-      {/* Expand toggle — subtle */}
+
+      {/* Expand toggle */}
       <button onClick={() => setExpanded(!expanded)}
-        style={{ display: 'block', width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.07)', padding: '4px 44px', cursor: 'pointer', color: '#777', fontSize: '0.5rem', letterSpacing: '0.18em', fontFamily: 'var(--fm)', textAlign: 'left', transition: 'color 0.15s' }}
-        onMouseEnter={e => e.currentTarget.style.color = '#666'}
-        onMouseLeave={e => e.currentTarget.style.color = '#333'}>
-        {expanded ? '▲ SAKRIJ' : '▼ VIŠE'}
+        style={{ display: 'block', width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '4px 44px', cursor: 'pointer', color: '#555', fontSize: '0.48rem', letterSpacing: '0.18em', fontFamily: 'var(--fm)', textAlign: 'left', transition: 'color 0.15s' }}
+        onMouseEnter={e => e.currentTarget.style.color = '#888'}
+        onMouseLeave={e => e.currentTarget.style.color = '#555'}>
+        {expanded ? '▲ SAKRIJ' : '▼ DETALJI'}
       </button>
     </div>
   )
 }
 
 // ─── WORKOUT CARD — editorial style ──────────────────────────────
-function WorkoutCard({ workout, exercises, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }: {
-  workout: Workout; exercises: Exercise[]
+function WorkoutCard({ workout, exercises, isAdmin, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }: {
+  workout: Workout; exercises: Exercise[]; isAdmin: boolean
   onUpdateWorkout: (id: string, data: Partial<Workout>) => void
   onDeleteWorkout: (id: string) => void
   onAddExercise: (workoutId: string, ex: Exercise) => void
@@ -390,22 +509,24 @@ function WorkoutCard({ workout, exercises, onUpdateWorkout, onDeleteWorkout, onA
             {exCount > 0 && (
               <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 72px 80px 80px 64px 28px', borderBottom: '2px solid rgba(255,255,255,0.1)', background: '#0d0d14' }}>
                 <div style={{ borderRight: '1px solid rgba(255,255,255,0.07)' }} />
-                {['VJEŽBA', 'SERI', 'PONOV', 'KG', 'RPE', ''].map((h, i) => (
-                  <div key={i} style={{ padding: '8px 16px', fontSize: '0.48rem', color: '#666', letterSpacing: '0.25em', fontWeight: 700, fontFamily: 'var(--fm)', textAlign: i > 0 ? 'center' : 'left', borderRight: i < 5 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>{h}</div>
+                {['VJEŽBA', 'SERI', 'PONOV', isAdmin ? 'KG PLAN' : 'KG', isAdmin ? 'RPE CILJ' : 'RPE', ''].map((h, i) => (
+                  <div key={i} style={{ padding: '8px 16px', fontSize: '0.48rem', color: i === 3 && !isAdmin ? '#6b8cff' : i === 4 && !isAdmin ? '#facc15' : '#666', letterSpacing: '0.25em', fontWeight: 700, fontFamily: 'var(--fm)', textAlign: i > 0 ? 'center' : 'left', borderRight: i < 5 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>{h}</div>
                 ))}
               </div>
             )}
 
             {/* Exercises */}
             {workout.workout_exercises?.map(we => (
-              <ExerciseRow key={we.id} we={we} onUpdate={onUpdateExercise} onDelete={onDeleteExercise} />
+              <ExerciseRow key={we.id} we={we} isAdmin={isAdmin} onUpdate={onUpdateExercise} onDelete={onDeleteExercise} />
             ))}
 
             {/* Add vježbu + bilješka footer */}
             <div className="ex-table-footer" style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-              <button onClick={() => setShowPicker(true)} className="add-btn" style={{ flex: 'none' }}>
-                <Plus size={11} /> DODAJ VJEŽBU
-              </button>
+              {isAdmin && (
+                <button onClick={() => setShowPicker(true)} className="add-btn" style={{ flex: 'none' }}>
+                  <Plus size={11} /> DODAJ VJEŽBU
+                </button>
+              )}
               <div style={{ flex: 1, borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '12px' }}>
                 <div style={{ fontSize: '0.48rem', color: '#444', letterSpacing: '0.22em', marginBottom: '4px' }}>BILJEŠKA DANA</div>
                 <EditableField value={workout.notes} placeholder="Dodaj bilješku..." onSave={v => onUpdateWorkout(workout.id, { notes: v || null })} />
@@ -420,8 +541,8 @@ function WorkoutCard({ workout, exercises, onUpdateWorkout, onDeleteWorkout, onA
 }
 
 // ─── WEEK PANEL ───────────────────────────────────────────────────
-function WeekPanel({ week, exercises, onDeleteWeek, onUpdateWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }: {
-  week: Week; exercises: Exercise[]
+function WeekPanel({ week, exercises, isAdmin, onDeleteWeek, onUpdateWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }: {
+  week: Week; exercises: Exercise[]; isAdmin: boolean
   onDeleteWeek: (id: string) => void; onUpdateWeek: (id: string, data: Partial<Week>) => void
   onAddWorkout: (weekId: string) => void
   onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void
@@ -469,9 +590,11 @@ function WeekPanel({ week, exercises, onDeleteWeek, onUpdateWeek, onAddWorkout, 
             <div style={{ color: '#888', transition: 'transform 0.25s, color 0.2s', transform: open ? 'rotate(90deg)' : 'none' }}>
               <ChevronRight size={14} />
             </div>
-            <button onClick={e => { e.stopPropagation(); onDeleteWeek(week.id) }} className="icon-btn-danger">
-              <Trash2 size={13} />
-            </button>
+            {isAdmin && (
+              <button onClick={e => { e.stopPropagation(); onDeleteWeek(week.id) }} className="icon-btn-danger">
+                <Trash2 size={13} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -505,13 +628,15 @@ function WeekPanel({ week, exercises, onDeleteWeek, onUpdateWeek, onAddWorkout, 
       {open && (
         <div style={{ padding: '16px', background: '#0b0b12' }}>
           {week.workouts?.map(w => (
-            <WorkoutCard key={w.id} workout={w} exercises={exercises}
+            <WorkoutCard key={w.id} workout={w} exercises={exercises} isAdmin={isAdmin}
               onUpdateWorkout={onUpdateWorkout} onDeleteWorkout={onDeleteWorkout}
               onAddExercise={onAddExercise} onUpdateExercise={onUpdateExercise} onDeleteExercise={onDeleteExercise} />
           ))}
-          <button onClick={() => onAddWorkout(week.id)} className="add-btn">
-            <Plus size={11} /> DODAJ DAN TRENINGA
-          </button>
+          {isAdmin && (
+            <button onClick={() => onAddWorkout(week.id)} className="add-btn">
+              <Plus size={11} /> DODAJ DAN TRENINGA
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -646,9 +771,16 @@ export default function TrainingPage() {
     if (!error && data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, workout_exercises: [...(wo.workout_exercises ?? []), data] } : wo) })) } : b)
     setSaving(false)
   }
+  const LIFTER_FIELDS: (keyof WorkoutExercise)[] = ['actual_sets','actual_reps','actual_weight_kg','actual_rpe','actual_note','completed']
+
   const updateExercise = async (weId: string, data: Partial<WorkoutExercise>) => {
-    await supabase.from('workout_exercises').update(data).eq('id', weId)
-    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.map(we => we.id === weId ? { ...we, ...data } : we) })) })) } : b)
+    // Lifters can only update actual_ fields — filter out anything else
+    const filtered = isAdmin
+      ? data
+      : Object.fromEntries(Object.entries(data).filter(([k]) => LIFTER_FIELDS.includes(k as keyof WorkoutExercise)))
+    if (Object.keys(filtered).length === 0) return
+    await supabase.from('workout_exercises').update(filtered).eq('id', weId)
+    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.map(we => we.id === weId ? { ...we, ...filtered } : we) })) })) } : b)
   }
   const deleteExercise = async (weId: string) => {
     await supabase.from('workout_exercises').delete().eq('id', weId)
@@ -743,10 +875,12 @@ export default function TrainingPage() {
                 </div>
 
                 {/* New block */}
-                <button onClick={async () => { const n = prompt('Naziv novog bloka:'); if (n?.trim()) await addBlock(n.trim()) }}
-                  className="action-btn" style={{ padding: '0 16px', borderRadius: 0 }}>
-                  <Plus size={12} /> NOVI BLOK
-                </button>
+                {isAdmin && (
+                  <button onClick={async () => { const n = prompt('Naziv novog bloka:'); if (n?.trim()) await addBlock(n.trim()) }}
+                    className="action-btn" style={{ padding: '0 16px', borderRadius: 0 }}>
+                    <Plus size={12} /> NOVI BLOK
+                  </button>
+                )}
 
                 {saving && (
                   <div style={{ padding: '0 14px', display: 'flex', alignItems: 'center', borderLeft: '1px solid rgba(255,255,255,0.09)' }}>
@@ -797,14 +931,16 @@ export default function TrainingPage() {
                 </div>
               )}
               {block.weeks?.map(week => (
-                <WeekPanel key={week.id} week={week} exercises={exercises}
+                <WeekPanel key={week.id} week={week} exercises={exercises} isAdmin={isAdmin}
                   onDeleteWeek={deleteWeek} onUpdateWeek={updateWeek} onAddWorkout={addWorkout}
                   onUpdateWorkout={updateWorkout} onDeleteWorkout={deleteWorkout}
                   onAddExercise={addExercise} onUpdateExercise={updateExercise} onDeleteExercise={deleteExercise} />
               ))}
-              <button onClick={addWeek} className="add-week-btn">
-                <Plus size={13} /> DODAJ TJEDAN {block.weeks ? block.weeks.length + 1 : 1}
-              </button>
+              {isAdmin && (
+                <button onClick={addWeek} className="add-week-btn">
+                  <Plus size={13} /> DODAJ TJEDAN {block.weeks ? block.weeks.length + 1 : 1}
+                </button>
+              )}
             </>
           )}
         </div>
