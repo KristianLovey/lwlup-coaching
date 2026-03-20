@@ -853,7 +853,6 @@ export default function AdminPage() {
     const { data } = await supabase
       .from('profiles')
       .select('id, full_name, role, created_at')
-      .neq('role', 'admin')
       .order('full_name')
 
     if (data) {
@@ -1014,7 +1013,7 @@ export default function AdminPage() {
 
             {/* Athlete circles grid */}
             <div style={{ marginBottom: '12px' }}>
-              <div style={{ fontSize: '0.52rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '20px', fontFamily: 'var(--fm)' }}>LIFTAČI — KLIKNI NA PROFIL ZA UREĐIVANJE</div>
+              <div style={{ fontSize: '0.52rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '20px', fontFamily: 'var(--fm)' }}>KORISNICI — KLIKNI NA PROFIL ZA UREĐIVANJE</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
                 {filteredAthletes.length === 0 && (
                   <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.8rem', padding: '40px 0' }}>Nema liftača.</div>
@@ -1038,15 +1037,15 @@ export default function AdminPage() {
                         <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(255,255,255,0.12) 0%,rgba(255,255,255,0.04) 100%)', border: '2px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fm)', margin: '0 auto 12px', position: 'relative' }}>
                           {initials}
                           {/* Active indicator */}
-                          {activeBlock && <div style={{ position: 'absolute', bottom: '2px', right: '2px', width: '10px', height: '10px', borderRadius: '50%', background: '#4ade80', border: '2px solid #08080a', boxShadow: '0 0 6px #4ade80' }} />}
+                          {(activeBlock || athlete.role === 'admin') && <div style={{ position: 'absolute', bottom: '2px', right: '2px', width: '10px', height: '10px', borderRadius: '50%', background: athlete.role === 'admin' ? '#ef4444' : '#4ade80', border: '2px solid #08080a', boxShadow: athlete.role === 'admin' ? '0 0 6px #ef4444' : '0 0 6px #4ade80' }} />}
                         </div>
 
                         {/* Name */}
                         <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)', marginBottom: '4px', lineHeight: 1.2 }}>{athlete.full_name}</div>
 
                         {/* Active block name */}
-                        <div style={{ fontSize: '0.58rem', color: activeBlock ? '#4ade80' : 'rgba(255,255,255,0.2)', letterSpacing: '0.08em', marginBottom: '12px', minHeight: '16px' }}>
-                          {activeBlock ? activeBlock.name : 'Nema ak. bloka'}
+                        <div style={{ fontSize: '0.58rem', color: athlete.role === 'admin' ? '#ef4444' : (activeBlock ? '#4ade80' : 'rgba(255,255,255,0.2)'), letterSpacing: '0.08em', marginBottom: '12px', minHeight: '16px' }}>
+                          {athlete.role === 'admin' ? '⚙ ADMINISTRATOR' : (activeBlock ? activeBlock.name : 'Nema ak. bloka')}
                         </div>
 
                         {/* Micro stats */}
