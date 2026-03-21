@@ -4,8 +4,8 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
-  GripVertical, Loader2, LogOut, Home, BarChart2, FolderOpen,
-  User, Shield, Settings, X, ChevronLeft, ChevronUp
+  GripVertical, Loader2, LogOut, Home, FolderOpen,
+  User, Shield, X, ChevronLeft, ChevronUp, Dumbbell, BookOpen, BarChart2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -38,16 +38,18 @@ type Block = {
   goal: string | null; status: 'active' | 'completed' | 'planned'; notes: string | null; weeks?: Week[]
 }
 type BlockSummary = { id: string; name: string; status: string; start_date: string; end_date: string }
+type Competition = { id: string; name: string; date: string; location: string | null; status: string }
+type SetLog = { set_number: number; weight_kg: number | null; reps: string | null; rpe: number | null; completed: boolean }
 
 // ─── NAVBAR ───────────────────────────────────────────────────────
 function TrainingNav({ athleteName, isAdmin, onLogout }: {
   athleteName: string; isAdmin: boolean; onLogout: () => void
 }) {
   const [profileOpen, setProfileOpen] = useState(false)
+  const [activeLink, setActiveLink]   = useState<string | null>(null)
   const initials = athleteName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
   const dropRef = useRef<HTMLDivElement>(null)
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropRef.current && !dropRef.current.contains(e.target as Node)) setProfileOpen(false)
@@ -56,108 +58,109 @@ function TrainingNav({ athleteName, isAdmin, onLogout }: {
     return () => document.removeEventListener('mousedown', handler)
   }, [profileOpen])
 
+  const NAV_ITEMS = [
+    { href: '/', icon: <Home size={13}/>, label: 'POČETNA' },
+    { href: '/exercises', icon: <Dumbbell size={13}/>, label: 'VJEŽBE' },
+    { href: '/profile', icon: <BarChart2 size={13}/>, label: 'PROFIL' },
+  ]
+
   return (
     <nav style={{
-      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, height: '60px',
-      display: 'flex', alignItems: 'center',
-      background: 'rgba(8,8,12,0.92)',
-      borderBottom: '1px solid rgba(255,255,255,0.06)',
-      backdropFilter: 'blur(20px)',
-      boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 4px 32px rgba(0,0,0,0.4)',
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, height: '64px',
+      display: 'flex', alignItems: 'stretch',
+      background: 'rgba(6,6,10,0.96)',
+      borderBottom: '1px solid rgba(255,255,255,0.08)',
+      backdropFilter: 'blur(24px)',
+      boxShadow: '0 1px 0 rgba(255,255,255,0.03), 0 8px 40px rgba(0,0,0,0.5)',
     }}>
-      {/* Left: logo + home */}
-      <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', height: '100%', padding: '0 18px', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
-          <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '36px' }} />
-        </Link>
-        <Link href="/" style={{
-          textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '7px',
-          height: '100%', padding: '0 18px', borderRight: '1px solid rgba(255,255,255,0.1)',
-          color: '#555', fontSize: '0.68rem', letterSpacing: '0.12em', fontWeight: 600,
-          fontFamily: 'var(--fm)', transition: 'color 0.2s',
-        }}
-          onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#999'}
-          onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = '#555'}
-        >
-          <Home size={12} /><span className='nav-home-text'> POČETNA</span>
-        </Link>
+
+      {/* ── Logo ── */}
+      <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', padding: '0 20px', borderRight: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }}>
+        <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '34px', opacity: 0.9, transition: 'opacity 0.2s' }}
+          onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+          onMouseLeave={e => e.currentTarget.style.opacity = '0.9'} />
+      </Link>
+
+      {/* ── Nav links (left-side) ── */}
+      <div className="tnav-links" style={{ display: 'flex', alignItems: 'stretch', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        {NAV_ITEMS.map(item => (
+          <Link key={item.href} href={item.href}
+            style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '7px', padding: '0 16px', color: activeLink === item.href ? '#fff' : 'rgba(255,255,255,0.38)', fontSize: '0.6rem', letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)', transition: 'all 0.2s', borderRight: '1px solid rgba(255,255,255,0.07)', position: 'relative' }}
+            onMouseEnter={e => { setActiveLink(item.href); (e.currentTarget as HTMLAnchorElement).style.color = '#fff'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.04)' }}
+            onMouseLeave={e => { setActiveLink(null); (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.38)'; (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}>
+            <span style={{ color: 'inherit', opacity: 0.8 }}>{item.icon}</span>
+            <span className="tnav-label">{item.label}</span>
+          </Link>
+        ))}
       </div>
 
-      {/* Center */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-        <div style={{ width: '5px', height: '5px', background: '#22c55e', borderRadius: '50%', boxShadow: '0 0 6px #22c55e' }} />
-        <span style={{ fontFamily: 'var(--fd)', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.28em', color: '#888' }}>
+      {/* ── Center badge ── */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+        {/* Animated status dot */}
+        <div style={{ position: 'relative', width: '8px', height: '8px' }}>
+          <div style={{ position: 'absolute', inset: 0, background: '#22c55e', borderRadius: '50%', boxShadow: '0 0 6px #22c55e' }} />
+          <div style={{ position: 'absolute', inset: '-4px', background: 'rgba(34,197,94,0.15)', borderRadius: '50%', animation: 'pingPulse 2s ease-in-out infinite' }} />
+        </div>
+        <span style={{ fontFamily: 'var(--fd)', fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', userSelect: 'none' }}>
           PROGRAM TRENINGA
         </span>
       </div>
 
-      {/* Right: profile */}
-      <div style={{ display: 'flex', alignItems: 'center', height: '100%' }} ref={dropRef}>
-        <button
-          onClick={() => setProfileOpen(o => !o)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
-            height: '100%', padding: '0 18px',
-            background: profileOpen ? '#161618' : 'transparent',
-            border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)',
-            cursor: 'pointer', transition: 'background 0.2s',
-          }}
-          onMouseEnter={e => { if (!profileOpen) e.currentTarget.style.background = '#111113' }}
-          onMouseLeave={e => { if (!profileOpen) e.currentTarget.style.background = 'transparent' }}
-        >
-          {/* Avatar */}
-          <div style={{
-            width: '30px', height: '30px', borderRadius: '50%',
-            background: 'linear-gradient(145deg, rgba(255,255,255,0.1), #12121a)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '0.6rem', fontWeight: 700, color: '#ccc', fontFamily: 'var(--fm)',
-          }}>{initials}</div>
-          <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#e0e0e0', fontFamily: 'var(--fm)', whiteSpace: 'nowrap', lineHeight: 1.2 }}>
-              {athleteName || 'Atleta'}
-            </div>
-            <div style={{ fontSize: '0.52rem', color: '#22c55e', letterSpacing: '0.1em', lineHeight: 1.2 }}>AKTIVAN</div>
+      {/* ── Profile button (right) ── */}
+      <div style={{ display: 'flex', alignItems: 'stretch' }} ref={dropRef}>
+        <button onClick={() => setProfileOpen(o => !o)}
+          style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '0 20px', background: profileOpen ? 'rgba(255,255,255,0.05)' : 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer', transition: 'background 0.2s', minWidth: '160px' }}
+          onMouseEnter={e => { if (!profileOpen) e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+          onMouseLeave={e => { if (!profileOpen) e.currentTarget.style.background = 'transparent' }}>
+
+          {/* Avatar circle */}
+          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #1e1e2a 0%, #111118 100%)', border: '1.5px solid rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.62rem', fontWeight: 800, color: '#e0e0e0', fontFamily: 'var(--fm)', flexShrink: 0, boxShadow: '0 2px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)' }}>
+            {initials}
           </div>
-          <ChevronDown size={13} color="#444" style={{ transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+
+          <div style={{ textAlign: 'left', flex: 1 }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--fm)', whiteSpace: 'nowrap', lineHeight: 1.3 }}>{athleteName || 'Atleta'}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>
+              <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 4px #22c55e' }} />
+              <span style={{ fontSize: '0.48rem', color: '#22c55e', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700 }}>AKTIVAN</span>
+            </div>
+          </div>
+          <ChevronDown size={12} color="rgba(255,255,255,0.35)" style={{ transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.22s', flexShrink: 0 }} />
         </button>
 
-        {/* Profile dropdown — NO transparency, sharp solid bg */}
+        {/* Profile dropdown */}
         {profileOpen && (
-          <div style={{
-            position: 'absolute', top: '60px', right: '0',
-            width: '220px',
-            background: '#0c0c0e',
-            border: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: '0 16px 56px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.05)',
-            zIndex: 300,
-            animation: 'dropDown 0.18s ease',
-          }}>
-            {/* Profile header */}
-            <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.09)' }}>
-              <div style={{ fontSize: '0.58rem', color: '#444', letterSpacing: '0.25em', marginBottom: '3px', fontFamily: 'var(--fm)' }}>PRIJAVLJEN/A KAO</div>
-              <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#e0e0e0', fontFamily: 'var(--fm)' }}>{athleteName}</div>
+          <div style={{ position: 'absolute', top: '64px', right: '0', width: '230px', background: '#09090e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0 0 10px 10px', boxShadow: '0 20px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05)', zIndex: 300, animation: 'dropDown 0.18s ease', overflow: 'hidden' }}>
+
+            {/* User info header */}
+            <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
+              <div style={{ fontSize: '0.52rem', color: '#555', letterSpacing: '0.28em', marginBottom: '4px', fontFamily: 'var(--fm)' }}>PRIJAVLJEN/A KAO</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--fm)' }}>{athleteName}</div>
             </div>
 
-            {/* Menu items */}
+            {/* Links */}
             <div style={{ padding: '6px' }}>
-              <Link href="/profile" onClick={() => setProfileOpen(false)} style={{ textDecoration: 'none' }}>
-                <button className="nav-menu-item">
-                  <User size={13} color="#666" /> <span>Moj profil</span>
-                </button>
-              </Link>
+              {[
+                { href: '/profile', icon: <User size={13}/>, label: 'Moj profil' },
+                { href: '/exercises', icon: <Dumbbell size={13}/>, label: 'Baza vježbi' },
+              ].map(item => (
+                <Link key={item.href} href={item.href} onClick={() => setProfileOpen(false)} style={{ textDecoration: 'none' }}>
+                  <button className="nav-menu-item">{item.icon} <span>{item.label}</span></button>
+                </Link>
+              ))}
 
               {isAdmin && (
                 <Link href="/admin" onClick={() => setProfileOpen(false)} style={{ textDecoration: 'none' }}>
                   <button className="nav-menu-item nav-menu-admin">
-                    <Shield size={13} color="#f59e0b" /> <span>Admin panel</span>
-                    <span style={{ marginLeft: 'auto', fontSize: '0.5rem', background: '#f59e0b22', color: '#f59e0b', padding: '2px 6px', letterSpacing: '0.15em', border: '1px solid #f59e0b44' }}>ADMIN</span>
+                    <Shield size={13} color="#f59e0b" />
+                    <span>Admin panel</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '0.48rem', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', padding: '2px 7px', letterSpacing: '0.12em', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '3px' }}>ADMIN</span>
                   </button>
                 </Link>
               )}
             </div>
 
-            {/* Logout */}
-            <div style={{ padding: '6px', borderTop: '1px solid rgba(255,255,255,0.09)' }}>
+            <div style={{ padding: '6px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
               <button onClick={() => { setProfileOpen(false); onLogout() }} className="nav-menu-item nav-menu-logout">
                 <LogOut size={13} /> <span>Odjava</span>
               </button>
@@ -255,11 +258,252 @@ function ExercisePicker({ exercises, onSelect, onClose }: {
   )
 }
 
+// ─── COMPETITION BANNER ───────────────────────────────────────────
+function CompetitionBanner({ userId }: { userId: string }) {
+  const [competitions, setCompetitions] = useState<Competition[]>([])
+  const [selected, setSelected]         = useState<Competition | null>(null)
+  const [open, setOpen]                 = useState(false)
+  const [daysOut, setDaysOut]           = useState<number | null>(null)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // Load upcoming competitions
+    supabase.from('competitions')
+      .select('id, name, date, location, status')
+      .eq('status', 'announced')
+      .gte('date', new Date().toISOString().split('T')[0])
+      .order('date')
+      .then(({ data }) => setCompetitions((data ?? []) as Competition[]))
+
+    // Load saved selection
+    supabase.from('athlete_competition_selection')
+      .select('competition_id, competitions(id, name, date, location, status)')
+      .eq('athlete_id', userId)
+      .single()
+      .then(({ data }) => {
+        if (data?.competitions) {
+          const c = data.competitions as any
+          setSelected(c)
+          calcDays(c.date)
+        }
+      })
+  }, [userId])
+
+  const calcDays = (dateStr: string) => {
+    const diff = Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000)
+    setDaysOut(diff)
+  }
+
+  const pick = async (comp: Competition) => {
+    setSelected(comp); calcDays(comp.date); setOpen(false)
+    await supabase.from('athlete_competition_selection')
+      .upsert({ athlete_id: userId, competition_id: comp.id, selected_at: new Date().toISOString() },
+               { onConflict: 'athlete_id' })
+  }
+
+  // Close on outside click
+  useEffect(() => {
+    const fn = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    if (open) document.addEventListener('mousedown', fn)
+    return () => document.removeEventListener('mousedown', fn)
+  }, [open])
+
+  if (competitions.length === 0) return null
+
+  return (
+    <div ref={ref} style={{ position: 'relative', marginBottom: '20px', animation: 'fadeUp 0.4s ease' }}>
+      <div style={{ display: 'flex', alignItems: 'stretch', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', overflow: 'hidden', background: 'linear-gradient(135deg, #0e0e14 0%, #09090e 100%)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
+
+        {/* Days out pill */}
+        {selected && daysOut !== null && (
+          <div style={{ padding: '0 24px', background: daysOut <= 14 ? 'rgba(239,68,68,0.12)' : daysOut <= 30 ? 'rgba(250,204,21,0.08)' : 'rgba(34,197,94,0.08)', borderRight: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: '90px' }}>
+            <div style={{ fontFamily: 'var(--fd)', fontSize: '2rem', fontWeight: 800, lineHeight: 1, color: daysOut <= 14 ? '#ef4444' : daysOut <= 30 ? '#facc15' : '#22c55e' }}>{daysOut}</div>
+            <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: '#666', marginTop: '3px', fontFamily: 'var(--fm)', fontWeight: 700 }}>DAYS OUT</div>
+          </div>
+        )}
+
+        {/* Picker button */}
+        <button onClick={() => setOpen(o => !o)}
+          style={{ flex: 1, padding: '14px 18px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.15s' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '0.48rem', letterSpacing: '0.35em', color: '#666', marginBottom: '3px', fontFamily: 'var(--fm)' }}>SLJEDEĆE NATJECANJE</div>
+            {selected ? (
+              <>
+                <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#f0f0f0', fontFamily: 'var(--fm)' }}>{selected.name}</div>
+                <div style={{ fontSize: '0.58rem', color: '#777', marginTop: '2px' }}>{selected.date}{selected.location ? ` · ${selected.location}` : ''}</div>
+              </>
+            ) : (
+              <div style={{ fontSize: '0.82rem', color: '#555', fontFamily: 'var(--fm)' }}>Odaberi natjecanje...</div>
+            )}
+          </div>
+          <ChevronDown size={13} color="#555" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
+        </button>
+      </div>
+
+      {/* Dropdown */}
+      {open && (
+        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, background: '#0c0c0e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', boxShadow: '0 16px 48px rgba(0,0,0,0.7)', overflow: 'hidden', animation: 'dropDown 0.18s ease' }}>
+          {competitions.map((comp, i) => (
+            <button key={comp.id} onClick={() => pick(comp)}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '14px', padding: '13px 18px', background: selected?.id === comp.id ? 'rgba(255,255,255,0.05)' : 'transparent', border: 'none', borderBottom: i < competitions.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.12s' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+              onMouseLeave={e => e.currentTarget.style.background = selected?.id === comp.id ? 'rgba(255,255,255,0.05)' : 'transparent'}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#e0e0e0', fontFamily: 'var(--fm)' }}>{comp.name}</div>
+                <div style={{ fontSize: '0.6rem', color: '#666', marginTop: '2px' }}>{comp.date}{comp.location ? ` · ${comp.location}` : ''}</div>
+              </div>
+              {selected?.id === comp.id && <Check size={12} color="#22c55e" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── SET LOG ROW — one box per set ─────────────────────────────────
+// Admin sees planned data. Lifter gets N input boxes (one per set).
+function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
+  we: WorkoutExercise; userId: string; isAdmin: boolean
+  onAggregateUpdate: (data: Partial<WorkoutExercise>) => void
+}) {
+  const plannedSets = we.planned_sets ?? 3
+  const [logs, setLogs] = useState<SetLog[]>([])
+  const [saving, setSaving] = useState(false)
+
+  // Initialise logs array — one entry per planned set
+  useEffect(() => {
+    if (isAdmin) return
+    supabase.from('set_logs')
+      .select('set_number, weight_kg, reps, rpe, completed')
+      .eq('workout_exercise_id', we.id)
+      .eq('athlete_id', userId)
+      .order('set_number')
+      .then(({ data }) => {
+        const existing = (data ?? []) as SetLog[]
+        // Fill in missing sets
+        const filled: SetLog[] = Array.from({ length: plannedSets }, (_, i) => {
+          const found = existing.find(s => s.set_number === i + 1)
+          return found ?? { set_number: i + 1, weight_kg: null, reps: null, rpe: null, completed: false }
+        })
+        setLogs(filled)
+      })
+  }, [we.id, plannedSets, isAdmin])
+
+  const saveSet = async (setNum: number, field: keyof SetLog, raw: string) => {
+    const val = (field === 'weight_kg' || field === 'rpe') ? (raw ? Number(raw) : null) : (raw || null)
+    setSaving(true)
+
+    const updated = logs.map(s => s.set_number === setNum ? { ...s, [field]: val } : s)
+    setLogs(updated)
+
+    await supabase.from('set_logs').upsert({
+      workout_exercise_id: we.id,
+      athlete_id: userId,
+      set_number: setNum,
+      [field]: val,
+    }, { onConflict: 'workout_exercise_id,set_number' })
+
+    // Update aggregate actual_ on workout_exercises so progress tracking still works
+    const completed = updated.filter(s => s.weight_kg || s.reps)
+    if (completed.length > 0) {
+      const avgKg = completed.reduce((s, x) => s + (x.weight_kg ?? 0), 0) / completed.length
+      const lastRpe = completed[completed.length - 1].rpe
+      onAggregateUpdate({ actual_weight_kg: avgKg, actual_rpe: lastRpe })
+    }
+    setSaving(false)
+  }
+
+  const markSetDone = async (setNum: number) => {
+    const s = logs.find(l => l.set_number === setNum)
+    if (!s) return
+    const nowDone = !s.completed
+    setLogs(logs.map(l => l.set_number === setNum ? { ...l, completed: nowDone } : l))
+    await supabase.from('set_logs').upsert({
+      workout_exercise_id: we.id, athlete_id: userId,
+      set_number: setNum, completed: nowDone,
+    }, { onConflict: 'workout_exercise_id,set_number' })
+  }
+
+  if (isAdmin) {
+    // Admin sees a summary of planned sets
+    return (
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', padding: '8px 0 0' }}>
+        {Array.from({ length: plannedSets }, (_, i) => (
+          <div key={i} style={{ padding: '4px 10px', background: '#111118', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '5px', fontSize: '0.62rem', color: '#888', fontFamily: 'var(--fm)' }}>
+            Set {i + 1} · {we.planned_reps ?? '?'} reps · {we.planned_weight_kg ? `${we.planned_weight_kg}kg` : '—'}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  // Lifter: one input group per set
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px 0 4px' }}>
+      {saving && <div style={{ fontSize: '0.48rem', color: '#555', letterSpacing: '0.2em', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}><Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} /> SNIMANJE...</div>}
+      {logs.map((log, i) => (
+        <div key={i} style={{ display: 'grid', gridTemplateColumns: '36px 1fr 1fr 1fr 32px', gap: '6px', alignItems: 'center', padding: '8px 10px', background: log.completed ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.02)', border: `1px solid ${log.completed ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '7px', transition: 'all 0.2s' }}>
+          {/* Set number */}
+          <div style={{ textAlign: 'center', fontSize: '0.6rem', fontWeight: 800, color: log.completed ? '#22c55e' : '#555', fontFamily: 'var(--fd)' }}>S{log.set_number}</div>
+          {/* KG */}
+          <div>
+            <div style={{ fontSize: '0.44rem', color: '#6b8cff', letterSpacing: '0.2em', marginBottom: '3px' }}>KG</div>
+            <input
+              type="number" step="0.5" value={log.weight_kg ?? ''}
+              onChange={e => saveSet(log.set_number, 'weight_kg', e.target.value)}
+              placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : '—'}
+              style={{ width: '100%', background: '#0a0a12', border: '1px solid rgba(255,255,255,0.1)', color: '#e0e0e0', padding: '5px 8px', fontSize: '0.82rem', outline: 'none', borderRadius: '5px', fontFamily: 'var(--fm)', boxSizing: 'border-box' }}
+              onFocus={e => e.target.style.borderColor = 'rgba(107,140,255,0.5)'}
+              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+            />
+          </div>
+          {/* Reps */}
+          <div>
+            <div style={{ fontSize: '0.44rem', color: '#aaa', letterSpacing: '0.2em', marginBottom: '3px' }}>PONOV</div>
+            <input
+              type="text" value={log.reps ?? ''}
+              onChange={e => saveSet(log.set_number, 'reps', e.target.value)}
+              placeholder={we.planned_reps ?? '—'}
+              style={{ width: '100%', background: '#0a0a12', border: '1px solid rgba(255,255,255,0.1)', color: '#e0e0e0', padding: '5px 8px', fontSize: '0.82rem', outline: 'none', borderRadius: '5px', fontFamily: 'var(--fm)', boxSizing: 'border-box' }}
+              onFocus={e => e.target.style.borderColor = 'rgba(255,255,255,0.3)'}
+              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+            />
+          </div>
+          {/* RPE */}
+          <div>
+            <div style={{ fontSize: '0.44rem', color: '#facc15', letterSpacing: '0.2em', marginBottom: '3px' }}>
+              RPE{(we.target_rpe ?? we.planned_rpe) ? ` (cilj: ${we.target_rpe ?? we.planned_rpe})` : ''}
+            </div>
+            <input
+              type="number" step="0.5" min="1" max="10" value={log.rpe ?? ''}
+              onChange={e => saveSet(log.set_number, 'rpe', e.target.value)}
+              placeholder="—"
+              style={{ width: '100%', background: '#0a0a12', border: '1px solid rgba(255,255,255,0.1)', color: log.rpe && (we.target_rpe ?? we.planned_rpe) ? (Number(log.rpe) - Number(we.target_rpe ?? we.planned_rpe) > 1 ? '#f87171' : Number(log.rpe) - Number(we.target_rpe ?? we.planned_rpe) > 0 ? '#facc15' : '#4ade80') : '#e0e0e0', padding: '5px 8px', fontSize: '0.82rem', outline: 'none', borderRadius: '5px', fontFamily: 'var(--fm)', boxSizing: 'border-box' }}
+              onFocus={e => e.target.style.borderColor = 'rgba(250,204,21,0.4)'}
+              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+            />
+          </div>
+          {/* Done toggle */}
+          <button onClick={() => markSetDone(log.set_number)}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: log.completed ? '#22c55e' : '#444', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.2s' }}
+            title={log.completed ? 'Poništi' : 'Označi kao odrađeno'}>
+            <Check size={14} strokeWidth={log.completed ? 3 : 1.5} />
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ─── EXERCISE ROW ─────────────────────────────────────────────────
 // isAdmin=true  → edits planned_ + target_rpe + coach_note + delete
 // isAdmin=false → reads planned_, edits actual_ + actual_note + completed
-function ExerciseRow({ we, isAdmin, onUpdate, onDelete }: {
-  we: WorkoutExercise; isAdmin: boolean
+function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
+  we: WorkoutExercise; isAdmin: boolean; userId: string
   onUpdate: (id: string, data: Partial<WorkoutExercise>) => void
   onDelete: (id: string) => void
 }) {
@@ -424,6 +668,14 @@ function ExerciseRow({ we, isAdmin, onUpdate, onDelete }: {
         </div>
       )}
 
+      {/* Set log section — shown always (below main row) */}
+      <div style={{ padding: '0 16px 0 44px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <SetLogSection
+          we={we} userId={userId} isAdmin={isAdmin}
+          onAggregateUpdate={data => onUpdate(we.id, data)}
+        />
+      </div>
+
       {/* Expand toggle */}
       <button onClick={() => setExpanded(!expanded)}
         style={{ display: 'block', width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '4px 44px', cursor: 'pointer', color: '#555', fontSize: '0.48rem', letterSpacing: '0.18em', fontFamily: 'var(--fm)', textAlign: 'left', transition: 'color 0.15s' }}
@@ -436,8 +688,8 @@ function ExerciseRow({ we, isAdmin, onUpdate, onDelete }: {
 }
 
 // ─── WORKOUT CARD — editorial style ──────────────────────────────
-function WorkoutCard({ workout, exercises, isAdmin, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }: {
-  workout: Workout; exercises: Exercise[]; isAdmin: boolean
+function WorkoutCard({ workout, exercises, isAdmin, userId, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }: {
+  workout: Workout; exercises: Exercise[]; isAdmin: boolean; userId: string
   onUpdateWorkout: (id: string, data: Partial<Workout>) => void
   onDeleteWorkout: (id: string) => void
   onAddExercise: (workoutId: string, ex: Exercise) => void
@@ -517,7 +769,7 @@ function WorkoutCard({ workout, exercises, isAdmin, onUpdateWorkout, onDeleteWor
 
             {/* Exercises */}
             {workout.workout_exercises?.map(we => (
-              <ExerciseRow key={we.id} we={we} isAdmin={isAdmin} onUpdate={onUpdateExercise} onDelete={onDeleteExercise} />
+              <ExerciseRow key={we.id} we={we} isAdmin={isAdmin} userId={userId} onUpdate={onUpdateExercise} onDelete={onDeleteExercise} />
             ))}
 
             {/* Add vježbu + bilješka footer */}
@@ -541,8 +793,8 @@ function WorkoutCard({ workout, exercises, isAdmin, onUpdateWorkout, onDeleteWor
 }
 
 // ─── WEEK PANEL ───────────────────────────────────────────────────
-function WeekPanel({ week, exercises, isAdmin, onDeleteWeek, onUpdateWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }: {
-  week: Week; exercises: Exercise[]; isAdmin: boolean
+function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onUpdateWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }: {
+  week: Week; exercises: Exercise[]; isAdmin: boolean; userId: string
   onDeleteWeek: (id: string) => void; onUpdateWeek: (id: string, data: Partial<Week>) => void
   onAddWorkout: (weekId: string) => void
   onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void
@@ -628,7 +880,7 @@ function WeekPanel({ week, exercises, isAdmin, onDeleteWeek, onUpdateWeek, onAdd
       {open && (
         <div style={{ padding: '16px', background: '#0b0b12' }}>
           {week.workouts?.map(w => (
-            <WorkoutCard key={w.id} workout={w} exercises={exercises} isAdmin={isAdmin}
+            <WorkoutCard key={w.id} workout={w} exercises={exercises} isAdmin={isAdmin} userId={userId}
               onUpdateWorkout={onUpdateWorkout} onDeleteWorkout={onDeleteWorkout}
               onAddExercise={onAddExercise} onUpdateExercise={onUpdateExercise} onDeleteExercise={onDeleteExercise} />
           ))}
@@ -794,21 +1046,62 @@ export default function TrainingPage() {
   return (
     <div style={{ background: '#06060a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
 
-      {/* ── Atmospheric layered background ── */}
+      {/* ── Background layers ── */}
+      {/* Dot grid */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-        backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.016) 1px, transparent 1px)',
+        backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.014) 1px, transparent 1px)',
         backgroundSize: '28px 28px' }} />
-      <div style={{ position: 'fixed', top: '-20vh', left: '-10vw', width: '65vw', height: '65vh', zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at center, rgba(56,100,255,0.055) 0%, transparent 70%)', filter: 'blur(50px)' }} />
-      <div style={{ position: 'fixed', bottom: '-15vh', right: '-8vw', width: '55vw', height: '55vh', zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at center, rgba(34,197,94,0.04) 0%, transparent 70%)', filter: 'blur(70px)' }} />
+      {/* Blue top-left glow */}
+      <div style={{ position: 'fixed', top: '-25vh', left: '-15vw', width: '70vw', height: '70vh', zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at center, rgba(56,100,255,0.06) 0%, transparent 65%)', filter: 'blur(60px)' }} />
+      {/* Green bottom-right glow */}
+      <div style={{ position: 'fixed', bottom: '-20vh', right: '-10vw', width: '60vw', height: '60vh', zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at center, rgba(34,197,94,0.045) 0%, transparent 65%)', filter: 'blur(80px)' }} />
+      {/* Vignette */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 50% 20%, transparent 35%, rgba(0,0,0,0.5) 100%)' }} />
+        background: 'radial-gradient(ellipse at 50% 30%, transparent 30%, rgba(0,0,0,0.55) 100%)' }} />
+
+      {/* ── Decorative geometric shapes (behind content) ── */}
+      {/* Large barbell outline — top right */}
+      <div style={{ position: 'fixed', top: '12vh', right: '-6vw', zIndex: 0, pointerEvents: 'none', opacity: 0.022, transform: 'rotate(-12deg)' }}>
+        <svg width="420" height="140" viewBox="0 0 420 140" fill="none">
+          <rect x="40" y="62" width="340" height="16" rx="8" fill="white"/>
+          <rect x="30" y="30" width="50" height="80" rx="12" fill="white"/>
+          <rect x="340" y="30" width="50" height="80" rx="12" fill="white"/>
+          <rect x="10" y="44" width="30" height="52" rx="8" fill="white"/>
+          <rect x="380" y="44" width="30" height="52" rx="8" fill="white"/>
+        </svg>
+      </div>
+      {/* Medium barbell — bottom left */}
+      <div style={{ position: 'fixed', bottom: '18vh', left: '-5vw', zIndex: 0, pointerEvents: 'none', opacity: 0.018, transform: 'rotate(8deg)' }}>
+        <svg width="300" height="100" viewBox="0 0 300 100" fill="none">
+          <rect x="30" y="44" width="240" height="12" rx="6" fill="white"/>
+          <rect x="22" y="20" width="36" height="60" rx="9" fill="white"/>
+          <rect x="242" y="20" width="36" height="60" rx="9" fill="white"/>
+          <rect x="8" y="30" width="22" height="40" rx="6" fill="white"/>
+          <rect x="270" y="30" width="22" height="40" rx="6" fill="white"/>
+        </svg>
+      </div>
+      {/* Diamond / plate shape — center right */}
+      <div style={{ position: 'fixed', top: '42vh', right: '-3vw', zIndex: 0, pointerEvents: 'none', opacity: 0.025, transform: 'rotate(18deg)' }}>
+        <svg width="160" height="160" viewBox="0 0 160 160" fill="none">
+          <rect x="12" y="12" width="136" height="136" rx="20" stroke="white" strokeWidth="8" fill="none"/>
+          <rect x="40" y="40" width="80" height="80" rx="12" stroke="white" strokeWidth="5" fill="none"/>
+          <circle cx="80" cy="80" r="16" stroke="white" strokeWidth="5" fill="none"/>
+        </svg>
+      </div>
+      {/* Small plate — top center-left */}
+      <div style={{ position: 'fixed', top: '55vh', left: '3vw', zIndex: 0, pointerEvents: 'none', opacity: 0.02, transform: 'rotate(-6deg)' }}>
+        <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+          <rect x="8" y="8" width="104" height="104" rx="18" stroke="white" strokeWidth="7" fill="none"/>
+          <circle cx="60" cy="60" r="22" stroke="white" strokeWidth="5" fill="none"/>
+        </svg>
+      </div>
 
       <TrainingNav athleteName={athleteName} isAdmin={isAdmin} onLogout={handleLogout} />
 
       {/* ─── HEADER ──────────────────────────────────────────────── */}
-      <div style={{ paddingTop: '60px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
+      <div style={{ paddingTop: '64px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
         {/* Header glow strip at top */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '180px', zIndex: 0, pointerEvents: 'none',
           background: 'linear-gradient(180deg, rgba(56,100,255,0.04) 0%, transparent 100%)' }} />
@@ -924,6 +1217,9 @@ export default function TrainingPage() {
           )}
           {!loading && block && (
             <>
+              {/* Competition countdown banner */}
+              {userId && <CompetitionBanner userId={userId} />}
+
               {(block.weeks?.length ?? 0) === 0 && (
                 <div style={{ textAlign: 'center', padding: '80px 0', color: '#333' }}>
                   <div style={{ fontFamily: 'var(--fd)', fontSize: '4rem', marginBottom: '14px', opacity: 0.3 }}>—</div>
@@ -931,7 +1227,7 @@ export default function TrainingPage() {
                 </div>
               )}
               {block.weeks?.map(week => (
-                <WeekPanel key={week.id} week={week} exercises={exercises} isAdmin={isAdmin}
+                <WeekPanel key={week.id} week={week} exercises={exercises} isAdmin={isAdmin} userId={userId ?? ''}
                   onDeleteWeek={deleteWeek} onUpdateWeek={updateWeek} onAddWorkout={addWorkout}
                   onUpdateWorkout={updateWorkout} onDeleteWorkout={deleteWorkout}
                   onAddExercise={addExercise} onUpdateExercise={updateExercise} onDeleteExercise={deleteExercise} />
@@ -1071,6 +1367,21 @@ export default function TrainingPage() {
 
         /* ── Nav menu item refined ── */
         .nav-menu-item { border-radius: 7px; }
+
+        /* ── Ping animation for status dot ── */
+        @keyframes pingPulse {
+          0%, 100% { transform: scale(1); opacity: 0.6; }
+          50% { transform: scale(2.2); opacity: 0; }
+        }
+
+        /* ── Training nav labels hide on small screens ── */
+        @media (max-width: 680px) {
+          .tnav-label { display: none !important; }
+          .tnav-links a { padding: 0 12px !important; }
+        }
+        @media (max-width: 480px) {
+          .tnav-links { display: none !important; }
+        }
 
         /* ══ MOBILE ══════════════════════════════════════════════ */
 
