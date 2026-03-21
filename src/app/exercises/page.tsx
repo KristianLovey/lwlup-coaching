@@ -20,7 +20,7 @@ export default function ExerciseLibraryPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
 
-  const categories = ['ALL', 'Primary Squat', 'Primary Bench', 'Primary Deadlift', 'Secondary Squat', 'Secondary Bench', 'Secondary Deadlift', 'Back Mid', 'Back Lats', 'Quads', 'Hamstring', 'Glute', 'Biceps Inner', 'Biceps Brachialis', 'Triceps Lateral', 'Triceps Medial', 'Delts Rear']
+  const categories = ['ALL', 'Squat', 'Bench', 'Deadlift', 'Squat Variation', 'Bench Variation', 'Deadlift Variation', 'Back Mid', 'Back Lats', 'Quads', 'Hamstring', 'Glute', 'Biceps Inner', 'Biceps Brachialis', 'Triceps Lateral', 'Triceps Medial', 'Delts Rear', 'Delts Side', 'Adductors', 'Delts Front' ]
 
   useEffect(() => {
     fetchExercises()
