@@ -391,9 +391,13 @@ function AthletePanel({
   const [newNote, setNewNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [loadingBlock, setLoadingBlock] = useState(false)
-  const [activeTab, setActiveTab] = useState<'program' | 'stats' | 'notes'>('program')
+  const [activeTab, setActiveTab] = useState<'program' | 'stats' | 'notes' | 'tips'>('program')
   const [duplicateBlock, setDuplicateBlock] = useState<Block | null>(null)
   const [showBlockMenu, setShowBlockMenu] = useState(false)
+  const [tips, setTips]                   = useState<any[]>([])
+  const [newTipTitle, setNewTipTitle]     = useState('')
+  const [newTipContent, setNewTipContent] = useState('')
+  const [newTipCat, setNewTipCat]         = useState('general')
 
   const initials = athlete.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
   const totalWorkouts = block?.weeks?.flatMap(w => w.workouts ?? []).length ?? 0
@@ -433,6 +437,9 @@ function AthletePanel({
     // Load notes
     const { data: notesData } = await supabase.from('athlete_notes').select('*').eq('athlete_id', athlete.id).order('created_at', { ascending: false })
     setNotes((notesData ?? []) as AthleteNote[])
+    // Load coach tips
+    const { data: tipsData } = await supabase.from('coach_tips').select('*').eq('athlete_id', athlete.id).order('priority', { ascending: false }).order('created_at', { ascending: false })
+    setTips(tipsData ?? [])
     setLoadingBlock(false)
   }
 
@@ -596,7 +603,7 @@ function AthletePanel({
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '0', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '28px' }}>
-        {([['program', 'PROGRAM'], ['stats', 'STATISTIKE'], ['notes', 'BILJEŠKE']] as [string, string][]).map(([tab, label]) => (
+        {([['program', 'PROGRAM'], ['stats', 'STATISTIKE'], ['notes', 'BILJEŠKE'], ['tips', 'HUB TIPS']] as [string, string][]).map(([tab, label]) => (
           <button key={tab} onClick={() => setActiveTab(tab as any)}
             style={{ padding: '12px 24px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700, color: activeTab === tab ? '#fff' : 'rgba(255,255,255,0.3)', borderBottom: `2px solid ${activeTab === tab ? '#fff' : 'transparent'}`, transition: 'all 0.2s', marginBottom: '-1px' }}>
             {label}
@@ -728,6 +735,68 @@ function AthletePanel({
                 <div style={{ fontSize: '0.6rem', color: b.status === 'active' ? '#4ade80' : b.status === 'completed' ? '#60a5fa' : 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700 }}>{b.status.toUpperCase()}</div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* TIPS TAB — personalizirani coaching tips vidljivi u Hubu */}
+      {activeTab === 'tips' && (
+        <div style={{ animation: 'fadeUp 0.3s ease' }}>
+          {/* Add tip form */}
+          <div style={{ marginBottom: '20px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', overflow: 'hidden' }}>
+            <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>NOVI HUB TIP ZA LIFTAČA</div>
+            <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* Category selector */}
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {[['general','Opće','#888'],['technique','Tehnika','#6b8cff'],['nutrition','Prehrana','#22c55e'],['competition','Natjecanje','#f59e0b'],['recovery','Oporavak','#f472b6']].map(([id,label,color]) => (
+                  <button key={id} onClick={() => setNewTipCat(id)}
+                    style={{ padding: '4px 12px', border: `1px solid ${newTipCat === id ? color : 'rgba(255,255,255,0.1)'}`, background: newTipCat === id ? `${color}18` : 'transparent', color: newTipCat === id ? color : '#666', borderRadius: '5px', cursor: 'pointer', fontSize: '0.6rem', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.1em', transition: 'all 0.15s' }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <input value={newTipTitle} onChange={e => setNewTipTitle(e.target.value)} placeholder="Naslov tipa..."
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 14px', borderRadius: '6px', fontSize: '0.9rem', outline: 'none', fontFamily: 'var(--fm)', width: '100%', boxSizing: 'border-box' as const }} />
+              <textarea value={newTipContent} onChange={e => setNewTipContent(e.target.value)} placeholder="Sadržaj — savjet, uputa, bilješka trenera..."
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 14px', borderRadius: '6px', fontSize: '0.88rem', outline: 'none', fontFamily: 'var(--fm)', resize: 'vertical', minHeight: '80px', width: '100%', boxSizing: 'border-box' as const, lineHeight: 1.6 }} />
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button onClick={async () => {
+                  if (!newTipTitle.trim() || !newTipContent.trim()) return
+                  const { data } = await supabase.from('coach_tips').insert({ athlete_id: athlete.id, admin_id: adminId, title: newTipTitle.trim(), content: newTipContent.trim(), category: newTipCat }).select('*').single()
+                  if (data) { setTips((t: any[]) => [data, ...t]); setNewTipTitle(''); setNewTipContent('') }
+                }} disabled={!newTipTitle.trim() || !newTipContent.trim()}
+                  style={{ padding: '9px 20px', background: newTipTitle.trim() && newTipContent.trim() ? '#fff' : 'rgba(255,255,255,0.06)', border: 'none', color: newTipTitle.trim() && newTipContent.trim() ? '#000' : 'rgba(255,255,255,0.2)', cursor: newTipTitle.trim() ? 'pointer' : 'not-allowed', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '6px', transition: 'all 0.2s' }}>
+                  OBJAVI TIP
+                </button>
+              </div>
+            </div>
+          </div>
+          {/* Tips list */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {tips.length === 0 ? (
+              <div style={{ padding: '32px', textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '8px' }}>Nema hub tipova za ovog liftača.</div>
+            ) : tips.map((tip: any) => {
+              const catColors: Record<string,string> = { general:'#888', technique:'#6b8cff', nutrition:'#22c55e', competition:'#f59e0b', recovery:'#f472b6' }
+              const c = catColors[tip.category] ?? '#888'
+              return (
+                <div key={tip.id} style={{ padding: '14px 18px', border: '1px solid rgba(255,255,255,0.07)', borderLeft: `3px solid ${c}`, borderRadius: '6px', background: `${c}06`, position: 'relative' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                    <div>
+                      <span style={{ fontSize: '0.46rem', color: c, letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, marginRight: '8px' }}>{tip.category.toUpperCase()}</span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff', fontFamily: 'var(--fm)' }}>{tip.title}</span>
+                    </div>
+                    <button onClick={async () => { await supabase.from('coach_tips').delete().eq('id', tip.id); setTips((t: any[]) => t.filter((x: any) => x.id !== tip.id)) }}
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.15)', padding: '2px', transition: 'color 0.15s' }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#ff4444'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.15)'}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                    </button>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.65, margin: 0 }}>{tip.content}</p>
+                  <div style={{ fontSize: '0.56rem', color: '#444', marginTop: '8px' }}>{new Date(tip.created_at).toLocaleDateString('hr-HR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })}</div>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

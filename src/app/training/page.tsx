@@ -38,6 +38,7 @@ type Block = {
   goal: string | null; status: 'active' | 'completed' | 'planned'; notes: string | null; weeks?: Week[]
 }
 type BlockSummary = { id: string; name: string; status: string; start_date: string; end_date: string }
+type CoachTip = { id: string; title: string; content: string; category: string; priority: number; created_at: string }
 type Competition = { id: string; name: string; date: string; location: string | null; status: string }
 type SetLog = { set_number: number; weight_kg: number | null; reps: string | null; rpe: number | null; completed: boolean }
 
@@ -46,9 +47,9 @@ function TrainingNav({ athleteName, isAdmin, onLogout }: {
   athleteName: string; isAdmin: boolean; onLogout: () => void
 }) {
   const [profileOpen, setProfileOpen] = useState(false)
-  const [activeLink, setActiveLink]   = useState<string | null>(null)
+  const [scrolled, setScrolled]       = useState(false)
   const initials = athleteName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-  const dropRef = useRef<HTMLDivElement>(null)
+  const dropRef  = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -58,115 +59,116 @@ function TrainingNav({ athleteName, isAdmin, onLogout }: {
     return () => document.removeEventListener('mousedown', handler)
   }, [profileOpen])
 
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', fn, { passive: true })
+    return () => window.removeEventListener('scroll', fn)
+  }, [])
+
   const NAV_ITEMS = [
-    { href: '/', icon: <Home size={13}/>, label: 'POČETNA' },
-    { href: '/exercises', icon: <Dumbbell size={13}/>, label: 'VJEŽBE' },
-    { href: '/profile', icon: <BarChart2 size={13}/>, label: 'PROFIL' },
+    { href: '/', label: 'Početna' },
+    { href: '/exercises', label: 'Vježbe' },
+    { href: '/profile', label: 'Profil' },
   ]
 
   return (
     <nav style={{
-      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, height: '64px',
-      display: 'flex', alignItems: 'stretch',
-      background: 'rgba(6,6,10,0.96)',
-      borderBottom: '1px solid rgba(255,255,255,0.08)',
-      backdropFilter: 'blur(24px)',
-      boxShadow: '0 1px 0 rgba(255,255,255,0.03), 0 8px 40px rgba(0,0,0,0.5)',
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
+      height: '56px',
+      display: 'flex', alignItems: 'center',
+      padding: '0 clamp(16px,3vw,32px)',
+      background: scrolled ? 'rgba(4,4,8,0.92)' : 'rgba(4,4,8,0.75)',
+      borderBottom: `1px solid ${scrolled ? 'rgba(255,255,255,0.09)' : 'rgba(255,255,255,0.05)'}`,
+      backdropFilter: 'blur(32px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(32px) saturate(180%)',
+      transition: 'background 0.4s, border-color 0.4s',
     }}>
 
-      {/* ── Logo ── */}
-      <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', padding: '0 20px', borderRight: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }}>
-        <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '34px', opacity: 0.9, transition: 'opacity 0.2s' }}
-          onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-          onMouseLeave={e => e.currentTarget.style.opacity = '0.9'} />
+      {/* Logo */}
+      <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', marginRight: '32px', flexShrink: 0 }}>
+        <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '28px', opacity: 0.95 }} />
       </Link>
 
-      {/* ── Nav links (left-side) ── */}
-      <div className="tnav-links" style={{ display: 'flex', alignItems: 'stretch', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+      {/* Nav links — Apple style, center-left */}
+      <div className="tnav-links" style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1 }}>
         {NAV_ITEMS.map(item => (
-          <Link key={item.href} href={item.href}
-            style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '7px', padding: '0 16px', color: activeLink === item.href ? '#fff' : 'rgba(255,255,255,0.38)', fontSize: '0.6rem', letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)', transition: 'all 0.2s', borderRight: '1px solid rgba(255,255,255,0.07)', position: 'relative' }}
-            onMouseEnter={e => { setActiveLink(item.href); (e.currentTarget as HTMLAnchorElement).style.color = '#fff'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.04)' }}
-            onMouseLeave={e => { setActiveLink(null); (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.38)'; (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}>
-            <span style={{ color: 'inherit', opacity: 0.8 }}>{item.icon}</span>
-            <span className="tnav-label">{item.label}</span>
+          <Link key={item.href} href={item.href} className="tnav-pill"
+            style={{ textDecoration: 'none', padding: '6px 14px', color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', fontWeight: 500, fontFamily: 'var(--fm)', letterSpacing: '0.01em', borderRadius: '8px', transition: 'all 0.18s', whiteSpace: 'nowrap' as const }}
+            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = '#fff'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.07)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.55)'; (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}>
+            {item.label}
           </Link>
         ))}
       </div>
 
-      {/* ── Center badge ── */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-        {/* Animated status dot */}
-        <div style={{ position: 'relative', width: '8px', height: '8px' }}>
-          <div style={{ position: 'absolute', inset: 0, background: '#22c55e', borderRadius: '50%', boxShadow: '0 0 6px #22c55e' }} />
-          <div style={{ position: 'absolute', inset: '-4px', background: 'rgba(34,197,94,0.15)', borderRadius: '50%', animation: 'pingPulse 2s ease-in-out infinite' }} />
+      {/* Right — status pill + avatar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+        {/* Live status pill */}
+        <div className="tnav-status" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.18)', borderRadius: '20px' }}>
+          <div style={{ position: 'relative', width: '6px', height: '6px', flexShrink: 0 }}>
+            <div style={{ position: 'absolute', inset: 0, background: '#22c55e', borderRadius: '50%', boxShadow: '0 0 5px #22c55e' }} />
+            <div style={{ position: 'absolute', inset: '-3px', background: 'rgba(34,197,94,0.2)', borderRadius: '50%', animation: 'pingPulse 2.4s ease-in-out infinite' }} />
+          </div>
+          <span style={{ fontSize: '0.62rem', color: '#4ade80', fontWeight: 600, fontFamily: 'var(--fm)', letterSpacing: '0.04em' }}>Aktivan</span>
         </div>
-        <span style={{ fontFamily: 'var(--fd)', fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', userSelect: 'none' }}>
-          PROGRAM TRENINGA
-        </span>
-      </div>
 
-      {/* ── Profile button (right) ── */}
-      <div style={{ display: 'flex', alignItems: 'stretch' }} ref={dropRef}>
-        <button onClick={() => setProfileOpen(o => !o)}
-          style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '0 20px', background: profileOpen ? 'rgba(255,255,255,0.05)' : 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer', transition: 'background 0.2s', minWidth: '160px' }}
-          onMouseEnter={e => { if (!profileOpen) e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
-          onMouseLeave={e => { if (!profileOpen) e.currentTarget.style.background = 'transparent' }}>
-
-          {/* Avatar circle */}
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #1e1e2a 0%, #111118 100%)', border: '1.5px solid rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.62rem', fontWeight: 800, color: '#e0e0e0', fontFamily: 'var(--fm)', flexShrink: 0, boxShadow: '0 2px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)' }}>
-            {initials}
-          </div>
-
-          <div style={{ textAlign: 'left', flex: 1 }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--fm)', whiteSpace: 'nowrap', lineHeight: 1.3 }}>{athleteName || 'Atleta'}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>
-              <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 4px #22c55e' }} />
-              <span style={{ fontSize: '0.48rem', color: '#22c55e', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700 }}>AKTIVAN</span>
+        {/* Avatar / profile button */}
+        <div ref={dropRef} style={{ position: 'relative' }}>
+          <button onClick={() => setProfileOpen(o => !o)}
+            style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '5px 10px 5px 5px', background: profileOpen ? 'rgba(255,255,255,0.08)' : 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', cursor: 'pointer', transition: 'all 0.2s' }}
+            onMouseEnter={e => { if (!profileOpen) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)' } }}
+            onMouseLeave={e => { if (!profileOpen) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' } }}>
+            {/* Avatar */}
+            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #2a2a3e 0%, #16161e 100%)', border: '1.5px solid rgba(255,255,255,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.58rem', fontWeight: 800, color: '#d0d0f0', fontFamily: 'var(--fm)', flexShrink: 0 }}>
+              {initials}
             </div>
-          </div>
-          <ChevronDown size={12} color="rgba(255,255,255,0.35)" style={{ transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.22s', flexShrink: 0 }} />
-        </button>
+            <span className="tnav-name" style={{ fontSize: '0.78rem', fontWeight: 500, color: '#e0e0e8', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>{athleteName?.split(' ')[0] || 'Atleta'}</span>
+            <ChevronDown size={11} color="rgba(255,255,255,0.4)" style={{ transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.22s', flexShrink: 0 }} />
+          </button>
 
-        {/* Profile dropdown */}
-        {profileOpen && (
-          <div style={{ position: 'absolute', top: '64px', right: '0', width: '230px', background: '#09090e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0 0 10px 10px', boxShadow: '0 20px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05)', zIndex: 300, animation: 'dropDown 0.18s ease', overflow: 'hidden' }}>
-
-            {/* User info header */}
-            <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
-              <div style={{ fontSize: '0.52rem', color: '#555', letterSpacing: '0.28em', marginBottom: '4px', fontFamily: 'var(--fm)' }}>PRIJAVLJEN/A KAO</div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--fm)' }}>{athleteName}</div>
+          {/* Dropdown */}
+          {profileOpen && (
+            <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '220px', background: 'rgba(10,10,16,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)', zIndex: 300, animation: 'dropDown 0.2s cubic-bezier(0.16,1,0.3,1)', overflow: 'hidden', backdropFilter: 'blur(40px)' }}>
+              {/* Header */}
+              <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #2a2a3e 0%, #16161e 100%)', border: '1.5px solid rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, color: '#d0d0f0' }}>
+                    {initials}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#f0f0f8', fontFamily: 'var(--fm)' }}>{athleteName}</div>
+                    <div style={{ fontSize: '0.58rem', color: '#4ade80', fontFamily: 'var(--fm)', marginTop: '1px' }}>● Aktivan</div>
+                  </div>
+                </div>
+              </div>
+              {/* Menu items */}
+              <div style={{ padding: '6px' }}>
+                {[
+                  { href: '/profile', icon: <User size={14}/>, label: 'Moj profil' },
+                  { href: '/exercises', icon: <Dumbbell size={14}/>, label: 'Baza vježbi' },
+                ].map(item => (
+                  <Link key={item.href} href={item.href} onClick={() => setProfileOpen(false)} style={{ textDecoration: 'none' }}>
+                    <button className="nav-menu-item">{item.icon}<span>{item.label}</span></button>
+                  </Link>
+                ))}
+                {isAdmin && (
+                  <Link href="/admin" onClick={() => setProfileOpen(false)} style={{ textDecoration: 'none' }}>
+                    <button className="nav-menu-item nav-menu-admin">
+                      <Shield size={14} color="#f59e0b"/>
+                      <span>Admin panel</span>
+                      <span style={{ marginLeft: 'auto', fontSize: '0.5rem', background: 'rgba(245,158,11,0.12)', color: '#f59e0b', padding: '2px 7px', letterSpacing: '0.1em', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '4px' }}>ADMIN</span>
+                    </button>
+                  </Link>
+                )}
+              </div>
+              <div style={{ padding: '6px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                <button onClick={() => { setProfileOpen(false); onLogout() }} className="nav-menu-item nav-menu-logout">
+                  <LogOut size={14}/><span>Odjava</span>
+                </button>
+              </div>
             </div>
-
-            {/* Links */}
-            <div style={{ padding: '6px' }}>
-              {[
-                { href: '/profile', icon: <User size={13}/>, label: 'Moj profil' },
-                { href: '/exercises', icon: <Dumbbell size={13}/>, label: 'Baza vježbi' },
-              ].map(item => (
-                <Link key={item.href} href={item.href} onClick={() => setProfileOpen(false)} style={{ textDecoration: 'none' }}>
-                  <button className="nav-menu-item">{item.icon} <span>{item.label}</span></button>
-                </Link>
-              ))}
-
-              {isAdmin && (
-                <Link href="/admin" onClick={() => setProfileOpen(false)} style={{ textDecoration: 'none' }}>
-                  <button className="nav-menu-item nav-menu-admin">
-                    <Shield size={13} color="#f59e0b" />
-                    <span>Admin panel</span>
-                    <span style={{ marginLeft: 'auto', fontSize: '0.48rem', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', padding: '2px 7px', letterSpacing: '0.12em', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '3px' }}>ADMIN</span>
-                  </button>
-                </Link>
-              )}
-            </div>
-
-            <div style={{ padding: '6px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-              <button onClick={() => { setProfileOpen(false); onLogout() }} className="nav-menu-item nav-menu-logout">
-                <LogOut size={13} /> <span>Odjava</span>
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </nav>
   )
@@ -312,7 +314,7 @@ function CompetitionBanner({ userId }: { userId: string }) {
 
   return (
     <div ref={ref} style={{ position: 'relative', marginBottom: '20px', animation: 'fadeUp 0.4s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'stretch', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', overflow: 'hidden', background: 'linear-gradient(135deg, #0e0e14 0%, #09090e 100%)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
+      <div style={{ display: 'flex', alignItems: 'stretch', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '14px', overflow: 'hidden', background: 'rgba(255,255,255,0.025)', boxShadow: '0 2px 20px rgba(0,0,0,0.3)' }}>
 
         {/* Days out pill */}
         {selected && daysOut !== null && (
@@ -810,14 +812,14 @@ function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onUpdateWee
     <div style={{ marginBottom: '20px', border: '1px solid rgba(255,255,255,0.14)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)' }}>
 
       {/* ── Week header — editorial black band ── */}
-      <div style={{ background: 'linear-gradient(180deg, #111118 0%, #0c0c13 100%)', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.1)' : 'none' }}
+      <div style={{ background: 'linear-gradient(160deg, #0f0f18 0%, #0a0a12 100%)', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.08)' : 'none' }}
         onClick={() => setOpen(!open)}>
 
         {/* Top: large week label row */}
         <div style={{ padding: 'clamp(14px,3vw,20px) clamp(16px,4vw,24px) 0', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
             {/* Giant W number */}
-            <span style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,5vw,4rem)', fontWeight: 800, lineHeight: 1, color: '#fff', letterSpacing: '-0.03em' }}>
+            <span style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.8rem,4vw,3.2rem)', fontWeight: 700, lineHeight: 1, color: 'rgba(255,255,255,0.92)', letterSpacing: '-0.04em' }}>
               W{week.week_number}
             </span>
             <div>
@@ -895,6 +897,468 @@ function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onUpdateWee
   )
 }
 
+// ─── SHARED: Input component ────────────────────────────────────
+function CalcInput({ label, value, onChange, color = '#6b8cff', type = 'number', step = '1', min = '0', max = '9999', placeholder = '' }: {
+  label: string; value: string; onChange: (v: string) => void
+  color?: string; type?: string; step?: string; min?: string; max?: string; placeholder?: string
+}) {
+  const [focused, setFocused] = useState(false)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '6px' }}>
+      <label style={{ fontSize: '0.6rem', fontWeight: 600, color: focused ? color : 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}>
+        {label}
+      </label>
+      <div style={{ position: 'relative' }}>
+        <input
+          type={type} value={value} onChange={e => onChange(e.target.value)}
+          step={step} min={min} max={max} placeholder={placeholder}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={{
+            width: '100%', background: focused ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
+            border: `1.5px solid ${focused ? color : 'rgba(255,255,255,0.1)'}`,
+            color: '#f0f0f5', padding: '11px 14px', borderRadius: '10px', outline: 'none',
+            fontSize: '1rem', fontFamily: 'var(--fm)', boxSizing: 'border-box' as const,
+            transition: 'border-color 0.2s, background 0.2s',
+            boxShadow: focused ? `0 0 0 3px ${color}18` : 'none',
+          }}
+        />
+        {/* Animated focus bar */}
+        <div style={{ position: 'absolute', bottom: 0, left: '10px', right: '10px', height: '2px', borderRadius: '1px', background: color, transform: focused ? 'scaleX(1)' : 'scaleX(0)', transition: 'transform 0.25s cubic-bezier(0.16,1,0.3,1)', transformOrigin: 'left' }} />
+      </div>
+    </div>
+  )
+}
+
+// ─── SHARED: Result card ─────────────────────────────────────────
+function ResultCard({ label, value, unit, color, sub }: { label: string; value: string | number; unit?: string; color: string; sub?: string }) {
+  return (
+    <div style={{ padding: '20px 24px', background: `${color}0c`, border: `1.5px solid ${color}28`, borderRadius: '14px', display: 'flex', flexDirection: 'column' as const, gap: '4px', animation: 'popIn 0.35s cubic-bezier(0.16,1,0.3,1)' }}>
+      <div style={{ fontSize: '0.6rem', color: `${color}cc`, letterSpacing: '0.1em', fontFamily: 'var(--fm)', fontWeight: 600 }}>{label}</div>
+      <div style={{ fontFamily: 'var(--fd)', fontSize: '2.6rem', fontWeight: 800, color, lineHeight: 1, letterSpacing: '-0.02em' }}>
+        {value}{unit && <span style={{ fontSize: '1rem', color: `${color}88`, marginLeft: '4px', fontFamily: 'var(--fm)', fontWeight: 400 }}>{unit}</span>}
+      </div>
+      {sub && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)' }}>{sub}</div>}
+    </div>
+  )
+}
+
+// ─── SHARED: Section title ────────────────────────────────────────
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+      <div style={{ height: '1px', width: '24px', background: 'rgba(255,255,255,0.15)' }} />
+      <span style={{ fontSize: '0.62rem', fontWeight: 600, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>{children}</span>
+    </div>
+  )
+}
+
+// ─── HUB: RPE CALCULATOR ─────────────────────────────────────────
+const RPE_TABLE: Record<number, Record<number, number>> = {
+  10:{1:1.00,2:0.955,3:0.922,4:0.892,5:0.863,6:0.837,7:0.811,8:0.786,9:0.762,10:0.739},
+  9:{1:0.978,2:0.933,3:0.900,4:0.871,5:0.843,6:0.818,7:0.792,8:0.768,9:0.745,10:0.723},
+  8:{1:0.955,2:0.911,3:0.878,4:0.850,5:0.823,6:0.798,7:0.773,8:0.750,9:0.728,10:0.707},
+  7:{1:0.933,2:0.889,3:0.857,4:0.829,5:0.803,6:0.778,7:0.754,8:0.731,9:0.710,10:0.690},
+  6:{1:0.911,2:0.867,3:0.835,4:0.808,5:0.783,6:0.759,7:0.736,8:0.714,9:0.693,10:0.674},
+}
+function calc1RM(w: number, r: number, rpe: number) {
+  const pct = RPE_TABLE[Math.round(rpe)]?.[r]; return pct ? Math.round(w / pct) : 0
+}
+function weightForRPE(orm: number, r: number, rpe: number) {
+  const pct = RPE_TABLE[Math.round(rpe)]?.[r]; return pct ? Math.round(orm * pct * 2) / 2 : 0
+}
+
+function RpeCalc() {
+  const [weight, setWeight] = useState('')
+  const [reps,   setReps]   = useState('3')
+  const [rpe,    setRpe]    = useState('8')
+  const [tRpe,   setTRpe]   = useState('8')
+  const [tReps,  setTReps]  = useState('3')
+
+  const w = parseFloat(weight), r = parseInt(reps), rv = parseFloat(rpe)
+  const orm = (w && r && rv) ? calc1RM(w, r, rv) : 0
+  const sug = (orm && tRpe && tReps) ? weightForRPE(orm, parseInt(tReps), parseFloat(tRpe)) : 0
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '24px' }}>
+      {/* Input section */}
+      <div>
+        <SectionTitle>Tvoj set</SectionTitle>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+          <CalcInput label="Težina (kg)" value={weight} onChange={setWeight} color="#f59e0b" step="0.5" placeholder="npr. 150" />
+          <CalcInput label="Ponavljanja" value={reps}   onChange={setReps}   color="#f59e0b" min="1" max="10" />
+          <CalcInput label="RPE"         value={rpe}    onChange={setRpe}    color="#f59e0b" step="0.5" min="6" max="10" />
+        </div>
+      </div>
+
+      {/* 1RM result */}
+      {orm > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <ResultCard label="Procijenjeni 1RM" value={orm} unit="kg" color="#f59e0b" sub={`iz ${w}kg × ${r} @RPE${rv}`} />
+          {/* RPE breakdown */}
+          <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.08)', borderRadius: '14px' }}>
+            <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '10px' }}>BREAKDOWN ZA {r} REPS</div>
+            {[10,9,8,7].map(r2 => {
+              const w2 = weightForRPE(orm, r, r2)
+              const isActive = r2 === Math.round(rv)
+              return (
+                <div key={r2} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: r2 > 7 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                  <span style={{ fontSize: '0.65rem', color: isActive ? '#f59e0b' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: isActive ? 700 : 400 }}>@RPE {r2}</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: isActive ? '#f59e0b' : 'rgba(255,255,255,0.6)', fontFamily: 'var(--fd)' }}>{w2} kg</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Target section */}
+      {orm > 0 && (
+        <div>
+          <SectionTitle>Preporučena težina</SectionTitle>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+            <CalcInput label="Ciljna ponavljanja" value={tReps} onChange={setTReps} color="#6b8cff" min="1" max="10" />
+            <CalcInput label="Ciljni RPE"         value={tRpe}  onChange={setTRpe}  color="#6b8cff" step="0.5" min="6" max="10" />
+          </div>
+          {sug > 0 && <ResultCard label="Preporučena težina" value={sug} unit="kg" color="#6b8cff" sub={`${tReps} ponavljanja @RPE${tRpe}`} />}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── HUB: GL CALCULATOR ──────────────────────────────────────────
+function GlCalc() {
+  const [total, setTotal] = useState('')
+  const [bw,    setBw]    = useState('')
+  const [sex,   setSex]   = useState<'male'|'female'>('male')
+
+  const t = parseFloat(total), b = parseFloat(bw)
+  const gl = (t && b) ? (() => {
+    const P = sex === 'male'
+      ? { a: 1199.72839, b: 1025.18162, c: 0.00921 }
+      : { a: 610.32796,  b: 1045.59282, c: 0.03048 }
+    const d = P.a - P.b * Math.exp(-P.c * b)
+    return d > 0 ? Math.round((t * 100 / d) * 100) / 100 : 0
+  })() : 0
+
+  const glC = gl >= 120 ? '#22c55e' : gl >= 100 ? '#f59e0b' : gl >= 80 ? '#f87171' : '#6b8cff'
+  const glL = gl >= 120 ? 'Elite' : gl >= 100 ? 'Advanced' : gl >= 80 ? 'Intermediate' : gl > 0 ? 'Beginner' : ''
+  const pct  = Math.min((gl / 150) * 100, 100)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '24px' }}>
+      {/* Sex toggle */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        {(['male','female'] as const).map(s => (
+          <button key={s} onClick={() => setSex(s)} style={{
+            padding: '11px', borderRadius: '10px', cursor: 'pointer', fontFamily: 'var(--fm)', fontWeight: 600, fontSize: '0.82rem', transition: 'all 0.2s',
+            background: sex === s ? 'rgba(107,140,255,0.12)' : 'rgba(255,255,255,0.03)',
+            border: `1.5px solid ${sex === s ? 'rgba(107,140,255,0.4)' : 'rgba(255,255,255,0.08)'}`,
+            color: sex === s ? '#8ba8ff' : 'rgba(255,255,255,0.4)',
+            boxShadow: sex === s ? '0 0 0 3px rgba(107,140,255,0.1)' : 'none',
+          }}>
+            {s === 'male' ? '♂  Muški' : '♀  Ženski'}
+          </button>
+        ))}
+      </div>
+
+      {/* Inputs */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <CalcInput label="Total (kg)"         value={total} onChange={setTotal} color="#6b8cff" step="0.5" placeholder="npr. 600" />
+        <CalcInput label="Tjelesna masa (kg)" value={bw}    onChange={setBw}    color="#6b8cff" step="0.1" placeholder="npr. 93" />
+      </div>
+
+      {/* Result */}
+      {gl > 0 && (
+        <div style={{ animation: 'popIn 0.35s cubic-bezier(0.16,1,0.3,1)' }}>
+          <div style={{ padding: '28px 28px 24px', background: `${glC}0a`, border: `1.5px solid ${glC}22`, borderRadius: '16px', textAlign: 'center' as const, marginBottom: '12px' }}>
+            <div style={{ fontSize: '0.62rem', color: `${glC}aa`, letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '8px' }}>IPF GL BODOVI</div>
+            <div style={{ fontFamily: 'var(--fd)', fontSize: '5rem', fontWeight: 800, color: glC, lineHeight: 1, letterSpacing: '-0.03em' }}>{gl}</div>
+            <div style={{ marginTop: '6px', display: 'inline-block', padding: '4px 14px', background: `${glC}18`, borderRadius: '20px', border: `1px solid ${glC}33` }}>
+              <span style={{ fontSize: '0.7rem', color: glC, fontWeight: 700, fontFamily: 'var(--fm)', letterSpacing: '0.06em' }}>{glL}</span>
+            </div>
+          </div>
+          {/* Progress bar */}
+          <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              {['Beginner', 'Intermediate', 'Advanced', 'Elite'].map((l, i) => (
+                <span key={l} style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>{l}</span>
+              ))}
+            </div>
+            <div style={{ height: '6px', background: 'rgba(255,255,255,0.07)', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${pct}%`, background: `linear-gradient(90deg, #6b8cff, ${glC})`, borderRadius: '3px', transition: 'width 1s cubic-bezier(0.16,1,0.3,1)', boxShadow: `0 0 8px ${glC}66` }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+              {[0, 80, 100, 120, 150].map(v => (
+                <span key={v} style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>{v}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── HUB: WATERCUT CALCULATOR ────────────────────────────────────
+function WaterCutCalc() {
+  const [curKg,  setCurKg]  = useState('')
+  const [tgtKg,  setTgtKg]  = useState('')
+  const [date,   setDate]   = useState('')
+  const [showPlan, setShowPlan] = useState(false)
+
+  const cur = parseFloat(curKg), tgt = parseFloat(tgtKg)
+  const lose  = (cur && tgt) ? cur - tgt : 0
+  const days  = date ? Math.max(0, Math.ceil((new Date(date).getTime() - Date.now()) / 86400000)) : 0
+  const maxWC = cur ? parseFloat((cur * 0.03).toFixed(1)) : 0
+  const needsGut = lose > maxWC
+  const gutKg    = needsGut ? parseFloat((lose - maxWC).toFixed(1)) : 0
+
+  const PLAN = [
+    { d:7, w:5.0, s:2.5, note:'Water loading — maksimum.' },
+    { d:6, w:6.0, s:2.5, note:'Nastavi water loading.' },
+    { d:5, w:6.0, s:2.0, note:'Zadrži visok unos.' },
+    { d:4, w:4.0, s:1.0, note:'Počni smanjivati sol.' },
+    { d:3, w:3.0, s:0.5, note:'Smanji vodu i sol.' },
+    { d:2, w:2.0, s:0.0, note:'Minimalna sol, manje carba.' },
+    { d:1, w:1.0, s:0.0, note:'Drastično smanji — prati kilažu.' },
+    { d:0, w:0.3, s:0.0, note:'Samo do vage. Ništa višak.' },
+  ].filter(p => p.d <= Math.min(days, 7))
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '24px' }}>
+      {/* Inputs */}
+      <div>
+        <SectionTitle>Unesi podatke</SectionTitle>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+          <CalcInput label="Trenutna masa (kg)" value={curKg} onChange={setCurKg} color="#22c55e" step="0.1" placeholder="npr. 95.5" />
+          <CalcInput label="Ciljna masa (kg)"   value={tgtKg} onChange={setTgtKg} color="#22c55e" step="0.1" placeholder="npr. 93.0" />
+          <CalcInput label="Datum natjecanja"   value={date}  onChange={setDate}  color="#22c55e" type="date" />
+        </div>
+      </div>
+
+      {/* Results */}
+      {cur && tgt && date && lose >= 0 && (
+        <div style={{ animation: 'popIn 0.3s ease' }}>
+          <SectionTitle>Analiza</SectionTitle>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '16px' }}>
+            {[
+              { l: 'Days out',    v: days,                c: days < 7 ? '#f59e0b' : '#22c55e' },
+              { l: 'Za skinuti',  v: `${lose.toFixed(1)}kg`, c: lose > maxWC ? '#f87171' : '#22c55e' },
+              { l: 'Max watercut',v: `${maxWC}kg`,        c: 'rgba(255,255,255,0.5)' },
+            ].map(s => (
+              <div key={s.l} style={{ padding: '14px 16px', background: `${s.c}0c`, border: `1.5px solid ${s.c}28`, borderRadius: '12px', textAlign: 'center' as const }}>
+                <div style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', fontWeight: 700, color: s.c, lineHeight: 1 }}>{s.v}</div>
+                <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '5px', fontFamily: 'var(--fm)' }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Gut cut warning */}
+          {needsGut && (
+            <div style={{ padding: '16px 20px', background: 'rgba(248,113,113,0.07)', border: '1.5px solid rgba(248,113,113,0.2)', borderRadius: '12px', marginBottom: '14px', display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f87171', marginBottom: '6px', letterSpacing: '0.01em' }}>
+                  Gut cut potreban — još {gutKg}kg prehranom
+                </div>
+                <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7 }}>
+                  Watercut može ukloniti max <strong style={{ color: '#f87171' }}>{maxWC}kg</strong>. Preostalo skini kalorijski deficitom 3–4 tjedna ranije (0.5–1kg/tjedno).
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Plan toggle */}
+          {PLAN.length > 0 && (
+            <>
+              <button onClick={() => setShowPlan(!showPlan)} style={{
+                width: '100%', padding: '12px', borderRadius: '10px', cursor: 'pointer',
+                background: showPlan ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.03)',
+                border: `1.5px solid ${showPlan ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                color: showPlan ? '#4ade80' : 'rgba(255,255,255,0.45)',
+                fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.04em', fontFamily: 'var(--fm)',
+                transition: 'all 0.2s', marginBottom: '10px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a5 5 0 0 1 5 5v3H7V7a5 5 0 0 1 5-5z"/><path d="M7 10H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-2"/></svg>
+                {showPlan ? 'Sakrij plan' : 'Plan vode po danima'}
+                <span style={{ marginLeft: 'auto', transform: showPlan ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>↓</span>
+              </button>
+              {showPlan && (
+                <div style={{ border: '1.5px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden', animation: 'fadeUp 0.25s ease' }}>
+                  {/* Header */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '70px 70px 60px 1fr', padding: '9px 16px', background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                    {['Dan','Voda','Sol','Napomena'].map(h => (
+                      <span key={h} style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.06em' }}>{h}</span>
+                    ))}
+                  </div>
+                  {[...PLAN].reverse().map((p, i) => {
+                    const isVaga = p.d === 0
+                    const isLow  = p.d <= 2
+                    return (
+                      <div key={i} style={{ display: 'grid', gridTemplateColumns: '70px 70px 60px 1fr', padding: '11px 16px', background: isVaga ? 'rgba(245,158,11,0.06)' : isLow ? 'rgba(248,113,113,0.04)' : 'transparent', borderBottom: i < PLAN.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', alignItems: 'center', transition: 'background 0.15s' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isVaga ? '#f59e0b' : '#e0e0e0', fontFamily: 'var(--fm)' }}>{isVaga ? 'Vaga' : `${p.d}d`}</span>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#4ade80' }}>{p.w}L</span>
+                        <span style={{ fontSize: '0.78rem', color: p.s === 0 ? '#f87171' : 'rgba(255,255,255,0.45)' }}>{p.s === 0 ? '✗' : `${p.s}g`}</span>
+                        <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>{p.note}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── HUB TAB COMPONENT ──────────────────────────────────────────
+const HUB_TOOLS = [
+  { id:'rpe',       label:'RPE Kalkulator',  sub:'Izračun 1RM i preporučene težine', color:'#f59e0b', badge:'CALC' },
+  { id:'gl',        label:'GL Points',        sub:'IPF Goodlift formula',             color:'#6b8cff', badge:'CALC' },
+  { id:'watercut',  label:'Water Cut',        sub:'Plan hidratacije i rezanja',       color:'#22c55e', badge:'CALC' },
+  { id:'guide-wc',  label:'Water Cut Guide',  sub:'Protokol dehidracije',             color:'#34d399', badge:'GUIDE'},
+  { id:'guide-rpe', label:'RPE Guide',        sub:'Kako koristiti RPE',               color:'#fbbf24', badge:'GUIDE'},
+  { id:'guide-peak',label:'Peaking Guide',    sub:'Priprema za natjecanje',           color:'#a78bfa', badge:'GUIDE'},
+]
+
+const GUIDE_CONTENT: Record<string,{title:string;body:string[]}> = {
+  'guide-wc': { title:'Water Cut Guide', body:[
+    '💧 Water Loading (7–5 dana): Pij 5–6L dnevno. "Varaš" tijelo da izlučuje više tekućine, pa kad smanjiš unos, ono nastavlja izlučivati.',
+    '🧂 Sol: Smanjuj sol od 4. dana. Sol zadržava vodu — njenim smanjenjem tijelo gubi tekućinu.',
+    '🍚 Ugljikohidrati: Svaki gram glikogena veže ~3g vode. Smanjenjem carba u posljednja 2 dana oslobađaš dodatnu tekućinu.',
+    '⚠️ OPREZ: Watercut od više od 3–4% tjelesne mase je opasan. Loša hidratacija = loš nastup.',
+    '🔋 Rehydratacija: Nakon vage pij elektrolite — ORS otopine ili sportski napitci. Cilj: 1–1.5L u 1–2h od vage.',
+  ]},
+  'guide-rpe': { title:'RPE Guide', body:[
+    'RPE (Rate of Perceived Exertion) je skala 1–10 koja opisuje koliko ti je težak set u odnosu na maksimum.',
+    '10 — Maksimum. Više reps nije moguće. / 9 — Jedna reps u rezervi. / 8 — Dvije reps u rezervi. Najčešće u treningu. / 7 — Tri reps u rezervi. Lagan trening, tehnika fokus.',
+    'U powerlifting programiranju RPE omogućuje auto-regulaciju — isti @RPE8 set je lakši kad si odmoran, teži kad si umoran, ali napor ostaje konstantan.',
+    'Pro tip: Nauči razliku između @RPE8 na kompetitivnim liftovima vs pomoćnim vježbama — deadlift @8 je teži nego curl @8.',
+  ]},
+  'guide-peak': { title:'Peaking Guide', body:[
+    '📈 Tjedan 3: Volumen trening, zadnji heavy week. Postavi operativne maxeve za comp. RPE 9 setovi.',
+    '📊 Tjedan 2: Smanji volumen 40%, zadrži intenzitet. Aktivacijski setovi do 90–92%. Tijelo "puni" glikogen.',
+    '🎯 Tjedan 1: Samo tehnika i aktivacija. Ništa heavy. Odmori se, spavaj, jedi dobro.',
+    '🏋️ Odabir kilaže: Opener = 90–93% max-a. Nešto što bi podigao 10 od 10 puta. Ne herojstvuj na openersima.',
+    '💡 Mentalitet: Comp dan je samo još jedan trening. Svi liftovi su drilled, tehnika je utjelovljena. Vjeruj procesu.',
+  ]},
+}
+
+function HubTab({ tips, athleteName }: { tips: CoachTip[]; athleteName: string }) {
+  const [active, setActive] = useState<string | null>(null)
+  const activeTool = HUB_TOOLS.find(t => t.id === active)
+  const CAT_COLORS: Record<string,string> = { general:'#888', technique:'#6b8cff', nutrition:'#22c55e', competition:'#f59e0b', recovery:'#f472b6' }
+
+  return (
+    <div style={{ animation: 'fadeUp 0.3s ease' }}>
+
+      {/* Coach tips */}
+      {tips.length > 0 && (
+        <div style={{ marginBottom: '36px' }}>
+          <SectionTitle>Savjeti od trenera</SectionTitle>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
+            {tips.map((tip, i) => {
+              const c = CAT_COLORS[tip.category] ?? '#888'
+              return (
+                <div key={tip.id} style={{ padding: '16px 20px', background: `${c}07`, border: `1px solid ${c}18`, borderLeft: `3px solid ${c}`, borderRadius: '10px', animation: `fadeUp 0.4s ease ${i * 0.06}s both` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
+                    <span style={{ fontSize: '0.58rem', color: c, letterSpacing: '0.1em', fontFamily: 'var(--fm)', fontWeight: 700 }}>{tip.category.toUpperCase()}</span>
+                    <span style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.2)' }}>{new Date(tip.created_at).toLocaleDateString('hr-HR')}</span>
+                  </div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#f0f0f5', marginBottom: '4px', fontFamily: 'var(--fm)' }}>{tip.title}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, fontFamily: 'var(--fm)' }}>{tip.content}</div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Tools grid */}
+      <SectionTitle>Kalkulatori & Vodiči</SectionTitle>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(clamp(180px,26vw,260px),1fr))', gap: '8px', marginBottom: '20px' }}>
+        {HUB_TOOLS.map((tool, i) => {
+          const isActive = active === tool.id
+          return (
+            <button key={tool.id} onClick={() => setActive(isActive ? null : tool.id)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', textAlign: 'left' as const,
+                background: isActive ? `${tool.color}10` : 'rgba(255,255,255,0.03)',
+                border: `1.5px solid ${isActive ? tool.color + '44' : 'rgba(255,255,255,0.07)'}`,
+                borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
+                boxShadow: isActive ? `0 4px 20px ${tool.color}18` : 'none',
+              }}
+              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)' } }}
+              onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' } }}>
+              {/* Icon dot */}
+              <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: `${tool.color}14`, border: `1px solid ${tool.color}2a`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: tool.color, boxShadow: isActive ? `0 0 8px ${tool.color}` : 'none', transition: 'box-shadow 0.2s' }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: isActive ? tool.color : '#e8e8f0', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}>{tool.label}</div>
+                <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '1px', fontFamily: 'var(--fm)' }}>{tool.sub}</div>
+              </div>
+              <span style={{ fontSize: '0.5rem', fontWeight: 700, color: tool.badge === 'CALC' ? tool.color : 'rgba(255,255,255,0.3)', background: tool.badge === 'CALC' ? `${tool.color}14` : 'rgba(255,255,255,0.04)', padding: '3px 8px', borderRadius: '5px', border: `1px solid ${tool.badge === 'CALC' ? tool.color + '25' : 'rgba(255,255,255,0.06)'}`, letterSpacing: '0.06em', fontFamily: 'var(--fm)', flexShrink: 0 }}>
+                {tool.badge}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Active tool panel */}
+      {active && activeTool && (
+        <div style={{ border: `1.5px solid ${activeTool.color}28`, borderRadius: '16px', overflow: 'hidden', boxShadow: `0 12px 48px rgba(0,0,0,0.4), 0 0 0 1px ${activeTool.color}0a`, animation: 'panelIn 0.3s cubic-bezier(0.16,1,0.3,1)' }}>
+          {/* Panel header */}
+          <div style={{ padding: '16px 24px', background: `${activeTool.color}08`, borderBottom: `1px solid ${activeTool.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: activeTool.color, boxShadow: `0 0 8px ${activeTool.color}` }} />
+              <div>
+                <div style={{ fontSize: '0.58rem', color: `${activeTool.color}99`, letterSpacing: '0.1em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '1px' }}>{activeTool.badge}</div>
+                <div style={{ fontSize: '1rem', fontWeight: 600, color: '#f0f0f5', fontFamily: 'var(--fm)' }}>{activeTool.label}</div>
+              </div>
+            </div>
+            <button onClick={() => setActive(null)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}>
+              <X size={13} />
+            </button>
+          </div>
+          {/* Content */}
+          <div style={{ padding: 'clamp(20px,4vw,32px)', background: 'rgba(255,255,255,0.01)' }}>
+            {active === 'rpe'      && <RpeCalc />}
+            {active === 'gl'       && <GlCalc />}
+            {active === 'watercut' && <WaterCutCalc />}
+            {['guide-wc','guide-rpe','guide-peak'].includes(active) && (() => {
+              const g = GUIDE_CONTENT[active]
+              if (!g) return null
+              return (
+                <div>
+                  <SectionTitle>{g.title}</SectionTitle>
+                  <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0' }}>
+                    {g.body.map((para, i) => (
+                      <div key={i} style={{ padding: '14px 0', borderBottom: i < g.body.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                        <p style={{ fontSize: '0.85rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.65)', margin: 0, fontFamily: 'var(--fm)' }}>{para}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── MAIN PAGE ────────────────────────────────────────────────────
 export default function TrainingPage() {
   const [block, setBlock] = useState<Block | null>(null)
@@ -907,6 +1371,9 @@ export default function TrainingPage() {
   const [athleteName, setAthleteName] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'program' | 'hub'>('program')
+  const [tips, setTips] = useState<CoachTip[]>([])
+  const [activeTool, setActiveTool] = useState<string | null>(null)
   const router = useRouter()
   const blockSelectorRef = useRef<HTMLDivElement>(null)
 
@@ -952,6 +1419,9 @@ export default function TrainingPage() {
         setBlock(blockData)
         const { data: ab } = await supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', user.id).order('created_at', { ascending: false })
         setAllBlocks((ab ?? []) as BlockSummary[])
+        // Load coach tips (visible to athlete + admin)
+        const { data: tipsData } = await supabase.from('coach_tips').select('*').eq('athlete_id', user.id).order('priority', { ascending: false }).order('created_at', { ascending: false })
+        setTips((tipsData ?? []) as CoachTip[])
       } catch { setError('Greška pri učitavanju.') } finally { setLoading(false) }
     }
     init()
@@ -1101,47 +1571,58 @@ export default function TrainingPage() {
       <TrainingNav athleteName={athleteName} isAdmin={isAdmin} onLogout={handleLogout} />
 
       {/* ─── HEADER ──────────────────────────────────────────────── */}
-      <div style={{ paddingTop: '64px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
+      <div style={{ paddingTop: '56px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
         {/* Header glow strip at top */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '180px', zIndex: 0, pointerEvents: 'none',
           background: 'linear-gradient(180deg, rgba(56,100,255,0.04) 0%, transparent 100%)' }} />
 
         <div className='page-header' style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 32px 0', position: 'relative', zIndex: 1 }}>
 
-          {/* Page title row */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', gap: '24px', flexWrap: 'wrap', animation: 'fadeUp 0.5s ease' }}>
+          {/* Tab switcher */}
+          <div style={{ display: 'flex', gap: '4px', marginBottom: '28px', animation: 'fadeUp 0.4s ease', padding: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.07)', width: 'fit-content' }}>
+            {([['program','Program'],['hub','Hub & Alati']] as [string,string][]).map(([tab,label])=>(
+              <button key={tab} onClick={()=>setActiveTab(tab as 'program'|'hub')}
+                style={{ padding:'8px 20px', background: activeTab===tab ? 'rgba(255,255,255,0.1)' : 'transparent', border: activeTab===tab ? '1px solid rgba(255,255,255,0.12)' : '1px solid transparent', borderRadius: '9px', cursor:'pointer', fontSize:'0.78rem', fontFamily:'var(--fm)', fontWeight: activeTab===tab ? 600 : 400, color: activeTab===tab ? '#fff' : 'rgba(255,255,255,0.45)', transition:'all 0.2s', whiteSpace:'nowrap' as const, letterSpacing: '0.01em' }}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Page title row — only in program tab */}
+          {activeTab === 'program' && <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '28px', gap: '20px', flexWrap: 'wrap', animation: 'fadeUp 0.5s ease 0.05s both' }}>
             <div>
-              <div style={{ fontSize: '0.52rem', letterSpacing: '0.5em', color: '#444', marginBottom: '8px', fontFamily: 'var(--fm)' }}>
-                {loading ? '...' : `${athleteName.toUpperCase()} · TRENING`}
+              <div style={{ fontSize: '0.6rem', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px', fontFamily: 'var(--fm)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ display: 'inline-block', width: '18px', height: '1px', background: 'rgba(255,255,255,0.2)' }} />
+                {loading ? '...' : athleteName}
               </div>
-              <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.8rem,4vw,3.5rem)', fontWeight: 800, lineHeight: 0.9, margin: 0, letterSpacing: '-0.02em', color: '#f0f0f0' }}>
-                {loading ? 'UČITAVANJE' : (block?.name?.toUpperCase() ?? 'MOJ PROGRAM')}<br />
-                <span style={{ color: '#2a2a35' }}>PLAN</span>
+              <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.6rem,4vw,3rem)', fontWeight: 800, lineHeight: 0.92, margin: 0, letterSpacing: '-0.03em', color: '#f5f5f7' }}>
+                {loading ? 'Učitavanje…' : (block?.name ?? 'Moj program')}
               </h1>
             </div>
 
-            {/* Stats pills */}
+            {/* Stats row */}
             {!loading && block && (
-              <div className="stats-row" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              <div className="stats-row" style={{ display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', overflow: 'hidden' }}>
                 {[
-                  { val: block.weeks?.length ?? 0, label: 'TJEDANA' },
-                  { val: totalWorkouts, label: 'TRENINGA' },
-                  { val: `${completedWorkouts}/${totalWorkouts}`, label: 'GOTOVO', accent: completedWorkouts > 0 },
-                  { val: `${pct}%`, label: 'NAPREDAK', accent: pct > 50 },
+                  { val: block.weeks?.length ?? 0, label: 'Tjedana' },
+                  { val: totalWorkouts, label: 'Treninga' },
+                  { val: `${completedWorkouts}/${totalWorkouts}`, label: 'Završeno', accent: completedWorkouts > 0 },
+                  { val: `${pct}%`, label: 'Napredak', accent: pct > 50 },
                 ].map((s, i) => (
-                  <div key={i} style={{ padding: '10px 16px', background: 'linear-gradient(145deg, #0e0e14 0%, #080810 100%)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', textAlign: 'center', minWidth: '72px', boxShadow: '0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
-                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1.5rem', fontWeight: 800, lineHeight: 1, color: s.accent ? '#22c55e' : '#e0e0e0' }}>{s.val}</div>
-                    <div style={{ fontSize: '0.48rem', color: '#777', letterSpacing: '0.22em', marginTop: '4px' }}>{s.label}</div>
+                  <div key={i} style={{ padding: '12px 20px', background: '#08080e', textAlign: 'center', minWidth: '76px' }}>
+                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, lineHeight: 1, color: s.accent ? '#4ade80' : '#f0f0f5' }}>{s.val}</div>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', marginTop: '5px', fontFamily: 'var(--fm)', fontWeight: 400 }}>{s.label}</div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </div>}
 
-          {/* Block selector bar */}
+          {/* Block selector bar — only in program tab */}
+          {activeTab === 'program' && <>
           {!loading && block && (
             <div style={{ position: 'relative', marginBottom: '24px' }} ref={blockSelectorRef}>
-              <div className="block-bar" style={{ display: 'flex', alignItems: 'stretch', background: 'linear-gradient(180deg, #0e0e14 0%, #09090e 100%)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+              <div className="block-bar" style={{ display: 'flex', alignItems: 'stretch', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.3)' }}>
 
                 {/* Block switcher */}
                 <button onClick={() => setShowBlockSelector(!showBlockSelector)}
@@ -1202,10 +1683,14 @@ export default function TrainingPage() {
               )}
             </div>
           )}
+          </>}
         </div>
 
         {/* ─── CONTENT ─────────────────────────────────────────── */}
         <div className='page-content' style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px 80px' }}>
+          {/* Hub tab */}
+          {activeTab === 'hub' && <HubTab tips={tips} athleteName={athleteName} />}
+          {activeTab === 'program' && <>
           {loading && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '80px 0', color: '#444' }}>
               <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
@@ -1239,6 +1724,7 @@ export default function TrainingPage() {
               )}
             </>
           )}
+          </>}
         </div>
       </div>
 
@@ -1329,6 +1815,7 @@ export default function TrainingPage() {
         }
 
         /* ── Exercise row table ── */
+        /* ── Base resets ── */
         .ex-row-wrap { border-bottom: none; }
         .ex-row-main { transition: background 0.12s; }
         .ex-row-main:hover { background: #0e0e18; }
@@ -1357,27 +1844,58 @@ export default function TrainingPage() {
           box-shadow: 0 0 16px rgba(34,197,94,0.15) !important;
         }
 
-        /* ── Add week btn upgrade ── */
+        /* ── Buttons ── */
         .add-week-btn:hover {
-          border-color: rgba(255,255,255,0.12) !important;
-          color: #ccc !important;
-          background: linear-gradient(160deg, #0e0e14 0%, #0a0a10 100%) !important;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+          border-color: rgba(255,255,255,0.15) !important;
+          color: #ddd !important;
+          background: rgba(255,255,255,0.05) !important;
+        }
+        .add-btn, .action-btn {
+          font-size: 0.65rem !important;
+          letter-spacing: 0.06em !important;
         }
 
-        /* ── Nav menu item refined ── */
-        .nav-menu-item { border-radius: 7px; }
+        /* ── Nav menu items — Apple style ── */
+        .nav-menu-item {
+          width: 100%; display: flex; align-items: center; gap: 10px;
+          padding: 8px 12px; background: transparent; border: none;
+          color: rgba(255,255,255,0.7); font-size: 0.82rem; font-family: var(--fm);
+          font-weight: 450; cursor: pointer; border-radius: 9px;
+          transition: background 0.15s, color 0.15s; text-align: left; letter-spacing: 0.01em;
+        }
+        .nav-menu-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+        .nav-menu-admin:hover { background: rgba(245,158,11,0.08) !important; }
+        .nav-menu-logout { color: rgba(255,80,80,0.7) !important; }
+        .nav-menu-logout:hover { background: rgba(255,60,60,0.08) !important; color: #ff6060 !important; }
 
-        /* ── Ping animation for status dot ── */
+        /* ── Nav pills ── */
+        .tnav-pill { display: flex; align-items: center; }
+
+        /* ── Status pill hide on small screens ── */
+        @media (max-width: 640px) { .tnav-status { display: none !important; } }
+        @media (max-width: 520px) { .tnav-name { display: none !important; } }
+
+        /* ── Animations ── */
+        @keyframes popIn {
+          from { opacity: 0; transform: scale(0.96) translateY(4px); }
+          to   { opacity: 1; transform: none; }
+        }
+        @keyframes panelIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: none; }
+        }
         @keyframes pingPulse {
-          0%, 100% { transform: scale(1); opacity: 0.6; }
-          50% { transform: scale(2.2); opacity: 0; }
+          0%, 100% { transform: scale(1); opacity: 0.5; }
+          50% { transform: scale(2.4); opacity: 0; }
+        }
+        @keyframes dropDown {
+          from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+          to   { opacity: 1; transform: none; }
         }
 
-        /* ── Training nav labels hide on small screens ── */
+        /* ── Nav responsive ── */
         @media (max-width: 680px) {
-          .tnav-label { display: none !important; }
-          .tnav-links a { padding: 0 12px !important; }
+          .tnav-links a { padding: 6px 10px !important; font-size: 0.7rem !important; }
         }
         @media (max-width: 480px) {
           .tnav-links { display: none !important; }
@@ -1387,7 +1905,7 @@ export default function TrainingPage() {
 
         /* ─ Header + content padding ─ */
         @media (max-width: 768px) {
-          .page-header  { padding: 20px 16px 0 !important; }
+          .page-header  { padding: 16px 16px 0 !important; }
           .page-content { padding: 0 16px 80px !important; }
         }
 
@@ -1399,8 +1917,9 @@ export default function TrainingPage() {
         }
 
         /* ─ Stats pills: 2×2 on small screens ─ */
-        @media (max-width: 480px) {
-          .stats-row { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+        @media (max-width: 560px) {
+          .stats-row { flex-wrap: wrap !important; }
+          .stats-row > div { min-width: 60px !important; padding: 10px 14px !important; }
         }
 
         /* ─ Week header: shrink W number ─ */
