@@ -64,7 +64,7 @@ function ScrollToTop() {
   const [visible, setVisible] = useState(false)
   const [animData, setAnimData] = useState<object | null>(null)
   const lottieRef = useRef<any>(null)
-  useEffect(() => { fetch('/animations/scroll-top.json').then(r => r.json()).then(setAnimData).catch(() => {}) }, [])
+  
   useEffect(() => {
     const fn = () => setVisible(window.scrollY > 400)
     window.addEventListener('scroll', fn, { passive: true })
