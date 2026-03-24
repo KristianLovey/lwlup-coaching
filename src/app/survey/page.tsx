@@ -12,6 +12,7 @@ type FormData = {
   nutrition_quality: string; supplements: string; equipment: string
   recovery_habits: string; coaching_history: string
   goals: string; injuries: string; additional: string
+  chosen_coach: string
 }
 
 const EMPTY: FormData = {
@@ -22,6 +23,7 @@ const EMPTY: FormData = {
   nutrition_quality: '', supplements: '', equipment: '',
   recovery_habits: '', coaching_history: '',
   goals: '', injuries: '', additional: '',
+  chosen_coach: '',
 }
 
 const BASE_STEPS = ['OSOBNO', 'TRENING', 'PRs', 'CILJEVI']
@@ -103,6 +105,7 @@ function Counter({ value }: { value: number }) {
 }
 
 export default function SurveyPage() {
+  const [showIntro, setShowIntro] = useState(true)
   const [step, setStep] = useState(0)
   const [dir, setDir] = useState<1 | -1>(1)
   const [animating, setAnimating] = useState(false)
@@ -277,7 +280,7 @@ export default function SurveyPage() {
           Javit ćemo ti se u najkraćem mogućem roku i dogovoriti sljedeće korake.
         </p>
         {totalVal !== null && totalVal > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '48px' }}>
+          <div className="survey-success-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '48px' }}>
             {[['SQUAT', form.squat], ['BENCH', form.bench], ['DEAD', form.deadlift], ['TOTAL', String(totalVal)]].map(([l, v]) => (
               <div key={l} style={{ padding: '20px 12px', background: '#060606', textAlign: 'center' }}>
                 <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>{l}</div>
@@ -305,6 +308,70 @@ export default function SurveyPage() {
     </div>
   )
 
+  // ── Intro screen ─────────────────────────────────────────────────
+  if (showIntro) return (
+    <div style={{ minHeight: '100vh', background: '#060606', color: '#fff', fontFamily: "'Barlow', sans-serif", position: 'relative', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div className="star-field" />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px)', backgroundSize: '48px 48px', pointerEvents: 'none' }} />
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(20px,5vw,60px)', background: 'rgba(6,6,6,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+          <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '60px' }} />
+        </Link>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '0.7rem', letterSpacing: '0.25em', fontWeight: 600, fontFamily: "'Barlow',sans-serif" }}>
+          <ArrowLeft size={13} /> NATRAG
+        </Link>
+      </nav>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(90px,12vh,120px) clamp(20px,5vw,60px) 60px', position: 'relative', zIndex: 1 }}>
+        <div style={{ maxWidth: '620px', width: '100%', animation: 'successIn 0.7s cubic-bezier(0.16,1,0.3,1)' }}>
+          <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.35)', marginBottom: '20px' }}>LWLUP · PRIJAVA</div>
+          <h1 style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 'clamp(2.8rem,8vw,5rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '24px', letterSpacing: '-0.01em' }}>
+            POSTANI DIO<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>LWL UP TIMA</span>
+          </h1>
+          <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.85, marginBottom: '48px', fontWeight: 300 }}>
+            Ispunit ćeš kratki upitnik koji pomaže treneru da bolje razumije tvoje iskustvo, ciljeve i fizičke karakteristike. Na temelju tvojih odgovora, kontaktirat ćemo te i dogovoriti sve detalje.
+          </p>
+
+          <div style={{ marginBottom: '40px' }}>
+            <div style={{ fontSize: '0.58rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.4)', marginBottom: '16px', fontWeight: 700 }}>ODABERI TRENERA</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {[
+                { name: 'Walter', desc: 'Specijalist za tehniku i snagu' },
+                { name: 'Grezina', desc: 'Fokus na napredak i natjecanja' },
+              ].map(({ name, desc }) => (
+                <button key={name} onClick={() => setForm(p => ({ ...p, chosen_coach: name }))}
+                  style={{ padding: '20px', background: form.chosen_coach === name ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.02)', border: `1px solid ${form.chosen_coach === name ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.1)'}`, cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', fontFamily: "'Barlow',sans-serif", position: 'relative' }}>
+                  {form.chosen_coach === name && (
+                    <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
+                      <Check size={14} color="rgba(255,255,255,0.7)" />
+                    </div>
+                  )}
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', marginBottom: '6px', fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: '0.04em' }}>{name.toUpperCase()}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>{desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => { if (form.chosen_coach) setShowIntro(false) }}
+            style={{ width: '100%', padding: '18px', background: form.chosen_coach ? '#fff' : 'rgba(255,255,255,0.06)', color: form.chosen_coach ? '#000' : 'rgba(255,255,255,0.2)', border: 'none', cursor: form.chosen_coach ? 'pointer' : 'not-allowed', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.25em', fontFamily: "'Barlow',sans-serif", transition: 'all 0.25s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+            ZAPOČNI UPITNIK <ArrowRight size={14} />
+          </button>
+          {!form.chosen_coach && (
+            <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.65rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>
+              Odaberi trenera za nastavak
+            </div>
+          )}
+        </div>
+      </div>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap');
+        body { margin: 0; background: #060606; }
+        @keyframes successIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
+    </div>
+  )
+
   // ── Main form ────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: '#060606', color: '#fff', fontFamily: "'Barlow', sans-serif", position: 'relative', overflowX: 'hidden' }}>
@@ -325,10 +392,10 @@ export default function SurveyPage() {
       </nav>
 
       {/* LAYOUT */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'clamp(200px,28vw,340px) 1fr', minHeight: '100vh', position: 'relative', zIndex: 1 }}>
+      <div className="survey-layout" style={{ display: 'grid', gridTemplateColumns: 'clamp(200px,28vw,340px) 1fr', minHeight: '100vh', position: 'relative', zIndex: 1 }}>
 
         {/* LEFT SIDEBAR */}
-        <div style={{ borderRight: '1px solid rgba(255,255,255,0.1)', padding: '100px 40px 60px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', position: 'sticky', top: 0, height: '100vh', overflow: 'hidden' }}>
+        <div className="survey-sidebar" style={{ borderRight: '1px solid rgba(255,255,255,0.1)', padding: '100px 40px 60px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', position: 'sticky', top: 0, height: '100vh', overflow: 'hidden' }}>
           <div>
             <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.45)', marginBottom: '40px' }}>PRISTUP PROGRAMU</div>
             <h1 style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 'clamp(2.2rem,3.5vw,3.2rem)', fontWeight: 800, lineHeight: 0.92, marginBottom: '32px', letterSpacing: '-0.01em' }}>
@@ -374,6 +441,18 @@ export default function SurveyPage() {
 
         {/* RIGHT: FORM */}
         <div style={{ padding: 'clamp(90px,10vh,120px) clamp(24px,6vw,80px) 80px', overflow: 'hidden', position: 'relative' }}>
+
+          {/* Mobile step indicator — only visible on small screens */}
+          <div className="survey-mobile-steps">
+            {STEPS.map((s, i) => (
+              <div key={s + i} className="survey-mobile-step" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: i < step ? '#fff' : i === step ? 'rgba(255,255,255,0.12)' : 'transparent', border: i === step ? '1px solid rgba(255,255,255,0.5)' : i < step ? 'none' : '1px solid rgba(255,255,255,0.1)', fontSize: '0.55rem', fontWeight: 800, color: i === step ? '#fff' : i < step ? '#000' : 'rgba(255,255,255,0.2)', fontFamily: "'Barlow',sans-serif" }}>
+                  {i < step ? <Check size={10} color="#000" strokeWidth={3} /> : i + 1}
+                </div>
+                {i < STEPS.length - 1 && <div style={{ flex: 1, height: '1px', background: i < step ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)' }} />}
+              </div>
+            ))}
+          </div>
 
           {/* Progress bar */}
           <div style={{ marginBottom: '48px' }}>
@@ -761,8 +840,22 @@ export default function SurveyPage() {
         @keyframes stepInLeft   { from{opacity:0;transform:translateX(-50px)}to{opacity:1;transform:translateX(0)} }
         @keyframes fadeUp       { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         @keyframes spin         { to{transform:rotate(360deg)} }
-        @media (max-width: 768px) { .layout { grid-template-columns: 1fr !important; } }
-        @media (max-width: 640px) { nav { padding: 0 20px !important; } }
+        .survey-mobile-steps { display: none; }
+        @media (max-width: 768px) {
+          .survey-layout { grid-template-columns: 1fr !important; }
+          .survey-sidebar { display: none !important; }
+          .survey-mobile-steps {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            margin-bottom: 28px;
+          }
+          .survey-mobile-step { flex: 1; }
+          .survey-success-grid { grid-template-columns: repeat(2,1fr) !important; }
+        }
+        @media (max-width: 480px) {
+          nav { padding: 0 16px !important; }
+        }
       `}</style>
     </div>
   )

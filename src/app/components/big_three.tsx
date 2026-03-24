@@ -91,7 +91,8 @@ function PointsList({ lift, hoveredHotspot, setHoveredHotspot }: {
     <div style={{ overflowY: 'auto', flex: 1 }}>
       {points.map((p, i) => (
         <div key={i} onMouseEnter={() => setHoveredHotspot(i)} onMouseLeave={() => setHoveredHotspot(null)}
-          style={{ padding: '18px 28px', transition: 'all 0.2s', cursor: 'default', borderBottom: i < points.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none', background: hoveredHotspot === i ? 'rgba(255,255,255,0.05)' : 'transparent', opacity: hoveredHotspot === null || hoveredHotspot === i ? 1 : 0.4, display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+          onClick={() => setHoveredHotspot(hoveredHotspot === i ? null : i)}
+          style={{ padding: '18px 28px', transition: 'all 0.2s', cursor: 'pointer', borderBottom: i < points.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none', background: hoveredHotspot === i ? 'rgba(255,255,255,0.05)' : 'transparent', opacity: hoveredHotspot === null || hoveredHotspot === i ? 1 : 0.4, display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
           <div style={{ width: '24px', height: '24px', borderRadius: '50%', flexShrink: 0, marginTop: '2px', background: hoveredHotspot === i ? '#fff' : 'transparent', border: `1px solid ${hoveredHotspot === i ? '#fff' : 'rgba(255,255,255,0.3)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: 800, color: hoveredHotspot === i ? '#000' : 'rgba(255,255,255,0.5)', transition: 'all 0.2s' }}>{i + 1}</div>
           <div>
             <div style={{ fontSize: '0.63rem', letterSpacing: '0.22em', fontWeight: 700, color: hoveredHotspot === i ? '#fff' : 'rgba(255,255,255,0.85)', marginBottom: '6px', transition: 'color 0.2s', fontFamily: 'var(--fm)' }}>{p.label}</div>
@@ -116,7 +117,7 @@ function PortraitModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
   lift: LiftKey; hoveredHotspot: number | null; setHoveredHotspot: (i: number | null) => void; onClose: () => void
 }) {
   return (
-    <div style={{ width: '100%', maxWidth: '1000px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.12)', display: 'grid', gridTemplateColumns: '1fr 380px', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.8)', animation: 'slideUp 0.45s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
+    <div className="bt-modal bt-modal-portrait" style={{ width: '100%', maxWidth: '1000px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.12)', display: 'grid', gridTemplateColumns: '1fr 380px', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.8)', animation: 'slideUp 0.45s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
       onClick={e => e.stopPropagation()}>
       <div style={{ position: 'relative', background: '#000', overflowY: 'auto' }}>
         <img src={LIFT_DETAILS[lift].img} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} alt={lift} />
@@ -124,8 +125,9 @@ function PortraitModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, transparent 65%, #0a0a0a 100%)' }} />
         {LIFT_DETAILS[lift].points.map((p, i) => (
           <div key={i} style={{ position: 'absolute', top: p.top, left: p.left, transform: 'translate(-50%, -50%)', zIndex: 3 }}
-            onMouseEnter={() => setHoveredHotspot(i)} onMouseLeave={() => setHoveredHotspot(null)}>
-            <div className="hotspot" style={{ transform: hoveredHotspot === i ? 'scale(1.3)' : 'scale(1)', transition: '0.3s' }}>
+            onMouseEnter={() => setHoveredHotspot(i)} onMouseLeave={() => setHoveredHotspot(null)}
+            onClick={e => { e.stopPropagation(); setHoveredHotspot(hoveredHotspot === i ? null : i) }}>
+            <div className={`hotspot${hoveredHotspot === i ? ' hotspot--active' : ''}`} style={{ transform: hoveredHotspot === i ? 'scale(1.3)' : 'scale(1)', transition: '0.3s' }}>
               <div className="hotspot-core" /><div className="hotspot-ring" />
               <div className="hotspot-label" style={{ opacity: hoveredHotspot === i ? 1 : 0, transform: hoveredHotspot === i ? 'translate(-50%, 8px)' : 'translate(-50%, 0)' }}>{p.label}</div>
             </div>
@@ -148,7 +150,7 @@ function LandscapeModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
   lift: LiftKey; hoveredHotspot: number | null; setHoveredHotspot: (i: number | null) => void; onClose: () => void
 }) {
   return (
-    <div style={{ width: '100%', maxWidth: '900px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.8)', animation: 'slideUp 0.45s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
+    <div className="bt-modal bt-modal-landscape" style={{ width: '100%', maxWidth: '900px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.8)', animation: 'slideUp 0.45s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
       onClick={e => e.stopPropagation()}>
       <div style={{ position: 'relative', background: '#000', flexShrink: 0 }}>
         <img src={LIFT_DETAILS[lift].img} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} alt={lift} />
@@ -156,8 +158,9 @@ function LandscapeModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.15) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.15) 100%)' }} />
         {LIFT_DETAILS[lift].points.map((p, i) => (
           <div key={i} style={{ position: 'absolute', top: p.top, left: p.left, transform: 'translate(-50%, -50%)', zIndex: 3 }}
-            onMouseEnter={() => setHoveredHotspot(i)} onMouseLeave={() => setHoveredHotspot(null)}>
-            <div className="hotspot" style={{ transform: hoveredHotspot === i ? 'scale(1.3)' : 'scale(1)', transition: '0.3s' }}>
+            onMouseEnter={() => setHoveredHotspot(i)} onMouseLeave={() => setHoveredHotspot(null)}
+            onClick={e => { e.stopPropagation(); setHoveredHotspot(hoveredHotspot === i ? null : i) }}>
+            <div className={`hotspot${hoveredHotspot === i ? ' hotspot--active' : ''}`} style={{ transform: hoveredHotspot === i ? 'scale(1.3)' : 'scale(1)', transition: '0.3s' }}>
               <div className="hotspot-core" /><div className="hotspot-ring" />
               <div className="hotspot-label" style={{ opacity: hoveredHotspot === i ? 1 : 0, transform: hoveredHotspot === i ? 'translate(-50%, 8px)' : 'translate(-50%, 0)' }}>{p.label}</div>
             </div>
@@ -169,7 +172,7 @@ function LandscapeModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
         </div>
       </div>
       <div style={{ overflowY: 'auto', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)' }}>
+        <div className="bt-points-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)' }}>
           {LIFT_DETAILS[lift].points.map((p, i) => (
             <div key={i} onMouseEnter={() => setHoveredHotspot(i)} onMouseLeave={() => setHoveredHotspot(null)}
               style={{ padding: '20px', transition: 'all 0.2s', cursor: 'default', borderRight: i < LIFT_DETAILS[lift].points.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none', background: hoveredHotspot === i ? 'rgba(255,255,255,0.05)' : 'transparent', opacity: hoveredHotspot === null || hoveredHotspot === i ? 1 : 0.4 }}>
@@ -248,7 +251,7 @@ export default function BigThree() {
               const { meta } = LIFT_DETAILS[lift]
               return (
                 <div key={lift} onClick={() => setActiveLift(lift)} className="bt-card"
-                  style={{ display: 'grid', gridTemplateColumns: '80px 1fr 340px', alignItems: 'stretch', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', overflow: 'hidden' }}>
+                  style={{ display: 'grid', gridTemplateColumns: '80px 1fr 340px', alignItems: 'stretch', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', overflow: 'hidden', position: 'relative' }}>
                   <div className="bt-num-col" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)', padding: 'clamp(32px,4vw,48px) 0' }}>
                     <span style={{ fontFamily: 'var(--fd)', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.2)', writingMode: 'vertical-rl', transform: 'rotate(180deg)', transition: 'color 0.3s' }}>{meta.num}</span>
                   </div>
@@ -288,7 +291,7 @@ export default function BigThree() {
       </section>
 
       {activeLift && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px', background: 'rgba(0,0,0,0.96)', backdropFilter: 'blur(20px)', animation: 'fadeIn 0.25s ease' }}
+        <div className="bt-overlay" style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px', background: 'rgba(0,0,0,0.96)', backdropFilter: 'blur(20px)', animation: 'fadeIn 0.25s ease' }}
           onClick={close}>
           {LIFT_DETAILS[activeLift].orientation === 'portrait' ? (
             <PortraitModal lift={activeLift} hoveredHotspot={hoveredHotspot} setHoveredHotspot={setHoveredHotspot} onClose={close} />
@@ -315,10 +318,14 @@ export default function BigThree() {
         .bt-card:hover .bt-num-col span { color: rgba(255,255,255,0.5) !important; }
 
         /* ── Hotspots ── */
-        .hotspot { position: relative; width: 16px; height: 16px; }
-        .hotspot-core { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 8px; height: 8px; background: #fff; border-radius: 50%; }
-        .hotspot-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 16px; height: 16px; border: 1px solid rgba(255,255,255,0.5); border-radius: 50%; animation: pulse 2s infinite; }
+        .hotspot { position: relative; width: 16px; height: 16px; cursor: pointer; }
+        .hotspot-core { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 8px; height: 8px; background: #fff; border-radius: 50%; transition: background 0.2s; }
+        .hotspot-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 16px; height: 16px; border: 1px solid rgba(255,255,255,0.5); border-radius: 50%; animation: pulse 2s infinite; transition: border-color 0.2s; }
         .hotspot-label { position: absolute; top: 100%; left: 50%; transform: translate(-50%, 4px); white-space: nowrap; background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.2); padding: 4px 10px; font-size: 0.55rem; letter-spacing: 0.15em; color: #fff; font-family: var(--fm); pointer-events: none; transition: all 0.2s; }
+        /* Active hotspot — yellow */
+        .hotspot--active .hotspot-core { background: #facc15; }
+        .hotspot--active .hotspot-ring { border-color: rgba(250,204,21,0.7); animation: pulseYellow 2s infinite; }
+        @keyframes pulseYellow { 0%,100% { transform: translate(-50%,-50%) scale(1); opacity: 0.7; } 50% { transform: translate(-50%,-50%) scale(1.5); opacity: 0; } }
 
         @keyframes pulse { 0%,100% { transform: translate(-50%,-50%) scale(1); opacity: 0.6; } 50% { transform: translate(-50%,-50%) scale(1.5); opacity: 0; } }
         @keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
@@ -327,15 +334,53 @@ export default function BigThree() {
         /* ── Mobile ── */
         @media (max-width: 768px) {
           .bt-intro-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
-          /* Keep cards but hide number col + shrink image col */
-          .bt-card { grid-template-columns: 1fr clamp(90px,28vw,160px) !important; }
-          .bt-num-col { display: none !important; }
-          .bt-img-col { width: 100% !important; }
-        }
-        @media (max-width: 480px) {
-          /* On very small screens hide image col entirely */
+
+          /* Cards: stack vertically — image on top (natural size), content below */
           .bt-card { grid-template-columns: 1fr !important; }
-          .bt-img-col { display: none !important; }
+          .bt-num-col { display: none !important; }
+          .bt-img-col { order: -1; height: 180px !important; }
+          .bt-img-col > img { width: 100% !important; height: 180px !important; object-fit: cover !important; }
+
+          /* Overlay: no padding, full screen */
+          .bt-overlay { padding: 0 !important; align-items: flex-end !important; }
+
+          /* Modal: full width */
+          .bt-modal {
+            max-width: 100% !important;
+            width: 100% !important;
+            max-height: 95dvh !important;
+            overflow-y: auto !important;
+          }
+
+          /* Portrait modal: stack vertically — image natural ratio, dots stay correct */
+          .bt-modal-portrait {
+            grid-template-columns: 1fr !important;
+            display: flex !important;
+            flex-direction: column !important;
+          }
+          .bt-modal-portrait > div:first-child {
+            height: auto !important;
+            overflow: visible !important;
+            flex-shrink: 0;
+          }
+          .bt-modal-portrait > div:last-child {
+            height: auto !important;
+            flex-shrink: 0;
+          }
+
+          /* Landscape modal: image natural ratio, points in 2 cols */
+          .bt-modal-landscape { flex-direction: column !important; }
+          .bt-modal-landscape .bt-points-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+
+          /* Smaller hotspot label on mobile */
+          .hotspot-label { font-size: 0.45rem !important; padding: 3px 7px !important; letter-spacing: 0.08em !important; }
+        }
+        @media (max-width: 400px) {
+          .bt-modal-landscape .bt-points-grid {
+            grid-template-columns: 1fr !important;
+          }
         }
       `}</style>
     </>

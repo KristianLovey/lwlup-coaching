@@ -113,7 +113,7 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
       {/* Status stripe */}
       <div style={{ height: '2px', background: status.dot, opacity: comp.status === 'completed' ? 0.25 : 0.9 }} />
 
-      <div style={{ padding: '28px 32px' }}>
+      <div className="comp-card-body" style={{ padding: '28px 32px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' }}>
 
           {/* Left */}
@@ -334,10 +334,10 @@ export default function CompetitionsPage() {
       <section style={{ paddingTop: '160px', paddingBottom: '48px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '800px', height: '400px', background: 'radial-gradient(ellipse at center top, rgba(255,255,255,0.05) 0%, transparent 70%)', zIndex: 1, pointerEvents: 'none' }} />
 
-        <div ref={heroReveal.ref} style={{ position: 'relative', zIndex: 2, maxWidth: '1200px', margin: '0 auto', padding: '0 60px' }}>
+        <div ref={heroReveal.ref} className="comp-hero-inner" style={{ position: 'relative', zIndex: 2, maxWidth: '1200px', margin: '0 auto', padding: '0 60px' }}>
           <div style={{ opacity: heroReveal.visible ? 1 : 0, transform: heroReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '32px', marginBottom: '40px' }}>
+            <div className="comp-hero-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '32px', marginBottom: '40px' }}>
               <div>
                 <div style={{ fontSize: '0.7rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.3)', marginBottom: '14px' }}>LWLUP · NATJECANJA</div>
                 <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem, 8vw, 6.5rem)', lineHeight: 0.88, margin: 0, letterSpacing: '-0.02em' }}>
@@ -347,7 +347,7 @@ export default function CompetitionsPage() {
 
               {/* Live stats */}
               {!loading && (
-                <div style={{ display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
+                <div className="comp-stats-bar" style={{ display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
                   {[
                     { val: upcoming,           label: 'NADOLAZEĆA' },
                     { val: completed,          label: 'ZAVRŠENA'   },
@@ -459,6 +459,15 @@ export default function CompetitionsPage() {
         @media (max-width: 768px) {
           nav { padding: 0 20px !important; }
           section { padding-left: 20px !important; padding-right: 20px !important; }
+          .comp-hero-inner { padding: 0 20px !important; }
+          .comp-hero-top { gap: 20px !important; margin-bottom: 24px !important; }
+          .comp-stats-bar { width: 100%; }
+          .comp-stats-bar > div { flex: 1; }
+          .comp-card-body { padding: 20px 16px !important; }
+        }
+        @media (max-width: 480px) {
+          .comp-hero-inner { padding: 0 16px !important; }
+          .comp-card-body { padding: 16px 14px !important; }
         }
       `}</style>
     </div>

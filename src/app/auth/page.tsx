@@ -9,43 +9,26 @@ const supabase = createClient()
 
 export default function AuthPage() {
   const router = useRouter()
-  const [mode, setMode] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [focused, setFocused] = useState<string | null>(null)
 
   const handleSubmit = async () => {
     setError('')
-    setSuccess('')
     if (!email || !password) { setError('Popuni sve obavezne podatke.'); return }
     if (password.length < 6) { setError('Lozinka mora imati najmanje 6 znakova.'); return }
 
     setLoading(true)
     try {
-      if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) throw error
-        router.push('/training')
-      } else {
-        if (!fullName.trim()) { setError('Unesi puno ime.'); setLoading(false); return }
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { full_name: fullName } },
-        })
-        if (error) throw error
-        setSuccess('Račun kreiran! Provjeri email za potvrdu, zatim se prijavi.')
-        setMode('login')
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+      router.push('/training')
     } catch (e: any) {
       const msg = e?.message ?? 'Greška. Pokušaj ponovo.'
       if (msg.includes('Invalid login')) setError('Pogrešan email ili lozinka.')
-      else if (msg.includes('already registered')) setError('Email je već registriran. Prijavi se.')
       else setError(msg)
     } finally {
       setLoading(false)
@@ -77,24 +60,21 @@ export default function AuthPage() {
       <div style={{ position: 'fixed', top: '20%', left: '60%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,255,255,0.02) 0%,transparent 70%)', pointerEvents: 'none' }} />
 
       {/* ── LEFT: branding ──────────────────────────────────────── */}
-      <div style={{ width: 'clamp(280px,40vw,520px)', borderRight: '1px solid rgba(255,255,255,0.06)', padding: '60px 60px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', zIndex: 1, flexShrink: 0 }}>
+      <div className="auth-left-panel" style={{ width: 'clamp(280px,40vw,520px)', borderRight: '1px solid rgba(255,255,255,0.06)', padding: '60px 60px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', zIndex: 1, flexShrink: 0 }}>
         <div>
           <Link href="/" style={{ textDecoration: 'none' }}>
             <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '52px', marginBottom: '80px', display: 'block' }} />
           </Link>
 
           <div style={{ fontSize: '0.58rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.2)', marginBottom: '20px' }}>
-            {mode === 'login' ? 'DOBRODOŠAO NAZAD' : 'PRIDRUŽI SE'}
+            DOBRODOŠAO NAZAD
           </div>
           <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,4vw,4rem)', fontWeight: 800, lineHeight: 0.88, letterSpacing: '-0.02em', margin: '0 0 32px' }}>
-            {mode === 'login' ? <>PRIJAVA<br /><span style={{ color: 'rgba(255,255,255,0.2)' }}>U SUSTAV</span></> : <>NOVI<br /><span style={{ color: 'rgba(255,255,255,0.2)' }}>RAČUN</span></>}
+            PRIJAVA<br /><span style={{ color: 'rgba(255,255,255,0.2)' }}>U SUSTAV</span>
           </h1>
 
           <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.8, maxWidth: '320px' }}>
-            {mode === 'login'
-              ? 'Prijavi se da pristupiš svom programu treninga, prati napredak i upravljaj treninzima.'
-              : 'Kreiraj račun i dobij pristup personaliziranom programu powerliftinga.'
-            }
+            Prijavi se da pristupiš svom programu treninga, prati napredak i upravljaj treninzima.
           </p>
         </div>
 
@@ -110,32 +90,18 @@ export default function AuthPage() {
       </div>
 
       {/* ── RIGHT: form ─────────────────────────────────────────── */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 40px', position: 'relative', zIndex: 1 }}>
-        <div style={{ width: '100%', maxWidth: '440px', animation: 'fadeUp 0.6s cubic-bezier(0.16,1,0.3,1)' }}>
+      <div className="auth-form-panel" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 40px', position: 'relative', zIndex: 1 }}>
+        <div className="auth-form-inner" style={{ width: '100%', maxWidth: '440px', animation: 'fadeUp 0.6s cubic-bezier(0.16,1,0.3,1)' }}>
 
-          {/* Mode toggle */}
-          <div style={{ display: 'flex', marginBottom: '48px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            {(['login', 'register'] as const).map(m => (
-              <button key={m} onClick={() => { setMode(m); setError(''); setSuccess('') }} style={{ padding: '12px 0', marginRight: '32px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.25em', fontFamily: 'var(--fm)', color: mode === m ? '#fff' : 'rgba(255,255,255,0.25)', borderBottom: `2px solid ${mode === m ? '#fff' : 'transparent'}`, marginBottom: '-1px', transition: 'all 0.2s' }}>
-                {m === 'login' ? 'PRIJAVA' : 'REGISTRACIJA'}
-              </button>
-            ))}
+          {/* Title */}
+          <div style={{ marginBottom: '48px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '24px' }}>
+            <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.25em', fontFamily: 'var(--fm)', color: '#fff' }}>
+              PRIJAVA
+            </div>
           </div>
 
           {/* Fields */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            {mode === 'register' && (
-              <div style={{ animation: 'fadeUp 0.3s ease' }}>
-                <label style={lbl('fullName')}>Puno ime</label>
-                <input
-                  name="fullName" value={fullName} onChange={e => setFullName(e.target.value)}
-                  onFocus={() => setFocused('fullName')} onBlur={() => setFocused(null)}
-                  placeholder="Ime i prezime" style={inp('fullName')}
-                  onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                />
-              </div>
-            )}
-
             <div>
               <label style={lbl('email')}>Email adresa</label>
               <input
@@ -166,15 +132,10 @@ export default function AuthPage() {
             </div>
           </div>
 
-          {/* Error / success */}
+          {/* Error */}
           {error && (
             <div style={{ marginTop: '20px', padding: '12px 16px', background: 'rgba(255,60,60,0.07)', border: '1px solid rgba(255,60,60,0.2)', color: 'rgba(255,100,100,0.9)', fontSize: '0.8rem', animation: 'fadeUp 0.2s ease' }}>
               {error}
-            </div>
-          )}
-          {success && (
-            <div style={{ marginTop: '20px', padding: '12px 16px', background: 'rgba(39,174,96,0.07)', border: '1px solid rgba(39,174,96,0.2)', color: 'rgba(100,200,130,0.9)', fontSize: '0.8rem', animation: 'fadeUp 0.2s ease' }}>
-              {success}
             </div>
           )}
 
@@ -187,8 +148,8 @@ export default function AuthPage() {
             onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
           >
             {loading
-              ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> {mode === 'login' ? 'PRIJAVA...' : 'KREIRANJE...'}</>
-              : mode === 'login' ? 'PRIJAVI SE →' : 'KREIRAJ RAČUN →'
+              ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> PRIJAVA...</>
+              : 'PRIJAVI SE →'
             }
           </button>
 
@@ -209,7 +170,19 @@ export default function AuthPage() {
         @keyframes fadeUp { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: translateY(0) } }
         @keyframes spin   { to { transform: rotate(360deg) } }
         @media (max-width: 768px) {
-          div[style*="clamp(280px,40vw"] { display: none !important; }
+          .auth-left-panel { display: none !important; }
+          .auth-form-panel {
+            padding: 48px 24px !important;
+            align-items: center !important;
+          }
+          .auth-form-inner {
+            max-width: 100% !important;
+          }
+        }
+        @media (max-width: 400px) {
+          .auth-form-panel {
+            padding: 40px 16px !important;
+          }
         }
       `}</style>
     </div>

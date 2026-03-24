@@ -152,7 +152,7 @@ export default function TeamPage() {
       {/* HERO */}
       <section style={{ paddingTop: '160px', paddingBottom: '80px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '900px', height: '500px', background: 'radial-gradient(ellipse at center top, rgba(255,255,255,0.06) 0%, transparent 70%)', zIndex: 1, pointerEvents: 'none' }} />
-        <div ref={heroReveal.ref} style={{ position: 'relative', zIndex: 2, maxWidth: '1200px', margin: '0 auto', padding: '0 60px' }}>
+        <div ref={heroReveal.ref} className="team-hero-inner" style={{ position: 'relative', zIndex: 2, maxWidth: '1200px', margin: '0 auto', padding: '0 60px' }}>
           <div style={{ opacity: heroReveal.visible ? 1 : 0, transform: heroReveal.visible ? 'none' : 'translateY(35px)', transition: 'all 1s cubic-bezier(0.16,1,0.3,1)' }}>
             <div style={{ fontSize: '0.75rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.45)', marginBottom: '20px' }}>UPOZNAJ</div>
             <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4rem, 10vw, 8rem)', lineHeight: 0.9, marginBottom: '30px' }}>
@@ -177,7 +177,7 @@ export default function TeamPage() {
 
       {/* STATS */}
       <section style={{ background: '#0a0a0a', padding: '80px 60px', borderTop: '1px solid rgba(255,255,255,0.08)', borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'relative', zIndex: 1 }}>
-        <div ref={statsReveal.ref} style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.08)' }}>
+        <div ref={statsReveal.ref} className="team-stats-grid" style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.08)' }}>
           {TEAM_STATS.map((stat, i) => (
             <div key={i} className="team-stat-card" style={{ textAlign: 'center', padding: '48px 20px', background: '#0a0a0a', transition: 'all 0.4s', opacity: statsReveal.visible ? 1 : 0, transform: statsReveal.visible ? 'none' : 'translateY(25px)', transitionDelay: `${i * 0.08}s`, transitionDuration: '0.7s' }}>
               <div style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>{stat.icon}</div>
@@ -196,7 +196,7 @@ export default function TeamPage() {
             <span style={{ fontSize: '0.8rem', letterSpacing: '0.2em' }}>UČITAVANJE TIMA...</span>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '24px' }}>
+          <div className="team-members-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '24px' }}>
             {filteredMembers.map((member, i) => (
               <div
                 key={member.id}
@@ -343,9 +343,16 @@ export default function TeamPage() {
 
         @media (max-width: 768px) {
           nav { padding: 0 20px !important; }
-          section { padding-left: 20px !important; padding-right: 20px !important; }
-          div[style*="repeat(4"] { grid-template-columns: repeat(2,1fr) !important; }
-          div[style*="minmax(380px"] { grid-template-columns: 1fr !important; }
+          section { padding-left: 20px !important; padding-right: 20px !important; padding-top: 60px !important; padding-bottom: 60px !important; }
+          .team-hero-inner { padding: 0 20px !important; }
+          .team-stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .team-stat-card { padding: 28px 12px !important; }
+          .team-stat-card div[style*="3.5rem"] { font-size: 2.2rem !important; }
+          .team-members-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+        }
+        @media (max-width: 480px) {
+          .team-hero-inner { padding: 0 16px !important; }
+          section { padding-left: 16px !important; padding-right: 16px !important; }
         }
       `}</style>
     </div>
