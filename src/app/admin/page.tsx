@@ -5,9 +5,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
-  GripVertical, Loader2, LogOut, User, Settings, Zap, Home,
-  BarChart2, FolderOpen, Copy, MessageSquare, Shield, Users,
-  TrendingUp, AlertCircle, X, Edit3, ChevronLeft, Bell, Eye
+  GripVertical, Loader2, LogOut, User, Settings, Home,
+  BarChart2, FolderOpen, Copy, MessageSquare, Shield,
+  AlertCircle, X, Edit3, ChevronLeft, Eye, Dumbbell
 } from 'lucide-react'
 
 const supabase = createClient()
@@ -182,7 +182,7 @@ function ExerciseRow({ we, onUpdate, onDelete }: { we: WorkoutExercise; onUpdate
   const [expanded, setExpanded] = useState(false)
   return (
     <div style={{ border: '1px solid rgba(255,255,255,0.06)', marginBottom: '4px', background: 'rgba(255,255,255,0.02)' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 60px 80px 80px 60px 32px', gap: '8px', alignItems: 'center', padding: '10px 12px' }}>
+      <div className="ex-row-grid" style={{ display: 'grid', gridTemplateColumns: '24px 1fr 60px 80px 80px 60px 32px', gap: '8px', alignItems: 'center', padding: '10px 12px' }}>
         <GripVertical size={14} color="rgba(255,255,255,0.15)" style={{ cursor: 'grab' }} />
         <div>
           <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)' }}>{we.exercise?.name ?? '—'}</div>
@@ -576,7 +576,7 @@ function AthletePanel({
   return (
     <div style={{ animation: 'fadeUp 0.4s ease' }}>
       {/* Back + Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '32px' }}>
+      <div className="admin-athlete-header" style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '32px', flexWrap: 'wrap' }}>
         <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', padding: '8px 16px', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', transition: 'all 0.2s' }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = '#fff'; e.currentTarget.style.color = '#fff' }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}>
@@ -591,7 +591,7 @@ function AthletePanel({
         </div>
 
         {/* Quick stats */}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="admin-detail-stats" style={{ marginLeft: 'auto', display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
           {[{ val: allBlocks.length, label: 'BLOKOVA' }, { val: totalWorkouts, label: 'TRENINGA' }, { val: `${progress}%`, label: 'NAPREDAK' }].map((s, i) => (
             <div key={i} style={{ padding: '12px 20px', background: '#08080a', textAlign: 'center' }}>
               <div style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', fontWeight: 800, color: '#fff' }}>{s.val}</div>
@@ -602,7 +602,7 @@ function AthletePanel({
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '28px' }}>
+      <div className="admin-tabs" style={{ display: 'flex', gap: '0', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '28px' }}>
         {([['program', 'PROGRAM'], ['stats', 'STATISTIKE'], ['notes', 'BILJEŠKE'], ['tips', 'HUB TIPS']] as [string, string][]).map(([tab, label]) => (
           <button key={tab} onClick={() => setActiveTab(tab as any)}
             style={{ padding: '12px 24px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700, color: activeTab === tab ? '#fff' : 'rgba(255,255,255,0.3)', borderBottom: `2px solid ${activeTab === tab ? '#fff' : 'transparent'}`, transition: 'all 0.2s', marginBottom: '-1px' }}>
@@ -858,9 +858,19 @@ export default function AdminPage() {
   const [searchQ, setSearchQ] = useState('')
   const [managingUsers, setManagingUsers] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const dropRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) setProfileOpen(false)
+    }
+    if (profileOpen) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [profileOpen])
 
   useEffect(() => {
     const init = async () => {
@@ -993,44 +1003,95 @@ export default function AdminPage() {
       </div>
 
       {/* NAV */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, height: '64px', display: 'flex', alignItems: 'center', background: 'rgba(10,10,12,0.98)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', height: '100%', padding: '0 20px', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-            <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '40px' }} />
-          </Link>
-          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', height: '100%', padding: '0 20px', borderRight: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.3)', fontSize: '0.65rem', letterSpacing: '0.2em', fontWeight: 700 }}
-            onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#fff'} onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.3)'}>
-            <Home size={13} /> POČETNA
-          </Link>
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, height: '56px', display: 'flex', alignItems: 'center', padding: '0 clamp(16px,3vw,32px)', background: 'rgba(4,4,8,0.92)', backdropFilter: 'blur(32px) saturate(180%)', WebkitBackdropFilter: 'blur(32px) saturate(180%)', borderBottom: '1px solid rgba(255,255,255,0.09)', transition: 'background 0.4s' }}>
+
+        {/* Logo */}
+        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', marginRight: '28px', flexShrink: 0 }}>
+          <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '28px', opacity: 0.95 }} />
+        </Link>
+
+        {/* Nav links */}
+        <div className="tnav-links" style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1 }}>
+          {[{ href: '/', label: 'Početna' }, { href: '/training', label: 'Trening' }, { href: '/profile', label: 'Profil' }].map(item => (
+            <Link key={item.href} href={item.href} className="tnav-pill"
+              style={{ textDecoration: 'none', padding: '6px 14px', color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', fontWeight: 500, fontFamily: 'var(--fm)', letterSpacing: '0.01em', borderRadius: '8px', transition: 'all 0.18s', whiteSpace: 'nowrap' as const }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = '#fff'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.07)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.55)'; (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}>
+              {item.label}
+            </Link>
+          ))}
         </div>
 
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-          <Shield size={13} color="#ef4444" />
-          <span style={{ fontFamily: 'var(--fd)', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.7)' }}>ADMIN PANEL</span>
-        </div>
+        {/* Right — admin badge + avatar */}
+        <div className="tnav-right" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
 
-        <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 20px', borderLeft: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef4444', boxShadow: '0 0 8px #ef4444' }} />
-            <div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#fff' }}>{adminName}</div>
-              <div style={{ fontSize: '0.5rem', color: '#ef4444', letterSpacing: '0.15em' }}>ADMINISTRATOR</div>
+          {/* Admin badge pill */}
+          <div className="tnav-status" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.22)', borderRadius: '20px' }}>
+            <div style={{ position: 'relative', width: '6px', height: '6px', flexShrink: 0 }}>
+              <div style={{ position: 'absolute', inset: 0, background: '#ef4444', borderRadius: '50%', boxShadow: '0 0 5px #ef4444' }} />
+              <div style={{ position: 'absolute', inset: '-3px', background: 'rgba(239,68,68,0.2)', borderRadius: '50%', animation: 'pingPulse 2.4s ease-in-out infinite' }} />
             </div>
+            <span style={{ fontSize: '0.62rem', color: '#f87171', fontWeight: 600, fontFamily: 'var(--fm)', letterSpacing: '0.04em' }}>Admin</span>
           </div>
-          <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '100%', padding: '0 20px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: '0.62rem', letterSpacing: '0.2em', fontWeight: 700, transition: 'all 0.2s' }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#ff5555'; e.currentTarget.style.background = 'rgba(255,60,60,0.06)' }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'transparent' }}>
-            <LogOut size={13} /> ODJAVA
-          </button>
+
+          {/* Avatar / profile dropdown */}
+          <div ref={dropRef} style={{ position: 'relative' }}>
+            <button onClick={() => setProfileOpen(o => !o)}
+              style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '5px 10px 5px 5px', background: profileOpen ? 'rgba(255,255,255,0.08)' : 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', cursor: 'pointer', transition: 'all 0.2s' }}
+              onMouseEnter={e => { if (!profileOpen) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)' } }}
+              onMouseLeave={e => { if (!profileOpen) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' } }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #3e1a1a 0%, #1e0a0a 100%)', border: '1.5px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.58rem', fontWeight: 800, color: '#f87171', fontFamily: 'var(--fm)', flexShrink: 0 }}>
+                {adminName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'AD'}
+              </div>
+              <span className="tnav-name" style={{ fontSize: '0.78rem', fontWeight: 500, color: '#e0e0e8', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>{adminName.split(' ')[0] || 'Admin'}</span>
+              <ChevronDown size={11} color="rgba(255,255,255,0.4)" style={{ transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.22s', flexShrink: 0 }} />
+            </button>
+
+            {profileOpen && (
+              <div className="profile-dropdown" style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '220px', background: 'rgba(10,10,16,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)', zIndex: 300, animation: 'dropDown 0.2s cubic-bezier(0.16,1,0.3,1)', overflow: 'hidden', backdropFilter: 'blur(40px)' }}>
+                {/* Header */}
+                <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #3e1a1a 0%, #1e0a0a 100%)', border: '1.5px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, color: '#f87171' }}>
+                      {adminName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'AD'}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#f0f0f8', fontFamily: 'var(--fm)' }}>{adminName}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
+                        <Shield size={9} color="#ef4444" />
+                        <span style={{ fontSize: '0.54rem', color: '#f87171', fontFamily: 'var(--fm)', letterSpacing: '0.1em' }}>ADMINISTRATOR</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Menu items */}
+                <div style={{ padding: '6px' }}>
+                  {[
+                    { href: '/profile', icon: <User size={14}/>, label: 'Moj profil' },
+                    { href: '/training', icon: <Dumbbell size={14}/>, label: 'Trening' },
+                  ].map(item => (
+                    <Link key={item.href} href={item.href} onClick={() => setProfileOpen(false)} style={{ textDecoration: 'none' }}>
+                      <button className="nav-menu-item">{item.icon}<span>{item.label}</span></button>
+                    </Link>
+                  ))}
+                </div>
+                <div style={{ padding: '6px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                  <button onClick={() => { setProfileOpen(false); handleLogout() }} className="nav-menu-item nav-menu-logout">
+                    <LogOut size={14}/><span>Odjava</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
       {/* MAIN */}
-      <div style={{ paddingTop: '64px', position: 'relative', zIndex: 1 }}>
+      <div style={{ paddingTop: '56px', position: 'relative', zIndex: 1 }}>
 
         {selectedAthlete ? (
           /* ─── ATHLETE DETAIL VIEW ─── */
-          <div style={{ padding: '48px 60px 100px', maxWidth: '1300px', margin: '0 auto' }}>
+          <div className="admin-outer" style={{ padding: '48px 60px 100px', maxWidth: '1300px', margin: '0 auto' }}>
             <AthletePanel
               athlete={selectedAthlete}
               exercises={exercises}
@@ -1042,7 +1103,7 @@ export default function AdminPage() {
           </div>
         ) : (
           /* ─── DASHBOARD ─── */
-          <div style={{ padding: '48px 60px 100px', maxWidth: '1400px', margin: '0 auto' }}>
+          <div className="admin-outer" style={{ padding: '48px 60px 100px', maxWidth: '1400px', margin: '0 auto' }}>
 
             {/* Hero */}
             <div style={{ marginBottom: '48px', animation: 'fadeUp 0.6s ease' }}>
@@ -1052,7 +1113,7 @@ export default function AdminPage() {
               </h1>
 
               {/* Summary stats */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.09)', maxWidth: '600px' }}>
+              <div className="admin-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.09)', maxWidth: '600px' }}>
                 {[
                   { val: totalAthletes, label: 'LIFTAČA', color: '#fff' },
                   { val: activeBlocks, label: 'AKT. BLOKOVA', color: '#4ade80' },
@@ -1068,7 +1129,7 @@ export default function AdminPage() {
             </div>
 
             {/* Search + manage */}
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '28px', alignItems: 'center' }}>
+            <div className="admin-search-row" style={{ display: 'flex', gap: '12px', marginBottom: '28px', alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '10px 16px', maxWidth: '360px' }}>
                 <Search size={14} color="rgba(255,255,255,0.3)" />
                 <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Pretraži liftače..."
@@ -1083,7 +1144,7 @@ export default function AdminPage() {
             {/* Athlete circles grid */}
             <div style={{ marginBottom: '12px' }}>
               <div style={{ fontSize: '0.52rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '20px', fontFamily: 'var(--fm)' }}>KORISNICI — KLIKNI NA PROFIL ZA UREĐIVANJE</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+              <div className="admin-athlete-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
                 {filteredAthletes.length === 0 && (
                   <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.8rem', padding: '40px 0' }}>Nema liftača.</div>
                 )}
@@ -1094,11 +1155,11 @@ export default function AdminPage() {
                   const noteCount = (athlete.notes as any[])?.length ?? 0
 
                   return (
-                    <div key={athlete.id} style={{ position: 'relative', animation: 'fadeUp 0.4s ease' }}>
+                    <div key={athlete.id} style={{ position: 'relative', animation: 'fadeUp 0.4s ease', minWidth: 0 }}>
                       {/* Card */}
                       <div
                         onClick={() => !managingUsers && setSelectedAthlete(athlete)}
-                        style={{ width: '160px', padding: '20px 16px 16px', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', cursor: managingUsers ? 'default' : 'pointer', transition: 'all 0.25s', textAlign: 'center', position: 'relative' }}
+                        style={{ width: '160px', minWidth: 0, padding: '20px 16px 16px', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', cursor: managingUsers ? 'default' : 'pointer', transition: 'all 0.25s', textAlign: 'center', position: 'relative', boxSizing: 'border-box' as const }}
                         onMouseEnter={e => { if (!managingUsers) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' } }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.background = 'rgba(255,255,255,0.025)' }}
                       >
@@ -1172,9 +1233,78 @@ export default function AdminPage() {
         @keyframes slideUp  { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
         @keyframes fadeUp   { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
         @keyframes spin     { to { transform: rotate(360deg) } }
+        @keyframes dropDown { from { opacity: 0; transform: translateY(-8px) } to { opacity: 1; transform: none } }
+        @keyframes pingPulse {
+          0%, 100% { transform: scale(1); opacity: 0.6; }
+          50% { transform: scale(2.2); opacity: 0; }
+        }
         div:hover .view-arrow { opacity: 1 !important; }
-        @media (max-width: 768px) {
-          div[style*="padding: '48px 60px'"] { padding: 24px 20px 80px !important; }
+
+        /* ── Nav styles (same as training) ── */
+        .tnav-pill { display: flex; align-items: center; }
+        .nav-menu-item {
+          width: 100%; display: flex; align-items: center; gap: 10px;
+          padding: 9px 10px; background: transparent; border: none;
+          cursor: pointer; color: #999; font-size: 0.82rem;
+          font-family: var(--fm); transition: all 0.15s; text-align: left;
+          border-radius: 6px;
+        }
+        .nav-menu-item:hover { background: rgba(255,255,255,0.07); color: #e0e0e0; }
+        .nav-menu-logout { color: rgba(255,80,80,0.7) !important; }
+        .nav-menu-logout:hover { background: rgba(255,60,60,0.08) !important; color: #ff6060 !important; }
+        .profile-dropdown { width: min(220px, calc(100vw - 32px)) !important; right: 0 !important; }
+
+        @media (max-width: 640px) { .tnav-status { display: none !important; } }
+        @media (max-width: 520px) { .tnav-name { display: none !important; } }
+        @media (max-width: 480px) {
+          .tnav-links { display: none !important; }
+          .tnav-right { margin-left: auto; }
+        }
+
+        /* ─ Main content padding ─ */
+        @media (max-width: 600px) {
+          .admin-outer { padding: 20px 16px 80px !important; }
+        }
+
+        /* ─ Dashboard stats: 4→2 cols ─ */
+        @media (max-width: 600px) {
+          .admin-stats-grid { grid-template-columns: repeat(2, 1fr) !important; max-width: 100% !important; }
+        }
+
+        /* ─ Search row: stack on mobile ─ */
+        @media (max-width: 480px) {
+          .admin-search-row { flex-direction: column; align-items: stretch !important; }
+          .admin-search-row > div { max-width: 100% !important; }
+          .admin-search-row > button { justify-content: center; }
+        }
+
+        /* ─ Athlete cards: responsive grid ─ */
+        .admin-athlete-grid { display: flex; flex-wrap: wrap; gap: 16px; }
+        .admin-athlete-grid > div { flex: 0 0 160px; }
+        @media (max-width: 480px) {
+          .admin-athlete-grid { gap: 10px; }
+          .admin-athlete-grid > div { flex: 1 1 calc(50% - 5px); max-width: calc(50% - 5px); }
+          .admin-athlete-grid > div > div { width: 100% !important; }
+        }
+
+        /* ─ Athlete detail header: wrap on mobile ─ */
+        @media (max-width: 600px) {
+          .admin-athlete-header { gap: 12px !important; }
+          .admin-detail-stats { margin-left: 0 !important; width: 100%; }
+          .admin-detail-stats > div { flex: 1; }
+        }
+
+        /* ─ Tabs: scrollable on mobile ─ */
+        @media (max-width: 600px) {
+          .admin-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+          .admin-tabs button { white-space: nowrap; padding: 10px 14px !important; font-size: 0.58rem !important; }
+        }
+
+        /* ─ Exercise row grid: simplified on mobile ─ */
+        @media (max-width: 480px) {
+          .ex-row-grid { grid-template-columns: 1fr 48px 64px 48px !important; }
+          .ex-row-grid > :first-child,
+          .ex-row-grid > :nth-child(5) { display: none; }
         }
       `}</style>
     </div>

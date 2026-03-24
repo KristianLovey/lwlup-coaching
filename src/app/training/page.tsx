@@ -204,19 +204,32 @@ export default function TrainingPage() {
           <rect x="270" y="30" width="22" height="40" rx="6" fill="white"/>
         </svg>
       </div>
-      {/* Diamond / plate shape — center right */}
-      <div style={{ position: 'fixed', top: '42vh', right: '-3vw', zIndex: 0, pointerEvents: 'none', opacity: 0.025, transform: 'rotate(18deg)' }}>
-        <svg width="160" height="160" viewBox="0 0 160 160" fill="none">
-          <rect x="12" y="12" width="136" height="136" rx="20" stroke="white" strokeWidth="8" fill="none"/>
-          <rect x="40" y="40" width="80" height="80" rx="12" stroke="white" strokeWidth="5" fill="none"/>
-          <circle cx="80" cy="80" r="16" stroke="white" strokeWidth="5" fill="none"/>
+      {/* Kettlebell — center right */}
+      <div style={{ position: 'fixed', top: '38vh', right: '2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.025, transform: 'rotate(8deg)' }}>
+        <svg width="140" height="160" viewBox="0 0 140 160" fill="none">
+          <circle cx="70" cy="75" r="50" stroke="white" strokeWidth="7" fill="none"/>
+          <circle cx="70" cy="75" r="28" stroke="white" strokeWidth="4" fill="none"/>
+          <path d="M52 30 Q55 10 70 6 Q85 10 88 30" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none"/>
+          <path d="M45 28 Q38 20 36 28 Q34 38 52 38 Q60 38 60 30" stroke="white" strokeWidth="5" strokeLinecap="round" fill="none"/>
+          <path d="M95 28 Q102 20 104 28 Q106 38 88 38 Q80 38 80 30" stroke="white" strokeWidth="5" strokeLinecap="round" fill="none"/>
         </svg>
       </div>
-      {/* Small plate — top center-left */}
-      <div style={{ position: 'fixed', top: '55vh', left: '3vw', zIndex: 0, pointerEvents: 'none', opacity: 0.02, transform: 'rotate(-6deg)' }}>
-        <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
-          <rect x="8" y="8" width="104" height="104" rx="18" stroke="white" strokeWidth="7" fill="none"/>
-          <circle cx="60" cy="60" r="22" stroke="white" strokeWidth="5" fill="none"/>
+      {/* Weight plate — left middle */}
+      <div style={{ position: 'fixed', top: '52vh', left: '2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.022, transform: 'rotate(-10deg)' }}>
+        <svg width="110" height="110" viewBox="0 0 110 110" fill="none">
+          <circle cx="55" cy="55" r="50" stroke="white" strokeWidth="7" fill="none"/>
+          <circle cx="55" cy="55" r="36" stroke="white" strokeWidth="4" fill="none"/>
+          <circle cx="55" cy="55" r="12" stroke="white" strokeWidth="5" fill="none"/>
+        </svg>
+      </div>
+      {/* Dumbbell — bottom right */}
+      <div style={{ position: 'fixed', bottom: '8vh', right: '4vw', zIndex: 0, pointerEvents: 'none', opacity: 0.018, transform: 'rotate(-20deg)' }}>
+        <svg width="200" height="70" viewBox="0 0 200 70" fill="none">
+          <rect x="70" y="30" width="60" height="10" rx="5" fill="white"/>
+          <rect x="20" y="18" width="28" height="34" rx="8" fill="white"/>
+          <rect x="6" y="24" width="18" height="22" rx="6" fill="white"/>
+          <rect x="152" y="18" width="28" height="34" rx="8" fill="white"/>
+          <rect x="176" y="24" width="18" height="22" rx="6" fill="white"/>
         </svg>
       </div>
 
@@ -621,15 +634,40 @@ export default function TrainingPage() {
           .nav-center-label { font-size: 0.6rem !important; letter-spacing: 0.15em !important; }
         }
 
-        /* ─ Profile dropdown: full width on mobile ─ */
+        /* ─ Profile dropdown: right-aligned on mobile ─ */
         @media (max-width: 480px) {
-          .profile-dropdown { width: 100vw !important; right: -16px !important; }
+          .profile-dropdown { width: min(220px, calc(100vw - 32px)) !important; right: 0 !important; }
+          .tnav-right { margin-left: auto; }
         }
 
         /* ─ Title heading: smaller on mobile ─ */
         @media (max-width: 480px) {
           .page-title { font-size: 1.8rem !important; }
         }
+
+        /* ─ GL calc: 3 lift inputs stack on small mobile ─ */
+        @media (max-width: 480px) {
+          .gl-lifts-grid { grid-template-columns: 1fr !important; }
+          .gl-total-grid { grid-template-columns: repeat(2,1fr) !important; }
+        }
+
+        /* ─ Tab switcher: full width on mobile ─ */
+        @media (max-width: 480px) {
+          .tab-switcher { width: 100% !important; }
+          .tab-switcher button { flex: 1; padding: 8px 10px !important; font-size: 0.7rem !important; }
+        }
+
+        /* ─ Hub tool grid: 1 col on very small ─ */
+        @media (max-width: 400px) {
+          .hub-tools-grid { grid-template-columns: 1fr !important; }
+        }
+
+        /* ─ Smooth tab transition ─ */
+        .tab-content { animation: fadeUp 0.25s cubic-bezier(0.16,1,0.3,1); }
+
+        /* ─ Card border glow on touch (active) ─ */
+        .workout-card:active { border-color: #2a2a3a !important; }
+        .bt-card:active { background: #0d0d0e !important; }
       `}</style>
     </div>
   )

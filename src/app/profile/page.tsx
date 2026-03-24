@@ -433,7 +433,7 @@ export default function ProfilePage() {
       <div style={{ paddingTop: '60px', maxWidth: '1000px', margin: '0 auto', padding: 'clamp(80px,10vw,100px) clamp(16px,4vw,32px) 80px', position: 'relative', zIndex: 1 }}>
 
         {/* ── PROFILE HEADER ── */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'clamp(16px,4vw,32px)', marginBottom: '40px', flexWrap: 'wrap' }}>
+        <div className="prof-header" style={{ display: 'flex', alignItems: 'flex-start', gap: 'clamp(16px,4vw,32px)', marginBottom: '40px', flexWrap: 'wrap' }}>
           {/* Avatar */}
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <button onClick={() => setShowAvatarPicker(true)}
@@ -458,7 +458,7 @@ export default function ProfilePage() {
           </div>
 
           {/* 1RM summary */}
-          <div style={{ display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
+          <div className="prof-orm-bar" style={{ display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
             {[
               { label: 'SQ', val: profile.current_squat_1rm, color: '#6b8cff' },
               { label: 'BP', val: profile.current_bench_1rm, color: '#f59e0b' },
@@ -504,7 +504,7 @@ export default function ProfilePage() {
         )}
 
         {/* ── TABS ── */}
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '28px' }}>
+        <div className="prof-tabs" style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '28px' }}>
           {([['progress', 'NAPREDAK'], ['prs', 'OSOBNI REKORDI'], ['leaderboard', 'LEADERBOARD']] as [string, string][]).map(([tab, label]) => (
             <button key={tab} onClick={() => setActiveTab(tab as any)}
               style={{ padding: '12px 20px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.62rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700, color: activeTab === tab ? '#fff' : '#555', borderBottom: `2px solid ${activeTab === tab ? '#fff' : 'transparent'}`, marginBottom: '-1px', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
@@ -716,7 +716,7 @@ export default function ProfilePage() {
               // bwUsed is already computed in lbSorted map above
               const bw    = (e as any).bwUsed ?? 93
               return (
-                <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px', border: `1px solid ${isMe ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '10px', marginBottom: '6px', background: isMe ? 'rgba(255,255,255,0.04)' : 'transparent', transition: 'all 0.15s', boxShadow: isMe ? '0 0 20px rgba(255,255,255,0.05)' : 'none' }}>
+                <div key={e.id} className="lb-entry" style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px', border: `1px solid ${isMe ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '10px', marginBottom: '6px', background: isMe ? 'rgba(255,255,255,0.04)' : 'transparent', transition: 'all 0.15s', boxShadow: isMe ? '0 0 20px rgba(255,255,255,0.05)' : 'none' }}>
 
                   {/* Rank */}
                   <div style={{ width: '32px', textAlign: 'center', flexShrink: 0 }}>
@@ -779,9 +779,30 @@ export default function ProfilePage() {
         table { font-family: var(--fm); }
         td, th { vertical-align: middle; }
         input::-webkit-inner-spin-button, input::-webkit-outer-spin-button { opacity: 0.5; }
+
+        /* ─ Profile header: stack on mobile ─ */
+        @media (max-width: 480px) {
+          .prof-header { flex-direction: column; align-items: flex-start !important; }
+          .prof-orm-bar { width: 100%; flex-shrink: 1 !important; }
+          .prof-orm-bar > div { flex: 1; min-width: 0; }
+        }
+
+        /* ─ Tabs: scrollable on mobile ─ */
+        @media (max-width: 480px) {
+          .prof-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+          .prof-tabs button { white-space: nowrap; padding: 10px 12px !important; font-size: 0.56rem !important; }
+        }
+
+        /* ─ Comp table ─ */
         @media (max-width: 600px) {
-          table { font-size: 0.75rem; }
-          td, th { padding: 8px !important; }
+          table { font-size: 0.72rem; }
+          td, th { padding: 7px 10px !important; }
+        }
+
+        /* ─ Leaderboard entries: smaller on mobile ─ */
+        @media (max-width: 480px) {
+          .lb-entry { padding: 10px 12px !important; gap: 10px !important; }
+          .lb-entry .lb-stat { font-size: 1rem !important; }
         }
       `}</style>
     </div>

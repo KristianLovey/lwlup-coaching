@@ -137,17 +137,24 @@ export function RpeCalc() {
 
 // ─── HUB: GL CALCULATOR ──────────────────────────────────────────
 export function GlCalc() {
-  const [total, setTotal] = useState('')
-  const [bw,    setBw]    = useState('')
-  const [sex,   setSex]   = useState<'male'|'female'>('male')
+  const [squat,  setSquat]  = useState('')
+  const [bench,  setBench]  = useState('')
+  const [dead,   setDead]   = useState('')
+  const [bw,     setBw]     = useState('')
+  const [sex,    setSex]    = useState<'male'|'female'>('male')
 
-  const t = parseFloat(total), b = parseFloat(bw)
-  const gl = (t && b) ? (() => {
+  const s = parseFloat(squat) || 0
+  const bn = parseFloat(bench) || 0
+  const d = parseFloat(dead) || 0
+  const total = s > 0 && bn > 0 && d > 0 ? Math.round((s + bn + d) * 2) / 2 : 0
+  const b = parseFloat(bw)
+
+  const gl = (total && b) ? (() => {
     const P = sex === 'male'
       ? { a: 1199.72839, b: 1025.18162, c: 0.00921 }
       : { a: 610.32796,  b: 1045.59282, c: 0.03048 }
-    const d = P.a - P.b * Math.exp(-P.c * b)
-    return d > 0 ? Math.round((t * 100 / d) * 100) / 100 : 0
+    const denom = P.a - P.b * Math.exp(-P.c * b)
+    return denom > 0 ? Math.round((total * 100 / denom) * 100) / 100 : 0
   })() : 0
 
   const glC = gl >= 120 ? '#22c55e' : gl >= 100 ? '#f59e0b' : gl >= 80 ? '#f87171' : '#6b8cff'
@@ -158,23 +165,44 @@ export function GlCalc() {
     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '24px' }}>
       {/* Sex toggle */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-        {(['male','female'] as const).map(s => (
-          <button key={s} onClick={() => setSex(s)} style={{
+        {(['male','female'] as const).map(sv => (
+          <button key={sv} onClick={() => setSex(sv)} style={{
             padding: '11px', borderRadius: '10px', cursor: 'pointer', fontFamily: 'var(--fm)', fontWeight: 600, fontSize: '0.82rem', transition: 'all 0.2s',
-            background: sex === s ? 'rgba(107,140,255,0.12)' : 'rgba(255,255,255,0.03)',
-            border: `1.5px solid ${sex === s ? 'rgba(107,140,255,0.4)' : 'rgba(255,255,255,0.08)'}`,
-            color: sex === s ? '#8ba8ff' : 'rgba(255,255,255,0.4)',
-            boxShadow: sex === s ? '0 0 0 3px rgba(107,140,255,0.1)' : 'none',
+            background: sex === sv ? 'rgba(107,140,255,0.12)' : 'rgba(255,255,255,0.03)',
+            border: `1.5px solid ${sex === sv ? 'rgba(107,140,255,0.4)' : 'rgba(255,255,255,0.08)'}`,
+            color: sex === sv ? '#8ba8ff' : 'rgba(255,255,255,0.4)',
+            boxShadow: sex === sv ? '0 0 0 3px rgba(107,140,255,0.1)' : 'none',
           }}>
-            {s === 'male' ? '♂  Muški' : '♀  Ženski'}
+            {sv === 'male' ? '♂  Muški' : '♀  Ženski'}
           </button>
         ))}
       </div>
 
-      {/* Inputs */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-        <CalcInput label="Total (kg)"         value={total} onChange={setTotal} color="#6b8cff" step="0.5" placeholder="npr. 600" />
-        <CalcInput label="Tjelesna masa (kg)" value={bw}    onChange={setBw}    color="#6b8cff" step="0.1" placeholder="npr. 93" />
+      {/* Lift inputs */}
+      <div>
+        <SectionTitle>Unesi liftove</SectionTitle>
+        <div className="gl-lifts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+          <CalcInput label="Čučanj (kg)"        value={squat} onChange={setSquat} color="#f87171" step="0.5" placeholder="npr. 200" />
+          <CalcInput label="Bench Press (kg)"   value={bench} onChange={setBench} color="#f59e0b" step="0.5" placeholder="npr. 140" />
+          <CalcInput label="Mrtvo Dizanje (kg)" value={dead}  onChange={setDead}  color="#6b8cff" step="0.5" placeholder="npr. 250" />
+        </div>
+      </div>
+
+      {/* Auto total display */}
+      {total > 0 && (
+        <div className="gl-total-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1px', background: 'rgba(255,255,255,0.06)', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', animation: 'popIn 0.3s ease' }}>
+          {[['SQ', squat, '#f87171'], ['BP', bench, '#f59e0b'], ['DL', dead, '#6b8cff'], ['TOTAL', String(total), '#fff']].map(([l, v, c]) => (
+            <div key={l} style={{ padding: '14px 10px', background: '#09090e', textAlign: 'center' as const }}>
+              <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', fontFamily: 'var(--fm)', marginBottom: '4px' }}>{l}</div>
+              <div style={{ fontFamily: 'var(--fd)', fontSize: l === 'TOTAL' ? '1.6rem' : '1.3rem', fontWeight: 700, color: c as string, lineHeight: 1 }}>{v || '—'}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* BW input */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+        <CalcInput label="Tjelesna masa (kg)" value={bw} onChange={setBw} color="#6b8cff" step="0.1" placeholder="npr. 93" />
       </div>
 
       {/* Result */}
@@ -183,14 +211,17 @@ export function GlCalc() {
           <div style={{ padding: '28px 28px 24px', background: `${glC}0a`, border: `1.5px solid ${glC}22`, borderRadius: '16px', textAlign: 'center' as const, marginBottom: '12px' }}>
             <div style={{ fontSize: '0.62rem', color: `${glC}aa`, letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '8px' }}>IPF GL BODOVI</div>
             <div style={{ fontFamily: 'var(--fd)', fontSize: '5rem', fontWeight: 800, color: glC, lineHeight: 1, letterSpacing: '-0.03em' }}>{gl}</div>
-            <div style={{ marginTop: '6px', display: 'inline-block', padding: '4px 14px', background: `${glC}18`, borderRadius: '20px', border: `1px solid ${glC}33` }}>
+            <div style={{ marginTop: '8px', display: 'inline-block', padding: '4px 14px', background: `${glC}18`, borderRadius: '20px', border: `1px solid ${glC}33` }}>
               <span style={{ fontSize: '0.7rem', color: glC, fontWeight: 700, fontFamily: 'var(--fm)', letterSpacing: '0.06em' }}>{glL}</span>
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>
+              {total}kg total · {bw}kg BW
             </div>
           </div>
           {/* Progress bar */}
           <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              {['Beginner', 'Intermediate', 'Advanced', 'Elite'].map((l, i) => (
+              {['Beginner', 'Inter.', 'Advanced', 'Elite'].map((l) => (
                 <span key={l} style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>{l}</span>
               ))}
             </div>
