@@ -2,8 +2,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Plus, Trash2, ChevronDown, Check, Loader2, LogOut, Home, Edit3, Trophy, TrendingUp, Award, X } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, Check, Loader2, LogOut, Edit3, X } from 'lucide-react'
+import { TrainingNav, AVATARS, AvatarSvg } from '../training/training-components'
 
 const supabase = createClient()
 
@@ -47,41 +47,6 @@ function calcGL(total: number, bw: number, sex: 'male' | 'female' = 'male'): num
   return Math.round((total * 100 / denom) * 100) / 100
 }
 
-// ─── AVATAR ICONS ─────────────────────────────────────────────────
-const AVATARS: { id: string; label: string; svg: string }[] = [
-  { id: 'barbell', label: 'Šipka',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="18" width="36" height="4" rx="2" fill="currentColor"/><rect x="6" y="12" width="4" height="16" rx="1.5" fill="currentColor" opacity=".8"/><rect x="30" y="12" width="4" height="16" rx="1.5" fill="currentColor" opacity=".8"/><rect x="3" y="15" width="4" height="10" rx="1" fill="currentColor"/><rect x="33" y="15" width="4" height="10" rx="1" fill="currentColor"/></svg>` },
-  { id: 'squat', label: 'Čučanj',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="6" r="3" fill="currentColor"/><path d="M14 12h12M20 12v10l-5 8M20 22l5 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><rect x="4" y="19" width="32" height="3" rx="1.5" fill="currentColor" opacity=".4"/></svg>` },
-  { id: 'deadlift', label: 'Mrtvo',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="6" r="3" fill="currentColor"/><path d="M20 9v12M14 28l6-7 6 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="29" width="32" height="4" rx="2" fill="currentColor" opacity=".5"/><rect x="4" y="26" width="6" height="10" rx="1.5" fill="currentColor" opacity=".7"/><rect x="30" y="26" width="6" height="10" rx="1.5" fill="currentColor" opacity=".7"/></svg>` },
-  { id: 'bench', label: 'Klupa',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="20" width="28" height="5" rx="2.5" fill="currentColor" opacity=".7"/><rect x="8" y="25" width="4" height="10" rx="2" fill="currentColor" opacity=".6"/><rect x="28" y="25" width="4" height="10" rx="2" fill="currentColor" opacity=".6"/><rect x="4" y="14" width="32" height="4" rx="2" fill="currentColor" opacity=".3"/><circle cx="20" cy="8" r="3" fill="currentColor"/></svg>` },
-  { id: 'trophy', label: 'Trofej',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 6h16v14a8 8 0 0 1-16 0V6Z" fill="currentColor" opacity=".8"/><path d="M12 10H6a4 4 0 0 0 4 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M28 10h6a4 4 0 0 1-4 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><rect x="16" y="28" width="8" height="4" rx="1" fill="currentColor" opacity=".6"/><rect x="12" y="32" width="16" height="3" rx="1.5" fill="currentColor" opacity=".5"/></svg>` },
-  { id: 'flame', label: 'Plamen',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4C20 4 28 14 28 22a8 8 0 0 1-16 0c0-4 2-8 4-10-1 4 2 6 2 6s2-8 2-14Z" fill="currentColor" opacity=".9"/><path d="M20 26a3 3 0 0 0 3-3c0-2-3-5-3-5s-3 3-3 5a3 3 0 0 0 3 3Z" fill="white" opacity=".4"/></svg>` },
-  { id: 'lightning', label: 'Munja',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22 4L10 22h12l-4 14 18-20H24L22 4Z" fill="currentColor" opacity=".9"/></svg>` },
-  { id: 'shield', label: 'Štit',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4L6 10v12c0 8 6 13 14 15 8-2 14-7 14-15V10L20 4Z" fill="currentColor" opacity=".8"/><path d="M13 20l5 5 9-9" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/></svg>` },
-  { id: 'mountain', label: 'Planina',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 34L14 14l6 8 4-6 12 18H4Z" fill="currentColor" opacity=".8"/><path d="M24 16l-2 3" stroke="white" stroke-width="2" stroke-linecap="round" opacity=".6"/></svg>` },
-  { id: 'star', label: 'Zvijezda',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4l4.9 10 11 1.6-8 7.8 1.9 11L20 29.4 10.2 34.4l1.9-11-8-7.8 11-1.6L20 4Z" fill="currentColor" opacity=".9"/></svg>` },
-  { id: 'target', label: 'Meta',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="16" stroke="currentColor" stroke-width="2.5" opacity=".4"/><circle cx="20" cy="20" r="10" stroke="currentColor" stroke-width="2.5" opacity=".65"/><circle cx="20" cy="20" r="4" fill="currentColor"/></svg>` },
-  { id: 'crown', label: 'Kruna',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 28h28M6 28L8 14l8 8 4-10 4 10 8-8 2 14" fill="currentColor" opacity=".7"/><path d="M6 28h28M8 14l8 8 4-10 4 10 8-8L30 28H10L8 14Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/><circle cx="8" cy="14" r="2.5" fill="currentColor"/><circle cx="20" cy="10" r="2.5" fill="currentColor"/><circle cx="32" cy="14" r="2.5" fill="currentColor"/><rect x="8" y="28" width="24" height="5" rx="1" fill="currentColor" opacity=".5"/></svg>` },
-]
-
-function AvatarSvg({ iconId, size = 32, color = 'currentColor' }: { iconId: string; size?: number; color?: string }) {
-  const icon = AVATARS.find(a => a.id === iconId) ?? AVATARS[0]
-  return (
-    <div style={{ width: size, height: size, color, flexShrink: 0 }}
-      dangerouslySetInnerHTML={{ __html: icon.svg }} />
-  )
-}
 
 // ─── MINI LINE CHART ───────────────────────────────────────────────
 function LineChart({ data, color, label }: {
@@ -416,19 +381,12 @@ export default function ProfilePage() {
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.015) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
       <div style={{ position: 'fixed', top: '-20vh', left: '-10vw', width: '60vw', height: '60vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse, rgba(56,100,255,0.05) 0%, transparent 70%)', filter: 'blur(50px)' }} />
 
-      {/* Mini nav */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(16px,4vw,32px)', background: 'rgba(6,6,10,0.95)', borderBottom: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(20px)' }}>
-        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', color: '#555', fontSize: '0.65rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}
-          onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#aaa'}
-          onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = '#555'}>
-          <Home size={13} /> POČETNA
-        </Link>
-        <Link href="/training" style={{ textDecoration: 'none', padding: '8px 18px', border: '1px solid rgba(255,255,255,0.15)', color: '#ccc', fontSize: '0.65rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', borderRadius: '6px', transition: 'all 0.2s' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.4)'; (e.currentTarget as HTMLAnchorElement).style.color = '#fff' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.15)'; (e.currentTarget as HTMLAnchorElement).style.color = '#ccc' }}>
-          TRENING →
-        </Link>
-      </nav>
+      <TrainingNav
+        athleteName={profile?.full_name ?? ''}
+        isAdmin={profile?.role === 'admin'}
+        onLogout={async () => { await supabase.auth.signOut(); router.push('/') }}
+        avatarIcon={profile?.avatar_icon ?? 'barbell'}
+      />
 
       <div style={{ paddingTop: '60px', maxWidth: '1000px', margin: '0 auto', padding: 'clamp(80px,10vw,100px) clamp(16px,4vw,32px) 80px', position: 'relative', zIndex: 1 }}>
 

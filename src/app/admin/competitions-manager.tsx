@@ -94,7 +94,7 @@ export function CompetitionsManager() {
   }
 
   const deleteComp = async (id: string) => {
-    if (!confirm('Obriši natjecanje i sve liftače s njega?')) return
+    if (!confirm('Obriši natjecanje i sve lifere s njega?')) return
     await supabase.from('competitions').delete().eq('id', id)
     setCompetitions(c => c.filter(x => x.id !== id))
   }
@@ -209,7 +209,7 @@ export function CompetitionsManager() {
                 <div style={{ display: 'flex', gap: '16px', paddingLeft: '19px' }}>
                   <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '5px' }}><Calendar size={11} />{comp.date}</span>
                   {comp.location && <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={11} />{comp.location}</span>}
-                  <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '5px' }}><Users size={11} />{athleteIds.size} liftača</span>
+                  <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '5px' }}><Users size={11} />{athleteIds.size} lifera</span>
                 </div>
               </div>
 
@@ -223,7 +223,7 @@ export function CompetitionsManager() {
 
               <button onClick={() => setExpandedComp(isExpanded ? null : comp.id)}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: isExpanded ? 'rgba(255,255,255,0.07)' : 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.62rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}>
-                <Users size={12} /> LIFTAČI
+                <Users size={12} /> LIFTERI
                 <ChevronDown size={11} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
 
@@ -239,7 +239,7 @@ export function CompetitionsManager() {
             {isExpanded && (
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '20px', animation: 'fadeUp 0.25s ease' }}>
                 <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.2)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>
-                  ODABERI LIFTAČE {comp.status === 'completed' && '— UNESI REZULTATE'}
+                  ODABERI LIFERE {comp.status === 'completed' && '— UNESI REZULTATE'}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '8px' }}>
                   {allAthletes.map(athlete => {

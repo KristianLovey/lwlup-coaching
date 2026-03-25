@@ -139,7 +139,7 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
               )}
               {hasAthletes && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem' }}>
-                  <Users size={13} color="rgba(255,255,255,0.3)" />{comp.athletes!.length} liftača
+                  <Users size={13} color="rgba(255,255,255,0.3)" />{comp.athletes!.length} lifera
                 </div>
               )}
             </div>
@@ -176,7 +176,7 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}>
                 <Users size={12} />
-                {expanded ? 'SAKRIJ' : 'LIFTAČI'}
+                {expanded ? 'SAKRIJ' : 'LIFTERI'}
                 <ChevronRight size={11} style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
             )}
@@ -187,7 +187,7 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
         {expanded && hasAthletes && (
           <div style={{ marginTop: '24px', borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '20px' }}>
             <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.2)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>
-              {comp.status === 'completed' ? 'REZULTATI LIFTAČA' : 'LIFTAČI NA NATJECANJU'}
+              {comp.status === 'completed' ? 'REZULTATI LIFERA' : 'LIFTERI NA NATJECANJU'}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
               {comp.athletes!.map(athlete => (

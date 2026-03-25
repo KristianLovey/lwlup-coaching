@@ -22,6 +22,7 @@ export default function TrainingPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [athleteName, setAthleteName] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
+  const [avatarIcon, setAvatarIcon] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'program' | 'hub' | 'meet'>('program')
   const [tips, setTips] = useState<CoachTip[]>([])
@@ -48,9 +49,10 @@ export default function TrainingPage() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { setError('Nisi prijavljen/a.'); setLoading(false); return }
         setUserId(user.id)
-        const { data: profile } = await supabase.from('profiles').select('full_name, role').eq('id', user.id).single()
+        const { data: profile } = await supabase.from('profiles').select('full_name, role, avatar_icon').eq('id', user.id).single()
         setAthleteName(profile?.full_name ?? user.email?.split('@')[0] ?? 'Atleta')
         setIsAdmin(profile?.role === 'admin')
+        setAvatarIcon(profile?.avatar_icon ?? 'barbell')
         const { data: exData } = await supabase.from('exercises').select('*').order('category').order('name')
         setExercises(exData ?? [])
         let { data: blockData } = await supabase
@@ -233,7 +235,7 @@ export default function TrainingPage() {
         </svg>
       </div>
 
-      <TrainingNav athleteName={athleteName} isAdmin={isAdmin} onLogout={handleLogout} />
+      <TrainingNav athleteName={athleteName} isAdmin={isAdmin} onLogout={handleLogout} avatarIcon={avatarIcon} />
 
       {/* ─── HEADER ──────────────────────────────────────────────── */}
       <div style={{ paddingTop: '56px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
@@ -606,6 +608,33 @@ export default function TrainingPage() {
           .workout-header-inner { flex-wrap: wrap !important; gap: 8px !important; }
           .workout-header-inner .workout-controls { width: 100%; justify-content: flex-end; }
           .workout-header-inner .workout-name { font-size: 0.88rem !important; }
+        }
+
+        /* ─ Hide default number input spinners (use custom StepInput instead) ─ */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        /* ─ Exercise row: hide RPE column on very small screens ─ */
+        @media (max-width: 520px) {
+          .ex-col-rpe { display: none !important; }
+          .ex-row-main { grid-template-columns: 28px 1fr 56px 64px 56px 28px !important; }
+        }
+        @media (max-width: 400px) {
+          .ex-col-sets { display: none !important; }
+          .ex-row-main { grid-template-columns: 28px 1fr 64px 56px 28px !important; }
+        }
+
+        /* ─ Set log rows: tighter on mobile ─ */
+        @media (max-width: 520px) {
+          .set-log-row { grid-template-columns: 28px 1fr 1fr 28px !important; }
+          .set-log-rpe { display: none !important; }
+        }
+
+        /* ─ Table footer: stack on mobile ─ */
+        @media (max-width: 520px) {
+          .ex-table-footer { flex-direction: column !important; }
+          .ex-table-footer > * { border-left: none !important; padding-left: 0 !important; }
         }
 
         /* ─ Exercise table: hide KG+RPE cols on mobile, show stacked ─ */

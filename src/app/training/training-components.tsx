@@ -11,9 +11,87 @@ import type { Exercise, WorkoutExercise, Workout, Week, CoachTip, SetLog, Compet
 
 const supabase = createClient()
 
+// ─── AVATAR ICONS ─────────────────────────────────────────────────
+export const AVATARS: { id: string; label: string; svg: string }[] = [
+  { id: 'barbell', label: 'Šipka',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="18" width="36" height="4" rx="2" fill="currentColor"/><rect x="6" y="12" width="4" height="16" rx="1.5" fill="currentColor" opacity=".8"/><rect x="30" y="12" width="4" height="16" rx="1.5" fill="currentColor" opacity=".8"/><rect x="3" y="15" width="4" height="10" rx="1" fill="currentColor"/><rect x="33" y="15" width="4" height="10" rx="1" fill="currentColor"/></svg>` },
+  { id: 'squat', label: 'Čučanj',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="6" r="3" fill="currentColor"/><path d="M14 12h12M20 12v10l-5 8M20 22l5 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><rect x="4" y="19" width="32" height="3" rx="1.5" fill="currentColor" opacity=".4"/></svg>` },
+  { id: 'deadlift', label: 'Mrtvo',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="6" r="3" fill="currentColor"/><path d="M20 9v12M14 28l6-7 6 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="29" width="32" height="4" rx="2" fill="currentColor" opacity=".5"/><rect x="4" y="26" width="6" height="10" rx="1.5" fill="currentColor" opacity=".7"/><rect x="30" y="26" width="6" height="10" rx="1.5" fill="currentColor" opacity=".7"/></svg>` },
+  { id: 'bench', label: 'Klupa',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="20" width="28" height="5" rx="2.5" fill="currentColor" opacity=".7"/><rect x="8" y="25" width="4" height="10" rx="2" fill="currentColor" opacity=".6"/><rect x="28" y="25" width="4" height="10" rx="2" fill="currentColor" opacity=".6"/><rect x="4" y="14" width="32" height="4" rx="2" fill="currentColor" opacity=".3"/><circle cx="20" cy="8" r="3" fill="currentColor"/></svg>` },
+  { id: 'trophy', label: 'Trofej',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 6h16v14a8 8 0 0 1-16 0V6Z" fill="currentColor" opacity=".8"/><path d="M12 10H6a4 4 0 0 0 4 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M28 10h6a4 4 0 0 1-4 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><rect x="16" y="28" width="8" height="4" rx="1" fill="currentColor" opacity=".6"/><rect x="12" y="32" width="16" height="3" rx="1.5" fill="currentColor" opacity=".5"/></svg>` },
+  { id: 'flame', label: 'Plamen',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4C20 4 28 14 28 22a8 8 0 0 1-16 0c0-4 2-8 4-10-1 4 2 6 2 6s2-8 2-14Z" fill="currentColor" opacity=".9"/><path d="M20 26a3 3 0 0 0 3-3c0-2-3-5-3-5s-3 3-3 5a3 3 0 0 0 3 3Z" fill="white" opacity=".4"/></svg>` },
+  { id: 'lightning', label: 'Munja',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22 4L10 22h12l-4 14 18-20H24L22 4Z" fill="currentColor" opacity=".9"/></svg>` },
+  { id: 'shield', label: 'Štit',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4L6 10v12c0 8 6 13 14 15 8-2 14-7 14-15V10L20 4Z" fill="currentColor" opacity=".8"/><path d="M13 20l5 5 9-9" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/></svg>` },
+  { id: 'mountain', label: 'Planina',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 34L14 14l6 8 4-6 12 18H4Z" fill="currentColor" opacity=".8"/><path d="M24 16l-2 3" stroke="white" stroke-width="2" stroke-linecap="round" opacity=".6"/></svg>` },
+  { id: 'star', label: 'Zvijezda',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4l4.9 10 11 1.6-8 7.8 1.9 11L20 29.4 10.2 34.4l1.9-11-8-7.8 11-1.6L20 4Z" fill="currentColor" opacity=".9"/></svg>` },
+  { id: 'target', label: 'Meta',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="16" stroke="currentColor" stroke-width="2.5" opacity=".4"/><circle cx="20" cy="20" r="10" stroke="currentColor" stroke-width="2.5" opacity=".65"/><circle cx="20" cy="20" r="4" fill="currentColor"/></svg>` },
+  { id: 'crown', label: 'Kruna',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 28h28M6 28L8 14l8 8 4-10 4 10 8-8 2 14" fill="currentColor" opacity=".7"/><path d="M6 28h28M8 14l8 8 4-10 4 10 8-8L30 28H10L8 14Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/><circle cx="8" cy="14" r="2.5" fill="currentColor"/><circle cx="20" cy="10" r="2.5" fill="currentColor"/><circle cx="32" cy="14" r="2.5" fill="currentColor"/><rect x="8" y="28" width="24" height="5" rx="1" fill="currentColor" opacity=".5"/></svg>` },
+]
+
+export function AvatarSvg({ iconId, size = 32, color = 'currentColor' }: { iconId: string; size?: number; color?: string }) {
+  const icon = AVATARS.find(a => a.id === iconId) ?? AVATARS[0]
+  return (
+    <div style={{ width: size, height: size, color, flexShrink: 0 }}
+      dangerouslySetInnerHTML={{ __html: icon.svg }} />
+  )
+}
+
+// ─── DATE HELPER ──────────────────────────────────────────────────
+function formatWorkoutDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr + 'T12:00:00')
+    const days = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub']
+    const months = ['sij', 'velj', 'ožu', 'tra', 'svi', 'lip', 'srp', 'kol', 'ruj', 'lis', 'stu', 'pro']
+    return `${days[d.getDay()]}  ·  ${d.getDate()}. ${months[d.getMonth()]}.`
+  } catch { return dateStr }
+}
+
+// ─── CUSTOM NUMBER STEP INPUT ─────────────────────────────────────
+function StepInput({ value, onChange, placeholder, step = 2.5, color = '#6b8cff' }: {
+  value: number | null; onChange: (v: string) => void; placeholder?: string; step?: number; color?: string
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'stretch', background: '#0a0a12', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', overflow: 'hidden', height: '30px' }}>
+      <button type="button" tabIndex={-1}
+        onClick={() => onChange(value !== null ? String(Math.max(0, value - step)) : '0')}
+        style={{ padding: '0 8px', background: 'rgba(255,255,255,0.03)', border: 'none', borderRight: '1px solid rgba(255,255,255,0.08)', color: '#555', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, flexShrink: 0, transition: 'color 0.15s, background 0.15s', fontFamily: 'var(--fm)' }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#bbb'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+        onMouseLeave={e => { e.currentTarget.style.color = '#555'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}>
+        −
+      </button>
+      <input
+        type="number" step={step} value={value ?? ''}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder ?? '—'}
+        style={{ flex: 1, background: 'transparent', border: 'none', color: '#e0e0e0', padding: '0 4px', fontSize: '0.82rem', outline: 'none', fontFamily: 'var(--fm)', textAlign: 'center', minWidth: 0, width: '100%' }}
+        onFocus={e => { (e.target.closest('div') as HTMLElement)!.style.borderColor = color + '66' }}
+        onBlur={e => { (e.target.closest('div') as HTMLElement)!.style.borderColor = 'rgba(255,255,255,0.1)' }}
+      />
+      <button type="button" tabIndex={-1}
+        onClick={() => onChange(String((value ?? 0) + step))}
+        style={{ padding: '0 8px', background: 'rgba(255,255,255,0.03)', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.08)', color: '#555', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, flexShrink: 0, transition: 'color 0.15s, background 0.15s', fontFamily: 'var(--fm)' }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#bbb'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+        onMouseLeave={e => { e.currentTarget.style.color = '#555'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}>
+        +
+      </button>
+    </div>
+  )
+}
+
 // ─── NAVBAR ───────────────────────────────────────────────────────
-export function TrainingNav({ athleteName, isAdmin, onLogout }: {
-  athleteName: string; isAdmin: boolean; onLogout: () => void
+export function TrainingNav({ athleteName, isAdmin, onLogout, avatarIcon }: {
+  athleteName: string; isAdmin: boolean; onLogout: () => void; avatarIcon?: string
 }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [scrolled, setScrolled]       = useState(false)
@@ -89,7 +167,7 @@ export function TrainingNav({ athleteName, isAdmin, onLogout }: {
             onMouseLeave={e => { if (!profileOpen) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' } }}>
             {/* Avatar */}
             <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #2a2a3e 0%, #16161e 100%)', border: '1.5px solid rgba(255,255,255,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.58rem', fontWeight: 800, color: '#d0d0f0', fontFamily: 'var(--fm)', flexShrink: 0 }}>
-              {initials}
+              {avatarIcon ? <AvatarSvg iconId={avatarIcon} size={18} color="#b0b8ff" /> : initials}
             </div>
             <span className="tnav-name" style={{ fontSize: '0.78rem', fontWeight: 500, color: '#e0e0e8', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>{athleteName?.split(' ')[0] || 'Atleta'}</span>
             <ChevronDown size={11} color="rgba(255,255,255,0.4)" style={{ transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.22s', flexShrink: 0 }} />
@@ -102,7 +180,7 @@ export function TrainingNav({ athleteName, isAdmin, onLogout }: {
               <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #2a2a3e 0%, #16161e 100%)', border: '1.5px solid rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, color: '#d0d0f0' }}>
-                    {initials}
+                    {avatarIcon ? <AvatarSvg iconId={avatarIcon} size={22} color="#b0b8ff" /> : initials}
                   </div>
                   <div>
                     <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#f0f0f8', fontFamily: 'var(--fm)' }}>{athleteName}</div>
@@ -114,6 +192,7 @@ export function TrainingNav({ athleteName, isAdmin, onLogout }: {
               <div style={{ padding: '6px' }}>
                 {[
                   { href: '/profile', icon: <User size={14}/>, label: 'Moj profil' },
+                  { href: '/training', icon: <BarChart2 size={14}/>, label: 'Trening' },
                   { href: '/exercises', icon: <Dumbbell size={14}/>, label: 'Baza vježbi' },
                 ].map(item => (
                   <Link key={item.href} href={item.href} onClick={() => setProfileOpen(false)} style={{ textDecoration: 'none' }}>
@@ -139,6 +218,26 @@ export function TrainingNav({ athleteName, isAdmin, onLogout }: {
           )}
         </div>
       </div>
+      <style>{`
+        @keyframes dropDown  { from { opacity:0; transform:translateY(-6px) scale(0.98) } to { opacity:1; transform:none } }
+        @keyframes pingPulse { 0%,100% { transform:scale(1); opacity:0.5 } 50% { transform:scale(2.4); opacity:0 } }
+        .nav-menu-item {
+          width:100%; display:flex; align-items:center; gap:10px;
+          padding:8px 12px; background:transparent; border:none;
+          color:rgba(255,255,255,0.7); font-size:0.82rem; font-family:var(--fm);
+          font-weight:450; cursor:pointer; border-radius:9px;
+          transition:background 0.15s, color 0.15s; text-align:left; letter-spacing:0.01em;
+        }
+        .nav-menu-item:hover { background:rgba(255,255,255,0.07); color:#fff; }
+        .nav-menu-admin:hover { background:rgba(245,158,11,0.08) !important; }
+        .nav-menu-logout { color:rgba(255,80,80,0.7) !important; }
+        .nav-menu-logout:hover { background:rgba(255,60,60,0.08) !important; color:#ff6060 !important; }
+        .tnav-pill { display:flex; align-items:center; }
+        @media (max-width:640px) { .tnav-status { display:none !important; } }
+        @media (max-width:520px) { .tnav-name   { display:none !important; } }
+        @media (max-width:680px) { .tnav-links a { padding:6px 10px !important; font-size:0.7rem !important; } }
+        @media (max-width:480px) { .tnav-links   { display:none !important; } }
+      `}</style>
     </nav>
   )
 }
@@ -337,9 +436,10 @@ export function CompetitionBanner({ userId }: { userId: string }) {
 
 // ─── SET LOG ROW — one box per set ─────────────────────────────────
 // Admin sees planned data. Lifter gets N input boxes (one per set).
-export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
+export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceComplete }: {
   we: WorkoutExercise; userId: string; isAdmin: boolean
   onAggregateUpdate: (data: Partial<WorkoutExercise>) => void
+  forceComplete?: boolean | null
 }) {
   const plannedSets = we.planned_sets ?? 3
   const [logs, setLogs] = useState<SetLog[]>([])
@@ -363,6 +463,19 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
         setLogs(filled)
       })
   }, [we.id, plannedSets, isAdmin])
+
+  // React to external forceComplete (exercise marked done/undone from row)
+  useEffect(() => {
+    if (forceComplete === null || forceComplete === undefined || isAdmin || logs.length === 0) return
+    const newLogs = logs.map(l => ({ ...l, completed: forceComplete }))
+    setLogs(newLogs)
+    Promise.all(newLogs.map(log =>
+      supabase.from('set_logs').upsert({
+        workout_exercise_id: we.id, athlete_id: userId,
+        set_number: log.set_number, completed: forceComplete,
+      }, { onConflict: 'workout_exercise_id,set_number' })
+    ))
+  }, [forceComplete]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveSet = async (setNum: number, field: keyof SetLog, raw: string) => {
     const val = (field === 'weight_kg' || field === 'rpe') ? (raw ? Number(raw) : null) : (raw || null)
@@ -392,11 +505,15 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     const s = logs.find(l => l.set_number === setNum)
     if (!s) return
     const nowDone = !s.completed
-    setLogs(logs.map(l => l.set_number === setNum ? { ...l, completed: nowDone } : l))
+    const newLogs = logs.map(l => l.set_number === setNum ? { ...l, completed: nowDone } : l)
+    setLogs(newLogs)
     await supabase.from('set_logs').upsert({
       workout_exercise_id: we.id, athlete_id: userId,
       set_number: setNum, completed: nowDone,
     }, { onConflict: 'workout_exercise_id,set_number' })
+    // Auto-complete exercise when all sets done (or uncheck if any undone)
+    const allDone = newLogs.length > 0 && newLogs.every(l => l.completed)
+    onAggregateUpdate({ completed: allDone })
   }
 
   if (isAdmin) {
@@ -417,19 +534,18 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px 0 4px' }}>
       {saving && <div style={{ fontSize: '0.48rem', color: '#555', letterSpacing: '0.2em', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}><Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} /> SNIMANJE...</div>}
       {logs.map((log, i) => (
-        <div key={i} style={{ display: 'grid', gridTemplateColumns: '36px 1fr 1fr 1fr 32px', gap: '6px', alignItems: 'center', padding: '8px 10px', background: log.completed ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.02)', border: `1px solid ${log.completed ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '7px', transition: 'all 0.2s' }}>
+        <div key={i} className="set-log-row" style={{ display: 'grid', gridTemplateColumns: '36px 1fr 1fr 1fr 32px', gap: '6px', alignItems: 'center', padding: '8px 10px', background: log.completed ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.02)', border: `1px solid ${log.completed ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '7px', transition: 'all 0.2s' }}>
           {/* Set number */}
           <div style={{ textAlign: 'center', fontSize: '0.6rem', fontWeight: 800, color: log.completed ? '#22c55e' : '#555', fontFamily: 'var(--fd)' }}>S{log.set_number}</div>
           {/* KG */}
           <div>
             <div style={{ fontSize: '0.44rem', color: '#6b8cff', letterSpacing: '0.2em', marginBottom: '3px' }}>KG</div>
-            <input
-              type="number" step="0.5" value={log.weight_kg ?? ''}
-              onChange={e => saveSet(log.set_number, 'weight_kg', e.target.value)}
+            <StepInput
+              value={log.weight_kg}
+              onChange={v => saveSet(log.set_number, 'weight_kg', v)}
               placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : '—'}
-              style={{ width: '100%', background: '#0a0a12', border: '1px solid rgba(255,255,255,0.1)', color: '#e0e0e0', padding: '5px 8px', fontSize: '0.82rem', outline: 'none', borderRadius: '5px', fontFamily: 'var(--fm)', boxSizing: 'border-box' }}
-              onFocus={e => e.target.style.borderColor = 'rgba(107,140,255,0.5)'}
-              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+              step={2.5}
+              color="#6b8cff"
             />
           </div>
           {/* Reps */}
@@ -445,7 +561,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
             />
           </div>
           {/* RPE */}
-          <div>
+          <div className="set-log-rpe">
             <div style={{ fontSize: '0.44rem', color: '#facc15', letterSpacing: '0.2em', marginBottom: '3px' }}>
               RPE{(we.target_rpe ?? we.planned_rpe) ? ` (cilj: ${we.target_rpe ?? we.planned_rpe})` : ''}
             </div>
@@ -479,6 +595,7 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
   onDelete: (id: string) => void
 }) {
   const [expanded, setExpanded] = useState(false)
+  const [forceComplete, setForceComplete] = useState<boolean | null>(null)
   const save = (field: keyof WorkoutExercise, val: string, isNum = false) =>
     onUpdate(we.id, { [field]: isNum ? (val ? Number(val) : null) : (val || null) })
 
@@ -587,7 +704,7 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
           {isAdmin
             ? <button onClick={() => onDelete(we.id)} className="icon-btn-danger"><Trash2 size={11} /></button>
             : <button
-                onClick={() => onUpdate(we.id, { completed: !we.completed })}
+                onClick={() => { const nd = !we.completed; onUpdate(we.id, { completed: nd }); setForceComplete(nd) }}
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: we.completed ? '#4ade80' : '#444', padding: '4px', transition: 'color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 title={we.completed ? 'Označi kao neodrađeno' : 'Označi kao odrađeno'}
               >
@@ -606,7 +723,7 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
               {[
                 { label: 'TEMPO', key: 'planned_tempo' as keyof WorkoutExercise, ph: '3010' },
                 { label: 'ODMOR (sek)', key: 'planned_rest_seconds' as keyof WorkoutExercise, ph: '90', type: 'number' },
-                { label: 'BILJEŠKA TRENERA', key: 'coach_note' as keyof WorkoutExercise, ph: 'Uputa za liftača...' },
+                { label: 'BILJEŠKA TRENERA', key: 'coach_note' as keyof WorkoutExercise, ph: 'Uputa za lifera...' },
               ].map((f, fi) => (
                 <div key={String(f.key)} style={{ padding: '10px 14px', borderRight: fi < 2 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
                   <div style={{ fontSize: '0.46rem', color: '#666', letterSpacing: '0.2em', marginBottom: '5px' }}>{f.label}</div>
@@ -644,6 +761,7 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
         <SetLogSection
           we={we} userId={userId} isAdmin={isAdmin}
           onAggregateUpdate={data => onUpdate(we.id, data)}
+          forceComplete={forceComplete}
         />
       </div>
 
@@ -671,6 +789,21 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, onUpdateWorko
   const [showPicker, setShowPicker] = useState(false)
   const exCount = workout.workout_exercises?.length ?? 0
 
+  const handleUpdateExercise = (id: string, data: Partial<WorkoutExercise>) => {
+    onUpdateExercise(id, data)
+    if ('completed' in data) {
+      const updatedExercises = (workout.workout_exercises ?? []).map(we =>
+        we.id === id ? { ...we, ...data } : we
+      )
+      const allDone = updatedExercises.length > 0 && updatedExercises.every(we => we.completed)
+      if (allDone && !workout.completed) {
+        onUpdateWorkout(workout.id, { completed: true })
+      } else if (!allDone && workout.completed) {
+        onUpdateWorkout(workout.id, { completed: false })
+      }
+    }
+  }
+
   return (
     <>
       {/* Outer card: sharp border, white/dark editorial split */}
@@ -686,9 +819,9 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, onUpdateWorko
           <div className='workout-header-inner' style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
             {/* Day label pill */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '0' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={workout.completed ? '#22c55e' : '#555'} strokeWidth="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <div style={{ fontSize: '0.56rem', letterSpacing: '0.3em', color: '#aaa', fontFamily: 'var(--fm)', fontWeight: 700 }}>
-                {workout.workout_date}
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={workout.completed ? '#22c55e' : '#4a4a6a'} strokeWidth="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <div style={{ fontSize: '0.78rem', fontWeight: 600, color: workout.completed ? '#4ade80' : '#9090b0', fontFamily: 'var(--fm)', letterSpacing: '0.02em' }}>
+                {formatWorkoutDate(workout.workout_date)}
               </div>
             </div>
 
@@ -708,7 +841,14 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, onUpdateWorko
                 </div>
               )}
               {/* Completed toggle */}
-              <div onClick={e => { e.stopPropagation(); onUpdateWorkout(workout.id, { completed: !workout.completed }) }}
+              <div onClick={e => {
+                e.stopPropagation()
+                const newDone = !workout.completed
+                onUpdateWorkout(workout.id, { completed: newDone })
+                if (newDone) {
+                  workout.workout_exercises?.forEach(we => onUpdateExercise(we.id, { completed: true }))
+                }
+              }}
                 className={`done-badge${workout.completed ? ' done-badge-active' : ''}`}>
                 {workout.completed ? <Check size={10} color="#22c55e" /> : <div style={{ width: '9px', height: '9px', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '2px' }} />}
                 <span>{workout.completed ? 'GOTOVO' : 'ODRADITI'}</span>
@@ -740,7 +880,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, onUpdateWorko
 
             {/* Exercises */}
             {workout.workout_exercises?.map(we => (
-              <ExerciseRow key={we.id} we={we} isAdmin={isAdmin} userId={userId} onUpdate={onUpdateExercise} onDelete={onDeleteExercise} />
+              <ExerciseRow key={we.id} we={we} isAdmin={isAdmin} userId={userId} onUpdate={handleUpdateExercise} onDelete={onDeleteExercise} />
             ))}
 
             {/* Add vježbu + bilješka footer */}

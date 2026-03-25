@@ -1,10 +1,12 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Search, X, ArrowLeft, ChevronRight, Dumbbell } from 'lucide-react'
+import { Search, X, ChevronRight } from 'lucide-react'
+import { TrainingNav } from '../training/training-components'
 
 const supabase = createClient()
+
 
 interface Exercise {
   id: string
@@ -238,6 +240,7 @@ function ExModal({ ex, onClose }: { ex: Exercise; onClose: () => void }) {
 
 // ── Main page ──────────────────────────────────────────────────────
 export default function ExerciseLibraryPage() {
+  const router = useRouter()
   const [exercises, setExercises]           = useState<Exercise[]>([])
   const [searchQuery, setSearchQuery]       = useState('')
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
@@ -247,11 +250,17 @@ export default function ExerciseLibraryPage() {
   const [dropdownPos, setDropdownPos]       = useState<{top: number; left: number}>({top: 0, left: 0})
   const [subCat, setSubCat]                 = useState<string | null>(null)
   const filterBarRef = useRef<HTMLDivElement>(null)
+  const [navUser, setNavUser] = useState({ name: '', isAdmin: false, avatarIcon: '' })
 
   useEffect(() => {
     supabase.from('exercises').select('*').order('name').then(({ data }) => {
       setExercises(data ?? [])
       setTimeout(() => setReady(true), 60)
+    })
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase.from('profiles').select('full_name, role, avatar_icon').eq('id', user.id).single()
+        .then(({ data }) => setNavUser({ name: data?.full_name ?? '', isAdmin: data?.role === 'admin', avatarIcon: data?.avatar_icon ?? 'barbell' }))
     })
   }, [])
 
@@ -291,25 +300,15 @@ export default function ExerciseLibraryPage() {
       <div style={{ position: 'fixed', top: '-20vh', right: '-10vw', width: '60vw', height: '60vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse, rgba(107,140,255,0.05) 0%, transparent 70%)', filter: 'blur(60px)' }} />
       <div style={{ position: 'fixed', bottom: '-10vh', left: '-8vw', width: '50vw', height: '50vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse, rgba(34,197,94,0.04) 0%, transparent 70%)', filter: 'blur(70px)' }} />
 
-      {/* ── Navbar ── */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(16px,4vw,40px)', background: 'rgba(6,6,10,0.96)', borderBottom: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(20px)', boxShadow: '0 4px 32px rgba(0,0,0,0.4)' }}>
-        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-          <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '34px', opacity: 0.9 }} />
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Dumbbell size={12} color="#888" />
-          <span style={{ fontFamily: 'var(--fd)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.3em', color: '#777' }}>BAZA VJEŽBI</span>
-        </div>
-        <Link href="/training"
-          style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '7px', color: 'rgba(255,255,255,0.4)', fontSize: '0.62rem', letterSpacing: '0.18em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'color 0.2s' }}
-          onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#fff'}
-          onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.4)'}>
-          <ArrowLeft size={12} /> TRENING
-        </Link>
-      </nav>
+      <TrainingNav
+        athleteName={navUser.name}
+        isAdmin={navUser.isAdmin}
+        onLogout={async () => { await supabase.auth.signOut(); router.push('/') }}
+        avatarIcon={navUser.avatarIcon}
+      />
 
       {/* ── Hero ── */}
-      <section style={{ paddingTop: '64px', position: 'relative', zIndex: 1 }}>
+      <section style={{ paddingTop: '56px', position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: 'clamp(52px,8vw,80px) clamp(16px,4vw,48px) 0' }}>
 
           {/* Overline */}

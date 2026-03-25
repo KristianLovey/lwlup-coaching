@@ -54,7 +54,7 @@ const FOUNDERS = [
     role: 'PODPREDSJEDNIK & SUOSNIVAČ',
     nickname: null,
     img: '/slike/luka-g.jpg',
-    bio: 'Luka Grežina jedan je od stupova LWL UP-a. Uz ulogu podpredsjednika, aktivni je natjecatelj i trener koji svakodnevno prenosi znanje i iskustvo na mlađe generacije liftača u klubu.',
+    bio: 'Luka Grežina jedan je od stupova LWL UP-a. Uz ulogu podpredsjednika, aktivni je natjecatelj i trener koji svakodnevno prenosi znanje i iskustvo na mlađe generacije liftera u klubu.',
     achievements: ['2x Državni prvak u M-120kg kategoriji', 'Aktivni natjecatelj i trener', 'Total: 747.5kg | GLP: 87.21', 'Suosnivač LWL UP-a 2023. godine'],
     imgLeft: false,
   },

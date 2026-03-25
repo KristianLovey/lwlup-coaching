@@ -7,8 +7,9 @@ import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
   GripVertical, Loader2, LogOut, User, Settings, Home,
   BarChart2, FolderOpen, Copy, MessageSquare, Shield,
-  AlertCircle, X, Edit3, ChevronLeft, Eye, Dumbbell
+  AlertCircle, X, Edit3, ChevronLeft, Eye, Dumbbell, Trophy
 } from 'lucide-react'
+import { CompetitionsManager } from './competitions-manager'
 
 const supabase = createClient()
 
@@ -342,9 +343,9 @@ function DuplicateModal({ block, athletes, onConfirm, onClose }:
         </div>
 
         <div style={{ marginBottom: '28px' }}>
-          <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px', fontFamily: 'var(--fm)' }}>KOPIRAJ NA LIFTAČA</div>
+          <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px', fontFamily: 'var(--fm)' }}>KOPIRAJ NA LIFERA</div>
           {others.length === 0 ? (
-            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', fontFamily: 'var(--fm)', padding: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>Nema drugih liftača.</div>
+            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', fontFamily: 'var(--fm)', padding: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>Nema drugih lifera.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
               {others.map(a => (
@@ -744,7 +745,7 @@ function AthletePanel({
         <div style={{ animation: 'fadeUp 0.3s ease' }}>
           {/* Add tip form */}
           <div style={{ marginBottom: '20px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', overflow: 'hidden' }}>
-            <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>NOVI HUB TIP ZA LIFTAČA</div>
+            <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>NOVI HUB TIP ZA LIFERA</div>
             <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {/* Category selector */}
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -774,7 +775,7 @@ function AthletePanel({
           {/* Tips list */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {tips.length === 0 ? (
-              <div style={{ padding: '32px', textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '8px' }}>Nema hub tipova za ovog liftača.</div>
+              <div style={{ padding: '32px', textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '8px' }}>Nema hub tipova za ovog lifera.</div>
             ) : tips.map((tip: any) => {
               const catColors: Record<string,string> = { general:'#888', technique:'#6b8cff', nutrition:'#22c55e', competition:'#f59e0b', recovery:'#f472b6' }
               const c = catColors[tip.category] ?? '#888'
@@ -806,7 +807,7 @@ function AthletePanel({
         <div style={{ animation: 'fadeUp 0.3s ease' }}>
           {/* New note */}
           <div style={{ marginBottom: '20px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>NOVA BILJEŠKA ZA LIFTAČA</div>
+            <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>NOVA BILJEŠKA ZA LIFERA</div>
             <textarea
               value={newNote}
               onChange={e => setNewNote(e.target.value)}
@@ -823,7 +824,7 @@ function AthletePanel({
           {/* Notes list */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {notes.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', letterSpacing: '0.15em', border: '1px dashed rgba(255,255,255,0.08)' }}>Nema bilješki za ovog liftača.</div>
+              <div style={{ padding: '40px', textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', letterSpacing: '0.15em', border: '1px dashed rgba(255,255,255,0.08)' }}>Nema bilješki za ovog lifera.</div>
             ) : notes.map(note => (
               <div key={note.id} style={{ padding: '16px 18px', border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)', position: 'relative' }}>
                 <div style={{ fontSize: '0.88rem', color: '#fff', lineHeight: 1.6, fontFamily: 'var(--fm)', marginBottom: '10px' }}>{note.content}</div>
@@ -857,6 +858,7 @@ export default function AdminPage() {
   const [selectedAthlete, setSelectedAthlete] = useState<AthleteProfile | null>(null)
   const [searchQ, setSearchQ] = useState('')
   const [managingUsers, setManagingUsers] = useState(false)
+  const [dashSection, setDashSection] = useState<'athletes' | 'competitions'>('athletes')
   const [error, setError] = useState<string | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
   const dropRef = useRef<HTMLDivElement>(null)
@@ -1107,15 +1109,26 @@ export default function AdminPage() {
 
             {/* Hero */}
             <div style={{ marginBottom: '48px', animation: 'fadeUp 0.6s ease' }}>
-              <div style={{ fontSize: '0.52rem', letterSpacing: '0.6em', color: 'rgba(255,255,255,0.2)', marginBottom: '10px' }}>LWLUP · UPRAVLJANJE LIFTAČIMA</div>
+              <div style={{ fontSize: '0.52rem', letterSpacing: '0.6em', color: 'rgba(255,255,255,0.2)', marginBottom: '10px' }}>LWLUP · UPRAVLJANJE LIFERIMA</div>
               <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,4.5vw,4.5rem)', fontWeight: 800, lineHeight: 0.88, margin: '0 0 28px', letterSpacing: '-0.02em' }}>
                 ADMIN<br /><span style={{ color: 'rgba(255,255,255,0.15)' }}>PANEL</span>
               </h1>
 
+              {/* Section switcher */}
+              <div style={{ display: 'flex', gap: '4px', padding: '4px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', width: 'fit-content', marginBottom: '32px' }}>
+                {([['athletes', 'Lifteri'], ['competitions', 'Natjecanja']] as [string,string][]).map(([sec, label]) => (
+                  <button key={sec} onClick={() => setDashSection(sec as 'athletes'|'competitions')}
+                    style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 18px', background: dashSection === sec ? 'rgba(255,255,255,0.1)' : 'transparent', border: dashSection === sec ? '1px solid rgba(255,255,255,0.12)' : '1px solid transparent', borderRadius: '7px', cursor: 'pointer', fontSize: '0.72rem', fontFamily: 'var(--fm)', fontWeight: dashSection === sec ? 700 : 400, color: dashSection === sec ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'all 0.2s', letterSpacing: '0.04em' }}>
+                    {sec === 'competitions' && <Trophy size={13} />}
+                    {label}
+                  </button>
+                ))}
+              </div>
+
               {/* Summary stats */}
               <div className="admin-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.09)', maxWidth: '600px' }}>
                 {[
-                  { val: totalAthletes, label: 'LIFTAČA', color: '#fff' },
+                  { val: totalAthletes, label: 'LIFERA', color: '#fff' },
                   { val: activeBlocks, label: 'AKT. BLOKOVA', color: '#4ade80' },
                   { val: athletes.reduce((s, a) => s + ((a.blocks as Block[])?.length ?? 0), 0), label: 'UK. BLOKOVA', color: '#fff' },
                   { val: totalNotes, label: 'BILJEŠKI', color: '#facc15' },
@@ -1128,11 +1141,14 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {dashSection === 'competitions' && <CompetitionsManager />}
+
+            {dashSection === 'athletes' && <>
             {/* Search + manage */}
             <div className="admin-search-row" style={{ display: 'flex', gap: '12px', marginBottom: '28px', alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '10px 16px', maxWidth: '360px' }}>
                 <Search size={14} color="rgba(255,255,255,0.3)" />
-                <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Pretraži liftače..."
+                <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Pretraži lifere..."
                   style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.88rem', width: '100%', fontFamily: 'var(--fm)' }} />
               </div>
               <button onClick={() => setManagingUsers(!managingUsers)}
@@ -1146,7 +1162,7 @@ export default function AdminPage() {
               <div style={{ fontSize: '0.52rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '20px', fontFamily: 'var(--fm)' }}>KORISNICI — KLIKNI NA PROFIL ZA UREĐIVANJE</div>
               <div className="admin-athlete-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
                 {filteredAthletes.length === 0 && (
-                  <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.8rem', padding: '40px 0' }}>Nema liftača.</div>
+                  <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.8rem', padding: '40px 0' }}>Nema lifera.</div>
                 )}
                 {filteredAthletes.map(athlete => {
                   const initials = athlete.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
@@ -1223,6 +1239,7 @@ export default function AdminPage() {
                 })}
               </div>
             </div>
+            </>}
           </div>
         )}
       </div>
