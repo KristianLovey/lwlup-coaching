@@ -5,11 +5,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
-  GripVertical, Loader2, LogOut, User, Settings, Home,
-  BarChart2, FolderOpen, Copy, MessageSquare, Shield,
-  AlertCircle, X, Edit3, ChevronLeft, Eye, Dumbbell, Trophy
+  GripVertical, Loader2, Settings,
+  BarChart2, FolderOpen, Copy, MessageSquare,
+  AlertCircle, X, Edit3, ChevronLeft, Eye, Trophy
 } from 'lucide-react'
 import { CompetitionsManager } from './competitions-manager'
+import { AppNav } from '../training/training-components'
 
 const supabase = createClient()
 
@@ -860,19 +861,9 @@ export default function AdminPage() {
   const [managingUsers, setManagingUsers] = useState(false)
   const [dashSection, setDashSection] = useState<'athletes' | 'competitions'>('athletes')
   const [error, setError] = useState<string | null>(null)
-  const [profileOpen, setProfileOpen] = useState(false)
-  const dropRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (dropRef.current && !dropRef.current.contains(e.target as Node)) setProfileOpen(false)
-    }
-    if (profileOpen) document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [profileOpen])
 
   useEffect(() => {
     const init = async () => {
@@ -1004,89 +995,7 @@ export default function AdminPage() {
         <div style={{ position: 'absolute', bottom: '-100px', left: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,255,255,0.02) 0%,transparent 70%)' }} />
       </div>
 
-      {/* NAV */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, height: '56px', display: 'flex', alignItems: 'center', padding: '0 clamp(16px,3vw,32px)', background: 'rgba(4,4,8,0.92)', backdropFilter: 'blur(32px) saturate(180%)', WebkitBackdropFilter: 'blur(32px) saturate(180%)', borderBottom: '1px solid rgba(255,255,255,0.09)', transition: 'background 0.4s' }}>
-
-        {/* Logo */}
-        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', marginRight: '28px', flexShrink: 0 }}>
-          <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '28px', opacity: 0.95 }} />
-        </Link>
-
-        {/* Nav links */}
-        <div className="tnav-links" style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1 }}>
-          {[{ href: '/', label: 'Početna' }, { href: '/training', label: 'Trening' }, { href: '/profile', label: 'Profil' }].map(item => (
-            <Link key={item.href} href={item.href} className="tnav-pill"
-              style={{ textDecoration: 'none', padding: '6px 14px', color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', fontWeight: 500, fontFamily: 'var(--fm)', letterSpacing: '0.01em', borderRadius: '8px', transition: 'all 0.18s', whiteSpace: 'nowrap' as const }}
-              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = '#fff'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.07)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.55)'; (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}>
-              {item.label}
-            </Link>
-          ))}
-        </div>
-
-        {/* Right — admin badge + avatar */}
-        <div className="tnav-right" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-
-          {/* Admin badge pill */}
-          <div className="tnav-status" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.22)', borderRadius: '20px' }}>
-            <div style={{ position: 'relative', width: '6px', height: '6px', flexShrink: 0 }}>
-              <div style={{ position: 'absolute', inset: 0, background: '#ef4444', borderRadius: '50%', boxShadow: '0 0 5px #ef4444' }} />
-              <div style={{ position: 'absolute', inset: '-3px', background: 'rgba(239,68,68,0.2)', borderRadius: '50%', animation: 'pingPulse 2.4s ease-in-out infinite' }} />
-            </div>
-            <span style={{ fontSize: '0.62rem', color: '#f87171', fontWeight: 600, fontFamily: 'var(--fm)', letterSpacing: '0.04em' }}>Admin</span>
-          </div>
-
-          {/* Avatar / profile dropdown */}
-          <div ref={dropRef} style={{ position: 'relative' }}>
-            <button onClick={() => setProfileOpen(o => !o)}
-              style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '5px 10px 5px 5px', background: profileOpen ? 'rgba(255,255,255,0.08)' : 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', cursor: 'pointer', transition: 'all 0.2s' }}
-              onMouseEnter={e => { if (!profileOpen) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)' } }}
-              onMouseLeave={e => { if (!profileOpen) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' } }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #3e1a1a 0%, #1e0a0a 100%)', border: '1.5px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.58rem', fontWeight: 800, color: '#f87171', fontFamily: 'var(--fm)', flexShrink: 0 }}>
-                {adminName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'AD'}
-              </div>
-              <span className="tnav-name" style={{ fontSize: '0.78rem', fontWeight: 500, color: '#e0e0e8', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>{adminName.split(' ')[0] || 'Admin'}</span>
-              <ChevronDown size={11} color="rgba(255,255,255,0.4)" style={{ transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.22s', flexShrink: 0 }} />
-            </button>
-
-            {profileOpen && (
-              <div className="profile-dropdown" style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '220px', background: 'rgba(10,10,16,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)', zIndex: 300, animation: 'dropDown 0.2s cubic-bezier(0.16,1,0.3,1)', overflow: 'hidden', backdropFilter: 'blur(40px)' }}>
-                {/* Header */}
-                <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #3e1a1a 0%, #1e0a0a 100%)', border: '1.5px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, color: '#f87171' }}>
-                      {adminName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'AD'}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#f0f0f8', fontFamily: 'var(--fm)' }}>{adminName}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
-                        <Shield size={9} color="#ef4444" />
-                        <span style={{ fontSize: '0.54rem', color: '#f87171', fontFamily: 'var(--fm)', letterSpacing: '0.1em' }}>ADMINISTRATOR</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {/* Menu items */}
-                <div style={{ padding: '6px' }}>
-                  {[
-                    { href: '/profile', icon: <User size={14}/>, label: 'Moj profil' },
-                    { href: '/training', icon: <Dumbbell size={14}/>, label: 'Trening' },
-                  ].map(item => (
-                    <Link key={item.href} href={item.href} onClick={() => setProfileOpen(false)} style={{ textDecoration: 'none' }}>
-                      <button className="nav-menu-item">{item.icon}<span>{item.label}</span></button>
-                    </Link>
-                  ))}
-                </div>
-                <div style={{ padding: '6px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-                  <button onClick={() => { setProfileOpen(false); handleLogout() }} className="nav-menu-item nav-menu-logout">
-                    <LogOut size={14}/><span>Odjava</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
+      <AppNav athleteName={adminName} isAdmin={true} onLogout={handleLogout} />
 
       {/* MAIN */}
       <div style={{ paddingTop: '56px', position: 'relative', zIndex: 1 }}>

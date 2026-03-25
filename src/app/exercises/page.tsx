@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Search, X, ChevronRight } from 'lucide-react'
-import { TrainingNav } from '../training/training-components'
+import { AppNav } from '../training/training-components'
 
 const supabase = createClient()
 
@@ -300,7 +300,7 @@ export default function ExerciseLibraryPage() {
       <div style={{ position: 'fixed', top: '-20vh', right: '-10vw', width: '60vw', height: '60vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse, rgba(107,140,255,0.05) 0%, transparent 70%)', filter: 'blur(60px)' }} />
       <div style={{ position: 'fixed', bottom: '-10vh', left: '-8vw', width: '50vw', height: '50vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse, rgba(34,197,94,0.04) 0%, transparent 70%)', filter: 'blur(70px)' }} />
 
-      <TrainingNav
+      <AppNav
         athleteName={navUser.name}
         isAdmin={navUser.isAdmin}
         onLogout={async () => { await supabase.auth.signOut(); router.push('/') }}
@@ -318,13 +318,13 @@ export default function ExerciseLibraryPage() {
           </div>
 
           {/* Title row */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '24px', marginBottom: 'clamp(36px,5vw,56px)' }}>
+          <div className="ex-hero-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '24px', marginBottom: 'clamp(36px,5vw,56px)' }}>
             <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3.5rem,9vw,7.5rem)', fontWeight: 800, lineHeight: 0.87, margin: 0, letterSpacing: '-0.03em', opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(24px)', transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s' }}>
               BAZA<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>VJEŽBI</span>
             </h1>
 
             {/* Stats */}
-            <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(16px)', transition: 'all 0.6s ease 0.2s', display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', overflow: 'hidden' }}>
+            <div className="ex-stats-bar" style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(16px)', transition: 'all 0.6s ease 0.2s', display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', overflow: 'hidden' }}>
               {[
                 { val: heroCount, label: 'VJEŽBI' },
                 { val: CATEGORY_GROUPS.length, label: 'GRUPA' },
@@ -363,7 +363,7 @@ export default function ExerciseLibraryPage() {
         </div>
 
         {/* ── Category filter bar ── */}
-        <div ref={filterBarRef} style={{ opacity: ready ? 1 : 0, transition: 'opacity 0.6s ease 0.3s', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(6,6,10,0.92)', backdropFilter: 'blur(16px)', position: 'sticky', top: '64px', zIndex: 150, overflow: 'visible' }}>
+        <div ref={filterBarRef} style={{ opacity: ready ? 1 : 0, transition: 'opacity 0.6s ease 0.3s', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(6,6,10,0.92)', backdropFilter: 'blur(16px)', position: 'sticky', top: '56px', zIndex: 150, overflow: 'visible' }}>
           <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 clamp(16px,4vw,48px)', display: 'flex', alignItems: 'stretch', gap: '0' }}>
 
             {TOP_FILTERS.map((tf, i) => {
@@ -550,11 +550,18 @@ export default function ExerciseLibraryPage() {
 
         /* ── Mobile ── */
         @media (max-width: 768px) {
-          nav { height: 56px !important; }
-          section:first-of-type { padding-top: 56px !important; }
+          .ex-stats-bar { display: none !important; }
+          .ex-hero-row { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
+        }
+        @media (max-width: 600px) {
+          .ex-filter-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+          .ex-filter-bar > div { min-width: max-content; padding-right: 8px; }
         }
         @media (max-width: 480px) {
           .ex-card { border-radius: 8px !important; }
+        }
+        @media (max-width: 400px) {
+          .ex-top-filters button { font-size: 0.52rem !important; padding: 0 10px !important; }
         }
       `}</style>
     </div>

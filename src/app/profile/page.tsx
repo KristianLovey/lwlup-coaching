@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, ChevronDown, Check, Loader2, LogOut, Edit3, X } from 'lucide-react'
-import { TrainingNav, AVATARS, AvatarSvg } from '../training/training-components'
+import { AppNav, AVATARS, AvatarSvg } from '../training/training-components'
 
 const supabase = createClient()
 
@@ -19,6 +19,11 @@ type CompLift = {
   id: string; comp_name: string; comp_date: string
   squat_kg: number | null; bench_kg: number | null; deadlift_kg: number | null
   total_kg: number | null; body_weight: number | null; weight_class: string | null; place: number | null
+}
+type AdminComp = {
+  result_squat: number | null; result_bench: number | null; result_deadlift: number | null
+  result_total: number | null; result_place: number | null; result_notes: string | null
+  competition: { id: string; name: string; date: string; location: string | null; status: string }
 }
 type PrLog = {
   id: string; lift: 'squat' | 'bench' | 'deadlift' | 'other'
@@ -246,17 +251,16 @@ function AddCompLiftModal({ onSave, onClose }: {
 // ─── MAIN PROFILE PAGE ────────────────────────────────────────────
 export default function ProfilePage() {
   const [profile, setProfile]         = useState<Profile | null>(null)
-  const [compLifts, setCompLifts]     = useState<CompLift[]>([])
+  const [adminComps, setAdminComps]   = useState<AdminComp[]>([])
   const [prLogs, setPrLogs]           = useState<PrLog[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading]         = useState(true)
   const [userId, setUserId]           = useState<string | null>(null)
   const [activeTab, setActiveTab]     = useState<'progress' | 'prs' | 'leaderboard'>('progress')
-  const [chartLift, setChartLift]     = useState<'squat_kg'|'bench_kg'|'deadlift_kg'|'total_kg'>('total_kg')
+  const [progressLift, setProgressLift] = useState<'squat'|'bench'|'deadlift'>('squat')
   const [prLift, setPrLift]           = useState<'squat'|'bench'|'deadlift'>('squat')
   const [prReps, setPrReps]           = useState(1)
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
-  const [showAddComp, setShowAddComp] = useState(false)
   const [editingORM, setEditingORM]   = useState(false)
   const [ormVals, setOrmVals]         = useState({ squat: '', bench: '', deadlift: '', body_weight: '', sex: 'male' as 'male'|'female' })
   const router = useRouter()
@@ -269,13 +273,15 @@ export default function ProfilePage() {
 
       const [{ data: prof }, { data: comps }, { data: prs }, { data: lb }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
-        supabase.from('competition_lifts').select('*').eq('athlete_id', user.id).order('comp_date'),
+        supabase.from('competition_athletes')
+          .select('result_squat, result_bench, result_deadlift, result_total, result_place, result_notes, competition:competitions(id, name, date, location, status)')
+          .eq('athlete_id', user.id),
         supabase.from('pr_logs').select('*').eq('athlete_id', user.id).order('date', { ascending: false }),
         supabase.from('leaderboard_view').select('*'),
       ])
 
       setProfile(prof as Profile)
-      setCompLifts((comps ?? []) as CompLift[])
+      setAdminComps(((comps ?? []) as unknown as AdminComp[]).sort((a, b) => b.competition.date.localeCompare(a.competition.date)))
       setPrLogs((prs ?? []) as PrLog[])
       setLeaderboard((lb ?? []) as LeaderboardEntry[])
       if (prof) setOrmVals({ squat: String(prof.current_squat_1rm ?? ''), bench: String(prof.current_bench_1rm ?? ''), deadlift: String(prof.current_deadlift_1rm ?? ''), body_weight: String(prof.body_weight ?? ''), sex: (prof.sex ?? 'male') as 'male'|'female' })
@@ -305,17 +311,6 @@ export default function ProfilePage() {
     // Update leaderboard entry for self so GL updates instantly
     setLeaderboard(lb => lb.map(e => e.id === userId ? { ...e, body_weight: data.body_weight, sex: data.sex } : e))
     setEditingORM(false)
-  }
-
-  const addCompLift = async (data: Omit<CompLift, 'id'>) => {
-    if (!userId) return
-    const { data: row } = await supabase.from('competition_lifts').insert({ ...data, athlete_id: userId }).select('*').single()
-    if (row) setCompLifts(c => [...c, row as CompLift].sort((a, b) => a.comp_date.localeCompare(b.comp_date)))
-  }
-
-  const deleteCompLift = async (id: string) => {
-    await supabase.from('competition_lifts').delete().eq('id', id)
-    setCompLifts(c => c.filter(x => x.id !== id))
   }
 
   const addPrLog = async (lift: PrLog['lift'], reps: number, weight: number, date: string) => {
@@ -372,7 +367,6 @@ export default function ProfilePage() {
 
   const currentAvatar = profile.avatar_icon ?? 'barbell'
   const trainingTotal = (profile.current_squat_1rm ?? 0) + (profile.current_bench_1rm ?? 0) + (profile.current_deadlift_1rm ?? 0)
-  const latestComp = compLifts.length > 0 ? compLifts[compLifts.length - 1] : null
 
   return (
     <div style={{ background: '#06060a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
@@ -381,7 +375,7 @@ export default function ProfilePage() {
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.015) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
       <div style={{ position: 'fixed', top: '-20vh', left: '-10vw', width: '60vw', height: '60vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse, rgba(56,100,255,0.05) 0%, transparent 70%)', filter: 'blur(50px)' }} />
 
-      <TrainingNav
+      <AppNav
         athleteName={profile?.full_name ?? ''}
         isAdmin={profile?.role === 'admin'}
         onLogout={async () => { await supabase.auth.signOut(); router.push('/') }}
@@ -442,7 +436,7 @@ export default function ProfilePage() {
 
         {/* 1RM edit panel */}
         {editingORM && (
-          <div style={{ marginBottom: '28px', padding: '18px 20px', background: '#0e0e14', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end', animation: 'fadeUp 0.2s ease' }}>
+          <div className="prof-orm-edit" style={{ marginBottom: '28px', padding: '18px 20px', background: '#0e0e14', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end', animation: 'fadeUp 0.2s ease' }}>
             {[
               { k: 'squat', label: 'ČUČANJ 1RM (kg)', color: '#6b8cff' },
               { k: 'bench', label: 'BENCH 1RM (kg)', color: '#f59e0b' },
@@ -475,75 +469,71 @@ export default function ProfilePage() {
         {activeTab === 'progress' && (
           <div style={{ animation: 'fadeUp 0.3s ease' }}>
 
-            {/* Comp progress chart */}
+            {/* PR progress chart */}
             <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: '#0e0e14', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                 <div>
-                  <div style={{ fontSize: '0.5rem', letterSpacing: '0.4em', color: '#666', marginBottom: '3px', fontFamily: 'var(--fm)' }}>COMP NAPREDAK</div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e0e0e0' }}>{chartLabels[chartLift]}</div>
+                  <div style={{ fontSize: '0.5rem', letterSpacing: '0.4em', color: '#666', marginBottom: '3px', fontFamily: 'var(--fm)' }}>PR NAPREDAK (1RM)</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e0e0e0' }}>
+                    {{ squat: 'ČUČANJ', bench: 'BENCH PRESS', deadlift: 'MRTVO DIZANJE' }[progressLift]}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {(['total_kg', 'squat_kg', 'bench_kg', 'deadlift_kg'] as const).map(k => (
-                    <button key={k} onClick={() => setChartLift(k)}
-                      style={{ padding: '5px 12px', background: chartLift === k ? chartColors[k] + '22' : 'transparent', border: `1px solid ${chartLift === k ? chartColors[k] : 'rgba(255,255,255,0.1)'}`, color: chartLift === k ? chartColors[k] : '#666', borderRadius: '5px', cursor: 'pointer', fontSize: '0.58rem', letterSpacing: '0.1em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s' }}>
-                      {chartLabels[k]}
+                <div className="prof-chart-filters" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {([['squat', 'ČUČANJ', '#6b8cff'], ['bench', 'BENCH', '#f59e0b'], ['deadlift', 'MRTVO', '#22c55e']] as const).map(([k, label, color]) => (
+                    <button key={k} onClick={() => setProgressLift(k)}
+                      style={{ padding: '5px 12px', background: progressLift === k ? color + '22' : 'transparent', border: `1px solid ${progressLift === k ? color : 'rgba(255,255,255,0.1)'}`, color: progressLift === k ? color : '#666', borderRadius: '5px', cursor: 'pointer', fontSize: '0.58rem', letterSpacing: '0.1em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s' }}>
+                      {label}
                     </button>
                   ))}
                 </div>
               </div>
               <div style={{ padding: '20px 20px 12px', background: '#09090e' }}>
-                <CompChart compLifts={compLifts} lift={chartLift} color={chartColors[chartLift]} />
+                {(() => {
+                  const liftColor = { squat: '#6b8cff', bench: '#f59e0b', deadlift: '#22c55e' }[progressLift]
+                  const chartData = [...prLogs]
+                    .filter(p => p.lift === progressLift && p.reps === 1)
+                    .reverse()
+                    .map(p => ({ date: p.date, value: p.weight_kg }))
+                  return <LineChart data={chartData} color={liftColor} label={progressLift} />
+                })()}
               </div>
             </div>
 
-            {/* Comp history table */}
+            {/* Admin-logged competition history */}
             <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>
-              <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: '#0e0e14', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: '#0e0e14' }}>
                 <div style={{ fontSize: '0.5rem', letterSpacing: '0.4em', color: '#666', fontFamily: 'var(--fm)' }}>NATJECANJA</div>
-                <button onClick={() => setShowAddComp(true)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: '#ccc', borderRadius: '6px', cursor: 'pointer', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', transition: 'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#ccc' }}>
-                  <Plus size={11} /> DODAJ
-                </button>
               </div>
 
-              {compLifts.length === 0 ? (
+              {adminComps.length === 0 ? (
                 <div style={{ padding: '40px', textAlign: 'center', color: '#444', fontSize: '0.78rem', letterSpacing: '0.1em' }}>
-                  Dodaj svoje natjecateljske rezultate za prikaz grafa napretka.
+                  Admin još nije ulogirao tvoje natjecateljske rezultate.
                 </div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ background: '#0a0a10' }}>
-                        {['NATJECANJE', 'DATUM', 'SQ', 'BP', 'DL', 'TOTAL', 'TJEL.', 'MJ.', ''].map(h => (
-                          <th key={h} style={{ padding: '8px 14px', fontSize: '0.46rem', color: '#555', letterSpacing: '0.2em', textAlign: h === '' ? 'center' : 'left', fontFamily: 'var(--fm)', borderBottom: '1px solid rgba(255,255,255,0.07)', whiteSpace: 'nowrap' }}>{h}</th>
+                        {['NATJECANJE', 'DATUM', 'SQ', 'BP', 'DL', 'TOTAL', 'MJ.', 'BILJEŠKA'].map(h => (
+                          <th key={h} className={h === 'BILJEŠKA' ? 'comp-table-hide' : ''} style={{ padding: '8px 14px', fontSize: '0.46rem', color: '#555', letterSpacing: '0.2em', textAlign: 'left', fontFamily: 'var(--fm)', borderBottom: '1px solid rgba(255,255,255,0.07)', whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {[...compLifts].reverse().map((c, i) => (
-                        <tr key={c.id} style={{ borderBottom: i < compLifts.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', transition: 'background 0.1s' }}
+                      {adminComps.map((c, i) => (
+                        <tr key={i} style={{ borderBottom: i < adminComps.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', transition: 'background 0.1s' }}
                           onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(255,255,255,0.02)'}
                           onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}>
-                          <td style={{ padding: '10px 14px', fontSize: '0.82rem', color: '#e0e0e0', fontWeight: 500 }}>{c.comp_name}</td>
-                          <td style={{ padding: '10px 14px', fontSize: '0.72rem', color: '#777' }}>{c.comp_date}</td>
-                          {[c.squat_kg, c.bench_kg, c.deadlift_kg].map((v, j) => (
+                          <td style={{ padding: '10px 14px', fontSize: '0.82rem', color: '#e0e0e0', fontWeight: 500 }}>{c.competition.name}</td>
+                          <td style={{ padding: '10px 14px', fontSize: '0.72rem', color: '#777' }}>{c.competition.date}</td>
+                          {[c.result_squat, c.result_bench, c.result_deadlift].map((v, j) => (
                             <td key={j} style={{ padding: '10px 14px', fontSize: '0.82rem', color: ['#6b8cff','#f59e0b','#22c55e'][j], fontWeight: 600 }}>{v ?? '—'}</td>
                           ))}
-                          <td style={{ padding: '10px 14px', fontSize: '0.88rem', color: '#e0e0e0', fontWeight: 700 }}>{c.total_kg ?? '—'}</td>
-                          <td style={{ padding: '10px 14px', fontSize: '0.72rem', color: '#777' }}>{c.body_weight ?? '—'}</td>
-                          <td style={{ padding: '10px 14px', fontSize: '0.82rem', color: c.place === 1 ? '#facc15' : '#888', fontWeight: c.place ? 700 : 400 }}>
-                            {c.place ? `${c.place}.` : '—'}
+                          <td style={{ padding: '10px 14px', fontSize: '0.88rem', color: '#e0e0e0', fontWeight: 700 }}>{c.result_total ?? '—'}</td>
+                          <td style={{ padding: '10px 14px', fontSize: '0.82rem', color: c.result_place === 1 ? '#facc15' : '#888', fontWeight: c.result_place ? 700 : 400 }}>
+                            {c.result_place ? `${c.result_place}.` : '—'}
                           </td>
-                          <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                            <button onClick={() => deleteCompLift(c.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#333', padding: '2px', transition: 'color 0.15s' }}
-                              onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                              onMouseLeave={e => e.currentTarget.style.color = '#333'}>
-                              <Trash2 size={11} />
-                            </button>
-                          </td>
+                          <td className="comp-table-hide" style={{ padding: '10px 14px', fontSize: '0.72rem', color: '#666', fontStyle: 'italic' }}>{c.result_notes ?? '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -691,7 +681,7 @@ export default function ProfilePage() {
 
                   {/* Name + class */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 600, color: isMe ? '#fff' : '#e0e0e0', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="lb-entry-name" style={{ fontSize: '0.88rem', fontWeight: 600, color: isMe ? '#fff' : '#e0e0e0', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {e.full_name}
                       {isMe && <span style={{ fontSize: '0.48rem', letterSpacing: '0.2em', color: '#6b8cff', border: '1px solid rgba(107,140,255,0.3)', padding: '2px 6px', borderRadius: '4px' }}>TI</span>}
                     </div>
@@ -704,7 +694,7 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Stats */}
-                  <div style={{ display: 'flex', gap: '16px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <div className="lb-entry-stats" style={{ display: 'flex', gap: '16px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ fontFamily: 'var(--fd)', fontSize: '1.3rem', fontWeight: 800, color: '#e0e0e0' }}>{total || '—'}</div>
                       <div style={{ fontSize: '0.46rem', color: '#555', letterSpacing: '0.15em' }}>TOTAL</div>
@@ -727,7 +717,7 @@ export default function ProfilePage() {
 
       {/* ── MODALS ── */}
       {showAvatarPicker && <AvatarPicker current={currentAvatar} onSelect={saveAvatar} onClose={() => setShowAvatarPicker(false)} />}
-      {showAddComp && <AddCompLiftModal onSave={addCompLift} onClose={() => setShowAddComp(false)} />}
+
 
       <style>{`
         @keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
@@ -739,28 +729,49 @@ export default function ProfilePage() {
         input::-webkit-inner-spin-button, input::-webkit-outer-spin-button { opacity: 0.5; }
 
         /* ─ Profile header: stack on mobile ─ */
-        @media (max-width: 480px) {
+        @media (max-width: 600px) {
           .prof-header { flex-direction: column; align-items: flex-start !important; }
           .prof-orm-bar { width: 100%; flex-shrink: 1 !important; }
-          .prof-orm-bar > div { flex: 1; min-width: 0; }
+          .prof-orm-bar > div { flex: 1; min-width: 0; padding: 10px 8px !important; }
         }
 
         /* ─ Tabs: scrollable on mobile ─ */
-        @media (max-width: 480px) {
+        @media (max-width: 540px) {
           .prof-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-          .prof-tabs button { white-space: nowrap; padding: 10px 12px !important; font-size: 0.56rem !important; }
+          .prof-tabs button { white-space: nowrap; padding: 10px 10px !important; font-size: 0.54rem !important; letter-spacing: 0.15em !important; }
+        }
+
+        /* ─ Comp chart buttons: wrap on mobile ─ */
+        @media (max-width: 520px) {
+          .prof-chart-filters { flex-wrap: wrap !important; gap: 4px !important; }
+          .prof-chart-filters button { font-size: 0.52rem !important; padding: 4px 8px !important; }
+        }
+
+        /* ─ 1RM edit panel ─ */
+        @media (max-width: 520px) {
+          .prof-orm-edit { flex-direction: column !important; }
+          .prof-orm-edit > div { min-width: 0 !important; width: 100% !important; }
+          .prof-orm-edit button { width: 100%; justify-content: center; }
         }
 
         /* ─ Comp table ─ */
         @media (max-width: 600px) {
           table { font-size: 0.72rem; }
-          td, th { padding: 7px 10px !important; }
+          td, th { padding: 7px 8px !important; }
+        }
+        @media (max-width: 440px) {
+          .comp-table-hide { display: none !important; }
         }
 
         /* ─ Leaderboard entries: smaller on mobile ─ */
-        @media (max-width: 480px) {
-          .lb-entry { padding: 10px 12px !important; gap: 10px !important; }
-          .lb-entry .lb-stat { font-size: 1rem !important; }
+        @media (max-width: 540px) {
+          .lb-entry { padding: 10px 12px !important; gap: 8px !important; }
+          .lb-entry-stats { gap: 10px !important; }
+          .lb-entry-stats > div > div:first-child { font-size: 1.1rem !important; }
+        }
+        @media (max-width: 380px) {
+          .lb-entry-name { font-size: 0.78rem !important; }
+          .lb-entry-stats { display: none !important; }
         }
       `}</style>
     </div>

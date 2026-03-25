@@ -242,6 +242,136 @@ export function TrainingNav({ athleteName, isAdmin, onLogout, avatarIcon }: {
   )
 }
 
+// ─── APP NAVBAR (sve app stranice: trening, profil, vježbe, admin) ─
+export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon }: {
+  athleteName: string; isAdmin: boolean; onLogout: () => void; avatarIcon?: string
+}) {
+  const [open, setOpen]       = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const dropRef = useRef<HTMLDivElement>(null)
+  const initials = athleteName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    if (open) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', fn, { passive: true })
+    return () => window.removeEventListener('scroll', fn)
+  }, [])
+
+  return (
+    <nav style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
+      height: '56px', display: 'flex', alignItems: 'center',
+      padding: '0 clamp(16px,3vw,32px)',
+      background: scrolled ? 'rgba(4,4,8,0.95)' : 'rgba(4,4,8,0.75)',
+      borderBottom: `1px solid ${scrolled ? 'rgba(255,255,255,0.09)' : 'rgba(255,255,255,0.05)'}`,
+      backdropFilter: 'blur(32px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(32px) saturate(180%)',
+      transition: 'background 0.4s, border-color 0.4s',
+    }}>
+
+      {/* Logo */}
+      <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+        <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '28px', opacity: 0.95 }} />
+      </Link>
+
+      {/* Push avatar to right */}
+      <div style={{ flex: 1 }} />
+
+      {/* Right — status pill + avatar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+
+        {/* Status pill */}
+        <div className="appnav-status" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: isAdmin ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', border: `1px solid ${isAdmin ? 'rgba(239,68,68,0.22)' : 'rgba(34,197,94,0.18)'}`, borderRadius: '20px' }}>
+          <div style={{ position: 'relative', width: '6px', height: '6px', flexShrink: 0 }}>
+            <div style={{ position: 'absolute', inset: 0, background: isAdmin ? '#ef4444' : '#22c55e', borderRadius: '50%', boxShadow: `0 0 5px ${isAdmin ? '#ef4444' : '#22c55e'}` }} />
+            <div style={{ position: 'absolute', inset: '-3px', background: isAdmin ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)', borderRadius: '50%', animation: 'appnavPing 2.4s ease-in-out infinite' }} />
+          </div>
+          <span style={{ fontSize: '0.62rem', color: isAdmin ? '#f87171' : '#4ade80', fontWeight: 600, fontFamily: 'var(--fm)', letterSpacing: '0.04em' }}>{isAdmin ? 'Admin' : 'Aktivan'}</span>
+        </div>
+
+        {/* Avatar / dropdown */}
+        <div ref={dropRef} style={{ position: 'relative' }}>
+          <button onClick={() => setOpen(o => !o)}
+            style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '5px 10px 5px 5px', background: open ? 'rgba(255,255,255,0.08)' : 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', cursor: 'pointer', transition: 'all 0.2s' }}
+            onMouseEnter={e => { if (!open) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)' } }}
+            onMouseLeave={e => { if (!open) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' } }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #2a2a3e 0%, #16161e 100%)', border: '1.5px solid rgba(255,255,255,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.58rem', fontWeight: 800, color: '#d0d0f0', fontFamily: 'var(--fm)', flexShrink: 0 }}>
+              {avatarIcon ? <AvatarSvg iconId={avatarIcon} size={18} color="#b0b8ff" /> : initials}
+            </div>
+            <span className="appnav-name" style={{ fontSize: '0.78rem', fontWeight: 500, color: '#e0e0e8', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>{athleteName?.split(' ')[0] || ''}</span>
+            <ChevronDown size={11} color="rgba(255,255,255,0.4)" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.22s', flexShrink: 0 }} />
+          </button>
+
+          {open && (
+            <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '220px', background: 'rgba(10,10,16,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)', zIndex: 300, animation: 'appnavDrop 0.2s cubic-bezier(0.16,1,0.3,1)', overflow: 'hidden', backdropFilter: 'blur(40px)' }}>
+              {/* Header */}
+              <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #2a2a3e 0%, #16161e 100%)', border: '1.5px solid rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {avatarIcon ? <AvatarSvg iconId={avatarIcon} size={22} color="#b0b8ff" /> : <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#d0d0f0' }}>{initials}</span>}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#f0f0f8', fontFamily: 'var(--fm)' }}>{athleteName}</div>
+                    <div style={{ fontSize: '0.58rem', color: isAdmin ? '#f87171' : '#4ade80', fontFamily: 'var(--fm)', marginTop: '1px' }}>
+                      {isAdmin ? '● Administrator' : '● Aktivan'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Menu items */}
+              <div style={{ padding: '6px' }}>
+                {[
+                  { href: '/profile',   icon: <User size={14}/>,     label: 'Moj profil' },
+                  { href: '/training',  icon: <BarChart2 size={14}/>, label: 'Trening'    },
+                  { href: '/exercises', icon: <Dumbbell size={14}/>,  label: 'Baza vježbi'},
+                ].map(item => (
+                  <Link key={item.href} href={item.href} onClick={() => setOpen(false)} style={{ textDecoration: 'none' }}>
+                    <button className="appnav-item">{item.icon}<span>{item.label}</span></button>
+                  </Link>
+                ))}
+                {isAdmin && (
+                  <Link href="/admin" onClick={() => setOpen(false)} style={{ textDecoration: 'none' }}>
+                    <button className="appnav-item appnav-admin">
+                      <Shield size={14} color="#f59e0b"/>
+                      <span>Admin panel</span>
+                      <span style={{ marginLeft: 'auto', fontSize: '0.5rem', background: 'rgba(245,158,11,0.12)', color: '#f59e0b', padding: '2px 7px', letterSpacing: '0.1em', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '4px' }}>ADMIN</span>
+                    </button>
+                  </Link>
+                )}
+              </div>
+              <div style={{ padding: '6px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                <button onClick={() => { setOpen(false); onLogout() }} className="appnav-item appnav-logout">
+                  <LogOut size={14}/><span>Odjava</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes appnavDrop { from { opacity:0; transform:translateY(-6px) scale(0.98) } to { opacity:1; transform:none } }
+        @keyframes appnavPing { 0%,100% { transform:scale(1); opacity:0.5 } 50% { transform:scale(2.4); opacity:0 } }
+        .appnav-item { width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; color:rgba(255,255,255,0.7); font-size:0.82rem; font-family:var(--fm); font-weight:450; cursor:pointer; border-radius:9px; transition:background 0.15s, color 0.15s; text-align:left; letter-spacing:0.01em; }
+        .appnav-item:hover { background:rgba(255,255,255,0.07); color:#fff; }
+        .appnav-admin:hover { background:rgba(245,158,11,0.08) !important; }
+        .appnav-logout { color:rgba(255,80,80,0.7) !important; }
+        .appnav-logout:hover { background:rgba(255,60,60,0.08) !important; color:#ff6060 !important; }
+        @media (max-width:640px) { .appnav-status { display:none !important; } }
+        @media (max-width:520px) { .appnav-name   { display:none !important; } }
+      `}</style>
+    </nav>
+  )
+}
+
 // ─── EDITABLE FIELD ───────────────────────────────────────────────
 export function EditableField({ value, placeholder, onSave, type = 'text', small = false }: {
   value: string | number | null; placeholder: string; onSave: (v: string) => void; type?: string; small?: boolean

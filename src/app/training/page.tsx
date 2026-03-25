@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Loader2, Plus, Check, FolderOpen, ChevronDown, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { Block, BlockSummary, CoachTip, Week, Exercise, WorkoutExercise, Workout } from './types'
-import { TrainingNav, EditableField, CompetitionBanner, WeekPanel } from './training-components'
+import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-components'
 import { HubTab } from './training-hub'
 import { MeetDayTab } from './training-meet'
 
@@ -235,7 +235,7 @@ export default function TrainingPage() {
         </svg>
       </div>
 
-      <TrainingNav athleteName={athleteName} isAdmin={isAdmin} onLogout={handleLogout} avatarIcon={avatarIcon} />
+      <AppNav athleteName={athleteName} isAdmin={isAdmin} onLogout={handleLogout} avatarIcon={avatarIcon} />
 
       {/* ─── HEADER ──────────────────────────────────────────────── */}
       <div style={{ paddingTop: '56px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
