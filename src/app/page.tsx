@@ -287,8 +287,8 @@ export default function Landing() {
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' }}>
             <div>
               <div style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.25)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>OSNIVAČI KLUBA</div>
-              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5.5rem)', lineHeight: 0.88, margin: 0, letterSpacing: '-0.02em' }}>
-                LJUDI IZA<br /><span style={{ color: 'rgba(255,255,255,0.2)' }}>ŠIPKE</span>
+              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5.5rem)', lineHeight: 0.88, margin: 0, letterSpacing: '-0.0em' }}>
+                LJUDI IZA <br /><span style={{ color: 'rgba(255,255,255,0.2)', marginTop: '6px', display: 'inline-block' }}>ŠIPKE</span>
               </h2>
             </div>
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 'clamp(0.8rem,2vw,0.9rem)', lineHeight: 1.8, maxWidth: '380px', marginBottom: '8px' }}>

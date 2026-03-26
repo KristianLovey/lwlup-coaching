@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, Calendar, Trophy, Users, ChevronRight, Loader2, ExternalLink } from 'lucide-react'
+import { MapPin, Calendar, Trophy, Users, ChevronRight, Loader2, ExternalLink, ArrowLeft } from 'lucide-react'
 import Footer from '@/app/components/Footer'
 import { createClient } from '@/lib/supabase/client'
 
@@ -139,7 +139,7 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
               )}
               {hasAthletes && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem' }}>
-                  <Users size={13} color="rgba(255,255,255,0.3)" />{comp.athletes!.length} lifera
+                  <Users size={13} color="rgba(255,255,255,0.3)" />{comp.athletes!.length} liftera
                 </div>
               )}
             </div>
@@ -187,7 +187,7 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
         {expanded && hasAthletes && (
           <div style={{ marginTop: '24px', borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '20px' }}>
             <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.2)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>
-              {comp.status === 'completed' ? 'REZULTATI LIFERA' : 'LIFTERI NA NATJECANJU'}
+              {comp.status === 'completed' ? 'REZULTATI LIFTERA' : 'LIFTERI NA NATJECANJU'}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
               {comp.athletes!.map(athlete => (
@@ -309,9 +309,8 @@ export default function CompetitionsPage() {
       <div className="star-field" />
       <ParticleCanvas />
 
-      {/* NAV */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 60px', background: 'rgba(5,5,5,0.97)', borderBottom: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(24px)', boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.4)' }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '15px', textDecoration: 'none', color: '#fff' }}>
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(20px,4vw,60px)', background: 'rgba(5,5,5,0.97)', borderBottom: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(24px)', boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.4)' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#fff' }}>
           <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '60px', width: 'auto', transition: 'transform 0.3s' }}
             onMouseEnter={e => (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.08)'}
             onMouseLeave={e => (e.currentTarget as HTMLImageElement).style.transform = 'scale(1)'} />
@@ -327,14 +326,15 @@ export default function CompetitionsPage() {
             onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.45)'}>
             <ArrowLeft size={14} /> NATRAG
           </Link>
+          
         </div>
       </nav>
 
       {/* HERO */}
-      <section style={{ paddingTop: '160px', paddingBottom: '48px', position: 'relative', overflow: 'hidden' }}>
+      <section style={{ paddingTop: 'clamp(80px,12vw,130px)', paddingBottom: '48px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '800px', height: '400px', background: 'radial-gradient(ellipse at center top, rgba(255,255,255,0.05) 0%, transparent 70%)', zIndex: 1, pointerEvents: 'none' }} />
 
-        <div ref={heroReveal.ref} className="comp-hero-inner" style={{ position: 'relative', zIndex: 2, maxWidth: '1200px', margin: '0 auto', padding: '0 60px' }}>
+        <div ref={heroReveal.ref} className="comp-hero-inner" style={{ position: 'relative', zIndex: 2, maxWidth: '1200px', margin: '0 auto', padding: '0 clamp(16px,4vw,60px)' }}>
           <div style={{ opacity: heroReveal.visible ? 1 : 0, transform: heroReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
 
             <div className="comp-hero-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '32px', marginBottom: '40px' }}>
@@ -363,7 +363,7 @@ export default function CompetitionsPage() {
             </div>
 
             {/* ── Filters ── */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="comp-filters" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
 
               {/* Year pills */}
               <div style={{ display: 'flex', gap: '6px', marginRight: '8px' }}>
@@ -403,7 +403,7 @@ export default function CompetitionsPage() {
       </section>
 
       {/* CONTENT */}
-      <section style={{ padding: '8px 60px 120px', maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+      <section style={{ padding: '8px clamp(16px,4vw,60px) 80px', maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '80px 0', color: 'rgba(255,255,255,0.3)' }}>
             <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} />
@@ -457,17 +457,18 @@ export default function CompetitionsPage() {
         .comp-card { animation: fadeInUp 0.5s cubic-bezier(0.16,1,0.3,1) backwards; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 768px) {
-          nav { padding: 0 20px !important; }
-          section { padding-left: 20px !important; padding-right: 20px !important; }
-          .comp-hero-inner { padding: 0 20px !important; }
-          .comp-hero-top { gap: 20px !important; margin-bottom: 24px !important; }
+          .comp-hero-top { gap: 20px !important; margin-bottom: 24px !important; flex-direction: column !important; align-items: flex-start !important; }
           .comp-stats-bar { width: 100%; }
           .comp-stats-bar > div { flex: 1; }
           .comp-card-body { padding: 20px 16px !important; }
         }
+        @media (max-width: 600px) {
+          .comp-filters { flex-direction: column !important; gap: 10px !important; }
+          .comp-filters > div { flex-wrap: wrap !important; }
+        }
         @media (max-width: 480px) {
-          .comp-hero-inner { padding: 0 16px !important; }
           .comp-card-body { padding: 16px 14px !important; }
+          .comp-card-body > div > div:last-child { align-items: flex-start !important; flex-direction: row !important; flex-wrap: wrap !important; }
         }
       `}</style>
     </div>
