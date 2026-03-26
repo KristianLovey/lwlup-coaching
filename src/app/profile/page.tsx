@@ -1,8 +1,8 @@
 'use client'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, ChevronDown, Check, Loader2, LogOut, Edit3, X } from 'lucide-react'
+import { Plus, Trash2, Loader2, Edit3, X } from 'lucide-react'
 import { AppNav, AVATARS, AvatarSvg } from '../training/training-components'
 
 const supabase = createClient()
@@ -54,120 +54,148 @@ function calcGL(total: number, bw: number, sex: 'male' | 'female' = 'male'): num
 
 
 // ─── MINI LINE CHART ───────────────────────────────────────────────
-function LineChart({ data, color, label }: {
+
+// ─── PROGRESS CHART (NAPREDAK tab) ────────────────────────────────
+function ProgressChart({ data, color, label }: {
   data: { date: string; value: number }[]; color: string; label: string
 }) {
-  if (data.length < 2) return (
-    <div style={{ height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444', fontSize: '0.72rem', fontFamily: 'var(--fm)' }}>
-      Nedovoljno podataka
+  const [hovered, setHovered] = useState<number | null>(null)
+
+  if (data.length === 0) return (
+    <div style={{ height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#333', fontSize: '0.72rem', fontFamily: 'var(--fm)', letterSpacing: '0.15em' }}>
+      NEMA ULOGIRANIH LIFTOVA
     </div>
   )
 
-  const vals  = data.map(d => d.value)
-  const min   = Math.min(...vals)
-  const max   = Math.max(...vals)
-  const range = max - min || 1
-  const W = 280, H = 80, PAD = 8
-
-  const pts = data.map((d, i) => {
-    const x = PAD + (i / (data.length - 1)) * (W - PAD * 2)
-    const y = PAD + ((max - d.value) / range) * (H - PAD * 2)
-    return { x, y, ...d }
-  })
-
-  const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
-  const fillD = `${pathD} L ${pts[pts.length - 1].x} ${H} L ${pts[0].x} ${H} Z`
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '80px', overflow: 'visible' }}>
-      <defs>
-        <linearGradient id={`grad-${label}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.2" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {/* Fill */}
-      <path d={fillD} fill={`url(#grad-${label})`} />
-      {/* Line */}
-      <path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      {/* Points */}
-      {pts.map((p, i) => (
-        <g key={i}>
-          <circle cx={p.x} cy={p.y} r="3.5" fill={color} />
-          <title>{p.date}: {p.value}kg</title>
-        </g>
-      ))}
-    </svg>
-  )
-}
-
-// ─── FULL CHART (competition progress) ────────────────────────────
-function CompChart({ compLifts, lift, color }: {
-  compLifts: CompLift[]; lift: 'squat_kg' | 'bench_kg' | 'deadlift_kg' | 'total_kg'; color: string
-}) {
-  const data = compLifts
-    .filter(c => c[lift] != null)
-    .sort((a, b) => a.comp_date.localeCompare(b.comp_date))
-    .map(c => ({ date: c.comp_date, value: c[lift] as number, label: c.comp_name }))
-
-  if (data.length === 0) return (
-    <div style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444', fontSize: '0.72rem' }}>Nema comp podataka</div>
+  if (data.length === 1) return (
+    <div style={{ height: '180px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+      <div style={{ fontFamily: 'var(--fd)', fontSize: '3.5rem', fontWeight: 800, color, lineHeight: 1 }}>
+        {data[0].value}<span style={{ fontSize: '1.4rem', color: '#555', marginLeft: '6px' }}>kg</span>
+      </div>
+      <div style={{ fontSize: '0.6rem', color: '#444', letterSpacing: '0.15em' }}>{data[0].date}</div>
+      <div style={{ fontSize: '0.55rem', color: '#2a2a35', letterSpacing: '0.1em', marginTop: '4px' }}>DODAJ JOŠ UNOSA ZA PRIKAZ GRAFA</div>
+    </div>
   )
 
-  const vals  = data.map(d => d.value)
-  const min   = Math.floor(Math.min(...vals) / 10) * 10 - 10
-  const max   = Math.ceil(Math.max(...vals) / 10)  * 10 + 10
-  const range = max - min
-  const W = 500, H = 120, PX = 40, PY = 12
+  const W = 560, H = 180, PX = 52, PY = 20
+  const vals = data.map(d => d.value)
+  const dataMin = Math.min(...vals)
+  const dataMax = Math.max(...vals)
+  const pad = Math.max((dataMax - dataMin) * 0.25, 10)
+  const yMin = Math.floor((dataMin - pad) / 5) * 5
+  const yMax = Math.ceil((dataMax + pad) / 5) * 5
+  const range = yMax - yMin
 
-  const pts = data.map((d, i) => ({
-    x: PX + (i / Math.max(data.length - 1, 1)) * (W - PX * 2),
-    y: PY + ((max - d.value) / range) * (H - PY * 2),
-    ...d,
-  }))
+  const toX = (i: number) => PX + (i / (data.length - 1)) * (W - PX - 16)
+  const toY = (v: number) => PY + ((yMax - v) / range) * (H - PY - 24)
 
-  const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
-  const fillD = pts.length > 1
-    ? `${pathD} L ${pts[pts.length - 1].x} ${H} L ${pts[0].x} ${H} Z`
-    : ''
+  const pts = data.map((d, i) => ({ x: toX(i), y: toY(d.value), ...d }))
 
-  // Y axis ticks
+  const linePath = pts.reduce((acc, p, i) => {
+    if (i === 0) return `M ${p.x} ${p.y}`
+    const prev = pts[i - 1]
+    const cx = (prev.x + p.x) / 2
+    return `${acc} C ${cx} ${prev.y} ${cx} ${p.y} ${p.x} ${p.y}`
+  }, '')
+
+  const fillPath = `${linePath} L ${pts[pts.length - 1].x} ${H} L ${pts[0].x} ${H} Z`
+
   const ticks = 4
-  const yTicks = Array.from({ length: ticks + 1 }, (_, i) => max - (range / ticks) * i)
+  const yTicks = Array.from({ length: ticks + 1 }, (_, i) => yMax - (range / ticks) * i)
+  const best = Math.max(...vals)
+  const glowId = `glow-${label}`
+  const gradId = `grad-${label}`
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '120px', overflow: 'visible' }}>
-      <defs>
-        <linearGradient id={`cg-${lift}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.15" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {/* Grid lines */}
-      {yTicks.map((v, i) => {
-        const y = PY + (i / ticks) * (H - PY * 2)
+    <div style={{ position: 'relative', userSelect: 'none' }}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '180px', overflow: 'visible', display: 'block' }}>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+          <filter id={glowId} x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+
+        {yTicks.map((v, i) => {
+          const y = PY + (i / ticks) * (H - PY - 24)
+          return (
+            <g key={i}>
+              <line x1={PX} y1={y} x2={W - 8} y2={y} stroke="rgba(255,255,255,0.04)" strokeWidth="1" strokeDasharray="4 4" />
+              <text x={PX - 8} y={y + 4} textAnchor="end" fill="#383848" fontSize="10" fontFamily="var(--fm)">{Math.round(v)}</text>
+            </g>
+          )
+        })}
+
+        {pts.map((p, i) => {
+          const show = data.length <= 6 || i === 0 || i === pts.length - 1 || i % Math.ceil(data.length / 5) === 0
+          if (!show) return null
+          return (
+            <text key={i} x={p.x} y={H - 4} textAnchor="middle" fill="#2e2e42" fontSize="9" fontFamily="var(--fm)">{p.date.slice(0, 7)}</text>
+          )
+        })}
+
+        <path d={fillPath} fill={`url(#${gradId})`} />
+        <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter={`url(#${glowId})`} opacity="0.5" />
+        <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+        {hovered !== null && (
+          <line x1={pts[hovered].x} y1={PY} x2={pts[hovered].x} y2={H - 24} stroke={color} strokeWidth="1" strokeOpacity="0.25" strokeDasharray="3 4" />
+        )}
+
+        {pts.map((p, i) => {
+          const isHov = hovered === i
+          const isBest = p.value === best
+          return (
+            <g key={i} style={{ cursor: 'crosshair' }}
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}>
+              <circle cx={p.x} cy={p.y} r="18" fill="transparent" />
+              {isHov && <circle cx={p.x} cy={p.y} r="10" fill={color} fillOpacity="0.1" />}
+              {isBest && !isHov && <circle cx={p.x} cy={p.y} r="7" fill="none" stroke={color} strokeWidth="1" strokeOpacity="0.35" />}
+              <circle cx={p.x} cy={p.y} r={isHov ? 5 : 3.5} fill={isHov ? '#fff' : color} stroke={isHov ? color : 'none'} strokeWidth="2" />
+            </g>
+          )
+        })}
+      </svg>
+
+      {hovered !== null && (() => {
+        const p = pts[hovered]
+        const isBest = p.value === best
+        const leftPct = (p.x / W) * 100
+        const alignRight = leftPct > 68
         return (
-          <g key={i}>
-            <line x1={PX} y1={y} x2={W - PX / 2} y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-            <text x={PX - 4} y={y + 4} textAnchor="end" fill="#555" fontSize="9">{Math.round(v)}</text>
-          </g>
+          <div style={{
+            position: 'absolute',
+            bottom: `${(1 - p.y / H) * 100}%`,
+            left: alignRight ? 'auto' : `${leftPct}%`,
+            right: alignRight ? `${100 - leftPct}%` : 'auto',
+            transform: `translateY(-8px) translateX(${alignRight ? '0' : '-50%'})`,
+            background: '#0d0d14',
+            border: `1px solid ${color}33`,
+            borderRadius: '8px',
+            padding: '10px 16px',
+            pointerEvents: 'none',
+            zIndex: 10,
+            boxShadow: `0 8px 32px rgba(0,0,0,0.7), 0 0 0 1px ${color}11`,
+            whiteSpace: 'nowrap',
+          }}>
+            <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 800, color, lineHeight: 1, display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+              {p.value}
+              <span style={{ fontSize: '0.8rem', color: '#555' }}>kg</span>
+              {isBest && <span style={{ fontSize: '0.42rem', color, border: `1px solid ${color}44`, borderRadius: '3px', padding: '2px 5px', marginLeft: '4px', letterSpacing: '0.12em' }}>BEST</span>}
+            </div>
+            <div style={{ fontSize: '0.58rem', color: '#555', marginTop: '4px', letterSpacing: '0.05em' }}>{p.date}</div>
+          </div>
         )
-      })}
-      {/* Fill + line */}
-      {fillD && <path d={fillD} fill={`url(#cg-${lift})`} />}
-      {pts.length > 1 && <path d={pathD} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
-      {/* Points + labels */}
-      {pts.map((p, i) => (
-        <g key={i}>
-          <circle cx={p.x} cy={p.y} r="4" fill={color} />
-          <circle cx={p.x} cy={p.y} r="7" fill={color} fillOpacity="0.15" />
-          <text x={p.x} y={p.y - 10} textAnchor="middle" fill={color} fontSize="10" fontWeight="700">{p.value}kg</text>
-          <text x={p.x} y={H - 2} textAnchor="middle" fill="#555" fontSize="8">{p.date.slice(0, 7)}</text>
-        </g>
-      ))}
-    </svg>
+      })()}
+    </div>
   )
 }
+
 
 // ─── AVATAR PICKER MODAL ──────────────────────────────────────────
 function AvatarPicker({ current, onSelect, onClose }: {
@@ -198,56 +226,6 @@ function AvatarPicker({ current, onSelect, onClose }: {
   )
 }
 
-// ─── ADD COMP LIFT MODAL ──────────────────────────────────────────
-function AddCompLiftModal({ onSave, onClose }: {
-  onSave: (data: Omit<CompLift, 'id'>) => void; onClose: () => void
-}) {
-  const [form, setForm] = useState({ comp_name: '', comp_date: '', squat_kg: '', bench_kg: '', deadlift_kg: '', total_kg: '', body_weight: '', weight_class: '', place: '' })
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
-  const num = (v: string) => v ? Number(v) : null
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', animation: 'fadeIn 0.15s' }}
-      onClick={onClose}>
-      <div style={{ background: '#0c0c0e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '12px', padding: '28px', maxWidth: '480px', width: '100%', boxShadow: '0 24px 80px rgba(0,0,0,0.7)' }}
-        onClick={e => e.stopPropagation()}>
-        <div style={{ fontSize: '0.6rem', letterSpacing: '0.35em', color: '#888', marginBottom: '20px', fontFamily: 'var(--fm)' }}>DODAJ COMP REZULTAT</div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          {[
-            { k: 'comp_name',   label: 'Naziv natjecanja', span: true },
-            { k: 'comp_date',   label: 'Datum', type: 'date' },
-            { k: 'weight_class',label: 'Kategorija (npr. M-93kg)' },
-            { k: 'body_weight', label: 'Tjelesna masa (kg)', type: 'number' },
-            { k: 'squat_kg',    label: 'Čučanj (kg)', type: 'number' },
-            { k: 'bench_kg',    label: 'Bench Press (kg)', type: 'number' },
-            { k: 'deadlift_kg', label: 'Mrtvo dizanje (kg)', type: 'number' },
-            { k: 'total_kg',    label: 'Total (kg)', type: 'number' },
-            { k: 'place',       label: 'Plasman', type: 'number' },
-          ].map(f => (
-            <div key={f.k} style={{ gridColumn: f.span ? '1 / -1' : 'auto' }}>
-              <div style={{ fontSize: '0.48rem', color: '#777', letterSpacing: '0.2em', marginBottom: '5px', fontFamily: 'var(--fm)' }}>{f.label.toUpperCase()}</div>
-              <input type={f.type ?? 'text'} value={(form as any)[f.k]} onChange={e => set(f.k, e.target.value)}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#e0e0e0', padding: '9px 12px', fontSize: '0.88rem', borderRadius: '6px', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }}
-                onFocus={e => e.target.style.borderColor = 'rgba(255,255,255,0.3)'}
-                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
-            </div>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#888', borderRadius: '7px', cursor: 'pointer', fontSize: '0.72rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)' }}>ODUSTANI</button>
-          <button onClick={() => {
-            if (!form.comp_name || !form.comp_date) return
-            onSave({ comp_name: form.comp_name, comp_date: form.comp_date, squat_kg: num(form.squat_kg), bench_kg: num(form.bench_kg), deadlift_kg: num(form.deadlift_kg), total_kg: num(form.total_kg) || (num(form.squat_kg)! + num(form.bench_kg)! + num(form.deadlift_kg)!), body_weight: num(form.body_weight), weight_class: form.weight_class || null, place: num(form.place) })
-            onClose()
-          }} style={{ flex: 1, padding: '11px', background: '#fff', border: 'none', color: '#000', borderRadius: '7px', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.15em', fontFamily: 'var(--fm)' }}>SPREMI</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ─── MAIN PROFILE PAGE ────────────────────────────────────────────
 export default function ProfilePage() {
   const [profile, setProfile]         = useState<Profile | null>(null)
@@ -271,17 +249,24 @@ export default function ProfilePage() {
       if (!user) { router.push('/auth'); return }
       setUserId(user.id)
 
-      const [{ data: prof }, { data: comps }, { data: prs }, { data: lb }] = await Promise.all([
+      const [{ data: prof }, { data: athleteStat }, { data: prs }, { data: lb }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
-        supabase.from('competition_athletes')
-          .select('result_squat, result_bench, result_deadlift, result_total, result_place, result_notes, competition:competitions(id, name, date, location, status)')
-          .eq('athlete_id', user.id),
+        supabase.from('athlete_stats').select('id').eq('profile_id', user.id).maybeSingle(),
         supabase.from('pr_logs').select('*').eq('athlete_id', user.id).order('date', { ascending: false }),
         supabase.from('leaderboard_view').select('*'),
       ])
 
+      let compsData = null
+      if (athleteStat?.id) {
+        const { data } = await supabase
+          .from('competition_athletes')
+          .select('result_squat, result_bench, result_deadlift, result_total, result_place, result_notes, competition:competitions(id, name, date, location, status)')
+          .eq('athlete_id', athleteStat.id)
+        compsData = data
+      }
+
       setProfile(prof as Profile)
-      setAdminComps(((comps ?? []) as unknown as AdminComp[]).sort((a, b) => b.competition.date.localeCompare(a.competition.date)))
+      setAdminComps(((compsData ?? []) as unknown as AdminComp[]).sort((a, b) => b.competition.date.localeCompare(a.competition.date)))
       setPrLogs((prs ?? []) as PrLog[])
       setLeaderboard((lb ?? []) as LeaderboardEntry[])
       if (prof) setOrmVals({ squat: String(prof.current_squat_1rm ?? ''), bench: String(prof.current_bench_1rm ?? ''), deadlift: String(prof.current_deadlift_1rm ?? ''), body_weight: String(prof.body_weight ?? ''), sex: (prof.sex ?? 'male') as 'male'|'female' })
@@ -346,14 +331,6 @@ export default function ProfilePage() {
     })
     .filter(e => e.gl > 0)
     .sort((a, b) => b.gl - a.gl)
-
-  // ── Comp progress chart data ───────────────────────────────────
-  const chartColors: Record<string, string> = {
-    squat_kg: '#6b8cff', bench_kg: '#f59e0b', deadlift_kg: '#22c55e', total_kg: '#e0e0e0'
-  }
-  const chartLabels: Record<string, string> = {
-    squat_kg: 'ČUČANJ', bench_kg: 'BENCH', deadlift_kg: 'MRTVO', total_kg: 'TOTAL'
-  }
 
   if (loading) return (
     <div style={{ background: '#06060a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', color: '#555', fontFamily: 'var(--fm)' }}>
@@ -473,7 +450,7 @@ export default function ProfilePage() {
             <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: '#0e0e14', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                 <div>
-                  <div style={{ fontSize: '0.5rem', letterSpacing: '0.4em', color: '#666', marginBottom: '3px', fontFamily: 'var(--fm)' }}>PR NAPREDAK (1RM)</div>
+                  <div style={{ fontSize: '0.5rem', letterSpacing: '0.4em', color: '#666', marginBottom: '3px', fontFamily: 'var(--fm)' }}>PR NAPREDAK</div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e0e0e0' }}>
                     {{ squat: 'ČUČANJ', bench: 'BENCH PRESS', deadlift: 'MRTVO DIZANJE' }[progressLift]}
                   </div>
@@ -491,10 +468,10 @@ export default function ProfilePage() {
                 {(() => {
                   const liftColor = { squat: '#6b8cff', bench: '#f59e0b', deadlift: '#22c55e' }[progressLift]
                   const chartData = [...prLogs]
-                    .filter(p => p.lift === progressLift && p.reps === 1)
+                    .filter(p => p.lift === progressLift)
                     .reverse()
                     .map(p => ({ date: p.date, value: p.weight_kg }))
-                  return <LineChart data={chartData} color={liftColor} label={progressLift} />
+                  return <ProgressChart data={chartData} color={liftColor} label={progressLift} />
                 })()}
               </div>
             </div>
@@ -603,21 +580,6 @@ export default function ProfilePage() {
               })()}
             </div>
 
-            {/* Progress over time for selected lift */}
-            {(() => {
-              const liftPrs = prLogs.filter(p => p.lift === prLift && p.reps === prReps).reverse()
-              const liftColor = { squat: '#6b8cff', bench: '#f59e0b', deadlift: '#22c55e' }[prLift]
-              if (liftPrs.length < 2) return null
-              return (
-                <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', marginBottom: '20px' }}>
-                  <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)', background: '#0e0e14', fontSize: '0.5rem', color: '#666', letterSpacing: '0.35em', fontFamily: 'var(--fm)' }}>NAPREDAK {prLift.toUpperCase()} {prReps}RM</div>
-                  <div style={{ padding: '16px 20px', background: '#09090e' }}>
-                    <LineChart data={liftPrs.map(p => ({ date: p.date, value: p.weight_kg }))} color={liftColor} label={`${prLift}-${prReps}`} />
-                  </div>
-                </div>
-              )
-            })()}
-
             {/* Add PR form */}
             <AddPrForm prLift={prLift} prReps={prReps} onAdd={addPrLog} />
 
@@ -661,8 +623,6 @@ export default function ProfilePage() {
               const isMe = e.id === userId
               const medal = i === 0 ? '#facc15' : i === 1 ? '#aaa' : i === 2 ? '#cd7f32' : null
               const total = e.latest_comp_total ?? e.training_total ?? 0
-              // bwUsed is already computed in lbSorted map above
-              const bw    = (e as any).bwUsed ?? 93
               return (
                 <div key={e.id} className="lb-entry" style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px', border: `1px solid ${isMe ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '10px', marginBottom: '6px', background: isMe ? 'rgba(255,255,255,0.04)' : 'transparent', transition: 'all 0.15s', boxShadow: isMe ? '0 0 20px rgba(255,255,255,0.05)' : 'none' }}>
 
