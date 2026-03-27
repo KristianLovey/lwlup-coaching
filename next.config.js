@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Ukloni ili zakomentiraj turbo: true
+  allowedDevOrigins: ['http://10.206.1.175:3000'],
 }
 
 module.exports = nextConfig

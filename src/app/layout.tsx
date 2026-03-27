@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'LWL UP Powerlifting',
-  description: 'Vodeći powerlifting klub u regiji.',
+  title: 'LWL UP Coaching System',
+  description: 'Powerlifting club and                                                            coaching system.',
   icons: {
     icon: '/slike/logopng.png',
   },
