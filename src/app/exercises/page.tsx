@@ -250,6 +250,7 @@ export default function ExerciseLibraryPage() {
   const [dropdownPos, setDropdownPos]       = useState<{top: number; left: number}>({top: 0, left: 0})
   const [subCat, setSubCat]                 = useState<string | null>(null)
   const filterBarRef = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const [navUser, setNavUser] = useState({ name: '', isAdmin: false, avatarIcon: '' })
 
   useEffect(() => {
@@ -267,12 +268,18 @@ export default function ExerciseLibraryPage() {
   // Close dropdown on outside click
   useEffect(() => {
     if (!openDropdown) return
-    const fn = (e: MouseEvent) => {
-      if (filterBarRef.current && !filterBarRef.current.contains(e.target as Node))
-        setOpenDropdown(null)
+    const fn = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node
+      const insideBar = filterBarRef.current?.contains(target)
+      const insideDropdown = dropdownRef.current?.contains(target)
+      if (!insideBar && !insideDropdown) setOpenDropdown(null)
     }
     document.addEventListener('mousedown', fn)
-    return () => document.removeEventListener('mousedown', fn)
+    document.addEventListener('touchstart', fn)
+    return () => {
+      document.removeEventListener('mousedown', fn)
+      document.removeEventListener('touchstart', fn)
+    }
   }, [openDropdown])
 
   // Compute active cats from topFilter + optional subCat
@@ -382,8 +389,6 @@ export default function ExerciseLibraryPage() {
                           const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect()
                           setDropdownPos({ top: rect.bottom + 4, left: rect.left })
                           setOpenDropdown(tf.id)
-                          setTopFilter(tf.id)
-                          setSubCat(null)
                         }
                       } else {
                         setTopFilter(tf.id)
@@ -498,6 +503,7 @@ export default function ExerciseLibraryPage() {
         if (!tf?.cats) return null
         return (
           <div
+            ref={dropdownRef}
             style={{ position: 'fixed', top: `${dropdownPos.top}px`, left: `${dropdownPos.left}px`, minWidth: '220px', background: '#09090e', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: '10px', boxShadow: `0 24px 64px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05), 0 -2px 0 ${tf.color}66`, overflow: 'hidden', animation: 'dropDown 0.18s ease', zIndex: 99999, pointerEvents: 'all' }}>
             {/* All in group */}
             <button onClick={() => { setSubCat(null); setTopFilter(openDropdown!); setOpenDropdown(null) }}

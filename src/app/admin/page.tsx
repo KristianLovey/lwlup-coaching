@@ -180,12 +180,20 @@ function ExercisePicker({ exercises, onSelect, onClose }: { exercises: Exercise[
 }
 
 // ── Exercise Row ───────────────────────────────────────────────────
-function ExerciseRow({ we, onUpdate, onDelete }: { we: WorkoutExercise; onUpdate: (id: string, data: Partial<WorkoutExercise>) => void; onDelete: (id: string) => void }) {
+function ExerciseRow({ we, onUpdate, onDelete, dragHandleProps, isDragging }: {
+  we: WorkoutExercise
+  onUpdate: (id: string, data: Partial<WorkoutExercise>) => void
+  onDelete: (id: string) => void
+  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>
+  isDragging?: boolean
+}) {
   const [expanded, setExpanded] = useState(false)
   return (
-    <div style={{ border: '1px solid rgba(255,255,255,0.06)', marginBottom: '4px', background: 'rgba(255,255,255,0.02)' }}>
+    <div style={{ border: `1px solid ${isDragging ? 'rgba(107,140,255,0.5)' : 'rgba(255,255,255,0.06)'}`, marginBottom: '4px', background: isDragging ? 'rgba(107,140,255,0.06)' : 'rgba(255,255,255,0.02)', transition: 'border-color 0.18s, background 0.18s' }}>
       <div className="ex-row-grid" style={{ display: 'grid', gridTemplateColumns: '24px 1fr 60px 80px 80px 60px 32px', gap: '8px', alignItems: 'center', padding: '10px 12px' }}>
-        <GripVertical size={14} color="rgba(255,255,255,0.15)" style={{ cursor: 'grab' }} />
+        <div {...dragHandleProps} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none', padding: '4px', color: isDragging ? 'rgba(107,140,255,0.8)' : 'rgba(255,255,255,0.2)', transition: 'color 0.18s', ...(dragHandleProps?.style) }}>
+          <GripVertical size={14} />
+        </div>
         <div>
           <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)' }}>{we.exercise?.name ?? '—'}</div>
           <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>{we.exercise?.category}</div>
@@ -226,11 +234,75 @@ function ExerciseRow({ we, onUpdate, onDelete }: { we: WorkoutExercise; onUpdate
 }
 
 // ── Workout Card ───────────────────────────────────────────────────
-function WorkoutCard({ workout, exercises, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }:
-  { workout: Workout; exercises: Exercise[]; onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void; onAddExercise: (workoutId: string, ex: Exercise) => void; onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void }) {
+function WorkoutCard({ workout, exercises, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onReorderExercises }:
+  { workout: Workout; exercises: Exercise[]; onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void; onAddExercise: (workoutId: string, ex: Exercise) => void; onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void; onReorderExercises: (workoutId: string, orderedIds: string[]) => void }) {
   const [open, setOpen] = useState(false)
   const [showPicker, setShowPicker] = useState(false)
+  const [orderedExercises, setOrderedExercises] = useState<WorkoutExercise[]>([])
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const dragOverId = useRef<string | null>(null)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const exCount = workout.workout_exercises?.length ?? 0
+
+  useEffect(() => {
+    setOrderedExercises(workout.workout_exercises ?? [])
+  }, [workout.workout_exercises])
+
+  const handleDragStart = (id: string) => {
+    setDraggingId(id)
+  }
+
+  const handleDragEnter = (id: string) => {
+    if (!draggingId || id === draggingId) return
+    dragOverId.current = id
+    setOrderedExercises(prev => {
+      const from = prev.findIndex(e => e.id === draggingId)
+      const to = prev.findIndex(e => e.id === id)
+      if (from === -1 || to === -1) return prev
+      const next = [...prev]
+      const [item] = next.splice(from, 1)
+      next.splice(to, 0, item)
+      return next
+    })
+  }
+
+  const handleDragEnd = () => {
+    if (draggingId) {
+      onReorderExercises(workout.id, orderedExercises.map(e => e.id))
+    }
+    setDraggingId(null)
+    dragOverId.current = null
+  }
+
+  // Touch drag support
+  const touchDragId = useRef<string | null>(null)
+
+  const handleTouchStart = (id: string) => {
+    longPressTimer.current = setTimeout(() => {
+      touchDragId.current = id
+      handleDragStart(id)
+    }, 400)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent, containerId: string) => {
+    if (!touchDragId.current) {
+      if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+      return
+    }
+    e.preventDefault()
+    const touch = e.touches[0]
+    const el = document.elementFromPoint(touch.clientX, touch.clientY)
+    const row = el?.closest('[data-we-id]')
+    if (row) {
+      const overId = row.getAttribute('data-we-id')
+      if (overId && overId !== touchDragId.current) handleDragEnter(overId)
+    }
+  }
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+    if (touchDragId.current) { handleDragEnd(); touchDragId.current = null }
+  }
 
   return (
     <>
@@ -258,14 +330,47 @@ function WorkoutCard({ workout, exercises, onUpdateWorkout, onDeleteWorkout, onA
         </div>
         {open && (
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '14px' }}>
-            {(workout.workout_exercises?.length ?? 0) > 0 && (
+            {orderedExercises.length > 0 && (
               <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 60px 80px 80px 60px 32px', gap: '8px', padding: '0 12px 8px' }}>
                 {['', 'VJEŽBA', 'SERI', 'PONOV', 'KG', 'RPE', ''].map((h, i) => (
                   <div key={i} style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.2em', textAlign: i > 1 ? 'center' : 'left', fontFamily: 'var(--fm)' }}>{h}</div>
                 ))}
               </div>
             )}
-            {workout.workout_exercises?.map(we => <ExerciseRow key={we.id} we={we} onUpdate={onUpdateExercise} onDelete={onDeleteExercise} />)}
+            {orderedExercises.map(we => {
+              const isDragging = draggingId === we.id
+              return (
+                <div key={we.id} data-we-id={we.id}
+                  onDragOver={e => { e.preventDefault(); handleDragEnter(we.id) }}
+                  onDrop={handleDragEnd}
+                  style={{
+                    transition: 'transform 0.18s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.18s ease, box-shadow 0.18s ease',
+                    transform: isDragging ? 'scale(1.02)' : 'scale(1)',
+                    opacity: isDragging ? 0.85 : 1,
+                    boxShadow: isDragging ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(107,140,255,0.35)' : 'none',
+                    borderRadius: isDragging ? '4px' : '0',
+                    zIndex: isDragging ? 10 : 'auto',
+                    position: 'relative',
+                    willChange: 'transform',
+                  }}>
+                  <ExerciseRow
+                    we={we}
+                    onUpdate={onUpdateExercise}
+                    onDelete={onDeleteExercise}
+                    isDragging={isDragging}
+                    dragHandleProps={{
+                      draggable: true,
+                      onDragStart: () => handleDragStart(we.id),
+                      onDragEnd: handleDragEnd,
+                      onTouchStart: () => handleTouchStart(we.id),
+                      onTouchMove: (e) => handleTouchMove(e as unknown as React.TouchEvent, we.id),
+                      onTouchEnd: handleTouchEnd,
+                      style: { touchAction: 'none' },
+                    }}
+                  />
+                </div>
+              )
+            })}
             <button onClick={() => setShowPicker(true)} style={{ width: '100%', marginTop: '8px', padding: '10px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.68rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', transition: 'all 0.2s' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)' }}>
@@ -280,8 +385,8 @@ function WorkoutCard({ workout, exercises, onUpdateWorkout, onDeleteWorkout, onA
 }
 
 // ── Week Panel ─────────────────────────────────────────────────────
-function WeekPanel({ week, exercises, onDeleteWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }:
-  { week: Week; exercises: Exercise[]; onDeleteWeek: (id: string) => void; onAddWorkout: (weekId: string) => void; onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void; onAddExercise: (workoutId: string, ex: Exercise) => void; onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void }) {
+function WeekPanel({ week, exercises, onDeleteWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onReorderExercises }:
+  { week: Week; exercises: Exercise[]; onDeleteWeek: (id: string) => void; onAddWorkout: (weekId: string) => void; onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void; onAddExercise: (workoutId: string, ex: Exercise) => void; onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void; onReorderExercises: (workoutId: string, orderedIds: string[]) => void }) {
   const [open, setOpen] = useState(true)
   const completedCount = week.workouts?.filter(w => w.completed).length ?? 0
   const totalCount = week.workouts?.length ?? 0
@@ -312,7 +417,7 @@ function WeekPanel({ week, exercises, onDeleteWeek, onAddWorkout, onUpdateWorkou
       </div>
       {open && (
         <div style={{ padding: '14px' }}>
-          {week.workouts?.map(w => <WorkoutCard key={w.id} workout={w} exercises={exercises} onUpdateWorkout={onUpdateWorkout} onDeleteWorkout={onDeleteWorkout} onAddExercise={onAddExercise} onUpdateExercise={onUpdateExercise} onDeleteExercise={onDeleteExercise} />)}
+          {week.workouts?.map(w => <WorkoutCard key={w.id} workout={w} exercises={exercises} onUpdateWorkout={onUpdateWorkout} onDeleteWorkout={onDeleteWorkout} onAddExercise={onAddExercise} onUpdateExercise={onUpdateExercise} onDeleteExercise={onDeleteExercise} onReorderExercises={onReorderExercises} />)}
           <button onClick={() => onAddWorkout(week.id)} style={{ width: '100%', padding: '10px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.65rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', transition: 'all 0.2s' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.color = '#fff' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)' }}>
@@ -537,6 +642,15 @@ function AthletePanel({
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.filter(we => we.id !== weId) })) })) } : b)
   }
 
+  const reorderExercises = async (workoutId: string, orderedIds: string[]) => {
+    await Promise.all(orderedIds.map((id, index) =>
+      supabase.from('workout_exercises').update({ exercise_order: index + 1 }).eq('id', id)
+    ))
+    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId
+      ? { ...wo, workout_exercises: orderedIds.map((id, index) => { const ex = wo.workout_exercises?.find(e => e.id === id)!; return { ...ex, exercise_order: index + 1 } }) }
+      : wo) })) } : b)
+  }
+
   const addNote = async () => {
     if (!newNote.trim()) return
     const { data, error } = await supabase.from('athlete_notes').insert({ athlete_id: athlete.id, admin_id: adminId, content: newNote.trim() }).select('*').single()
@@ -678,7 +792,7 @@ function AthletePanel({
                 <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '16px' }}>BLOK JE PRAZAN — DODAJ TJEDAN</div>
               )}
               {block.weeks?.map(week => (
-                <WeekPanel key={week.id} week={week} exercises={exercises} onDeleteWeek={deleteWeek} onAddWorkout={addWorkout} onUpdateWorkout={updateWorkout} onDeleteWorkout={deleteWorkout} onAddExercise={addExercise} onUpdateExercise={updateExercise} onDeleteExercise={deleteExercise} />
+                <WeekPanel key={week.id} week={week} exercises={exercises} onDeleteWeek={deleteWeek} onAddWorkout={addWorkout} onUpdateWorkout={updateWorkout} onDeleteWorkout={deleteWorkout} onAddExercise={addExercise} onUpdateExercise={updateExercise} onDeleteExercise={deleteExercise} onReorderExercises={reorderExercises} />
               ))}
               <button onClick={addWeek} style={{ width: '100%', padding: '16px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '0.68rem', letterSpacing: '0.3em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
