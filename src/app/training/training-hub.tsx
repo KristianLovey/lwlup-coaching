@@ -157,9 +157,9 @@ export function GlCalc() {
     return denom > 0 ? Math.round((total * 100 / denom) * 100) / 100 : 0
   })() : 0
 
-  const glC = gl >= 120 ? '#22c55e' : gl >= 100 ? '#f59e0b' : gl >= 80 ? '#f87171' : '#6b8cff'
-  const glL = gl >= 120 ? 'Elite' : gl >= 100 ? 'Advanced' : gl >= 80 ? 'Intermediate' : gl > 0 ? 'Beginner' : ''
-  const pct  = Math.min((gl / 150) * 100, 100)
+  const glC = gl >= 115 ? '#ff4444' : gl >= 100 ? '#c0a060' : gl >= 90 ? '#8888ff' : gl >= 80 ? '#44cc88' : gl >= 70 ? '#aaaaaa' : '#6b8cff'
+  const glL = gl >= 115 ? 'Monster' : gl >= 100 ? 'Elite' : gl >= 90 ? 'Professional' : gl >= 80 ? 'Advanced' : gl >= 70 ? 'Intermediate' : gl > 0 ? 'Beginner' : ''
+  const pct  = Math.min((gl / 130) * 100, 100)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '24px' }}>
@@ -221,7 +221,7 @@ export function GlCalc() {
           {/* Progress bar */}
           <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              {['Beginner', 'Inter.', 'Advanced', 'Elite'].map((l) => (
+              {['Beginner', 'Inter.', 'Advanced', 'Prof.', 'Elite', 'Monster'].map((l) => (
                 <span key={l} style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>{l}</span>
               ))}
             </div>
@@ -229,7 +229,7 @@ export function GlCalc() {
               <div style={{ height: '100%', width: `${pct}%`, background: `linear-gradient(90deg, #6b8cff, ${glC})`, borderRadius: '3px', transition: 'width 1s cubic-bezier(0.16,1,0.3,1)', boxShadow: `0 0 8px ${glC}66` }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
-              {[0, 80, 100, 120, 150].map(v => (
+              {[0, 70, 80, 90, 100, 115].map(v => (
                 <span key={v} style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>{v}</span>
               ))}
             </div>

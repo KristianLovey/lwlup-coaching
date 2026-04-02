@@ -23,6 +23,15 @@ type AthleteStat = {
   display_order: number
 }
 
+function glpTier(glp: number): { label: string; color: string } {
+  if (glp >= 115) return { label: 'MONSTER',      color: '#ff4444' }
+  if (glp >= 100) return { label: 'ELITE',         color: '#c0a060' }
+  if (glp >= 90)  return { label: 'PROFESSIONAL',  color: '#8888ff' }
+  if (glp >= 80)  return { label: 'ADVANCED',      color: '#44cc88' }
+  if (glp >= 70)  return { label: 'INTERMEDIATE',  color: '#aaaaaa' }
+  return                  { label: 'BEGINNER',      color: 'rgba(255,255,255,0.4)' }
+}
+
 function useReveal(threshold = 0.08) {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
@@ -159,7 +168,7 @@ export default function TeamPage() {
               LWL UP<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>TEAM</span>
             </h1>
             <p style={{ fontSize: '1.15rem', color: 'rgba(255,255,255,0.65)', maxWidth: '700px', margin: '0 auto 60px', lineHeight: 1.85, fontWeight: 300 }}>
-              Naši atleti su srce i duša LWL UP-a. Od nacionalnih prvaka do europskih natjecatelja, svaki član donosi jedinstvenu predanost i neumornu želju za napretkom.
+              Naši natjecatelji su srce i duša LWL UP-a. Od državnih prvaka do europskih natjecatelja, svaki član donosi jedinstvenu predanost i neumornu želju za napretkom.
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginBottom: '60px' }}>
               {[['ALL','SVI'],['MEN','MUŠKARCI'],['WOMEN','ŽENE']].map(([f, label]) => (
@@ -265,9 +274,12 @@ export default function TeamPage() {
                             {member.total}<span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.35)', marginLeft: '6px' }}>kg</span>
                           </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                           <div style={{ fontSize: '0.55rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)', marginBottom: '5px' }}>GLP</div>
                           <div style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1 }}>{member.glp}</div>
+                          {member.glp > 0 && (() => { const t = glpTier(member.glp); return (
+                            <div style={{ fontSize: '0.5rem', letterSpacing: '0.18em', color: t.color, fontWeight: 700, marginTop: '4px' }}>{t.label}</div>
+                          )})()}
                         </div>
                       </div>
                     </>

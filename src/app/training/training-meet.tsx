@@ -186,7 +186,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
                   </div>
                   {/* Actual column — lifter fills on meet day */}
                   <div style={{ gridColumn: isAdmin ? '3 / 4' : '2 / 3' }}>
-                    <MeetInput label="Odigrano" value={row.act} onChange={row.setAct} color={row.good === true ? '#4ade80' : row.good === false ? '#f87171' : 'rgba(255,255,255,0.5)'} placeholder="kg" disabled={isAdmin} />
+                    <MeetInput label="Podignuto" value={row.act} onChange={row.setAct} color={row.good === true ? '#4ade80' : row.good === false ? '#f87171' : 'rgba(255,255,255,0.5)'} placeholder="kg" disabled={isAdmin} />
                   </div>
                   {/* Good/No lift toggle */}
                   <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '4px' }}>
