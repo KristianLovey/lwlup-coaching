@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
   GripVertical, Loader2, Settings,
-  BarChart2, FolderOpen, Copy, MessageSquare,
-  AlertCircle, X, Edit3, ChevronLeft, Eye, Trophy
+  FolderOpen, Copy, Bell,
+  AlertCircle, ChevronLeft, Eye, Trophy, Send
 } from 'lucide-react'
 import { CompetitionsManager } from './competitions-manager'
 import { AppNav } from '../training/training-components'
@@ -385,9 +385,10 @@ function WorkoutCard({ workout, exercises, onUpdateWorkout, onDeleteWorkout, onA
 }
 
 // ── Week Panel ─────────────────────────────────────────────────────
-function WeekPanel({ week, exercises, onDeleteWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onReorderExercises }:
-  { week: Week; exercises: Exercise[]; onDeleteWeek: (id: string) => void; onAddWorkout: (weekId: string) => void; onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void; onAddExercise: (workoutId: string, ex: Exercise) => void; onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void; onReorderExercises: (workoutId: string, orderedIds: string[]) => void }) {
+function WeekPanel({ week, exercises, onDeleteWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onReorderExercises, onUpdateWeekNotes }:
+  { week: Week; exercises: Exercise[]; onDeleteWeek: (id: string) => void; onAddWorkout: (weekId: string) => void; onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void; onAddExercise: (workoutId: string, ex: Exercise) => void; onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void; onReorderExercises: (workoutId: string, orderedIds: string[]) => void; onUpdateWeekNotes: (id: string, notes: string) => void }) {
   const [open, setOpen] = useState(true)
+  const [weekNote, setWeekNote] = useState(week.notes ?? '')
   const completedCount = week.workouts?.filter(w => w.completed).length ?? 0
   const totalCount = week.workouts?.length ?? 0
 
@@ -423,6 +424,19 @@ function WeekPanel({ week, exercises, onDeleteWeek, onAddWorkout, onUpdateWorkou
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)' }}>
             <Plus size={12} /> DODAJ DAN
           </button>
+          {/* Inline week comment */}
+          <div style={{ marginTop: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '10px' }}>
+            <div style={{ fontSize: '0.48rem', letterSpacing: '0.28em', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', marginBottom: '6px' }}>KOMENTAR TJEDNA</div>
+            <textarea
+              value={weekNote}
+              onChange={e => setWeekNote(e.target.value)}
+              onBlur={() => onUpdateWeekNotes(week.id, weekNote)}
+              placeholder="Dodaj komentar za ovaj tjedan..."
+              rows={2}
+              style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: '#e0e0f0', padding: '9px 12px', fontSize: '0.82rem', fontFamily: 'var(--fm)', outline: 'none', resize: 'vertical', boxSizing: 'border-box' as const, lineHeight: 1.6, borderRadius: '6px', transition: 'border-color 0.15s' }}
+              onFocus={e => e.target.style.borderColor = 'rgba(251,191,36,0.35)'}
+            />
+          </div>
         </div>
       )}
     </div>
@@ -494,17 +508,11 @@ function AthletePanel({
 }) {
   const [block, setBlock] = useState<Block | null>(null)
   const [allBlocks, setAllBlocks] = useState<Block[]>([])
-  const [notes, setNotes] = useState<AthleteNote[]>([])
-  const [newNote, setNewNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [loadingBlock, setLoadingBlock] = useState(false)
-  const [activeTab, setActiveTab] = useState<'program' | 'stats' | 'notes' | 'tips'>('program')
+  const [activeTab, setActiveTab] = useState<'program' | 'stats'>('program')
   const [duplicateBlock, setDuplicateBlock] = useState<Block | null>(null)
   const [showBlockMenu, setShowBlockMenu] = useState(false)
-  const [tips, setTips]                   = useState<any[]>([])
-  const [newTipTitle, setNewTipTitle]     = useState('')
-  const [newTipContent, setNewTipContent] = useState('')
-  const [newTipCat, setNewTipCat]         = useState('general')
 
   const initials = athlete.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
   const totalWorkouts = block?.weeks?.flatMap(w => w.workouts ?? []).length ?? 0
@@ -541,12 +549,6 @@ function AthletePanel({
       setBlock(null)
     }
 
-    // Load notes
-    const { data: notesData } = await supabase.from('athlete_notes').select('*').eq('athlete_id', athlete.id).order('created_at', { ascending: false })
-    setNotes((notesData ?? []) as AthleteNote[])
-    // Load coach tips
-    const { data: tipsData } = await supabase.from('coach_tips').select('*').eq('athlete_id', athlete.id).order('priority', { ascending: false }).order('created_at', { ascending: false })
-    setTips(tipsData ?? [])
     setLoadingBlock(false)
   }
 
@@ -602,6 +604,11 @@ function AthletePanel({
     setBlock(b => b ? { ...b, weeks: b.weeks?.filter(w => w.id !== weekId) } : b)
   }
 
+  const updateWeekNotes = async (weekId: string, notes: string) => {
+    await supabase.from('weeks').update({ notes: notes || null }).eq('id', weekId)
+    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? { ...w, notes: notes || null } : w) } : b)
+  }
+
   const addWorkout = async (weekId: string) => {
     setSaving(true)
     const week = block?.weeks?.find(w => w.id === weekId)
@@ -649,17 +656,6 @@ function AthletePanel({
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId
       ? { ...wo, workout_exercises: orderedIds.map((id, index) => { const ex = wo.workout_exercises?.find(e => e.id === id)!; return { ...ex, exercise_order: index + 1 } }) }
       : wo) })) } : b)
-  }
-
-  const addNote = async () => {
-    if (!newNote.trim()) return
-    const { data, error } = await supabase.from('athlete_notes').insert({ athlete_id: athlete.id, admin_id: adminId, content: newNote.trim() }).select('*').single()
-    if (!error && data) { setNotes(n => [data as AthleteNote, ...n]); setNewNote('') }
-  }
-
-  const deleteNote = async (noteId: string) => {
-    await supabase.from('athlete_notes').delete().eq('id', noteId)
-    setNotes(n => n.filter(x => x.id !== noteId))
   }
 
   const duplicateBlockTo = async (targetAthleteId: string, newName: string) => {
@@ -719,7 +715,7 @@ function AthletePanel({
 
       {/* Tabs */}
       <div className="admin-tabs" style={{ display: 'flex', gap: '0', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '28px' }}>
-        {([['program', 'PROGRAM'], ['stats', 'STATISTIKE'], ['notes', 'BILJEŠKE'], ['tips', 'HUB TIPS']] as [string, string][]).map(([tab, label]) => (
+        {([['program', 'PROGRAM'], ['stats', 'STATISTIKE']] as [string, string][]).map(([tab, label]) => (
           <button key={tab} onClick={() => setActiveTab(tab as any)}
             style={{ padding: '12px 24px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700, color: activeTab === tab ? '#fff' : 'rgba(255,255,255,0.3)', borderBottom: `2px solid ${activeTab === tab ? '#fff' : 'transparent'}`, transition: 'all 0.2s', marginBottom: '-1px' }}>
             {label}
@@ -792,7 +788,7 @@ function AthletePanel({
                 <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '16px' }}>BLOK JE PRAZAN — DODAJ TJEDAN</div>
               )}
               {block.weeks?.map(week => (
-                <WeekPanel key={week.id} week={week} exercises={exercises} onDeleteWeek={deleteWeek} onAddWorkout={addWorkout} onUpdateWorkout={updateWorkout} onDeleteWorkout={deleteWorkout} onAddExercise={addExercise} onUpdateExercise={updateExercise} onDeleteExercise={deleteExercise} onReorderExercises={reorderExercises} />
+                <WeekPanel key={week.id} week={week} exercises={exercises} onDeleteWeek={deleteWeek} onAddWorkout={addWorkout} onUpdateWorkout={updateWorkout} onDeleteWorkout={deleteWorkout} onAddExercise={addExercise} onUpdateExercise={updateExercise} onDeleteExercise={deleteExercise} onReorderExercises={reorderExercises} onUpdateWeekNotes={updateWeekNotes} />
               ))}
               <button onClick={addWeek} style={{ width: '100%', padding: '16px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '0.68rem', letterSpacing: '0.3em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
@@ -855,107 +851,6 @@ function AthletePanel({
         </div>
       )}
 
-      {/* TIPS TAB — personalizirani coaching tips vidljivi u Hubu */}
-      {activeTab === 'tips' && (
-        <div style={{ animation: 'fadeUp 0.3s ease' }}>
-          {/* Add tip form */}
-          <div style={{ marginBottom: '20px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', overflow: 'hidden' }}>
-            <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>NOVI HUB TIP ZA LIFERA</div>
-            <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {/* Category selector */}
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {[['general','Opće','#888'],['technique','Tehnika','#6b8cff'],['nutrition','Prehrana','#22c55e'],['competition','Natjecanje','#f59e0b'],['recovery','Oporavak','#f472b6']].map(([id,label,color]) => (
-                  <button key={id} onClick={() => setNewTipCat(id)}
-                    style={{ padding: '4px 12px', border: `1px solid ${newTipCat === id ? color : 'rgba(255,255,255,0.1)'}`, background: newTipCat === id ? `${color}18` : 'transparent', color: newTipCat === id ? color : '#666', borderRadius: '5px', cursor: 'pointer', fontSize: '0.6rem', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.1em', transition: 'all 0.15s' }}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <input value={newTipTitle} onChange={e => setNewTipTitle(e.target.value)} placeholder="Naslov tipa..."
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 14px', borderRadius: '6px', fontSize: '0.9rem', outline: 'none', fontFamily: 'var(--fm)', width: '100%', boxSizing: 'border-box' as const }} />
-              <textarea value={newTipContent} onChange={e => setNewTipContent(e.target.value)} placeholder="Sadržaj — savjet, uputa, bilješka trenera..."
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 14px', borderRadius: '6px', fontSize: '0.88rem', outline: 'none', fontFamily: 'var(--fm)', resize: 'vertical', minHeight: '80px', width: '100%', boxSizing: 'border-box' as const, lineHeight: 1.6 }} />
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button onClick={async () => {
-                  if (!newTipTitle.trim() || !newTipContent.trim()) return
-                  const { data } = await supabase.from('coach_tips').insert({ athlete_id: athlete.id, admin_id: adminId, title: newTipTitle.trim(), content: newTipContent.trim(), category: newTipCat }).select('*').single()
-                  if (data) { setTips((t: any[]) => [data, ...t]); setNewTipTitle(''); setNewTipContent('') }
-                }} disabled={!newTipTitle.trim() || !newTipContent.trim()}
-                  style={{ padding: '9px 20px', background: newTipTitle.trim() && newTipContent.trim() ? '#fff' : 'rgba(255,255,255,0.06)', border: 'none', color: newTipTitle.trim() && newTipContent.trim() ? '#000' : 'rgba(255,255,255,0.2)', cursor: newTipTitle.trim() ? 'pointer' : 'not-allowed', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '6px', transition: 'all 0.2s' }}>
-                  OBJAVI TIP
-                </button>
-              </div>
-            </div>
-          </div>
-          {/* Tips list */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {tips.length === 0 ? (
-              <div style={{ padding: '32px', textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '8px' }}>Nema hub tipova za ovog lifera.</div>
-            ) : tips.map((tip: any) => {
-              const catColors: Record<string,string> = { general:'#888', technique:'#6b8cff', nutrition:'#22c55e', competition:'#f59e0b', recovery:'#f472b6' }
-              const c = catColors[tip.category] ?? '#888'
-              return (
-                <div key={tip.id} style={{ padding: '14px 18px', border: '1px solid rgba(255,255,255,0.07)', borderLeft: `3px solid ${c}`, borderRadius: '6px', background: `${c}06`, position: 'relative' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                    <div>
-                      <span style={{ fontSize: '0.46rem', color: c, letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, marginRight: '8px' }}>{tip.category.toUpperCase()}</span>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff', fontFamily: 'var(--fm)' }}>{tip.title}</span>
-                    </div>
-                    <button onClick={async () => { await supabase.from('coach_tips').delete().eq('id', tip.id); setTips((t: any[]) => t.filter((x: any) => x.id !== tip.id)) }}
-                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.15)', padding: '2px', transition: 'color 0.15s' }}
-                      onMouseEnter={e => e.currentTarget.style.color = '#ff4444'}
-                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.15)'}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                    </button>
-                  </div>
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.65, margin: 0 }}>{tip.content}</p>
-                  <div style={{ fontSize: '0.56rem', color: '#444', marginTop: '8px' }}>{new Date(tip.created_at).toLocaleDateString('hr-HR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })}</div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* NOTES TAB */}
-      {activeTab === 'notes' && (
-        <div style={{ animation: 'fadeUp 0.3s ease' }}>
-          {/* New note */}
-          <div style={{ marginBottom: '20px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>NOVA BILJEŠKA ZA LIFERA</div>
-            <textarea
-              value={newNote}
-              onChange={e => setNewNote(e.target.value)}
-              placeholder="Upiši bilješku, feedback, ili uputu..."
-              style={{ width: '100%', minHeight: '100px', background: 'transparent', border: 'none', padding: '16px 18px', color: '#fff', fontSize: '0.88rem', fontFamily: 'var(--fm)', outline: 'none', resize: 'vertical', boxSizing: 'border-box', lineHeight: 1.6 }}
-            />
-            <div style={{ padding: '10px 14px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={addNote} disabled={!newNote.trim()} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 20px', background: newNote.trim() ? '#fff' : 'rgba(255,255,255,0.06)', border: 'none', color: newNote.trim() ? '#000' : 'rgba(255,255,255,0.2)', cursor: newNote.trim() ? 'pointer' : 'not-allowed', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}>
-                <MessageSquare size={12} /> POŠALJI BILJEŠKU
-              </button>
-            </div>
-          </div>
-
-          {/* Notes list */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {notes.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', letterSpacing: '0.15em', border: '1px dashed rgba(255,255,255,0.08)' }}>Nema bilješki za ovog lifera.</div>
-            ) : notes.map(note => (
-              <div key={note.id} style={{ padding: '16px 18px', border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)', position: 'relative' }}>
-                <div style={{ fontSize: '0.88rem', color: '#fff', lineHeight: 1.6, fontFamily: 'var(--fm)', marginBottom: '10px' }}>{note.content}</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>{new Date(note.created_at).toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-                  <button onClick={() => deleteNote(note.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.15)', transition: 'color 0.2s', padding: '4px' }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#ff4444'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.15)'}>
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {duplicateBlock && (
         <DuplicateModal block={duplicateBlock} athletes={allAthletes} onConfirm={duplicateBlockTo} onClose={() => setDuplicateBlock(null)} />
       )}
@@ -973,7 +868,10 @@ export default function AdminPage() {
   const [selectedAthlete, setSelectedAthlete] = useState<AthleteProfile | null>(null)
   const [searchQ, setSearchQ] = useState('')
   const [managingUsers, setManagingUsers] = useState(false)
-  const [dashSection, setDashSection] = useState<'athletes' | 'competitions'>('athletes')
+  const [dashSection, setDashSection] = useState<'athletes' | 'competitions' | 'obavijesti'>('athletes')
+  const [notifMsg, setNotifMsg] = useState('')
+  const [notifSelected, setNotifSelected] = useState<string[]>([])
+  const [notifSending, setNotifSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
@@ -1046,8 +944,7 @@ export default function AdminPage() {
       // For now we use profile data only
       const withBlocks = await Promise.all(data.map(async (p) => {
         const { data: blocks } = await supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', p.id)
-        const { data: notes } = await supabase.from('athlete_notes').select('id').eq('athlete_id', p.id)
-        return { ...p, blocks: blocks ?? [], notes: notes ?? [] } as AthleteProfile
+        return { ...p, blocks: blocks ?? [] } as AthleteProfile
       }))
       setAthletes(withBlocks)
     }
@@ -1072,7 +969,7 @@ export default function AdminPage() {
 
   const totalAthletes = athletes.length
   const activeBlocks = athletes.reduce((s, a) => s + ((a.blocks as Block[])?.filter(b => b.status === 'active').length ?? 0), 0)
-  const totalNotes = athletes.reduce((s, a) => s + ((a.notes as any[])?.length ?? 0), 0)
+  const lifters = athletes.filter(a => a.role === 'lifter')
 
   if (loading) return (
     <div style={{ background: '#08080a', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', fontFamily: 'var(--fm)' }}>
@@ -1139,22 +1036,22 @@ export default function AdminPage() {
 
               {/* Section switcher */}
               <div style={{ display: 'flex', gap: '4px', padding: '4px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', width: 'fit-content', marginBottom: '32px' }}>
-                {([['athletes', 'Lifteri'], ['competitions', 'Natjecanja']] as [string,string][]).map(([sec, label]) => (
-                  <button key={sec} onClick={() => setDashSection(sec as 'athletes'|'competitions')}
+                {([['athletes', 'Lifteri'], ['competitions', 'Natjecanja'], ['obavijesti', 'Obavijesti']] as [string,string][]).map(([sec, label]) => (
+                  <button key={sec} onClick={() => setDashSection(sec as 'athletes'|'competitions'|'obavijesti')}
                     style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 18px', background: dashSection === sec ? 'rgba(255,255,255,0.1)' : 'transparent', border: dashSection === sec ? '1px solid rgba(255,255,255,0.12)' : '1px solid transparent', borderRadius: '7px', cursor: 'pointer', fontSize: '0.72rem', fontFamily: 'var(--fm)', fontWeight: dashSection === sec ? 700 : 400, color: dashSection === sec ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'all 0.2s', letterSpacing: '0.04em' }}>
                     {sec === 'competitions' && <Trophy size={13} />}
+                    {sec === 'obavijesti' && <Bell size={13} />}
                     {label}
                   </button>
                 ))}
               </div>
 
               {/* Summary stats */}
-              <div className="admin-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.09)', maxWidth: '600px' }}>
+              <div className="admin-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.09)', maxWidth: '450px' }}>
                 {[
                   { val: totalAthletes, label: 'LIFERA', color: '#fff' },
                   { val: activeBlocks, label: 'AKT. BLOKOVA', color: '#4ade80' },
                   { val: athletes.reduce((s, a) => s + ((a.blocks as Block[])?.length ?? 0), 0), label: 'UK. BLOKOVA', color: '#fff' },
-                  { val: totalNotes, label: 'BILJEŠKI', color: '#facc15' },
                 ].map((s, i) => (
                   <div key={i} style={{ padding: '18px 20px', background: '#08080a', textAlign: 'center' }}>
                     <div style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.val}</div>
@@ -1165,6 +1062,70 @@ export default function AdminPage() {
             </div>
 
             {dashSection === 'competitions' && <CompetitionsManager />}
+
+            {dashSection === 'obavijesti' && (
+              <div style={{ animation: 'fadeUp 0.3s ease', maxWidth: '680px' }}>
+                {/* Compose box */}
+                <div style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', overflow: 'hidden', marginBottom: '28px' }}>
+                  <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>NOVA OBAVIJEST</div>
+                  <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column' as const, gap: '14px' }}>
+                    <textarea
+                      value={notifMsg}
+                      onChange={e => setNotifMsg(e.target.value)}
+                      placeholder="Upiši poruku za lifere..."
+                      style={{ width: '100%', minHeight: '90px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '12px 16px', fontSize: '0.9rem', fontFamily: 'var(--fm)', outline: 'none', resize: 'vertical', boxSizing: 'border-box' as const, lineHeight: 1.6, borderRadius: '6px' }}
+                    />
+
+                    {/* Lifter selection */}
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '0.55rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>PRIMATELJI ({notifSelected.length}/{lifters.length})</div>
+                        <button
+                          onClick={() => setNotifSelected(notifSelected.length === lifters.length ? [] : lifters.map(a => a.id))}
+                          style={{ background: notifSelected.length === lifters.length ? 'rgba(251,191,36,0.12)' : 'transparent', border: `1px solid ${notifSelected.length === lifters.length ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.12)'}`, color: notifSelected.length === lifters.length ? '#fbbf24' : 'rgba(255,255,255,0.4)', padding: '4px 14px', cursor: 'pointer', fontSize: '0.58rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '5px', transition: 'all 0.15s' }}>
+                          SVI LIFTERI
+                        </button>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '4px', maxHeight: '220px', overflowY: 'auto' as const }}>
+                        {lifters.map(a => {
+                          const sel = notifSelected.includes(a.id)
+                          const initials = a.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
+                          return (
+                            <button key={a.id} onClick={() => setNotifSelected(sel ? notifSelected.filter(id => id !== a.id) : [...notifSelected, a.id])}
+                              style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: sel ? 'rgba(251,191,36,0.06)' : 'transparent', border: `1px solid ${sel ? 'rgba(251,191,36,0.25)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '7px', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left' as const }}>
+                              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.62rem', fontWeight: 800, color: '#fff', flexShrink: 0, fontFamily: 'var(--fm)' }}>{initials}</div>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: sel ? '#fff' : 'rgba(255,255,255,0.6)', fontFamily: 'var(--fm)', flex: 1 }}>{a.full_name}</span>
+                              {sel && <Check size={13} color="#fbbf24" />}
+                            </button>
+                          )
+                        })}
+                        {lifters.length === 0 && <div style={{ padding: '16px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', fontFamily: 'var(--fm)' }}>Nema lifera.</div>}
+                      </div>
+                    </div>
+
+                    {/* Send button */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        disabled={!notifMsg.trim() || notifSelected.length === 0 || notifSending}
+                        onClick={async () => {
+                          if (!notifMsg.trim() || notifSelected.length === 0) return
+                          setNotifSending(true)
+                          await supabase.from('notifications').insert(
+                            notifSelected.map(rid => ({ recipient_id: rid, sender_id: adminId, message: notifMsg.trim(), read: false }))
+                          )
+                          setNotifMsg('')
+                          setNotifSelected([])
+                          setNotifSending(false)
+                        }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', background: notifMsg.trim() && notifSelected.length > 0 && !notifSending ? '#fbbf24' : 'rgba(255,255,255,0.06)', border: 'none', color: notifMsg.trim() && notifSelected.length > 0 && !notifSending ? '#000' : 'rgba(255,255,255,0.2)', cursor: notifMsg.trim() && notifSelected.length > 0 && !notifSending ? 'pointer' : 'not-allowed', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '7px', transition: 'all 0.2s' }}>
+                        {notifSending ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <Send size={13} />}
+                        POŠALJI OBAVIJEST {notifSelected.length > 0 && `(${notifSelected.length})`}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {dashSection === 'athletes' && <>
             {/* Search + manage */}

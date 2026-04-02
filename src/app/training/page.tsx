@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Loader2, Plus, Check, FolderOpen, ChevronDown, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import type { Block, BlockSummary, CoachTip, Week, Exercise, WorkoutExercise, Workout } from './types'
+import type { Block, BlockSummary, Week, Exercise, WorkoutExercise, Workout } from './types'
 import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-components'
 import { HubTab } from './training-hub'
 import { MeetDayTab } from './training-meet'
@@ -25,7 +25,6 @@ export default function TrainingPage() {
   const [avatarIcon, setAvatarIcon] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'program' | 'hub' | 'meet'>('program')
-  const [tips, setTips] = useState<CoachTip[]>([])
   const [activeTool, setActiveTool] = useState<string | null>(null)
   const router = useRouter()
   const blockSelectorRef = useRef<HTMLDivElement>(null)
@@ -73,9 +72,6 @@ export default function TrainingPage() {
         setBlock(blockData)
         const { data: ab } = await supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', user.id).order('created_at', { ascending: false })
         setAllBlocks((ab ?? []) as BlockSummary[])
-        // Load coach tips (visible to athlete + admin)
-        const { data: tipsData } = await supabase.from('coach_tips').select('*').eq('athlete_id', user.id).order('priority', { ascending: false }).order('created_at', { ascending: false })
-        setTips((tipsData ?? []) as CoachTip[])
       } catch { setError('Greška pri učitavanju.') } finally { setLoading(false) }
     }
     init()
@@ -373,7 +369,7 @@ export default function TrainingPage() {
         {/* ─── CONTENT ─────────────────────────────────────────── */}
         <div className='page-content' style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px 80px' }}>
           {/* Hub tab */}
-          {activeTab === 'hub' && <HubTab tips={tips} athleteName={athleteName} userId={userId ?? undefined} />}
+          {activeTab === 'hub' && <HubTab athleteName={athleteName} userId={userId ?? undefined} />}
           {/* Meet day tab */}
           {activeTab === 'meet' && userId && <MeetDayTab userId={userId} isAdmin={isAdmin} />}
           {activeTab === 'program' && <>

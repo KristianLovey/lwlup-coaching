@@ -1,8 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import type { ReactNode } from 'react'
 import { X } from 'lucide-react'
-import type { CoachTip } from './types'
 import { createClient } from '@/lib/supabase/client'
 
 const supabase = createClient()
@@ -863,35 +861,12 @@ function WeightTracker({ userId }: { userId: string }) {
   )
 }
 
-export function HubTab({ tips, athleteName, userId }: { tips: CoachTip[]; athleteName: string; userId?: string }) {
+export function HubTab({ athleteName, userId }: { athleteName: string; userId?: string }) {
   const [active, setActive] = useState<string | null>(null)
   const activeTool = HUB_TOOLS.find(t => t.id === active)
-  const CAT_COLORS: Record<string,string> = { general:'#888', technique:'#6b8cff', nutrition:'#22c55e', competition:'#f59e0b', recovery:'#f472b6' }
 
   return (
     <div style={{ animation: 'fadeUp 0.3s ease' }}>
-
-      {/* Coach tips */}
-      {tips.length > 0 && (
-        <div style={{ marginBottom: '36px' }}>
-          <SectionTitle>Savjeti od trenera</SectionTitle>
-          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
-            {tips.map((tip, i) => {
-              const c = CAT_COLORS[tip.category] ?? '#888'
-              return (
-                <div key={tip.id} style={{ padding: '16px 20px', background: `${c}07`, border: `1px solid ${c}18`, borderLeft: `3px solid ${c}`, borderRadius: '10px', animation: `fadeUp 0.4s ease ${i * 0.06}s both` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
-                    <span style={{ fontSize: '0.58rem', color: c, letterSpacing: '0.1em', fontFamily: 'var(--fm)', fontWeight: 700 }}>{tip.category.toUpperCase()}</span>
-                    <span style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.2)' }}>{new Date(tip.created_at).toLocaleDateString('hr-HR')}</span>
-                  </div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#f0f0f5', marginBottom: '4px', fontFamily: 'var(--fm)' }}>{tip.title}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, fontFamily: 'var(--fm)' }}>{tip.content}</div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Tools grid */}
       <SectionTitle>Kalkulatori & Vodiči</SectionTitle>

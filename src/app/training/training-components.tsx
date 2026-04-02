@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
   GripVertical, Loader2, LogOut, Home, FolderOpen,
-  User, Shield, X, ChevronLeft, Dumbbell, BarChart2, Send
+  User, Shield, X, ChevronLeft, Dumbbell, BarChart2, Send, MessageSquare
 } from 'lucide-react'
 import type { Exercise, WorkoutExercise, Workout, Week, CoachTip, SetLog, Competition } from './types'
 
@@ -271,17 +271,17 @@ export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon, userId }: {
   const unread = notifs.filter(n => !n.read).length
 
   useEffect(() => {
-    if (!isAdmin || !userId) return
+    if (!userId) return
     // Initial load
     supabase.from('notifications').select('*').eq('recipient_id', userId).order('created_at', { ascending: false }).limit(30)
       .then(({ data }) => setNotifs(data ?? []))
     // Realtime subscription
-    const channel = supabase.channel('notifications')
+    const channel = supabase.channel(`notifications-${userId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${userId}` },
         payload => setNotifs(prev => [payload.new as any, ...prev]))
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [isAdmin, userId])
+  }, [userId])
 
   const markAllRead = async () => {
     const ids = notifs.filter(n => !n.read).map(n => n.id)
@@ -345,8 +345,8 @@ export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon, userId }: {
           <span style={{ fontSize: '0.62rem', color: isAdmin ? '#f87171' : '#4ade80', fontWeight: 600, fontFamily: 'var(--fm)', letterSpacing: '0.04em' }}>{isAdmin ? 'Admin' : 'Aktivan'}</span>
         </div>
 
-        {/* Notification bell — admin only */}
-        {isAdmin && (
+        {/* Notification bell */}
+        {!!userId && (
           <div ref={notifRef} style={{ position: 'relative' }}>
             <button onClick={() => { setShowNotifs(o => !o); if (!showNotifs) markAllRead() }}
               style={{ position: 'relative', background: unread > 0 ? 'rgba(251,191,36,0.1)' : 'transparent', border: `1px solid ${unread > 0 ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '10px', padding: '7px 9px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: unread > 0 ? '#fbbf24' : 'rgba(255,255,255,0.45)', transition: 'all 0.2s' }}>
@@ -358,7 +358,7 @@ export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon, userId }: {
             {showNotifs && (
               <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '300px', background: 'rgba(10,10,16,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.85)', zIndex: 300, overflow: 'hidden', backdropFilter: 'blur(40px)', animation: 'appnavDrop 0.2s cubic-bezier(0.16,1,0.3,1)' }}>
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: '#fbbf24', fontFamily: 'var(--fm)', fontWeight: 700 }}>OBAVIJESTI</span>
+                  <span style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: '#fbbf24', fontFamily: 'var(--fm)', fontWeight: 700 }}>{isAdmin ? 'OBAVIJESTI' : 'OD TRENERA'}</span>
                   {notifs.length > 0 && <button onClick={markAllRead} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '0.55rem', fontFamily: 'var(--fm)', cursor: 'pointer', letterSpacing: '0.1em' }}>označi sve pročitano</button>}
                 </div>
                 <div style={{ maxHeight: '320px', overflowY: 'auto' as const }}>
