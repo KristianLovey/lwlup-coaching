@@ -36,6 +36,7 @@ export interface MeetAttempt {
   warmup1_kg?: number | null;
   warmup2_kg?: number | null;
   warmup3_kg?: number | null;
+  warmup_extra?: number[] | null;
 
   attempt1_min?: number | null;
   attempt1_max?: number | null;

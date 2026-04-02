@@ -31,11 +31,18 @@ type PrLog = {
 }
 type LeaderboardEntry = {
   id: string; full_name: string; avatar_icon: string | null; weight_class: string | null
-  body_weight: number | null        // profile body weight
-  sex: string | null                // 'male' | 'female'
+  body_weight: number | null
+  sex: string | null
   training_total: number | null; latest_comp_total: number | null
-  latest_comp_date: string | null; latest_body_weight: number | null  // from competition
+  latest_comp_date: string | null; latest_body_weight: number | null
   current_squat_1rm: number | null; current_bench_1rm: number | null; current_deadlift_1rm: number | null
+}
+
+type CompletionEntry = {
+  athlete_id: string
+  total_workouts: number
+  completed_workouts: number
+  completion_pct: number
 }
 
 // ─── IPF GL POINTS ────────────────────────────────────────────────
@@ -232,10 +239,12 @@ export default function ProfilePage() {
   const [adminComps, setAdminComps]   = useState<AdminComp[]>([])
   const [prLogs, setPrLogs]           = useState<PrLog[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [completions, setCompletions] = useState<Record<string, { total: number; done: number; pct: number }>>({})
   const [loading, setLoading]         = useState(true)
   const [userId, setUserId]           = useState<string | null>(null)
   const [activeTab, setActiveTab]     = useState<'progress' | 'prs' | 'leaderboard'>('progress')
   const [progressLift, setProgressLift] = useState<'squat'|'bench'|'deadlift'>('squat')
+  const [progressReps, setProgressReps] = useState<number>(1)
   const [prLift, setPrLift]           = useState<'squat'|'bench'|'deadlift'>('squat')
   const [prReps, setPrReps]           = useState(1)
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
@@ -249,11 +258,12 @@ export default function ProfilePage() {
       if (!user) { router.push('/auth'); return }
       setUserId(user.id)
 
-      const [{ data: prof }, { data: athleteStat }, { data: prs }, { data: lb }] = await Promise.all([
+      const [{ data: prof }, { data: athleteStat }, { data: prs }, { data: lb }, { data: workoutRows }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('athlete_stats').select('id').eq('profile_id', user.id).maybeSingle(),
         supabase.from('pr_logs').select('*').eq('athlete_id', user.id).order('date', { ascending: false }),
         supabase.from('leaderboard_view').select('*'),
+        supabase.from('workouts').select('athlete_id, completed'),
       ])
 
       let compsData = null
@@ -264,6 +274,20 @@ export default function ProfilePage() {
           .eq('athlete_id', athleteStat.id)
         compsData = data
       }
+
+      // Build completion map: athlete_id → { total, done, pct }
+      const compMap: Record<string, { total: number; done: number; pct: number }> = {}
+      for (const w of (workoutRows ?? [])) {
+        if (!w.athlete_id) continue
+        if (!compMap[w.athlete_id]) compMap[w.athlete_id] = { total: 0, done: 0, pct: 0 }
+        compMap[w.athlete_id].total++
+        if (w.completed) compMap[w.athlete_id].done++
+      }
+      for (const k of Object.keys(compMap)) {
+        const c = compMap[k]
+        c.pct = c.total > 0 ? Math.round((c.done / c.total) * 100) : 0
+      }
+      setCompletions(compMap)
 
       setProfile(prof as Profile)
       setAdminComps(((compsData ?? []) as unknown as AdminComp[]).sort((a, b) => b.competition.date.localeCompare(a.competition.date)))
@@ -316,21 +340,14 @@ export default function ProfilePage() {
     return filtered.reduce((best, cur) => cur.weight_kg > best.weight_kg ? cur : best)
   }
 
-  // ── Leaderboard sort + GL calc ─────────────────────────────────
+  // ── Leaderboard sort by workout completion % ──────────────────
   const lbSorted = [...leaderboard]
     .map(e => {
-      // Priority: 1) latest comp total + comp body weight
-      //           2) training total  + profile body weight
-      //           3) training total  + 93kg fallback
-      const total = e.latest_comp_total ?? e.training_total ?? 0
-      const bw    = e.latest_body_weight  // from last competition
-               ?? e.body_weight           // from profile (lifter enters this)
-               ?? 93                      // absolute fallback
-      const sex   = (e.sex === 'female' ? 'female' : 'male') as 'male' | 'female'
-      return { ...e, gl: calcGL(total, bw, sex), bwUsed: bw }
+      const c = completions[e.id] ?? { total: 0, done: 0, pct: 0 }
+      return { ...e, compTotal: c.total, compDone: c.done, compPct: c.pct }
     })
-    .filter(e => e.gl > 0)
-    .sort((a, b) => b.gl - a.gl)
+    .filter(e => e.compTotal > 0)
+    .sort((a, b) => b.compPct - a.compPct || b.compDone - a.compDone)
 
   if (loading) return (
     <div style={{ background: '#06060a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', color: '#555', fontFamily: 'var(--fm)' }}>
@@ -464,14 +481,27 @@ export default function ProfilePage() {
                   ))}
                 </div>
               </div>
+              <div style={{ padding: '12px 20px 0', background: '#09090e', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' as const, paddingBottom: '12px' }}>
+                  {[1,2,3,4,5,6,8,10,12].map(r => {
+                    const hasData = prLogs.some(p => p.lift === progressLift && p.reps === r)
+                    return (
+                      <button key={r} onClick={() => setProgressReps(r)} disabled={!hasData}
+                        style={{ padding: '4px 10px', background: progressReps === r ? 'rgba(255,255,255,0.1)' : 'transparent', border: `1px solid ${progressReps === r ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.06)'}`, color: progressReps === r ? '#fff' : hasData ? '#555' : '#2a2a35', borderRadius: '5px', cursor: hasData ? 'pointer' : 'default', fontSize: '0.58rem', fontFamily: 'var(--fm)', transition: 'all 0.15s' }}>
+                        {r}RM
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
               <div style={{ padding: '20px 20px 12px', background: '#09090e' }}>
                 {(() => {
                   const liftColor = { squat: '#6b8cff', bench: '#f59e0b', deadlift: '#22c55e' }[progressLift]
                   const chartData = [...prLogs]
-                    .filter(p => p.lift === progressLift)
+                    .filter(p => p.lift === progressLift && p.reps === progressReps)
                     .reverse()
                     .map(p => ({ date: p.date, value: p.weight_kg }))
-                  return <ProgressChart data={chartData} color={liftColor} label={progressLift} />
+                  return <ProgressChart data={chartData} color={liftColor} label={`${progressLift}-${progressReps}rm`} />
                 })()}
               </div>
             </div>
@@ -614,7 +644,7 @@ export default function ProfilePage() {
         {activeTab === 'leaderboard' && (
           <div style={{ animation: 'fadeUp 0.3s ease' }}>
             <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: '#555', marginBottom: '16px', fontFamily: 'var(--fm)' }}>
-              IPF GL BODOVI · SORTIRANO PO TOTAL-U (COMP ILI TRENING)
+              POSTOTAK ZAVRŠENIH TRENINGA · SORTIRANO PO KONZISTENTNOSTI
             </div>
 
             {lbSorted.length === 0 ? (
@@ -622,7 +652,7 @@ export default function ProfilePage() {
             ) : lbSorted.map((e, i) => {
               const isMe = e.id === userId
               const medal = i === 0 ? '#facc15' : i === 1 ? '#aaa' : i === 2 ? '#cd7f32' : null
-              const total = e.latest_comp_total ?? e.training_total ?? 0
+              const pctColor = e.compPct >= 90 ? '#22c55e' : e.compPct >= 70 ? '#f59e0b' : e.compPct >= 50 ? '#6b8cff' : '#666'
               return (
                 <div key={e.id} className="lb-entry" style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px', border: `1px solid ${isMe ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '10px', marginBottom: '6px', background: isMe ? 'rgba(255,255,255,0.04)' : 'transparent', transition: 'all 0.15s', boxShadow: isMe ? '0 0 20px rgba(255,255,255,0.05)' : 'none' }}>
 
@@ -639,29 +669,26 @@ export default function ProfilePage() {
                     <AvatarSvg iconId={e.avatar_icon ?? 'barbell'} size={22} color="rgba(255,255,255,0.7)" />
                   </div>
 
-                  {/* Name + class */}
+                  {/* Name + progress bar */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="lb-entry-name" style={{ fontSize: '0.88rem', fontWeight: 600, color: isMe ? '#fff' : '#e0e0e0', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="lb-entry-name" style={{ fontSize: '0.88rem', fontWeight: 600, color: isMe ? '#fff' : '#e0e0e0', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                       {e.full_name}
                       {isMe && <span style={{ fontSize: '0.48rem', letterSpacing: '0.2em', color: '#6b8cff', border: '1px solid rgba(107,140,255,0.3)', padding: '2px 6px', borderRadius: '4px' }}>TI</span>}
                     </div>
-                    <div style={{ fontSize: '0.58rem', color: '#555', marginTop: '1px' }}>
-                      {e.weight_class ?? '—'}
-                      {' · '}
-                      {(e as any).bwUsed ? `${(e as any).bwUsed}kg` : '—kg'}
-                      {e.latest_comp_date ? ` · comp ${e.latest_comp_date.slice(0, 7)}` : ` · trening total`}
+                    <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${e.compPct}%`, background: pctColor, borderRadius: '2px', transition: 'width 0.8s cubic-bezier(0.16,1,0.3,1)' }} />
                     </div>
                   </div>
 
                   {/* Stats */}
-                  <div className="lb-entry-stats" style={{ display: 'flex', gap: '16px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <div className="lb-entry-stats" style={{ display: 'flex', gap: '16px', flexShrink: 0, alignItems: 'center' }}>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontFamily: 'var(--fd)', fontSize: '1.3rem', fontWeight: 800, color: '#e0e0e0' }}>{total || '—'}</div>
-                      <div style={{ fontSize: '0.46rem', color: '#555', letterSpacing: '0.15em' }}>TOTAL</div>
+                      <div style={{ fontFamily: 'var(--fd)', fontSize: '1.3rem', fontWeight: 800, color: medal ?? pctColor }}>{e.compPct}%</div>
+                      <div style={{ fontSize: '0.46rem', color: '#555', letterSpacing: '0.15em' }}>ZAVRŠENO</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontFamily: 'var(--fd)', fontSize: '1.3rem', fontWeight: 800, color: medal ?? '#888' }}>{e.gl.toFixed(2)}</div>
-                      <div style={{ fontSize: '0.46rem', color: '#555', letterSpacing: '0.15em' }}>GL PTS</div>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#666', fontFamily: 'var(--fm)' }}>{e.compDone}/{e.compTotal}</div>
+                      <div style={{ fontSize: '0.46rem', color: '#555', letterSpacing: '0.15em' }}>TRENINGA</div>
                     </div>
                   </div>
                 </div>
@@ -669,7 +696,7 @@ export default function ProfilePage() {
             })}
 
             <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', fontSize: '0.6rem', color: '#444', lineHeight: 1.7 }}>
-              GL bodovi se računaju po IPF GL formuli koristeći zadnji natjecatelji total i tjelesnu masu, ili trening total (SQ+BP+DL 1RM) ako nema comp podataka. Muški parametri: a=1199.73, b=1025.18, c=0.00921.
+              Rangirano po postotku završenih treninga. U slučaju jednakog postotka, više apsolutnih treninga dolazi više.
             </div>
           </div>
         )}

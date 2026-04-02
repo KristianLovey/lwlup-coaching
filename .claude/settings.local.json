@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(npx tsc:*)",
-      "Bash(python3 -c \":*)"
+      "Bash(python3 -c \":*)",
+      "Bash(find /Users/kristianlovey/Documents/lwlup -name *schema* -o -name *migration*)",
+      "Bash(ls -la /Users/kristianlovey/Documents/lwlup/.env*)",
+      "Bash(grep -n \"set_logs\\\\|notifications\" /Users/kristianlovey/Documents/lwlup/src/app/training/*.tsx)",
+      "Bash(grep -r \"toast\\\\|notification\" /Users/kristianlovey/Documents/lwlup/src --include=*.tsx --include=*.ts)"
     ]
   }
 }

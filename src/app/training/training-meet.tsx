@@ -61,10 +61,20 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
   const [open, setOpen] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  // Local state for all fields
-  const [w1, setW1] = useState(attempt?.warmup1_kg?.toString() ?? '')
-  const [w2, setW2] = useState(attempt?.warmup2_kg?.toString() ?? '')
-  const [w3, setW3] = useState(attempt?.warmup3_kg?.toString() ?? '')
+  // Warmups — dynamic array built from DB fields
+  const initWarmups = () => {
+    const base = [
+      attempt?.warmup1_kg?.toString() ?? '',
+      attempt?.warmup2_kg?.toString() ?? '',
+      attempt?.warmup3_kg?.toString() ?? '',
+      ...(attempt?.warmup_extra ?? []).map(v => v.toString()),
+    ]
+    // trim trailing empty slots but keep at least 1
+    let end = base.length - 1
+    while (end > 0 && base[end] === '') end--
+    return base.slice(0, end + 1)
+  }
+  const [warmups, setWarmups] = useState<string[]>(initWarmups)
   const [a1min, setA1min] = useState(attempt?.attempt1_min?.toString() ?? '')
   const [a1max, setA1max] = useState(attempt?.attempt1_max?.toString() ?? '')
   const [a2min, setA2min] = useState(attempt?.attempt2_min?.toString() ?? '')
@@ -86,7 +96,8 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
     setSaving(true)
     const data = {
       lift, athlete_id: athleteId,
-      warmup1_kg: num(w1), warmup2_kg: num(w2), warmup3_kg: num(w3),
+      warmup1_kg: num(warmups[0] ?? ''), warmup2_kg: num(warmups[1] ?? ''), warmup3_kg: num(warmups[2] ?? ''),
+      warmup_extra: warmups.slice(3).map(v => parseFloat(v)).filter(v => !isNaN(v) && v > 0),
       attempt1_min: num(a1min), attempt1_max: num(a1max),
       attempt2_min: num(a2min), attempt2_max: num(a2max),
       attempt3_min: num(a3min), attempt3_max: num(a3max),
@@ -147,10 +158,28 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
               <div style={{ height: '1px', width: '16px', background: 'rgba(255,255,255,0.12)' }} />
               <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>WARMUPS</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px' }}>
-              <MeetInput label="Warmup 1" value={w1} onChange={setW1} color={meta.color} disabled={!isAdmin} placeholder="kg" />
-              <MeetInput label="Warmup 2" value={w2} onChange={setW2} color={meta.color} disabled={!isAdmin} placeholder="kg" />
-              <MeetInput label="Warmup 3" value={w3} onChange={setW3} color={meta.color} disabled={!isAdmin} placeholder="kg" />
+            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px' }}>
+                {warmups.map((w, idx) => (
+                  <div key={idx} style={{ position: 'relative' }}>
+                    <MeetInput label={`Warmup ${idx + 1}`} value={w} onChange={v => setWarmups(prev => prev.map((x, i) => i === idx ? v : x))} color={meta.color} disabled={!isAdmin} placeholder="kg" />
+                    {isAdmin && warmups.length > 1 && (
+                      <button onClick={() => setWarmups(prev => prev.filter((_, i) => i !== idx))}
+                        style={{ position: 'absolute', top: 0, right: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem', padding: '2px 4px', lineHeight: 1, transition: 'color 0.15s' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#f87171'}
+                        onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.2)'}>×</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {isAdmin && warmups.length < 8 && (
+                <button onClick={() => setWarmups(prev => [...prev, ''])}
+                  style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 12px', background: `${meta.color}10`, border: `1px dashed ${meta.color}33`, borderRadius: '7px', color: meta.color, fontSize: '0.62rem', fontFamily: 'var(--fm)', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${meta.color}1e`; (e.currentTarget as HTMLButtonElement).style.borderColor = `${meta.color}66` }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = `${meta.color}10`; (e.currentTarget as HTMLButtonElement).style.borderColor = `${meta.color}33` }}>
+                  <Plus size={11} /> DODAJ WARMUP
+                </button>
+              )}
             </div>
           </div>
 
@@ -294,6 +323,19 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
     setAttempts(prev => prev.filter(a => a.id !== id))
   }
 
+  // Sync selectedComp with current date's saved competition_id
+  useEffect(() => {
+    setSelectedComp(dateAttempts[0]?.competition_id ?? null)
+  }, [meetDate, attempts])
+
+  const saveCompLink = async (compId: string | null) => {
+    setSelectedComp(compId)
+    if (dateAttempts.length === 0) return
+    const ids = dateAttempts.map(a => a.id)
+    await supabase.from('meet_attempts').update({ competition_id: compId }).in('id', ids)
+    setAttempts(prev => prev.map(a => ids.includes(a.id) ? { ...a, competition_id: compId } : a))
+  }
+
   // Competition linked to current date's attempts
   const linkedComp = dateAttempts[0]?.competition_id
     ? competitions.find(c => c.id === dateAttempts[0].competition_id)
@@ -361,7 +403,7 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
 
         {/* Comp link — optional */}
         {competitions.length > 0 && isAdmin && (
-          <select value={selectedComp ?? ''} onChange={e => setSelectedComp(e.target.value || null)}
+          <select value={selectedComp ?? ''} onChange={e => saveCompLink(e.target.value || null)}
             style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: '9px', color: '#aaa', fontFamily: 'var(--fm)', fontSize: '0.78rem', outline: 'none', cursor: 'pointer' }}>
             <option value="">Poveži natjecanje (opcionalno)</option>
             {competitions.map(c => <option key={c.id} value={c.id}>{c.name} — {c.date}</option>)}

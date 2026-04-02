@@ -149,14 +149,31 @@ export default function TrainingPage() {
   }
   const LIFTER_FIELDS: (keyof WorkoutExercise)[] = ['actual_sets','actual_reps','actual_weight_kg','actual_rpe','actual_note','completed']
 
+  // ── Notify mentor when lifter saves actual data ─────────────────
+  const notifyMentor = async (msg: string) => {
+    if (isAdmin || !userId) return
+    // Get admin user IDs from profiles
+    const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin')
+    if (!admins?.length) return
+    const rows = admins.map(a => ({ recipient_id: a.id, sender_id: userId, message: msg, read: false }))
+    await supabase.from('notifications').insert(rows)
+  }
+
   const updateExercise = async (weId: string, data: Partial<WorkoutExercise>) => {
-    // Lifters can only update actual_ fields — filter out anything else
     const filtered = isAdmin
       ? data
       : Object.fromEntries(Object.entries(data).filter(([k]) => LIFTER_FIELDS.includes(k as keyof WorkoutExercise)))
     if (Object.keys(filtered).length === 0) return
     await supabase.from('workout_exercises').update(filtered).eq('id', weId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.map(we => we.id === weId ? { ...we, ...filtered } : we) })) })) } : b)
+    // Notify if lifter logged actual data
+    if (!isAdmin && (filtered.actual_weight_kg || filtered.actual_rpe || filtered.completed)) {
+      const exerciseName = block?.weeks?.flatMap(w => w.workouts ?? [])
+        .flatMap(wo => wo.workout_exercises ?? [])
+        .find(we => we.id === weId)?.exercise?.name ?? 'vježba'
+      if (filtered.completed) notifyMentor(`${athleteName} je završio/la set — ${exerciseName}`)
+      else if (filtered.actual_weight_kg) notifyMentor(`${athleteName} je ulogirao/la ${filtered.actual_weight_kg}kg na ${exerciseName}`)
+    }
   }
   const deleteExercise = async (weId: string) => {
     await supabase.from('workout_exercises').delete().eq('id', weId)
@@ -235,7 +252,7 @@ export default function TrainingPage() {
         </svg>
       </div>
 
-      <AppNav athleteName={athleteName} isAdmin={isAdmin} onLogout={handleLogout} avatarIcon={avatarIcon} />
+      <AppNav athleteName={athleteName} isAdmin={isAdmin} onLogout={handleLogout} avatarIcon={avatarIcon} userId={userId ?? undefined} />
 
       {/* ─── HEADER ──────────────────────────────────────────────── */}
       <div style={{ paddingTop: '56px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
@@ -356,7 +373,7 @@ export default function TrainingPage() {
         {/* ─── CONTENT ─────────────────────────────────────────── */}
         <div className='page-content' style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px 80px' }}>
           {/* Hub tab */}
-          {activeTab === 'hub' && <HubTab tips={tips} athleteName={athleteName} />}
+          {activeTab === 'hub' && <HubTab tips={tips} athleteName={athleteName} userId={userId ?? undefined} />}
           {/* Meet day tab */}
           {activeTab === 'meet' && userId && <MeetDayTab userId={userId} isAdmin={isAdmin} />}
           {activeTab === 'program' && <>

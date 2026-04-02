@@ -1,8 +1,11 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { X } from 'lucide-react'
 import type { CoachTip } from './types'
+import { createClient } from '@/lib/supabase/client'
+
+const supabase = createClient()
 
 // ─── SHARED UI ───────────────────────────────────────────────────
 // ─── SHARED: Input component ────────────────────────────────────
@@ -365,6 +368,8 @@ const HUB_TOOLS = [
   { id:'guide-wc',  label:'Water Cut Guide',  sub:'Protokol dehidracije',             color:'#34d399', badge:'GUIDE'},
   { id:'guide-rpe', label:'RPE Guide',        sub:'Kako koristiti RPE',               color:'#fbbf24', badge:'GUIDE'},
   { id:'guide-peak',label:'Peaking Guide',    sub:'Priprema za natjecanje',           color:'#a78bfa', badge:'GUIDE'},
+  { id:'weight',    label:'Praćenje kilaze',  sub:'Dnevni unos i tjedna projekcija',  color:'#f472b6', badge:'LOG'  },
+  { id:'progress',  label:'Graf napretka',   sub:'Kilaze kroz blokove po liftu/RPE', color:'#22d3ee', badge:'GRAF' },
 ]
 
 const GUIDE_CONTENT: Record<string,{title:string;body:string[]}> = {
@@ -390,7 +395,475 @@ const GUIDE_CONTENT: Record<string,{title:string;body:string[]}> = {
   ]},
 }
 
-export function HubTab({ tips, athleteName }: { tips: CoachTip[]; athleteName: string }) {
+// ─── PROGRESS GRAPH ─────────────────────────────────────────────
+type ProgressRow = {
+  date: string
+  weight_kg: number | null
+  actual_rpe: number | null
+  exercise_name: string
+  block_name: string
+  week_number: number
+  priority: 'primary' | 'secondary' | 'other'
+}
+
+const RPE_RANGES = [
+  { label: 'Sve', min: 0, max: 10 },
+  { label: '@6-7', min: 6, max: 7 },
+  { label: '@7-8', min: 7, max: 8 },
+  { label: '@8-9', min: 8, max: 9 },
+  { label: '@9+',  min: 9, max: 10 },
+]
+
+const GRAPH_COLORS = ['#22d3ee', '#f59e0b', '#f472b6', '#a78bfa', '#22c55e', '#f87171']
+
+function ProgressGraph({ userId }: { userId: string }) {
+  const [rows, setRows]           = useState<ProgressRow[]>([])
+  const [exercises, setExercises] = useState<string[]>([])
+  const [primaryLift, setPrimary] = useState('')
+  const [secondaryLift, setSecondary] = useState('')
+  const [rpeRange, setRpeRange]   = useState(0) // index into RPE_RANGES
+  const [loading, setLoading]     = useState(true)
+  const [hovered, setHovered]     = useState<{lift:string;idx:number}|null>(null)
+
+  const COLOR = '#22d3ee'
+
+  useEffect(() => {
+    const load = async () => {
+      // Get all blocks → weeks → workouts → workout_exercises with exercise name and dates
+      const { data: blocks } = await supabase
+        .from('blocks')
+        .select('id, name, weeks(week_number, workouts(workout_date, workout_exercises(actual_weight_kg, actual_rpe, exercise:exercises(name))))')
+        .eq('athlete_id', userId)
+        .order('created_at', { ascending: true })
+
+      const allRows: ProgressRow[] = []
+      const exSet = new Set<string>()
+
+      for (const block of (blocks ?? []) as any[]) {
+        for (const week of (block.weeks ?? []) as any[]) {
+          for (const workout of (week.workouts ?? []) as any[]) {
+            for (const we of (workout.workout_exercises ?? []) as any[]) {
+              if (!we.actual_weight_kg || !we.exercise?.name) continue
+              exSet.add(we.exercise.name)
+              allRows.push({
+                date: workout.workout_date,
+                weight_kg: we.actual_weight_kg,
+                actual_rpe: we.actual_rpe,
+                exercise_name: we.exercise.name,
+                block_name: block.name,
+                week_number: week.week_number,
+                priority: 'other',
+              })
+            }
+          }
+        }
+      }
+
+      allRows.sort((a, b) => a.date.localeCompare(b.date))
+      setRows(allRows)
+      const exList = Array.from(exSet).sort()
+      setExercises(exList)
+      if (exList.length > 0) setPrimary(exList[0])
+      if (exList.length > 1) setSecondary(exList[1])
+      setLoading(false)
+    }
+    load()
+  }, [userId])
+
+  function filterRows(lift: string) {
+    const range = RPE_RANGES[rpeRange]
+    return rows.filter(r =>
+      r.exercise_name === lift &&
+      (range.min === 0 || (r.actual_rpe !== null && r.actual_rpe >= range.min && r.actual_rpe <= range.max))
+    )
+  }
+
+  function LiftChart({ lift, color, label }: { lift: string; color: string; label: string }) {
+    const data = filterRows(lift)
+    if (data.length === 0) return (
+      <div style={{ height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem', fontFamily: 'var(--fm)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px' }}>
+        Nema podataka za odabrani filter
+      </div>
+    )
+
+    const W = 500, H = 120, PL = 40, PR = 12, PT = 14, PB = 20
+    const ys = data.map(d => d.weight_kg!)
+    const minY = Math.floor(Math.min(...ys)) - 2
+    const maxY = Math.ceil(Math.max(...ys)) + 2
+    const toX = (i: number) => PL + (i / Math.max(data.length - 1, 1)) * (W - PL - PR)
+    const toY = (v: number) => PT + (1 - (v - minY) / (maxY - minY)) * (H - PT - PB)
+    const pts = data.map((d, i) => ({ x: toX(i), y: toY(d.weight_kg!), ...d }))
+    const linePath = pts.reduce((acc, p, i) => {
+      if (i === 0) return `M ${p.x} ${p.y}`
+      const prev = pts[i - 1]
+      const cx = (prev.x + p.x) / 2
+      return `${acc} C ${cx} ${prev.y} ${cx} ${p.y} ${p.x} ${p.y}`
+    }, '')
+    const fillPath = `${linePath} L ${pts[pts.length - 1].x} ${H} L ${pts[0].x} ${H} Z`
+    const yTicks = [minY, Math.round((minY + maxY) / 2), maxY]
+    const hov = hovered?.lift === lift ? hovered.idx : null
+
+    // Group block labels
+    const blockLabels: { x: number; name: string }[] = []
+    let lastBlock = ''
+    pts.forEach((p, i) => {
+      if (p.block_name !== lastBlock) { blockLabels.push({ x: p.x, name: p.block_name }); lastBlock = p.block_name }
+    })
+
+    return (
+      <div style={{ position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: color }} />
+          <span style={{ fontSize: '0.65rem', fontWeight: 700, color, fontFamily: 'var(--fm)' }}>{label}</span>
+          <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>{data.length} unosa · max {Math.max(...ys)}kg</span>
+        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '120px', overflow: 'visible', display: 'block' }}>
+          <defs>
+            <linearGradient id={`pg-${lift.replace(/\s/g,'')}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity="0.18" />
+              <stop offset="100%" stopColor={color} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {yTicks.map(v => (
+            <g key={v}>
+              <line x1={PL} y1={toY(v)} x2={W - PR} y2={toY(v)} stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+              <text x={PL - 4} y={toY(v) + 3.5} textAnchor="end" fontSize="8" fill="rgba(255,255,255,0.2)" fontFamily="var(--fm)">{v}</text>
+            </g>
+          ))}
+          {/* Block dividers */}
+          {blockLabels.map((bl, i) => i > 0 && (
+            <g key={bl.name}>
+              <line x1={bl.x} y1={PT} x2={bl.x} y2={H - PB} stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="3 3" />
+            </g>
+          ))}
+          <path d={fillPath} fill={`url(#pg-${lift.replace(/\s/g,'')})`} />
+          <path d={linePath} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          {hov !== null && <line x1={pts[hov].x} y1={PT} x2={pts[hov].x} y2={H - PB} stroke={color} strokeWidth="1" strokeOpacity="0.3" strokeDasharray="3 3" />}
+          {pts.map((p, i) => (
+            <g key={i} onMouseEnter={() => setHovered({ lift, idx: i })} onMouseLeave={() => setHovered(null)} style={{ cursor: 'crosshair' }}>
+              <circle cx={p.x} cy={p.y} r="14" fill="transparent" />
+              <circle cx={p.x} cy={p.y} r={hov === i ? 5 : 2.5} fill={hov === i ? '#fff' : color} stroke={color} strokeWidth="1.5" />
+              {hov === i && (
+                <foreignObject x={p.x - 60} y={p.y - 56} width="120" height="50" style={{ overflow: 'visible', pointerEvents: 'none' }}>
+                  <div style={{ background: '#0d0d16', border: `1px solid ${color}44`, borderRadius: '8px', padding: '7px 10px', textAlign: 'center', whiteSpace: 'nowrap' as const, fontFamily: 'var(--fm)' }}>
+                    <div style={{ fontSize: '1rem', fontWeight: 800, color, fontFamily: 'var(--fd)', lineHeight: 1 }}>{p.weight_kg}kg</div>
+                    {p.actual_rpe && <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>@RPE {p.actual_rpe}</div>}
+                    <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.25)', marginTop: '1px' }}>{p.block_name} · W{p.week_number} · {p.date}</div>
+                  </div>
+                </foreignObject>
+              )}
+            </g>
+          ))}
+          {/* Block name labels on x-axis */}
+          {blockLabels.map((bl, i) => (
+            <text key={bl.name} x={bl.x + 4} y={H - 3} fontSize="7" fill="rgba(255,255,255,0.18)" fontFamily="var(--fm)">{bl.name.slice(0, 14)}</text>
+          ))}
+        </svg>
+      </div>
+    )
+  }
+
+  if (loading) return <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.72rem', padding: '20px 0', textAlign: 'center' as const }}>UČITAVANJE...</div>
+  if (exercises.length === 0) return <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.72rem', padding: '20px 0', textAlign: 'center' as const }}>Nema ulogiranih kilaža u treninzima.</div>
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
+
+      {/* Filters */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div>
+          <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: COLOR, fontFamily: 'var(--fm)', marginBottom: '6px', fontWeight: 700 }}>PRIMARNI LIFT</div>
+          <select value={primaryLift} onChange={e => setPrimary(e.target.value)}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: `1.5px solid ${COLOR}33`, borderRadius: '9px', color: '#f0f0f5', padding: '9px 12px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', cursor: 'pointer' }}>
+            <option value="">— bez odabira —</option>
+            {exercises.map(e => <option key={e} value={e}>{e}</option>)}
+          </select>
+        </div>
+        <div>
+          <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: '#f59e0b', fontFamily: 'var(--fm)', marginBottom: '6px', fontWeight: 700 }}>SEKUNDARNI LIFT</div>
+          <select value={secondaryLift} onChange={e => setSecondary(e.target.value)}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(245,158,11,0.3)', borderRadius: '9px', color: '#f0f0f5', padding: '9px 12px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', cursor: 'pointer' }}>
+            <option value="">— bez odabira —</option>
+            {exercises.map(e => <option key={e} value={e}>{e}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* RPE filter */}
+      <div>
+        <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', marginBottom: '6px' }}>RPE FILTER</div>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const }}>
+          {RPE_RANGES.map((r, i) => (
+            <button key={r.label} onClick={() => setRpeRange(i)}
+              style={{ padding: '5px 12px', background: rpeRange === i ? `${COLOR}18` : 'transparent', border: `1px solid ${rpeRange === i ? COLOR : 'rgba(255,255,255,0.1)'}`, borderRadius: '6px', color: rpeRange === i ? COLOR : '#555', cursor: 'pointer', fontSize: '0.62rem', fontFamily: 'var(--fm)', transition: 'all 0.15s' }}>
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Charts */}
+      {primaryLift && (
+        <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px' }}>
+          <LiftChart lift={primaryLift} color={COLOR} label={primaryLift} />
+        </div>
+      )}
+      {secondaryLift && secondaryLift !== primaryLift && (
+        <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px' }}>
+          <LiftChart lift={secondaryLift} color="#f59e0b" label={secondaryLift} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── WEIGHT TRACKER ─────────────────────────────────────────────
+type WeightEntry = { id: string; weight_kg: number; logged_at: string; notes: string | null }
+
+const DAY_NAMES = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub']
+
+function getWeekKey(dateStr: string) {
+  const d = new Date(dateStr)
+  const day = d.getDay() === 0 ? 7 : d.getDay() // Mon=1 ... Sun=7
+  const mon = new Date(d); mon.setDate(d.getDate() - (day - 1))
+  return mon.toISOString().split('T')[0]
+}
+
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr)
+  return `${DAY_NAMES[d.getDay()]} ${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.`
+}
+
+function linReg(pts: {x:number;y:number}[]) {
+  const n = pts.length
+  if (n < 2) return null
+  const sumX = pts.reduce((s,p)=>s+p.x,0), sumY = pts.reduce((s,p)=>s+p.y,0)
+  const sumXY = pts.reduce((s,p)=>s+p.x*p.y,0), sumXX = pts.reduce((s,p)=>s+p.x*p.x,0)
+  const slope = (n*sumXY - sumX*sumY) / (n*sumXX - sumX*sumX)
+  const intercept = (sumY - slope*sumX) / n
+  return { slope, intercept }
+}
+
+function WeightTracker({ userId }: { userId: string }) {
+  const [entries, setEntries] = useState<WeightEntry[]>([])
+  const [weight, setWeight]   = useState('')
+  const [date, setDate]       = useState(() => new Date().toISOString().split('T')[0])
+  const [notes, setNotes]     = useState('')
+  const [saving, setSaving]   = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null)
+
+  const COLOR = '#f472b6'
+
+  useEffect(() => {
+    supabase
+      .from('weight_logs')
+      .select('id, weight_kg, logged_at, notes')
+      .eq('user_id', userId)
+      .order('logged_at', { ascending: true })
+      .limit(180)
+      .then(({ data }) => { setEntries(data ?? []); setLoading(false) })
+  }, [userId])
+
+  async function addEntry() {
+    const kg = parseFloat(weight)
+    if (!kg || kg < 20 || kg > 400 || !date) return
+    setSaving(true)
+    // upsert by date — replace existing entry for same day
+    const existing = entries.find(e => e.logged_at === date)
+    if (existing) {
+      const { data, error } = await supabase
+        .from('weight_logs').update({ weight_kg: kg, notes: notes || null })
+        .eq('id', existing.id).select('id, weight_kg, logged_at, notes').single()
+      if (!error && data) setEntries(prev => prev.map(e => e.id === data.id ? data : e))
+    } else {
+      const { data, error } = await supabase
+        .from('weight_logs').insert({ user_id: userId, weight_kg: kg, logged_at: date, notes: notes || null })
+        .select('id, weight_kg, logged_at, notes').single()
+      if (!error && data) setEntries(prev => [...prev, data].sort((a,b) => a.logged_at.localeCompare(b.logged_at)))
+    }
+    setWeight(''); setNotes('')
+    setSaving(false)
+  }
+
+  async function deleteEntry(id: string) {
+    await supabase.from('weight_logs').delete().eq('id', id)
+    setEntries(prev => prev.filter(e => e.id !== id))
+  }
+
+  // Group entries by ISO week (Mon–Sun)
+  const weeks = (() => {
+    const map = new Map<string, WeightEntry[]>()
+    for (const e of entries) {
+      const wk = getWeekKey(e.logged_at)
+      if (!map.has(wk)) map.set(wk, [])
+      map.get(wk)!.push(e)
+    }
+    // Sort weeks desc (newest first)
+    return Array.from(map.entries()).sort((a,b) => b[0].localeCompare(a[0]))
+  })()
+
+  // Per-week projection: use entries from this week + previous week
+  function weekProjection(weekKey: string) {
+    const wIdx = weeks.findIndex(([k]) => k === weekKey)
+    const relevant: WeightEntry[] = []
+    for (let i = wIdx; i < Math.min(wIdx + 2, weeks.length); i++) relevant.push(...weeks[i][1])
+    if (relevant.length < 2) return null
+    const base = new Date(relevant[0].logged_at).getTime()
+    const pts = relevant.map(e => ({ x: (new Date(e.logged_at).getTime() - base) / 86400000, y: e.weight_kg }))
+    const reg = linReg(pts)
+    if (!reg) return null
+    const lastX = pts[pts.length - 1].x
+    const endX = lastX + 7
+    const projEnd = +(reg.intercept + reg.slope * endX).toFixed(2)
+    const weeklyChange = +(reg.slope * 7).toFixed(2)
+    return { projEnd, weeklyChange }
+  }
+
+  // Full chart (all entries)
+  function FullChart() {
+    if (entries.length < 2) return null
+    const W = 400, H = 110, PL = 36, PR = 12, PT = 12, PB = 16
+    const ys = entries.map(e => e.weight_kg)
+    const minY = Math.floor(Math.min(...ys)) - 1
+    const maxY = Math.ceil(Math.max(...ys)) + 1
+    const toX = (i: number) => PL + (i / (entries.length - 1)) * (W - PL - PR)
+    const toY = (v: number) => PT + (1 - (v - minY) / (maxY - minY)) * (H - PT - PB)
+    const pts = entries.map((e, i) => `${toX(i)},${toY(e.weight_kg)}`).join(' ')
+    const yTicks = [minY, Math.round((minY + maxY) / 2), maxY]
+    return (
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '110px', overflow: 'visible' }}>
+        <defs>
+          <linearGradient id="wgfull" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={COLOR} stopOpacity="0.2" />
+            <stop offset="100%" stopColor={COLOR} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {yTicks.map(v => (
+          <g key={v}>
+            <line x1={PL} y1={toY(v)} x2={W - PR} y2={toY(v)} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+            <text x={PL - 4} y={toY(v) + 3} textAnchor="end" fontSize="7" fill="rgba(255,255,255,0.2)" fontFamily="var(--fm)">{v}</text>
+          </g>
+        ))}
+        <polygon points={`${PL},${H - PB} ${pts} ${toX(entries.length-1)},${H - PB}`} fill="url(#wgfull)" />
+        <polyline points={pts} fill="none" stroke={COLOR} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
+        {entries.map((e, i) => (
+          <g key={e.id} onMouseEnter={() => setHoverIdx(i)} onMouseLeave={() => setHoverIdx(null)} style={{ cursor: 'pointer' }}>
+            <circle cx={toX(i)} cy={toY(e.weight_kg)} r={hoverIdx === i ? 5 : 2.5} fill={hoverIdx === i ? '#fff' : COLOR} stroke={COLOR} strokeWidth="1.5" style={{ transition: 'r 0.1s' }} />
+            {hoverIdx === i && (
+              <text x={toX(i)} y={toY(e.weight_kg) - 8} textAnchor="middle" fontSize="8.5" fill="#fff" fontFamily="var(--fm)" fontWeight="700">{e.weight_kg}kg</text>
+            )}
+          </g>
+        ))}
+      </svg>
+    )
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
+
+      {/* Input */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+        <CalcInput label="Datum" value={date} onChange={setDate} color={COLOR} type="date" />
+        <CalcInput label="Kilaza (kg)" value={weight} onChange={setWeight} color={COLOR} step="0.1" placeholder="npr. 92.5" />
+        <CalcInput label="Bilješka" value={notes} onChange={setNotes} color={COLOR} type="text" placeholder="npr. natašte" />
+      </div>
+      <button onClick={addEntry} disabled={saving || !weight}
+        style={{ padding: '12px', background: weight ? `${COLOR}18` : 'rgba(255,255,255,0.03)', border: `1.5px solid ${weight ? COLOR+'44' : 'rgba(255,255,255,0.07)'}`, borderRadius: '10px', color: weight ? COLOR : 'rgba(255,255,255,0.3)', fontSize: '0.8rem', fontWeight: 700, fontFamily: 'var(--fm)', letterSpacing: '0.06em', cursor: weight ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}>
+        {saving ? 'SPREMA...' : '+ SPREMI UNOS'}
+      </button>
+
+      {loading && <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', textAlign: 'center' as const, padding: '20px 0' }}>UČITAVANJE...</div>}
+
+      {/* Full chart */}
+      {entries.length >= 2 && (
+        <div style={{ padding: '16px 20px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px' }}>
+          <div style={{ fontSize: '0.52rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>
+            UKUPNI GRAFIKON · {entries.length} unosa · {entries[0].logged_at} – {entries[entries.length-1].logged_at}
+          </div>
+          <FullChart />
+        </div>
+      )}
+
+      {/* Weeks */}
+      {weeks.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '12px' }}>
+          {weeks.map(([weekKey, wEntries]) => {
+            const proj = weekProjection(weekKey)
+            const avg = +(wEntries.reduce((s,e) => s+e.weight_kg, 0) / wEntries.length).toFixed(2)
+            const monDate = new Date(weekKey)
+            const sunDate = new Date(weekKey); sunDate.setDate(monDate.getDate() + 6)
+            const weekLabel = `${monDate.getDate().toString().padStart(2,'0')}.${(monDate.getMonth()+1).toString().padStart(2,'0')} – ${sunDate.getDate().toString().padStart(2,'0')}.${(sunDate.getMonth()+1).toString().padStart(2,'0')}.${sunDate.getFullYear()}`
+            return (
+              <div key={weekKey} style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden' }}>
+                {/* Week header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div>
+                    <span style={{ fontSize: '0.58rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700 }}>TJEDAN · </span>
+                    <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)' }}>{weekLabel}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <div style={{ textAlign: 'right' as const }}>
+                      <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', letterSpacing: '0.1em' }}>PROSJEK</div>
+                      <div style={{ fontFamily: 'var(--fd)', fontSize: '1rem', color: '#fff', lineHeight: 1 }}>{avg}kg</div>
+                    </div>
+                    {proj && (
+                      <div style={{ textAlign: 'right' as const }}>
+                        <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', letterSpacing: '0.1em' }}>PROJ. SLJ. TJ.</div>
+                        <div style={{ fontFamily: 'var(--fd)', fontSize: '1rem', color: COLOR, lineHeight: 1 }}>{proj.projEnd}kg</div>
+                      </div>
+                    )}
+                    {proj && (
+                      <div style={{ fontSize: '0.65rem', fontWeight: 700, fontFamily: 'var(--fm)', color: proj.weeklyChange < 0 ? '#44cc88' : proj.weeklyChange > 0 ? '#f87171' : 'rgba(255,255,255,0.3)', minWidth: '48px', textAlign: 'right' as const }}>
+                        {proj.weeklyChange > 0 ? '+' : ''}{proj.weeklyChange}kg/tj
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {/* Day rows */}
+                <div>
+                  {wEntries.map((e, i) => {
+                    const prevEntry = i < wEntries.length - 1 ? wEntries[i + 1] : entries[entries.findIndex(x => x.id === e.id) - 1]
+                    const diff = prevEntry ? +(e.weight_kg - prevEntry.weight_kg).toFixed(2) : null
+                    return (
+                      <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 16px', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+                        {/* Date */}
+                        <div style={{ width: '90px', flexShrink: 0 }}>
+                          <div style={{ fontSize: '0.62rem', color: COLOR, fontFamily: 'var(--fm)', fontWeight: 700 }}>{formatDate(e.logged_at)}</div>
+                          <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>{e.logged_at}</div>
+                        </div>
+                        {/* Weight */}
+                        <div style={{ fontFamily: 'var(--fd)', fontSize: '1.25rem', color: '#fff', minWidth: '64px' }}>{e.weight_kg}kg</div>
+                        {/* Diff */}
+                        {diff !== null && (
+                          <span style={{ fontSize: '0.62rem', fontWeight: 700, fontFamily: 'var(--fm)', color: diff < 0 ? '#44cc88' : diff > 0 ? '#f87171' : 'rgba(255,255,255,0.3)' }}>
+                            {diff > 0 ? '+' : ''}{diff}
+                          </span>
+                        )}
+                        {/* Notes */}
+                        {e.notes && <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{e.notes}</span>}
+                        {/* Delete */}
+                        <button onClick={() => deleteEntry(e.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.12)', cursor: 'pointer', fontSize: '0.75rem', fontFamily: 'var(--fm)', padding: '2px 6px', borderRadius: '4px', transition: 'color 0.15s', flexShrink: 0 }}
+                          onMouseEnter={e2 => (e2.currentTarget as HTMLButtonElement).style.color = '#f87171'}
+                          onMouseLeave={e2 => (e2.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.12)'}>×</button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {!loading && entries.length === 0 && (
+        <div style={{ textAlign: 'center' as const, padding: '30px 0', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', fontFamily: 'var(--fm)' }}>Još nema unosa. Odaberi datum i dodaj kilažu iznad.</div>
+      )}
+    </div>
+  )
+}
+
+export function HubTab({ tips, athleteName, userId }: { tips: CoachTip[]; athleteName: string; userId?: string }) {
   const [active, setActive] = useState<string | null>(null)
   const activeTool = HUB_TOOLS.find(t => t.id === active)
   const CAT_COLORS: Record<string,string> = { general:'#888', technique:'#6b8cff', nutrition:'#22c55e', competition:'#f59e0b', recovery:'#f472b6' }
@@ -475,6 +948,10 @@ export function HubTab({ tips, athleteName }: { tips: CoachTip[]; athleteName: s
             {active === 'rpe'      && <RpeCalc />}
             {active === 'gl'       && <GlCalc />}
             {active === 'watercut' && <WaterCutCalc />}
+            {active === 'weight'    && userId && <WeightTracker userId={userId} />}
+            {active === 'weight'    && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje kilaze.</div>}
+            {active === 'progress'  && userId && <ProgressGraph userId={userId} />}
+            {active === 'progress'  && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za prikaz grafa.</div>}
             {['guide-wc','guide-rpe','guide-peak'].includes(active) && (() => {
               const g = GUIDE_CONTENT[active]
               if (!g) return null

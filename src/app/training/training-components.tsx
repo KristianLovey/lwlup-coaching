@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
   GripVertical, Loader2, LogOut, Home, FolderOpen,
-  User, Shield, X, ChevronLeft, Dumbbell, BarChart2
+  User, Shield, X, ChevronLeft, Dumbbell, BarChart2, Send
 } from 'lucide-react'
 import type { Exercise, WorkoutExercise, Workout, Week, CoachTip, SetLog, Competition } from './types'
 
@@ -14,29 +14,45 @@ const supabase = createClient()
 // ─── AVATAR ICONS ─────────────────────────────────────────────────
 export const AVATARS: { id: string; label: string; svg: string }[] = [
   { id: 'barbell', label: 'Šipka',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="18" width="36" height="4" rx="2" fill="currentColor"/><rect x="6" y="12" width="4" height="16" rx="1.5" fill="currentColor" opacity=".8"/><rect x="30" y="12" width="4" height="16" rx="1.5" fill="currentColor" opacity=".8"/><rect x="3" y="15" width="4" height="10" rx="1" fill="currentColor"/><rect x="33" y="15" width="4" height="10" rx="1" fill="currentColor"/></svg>` },
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="13" y="19" width="14" height="2" fill="currentColor"/><rect x="5" y="17" width="3" height="6" rx="1" fill="currentColor"/><rect x="8" y="15" width="3" height="10" rx="1" fill="currentColor" opacity=".85"/><rect x="29" y="17" width="3" height="6" rx="1" fill="currentColor"/><rect x="29" y="15" width="3" height="10" rx="1" fill="currentColor" opacity=".85"/><rect x="11" y="19.5" width="18" height="1" fill="currentColor" opacity=".5"/><rect x="3" y="18" width="5" height="4" rx=".8" fill="currentColor" opacity=".6"/><rect x="32" y="18" width="5" height="4" rx=".8" fill="currentColor" opacity=".6"/></svg>` },
   { id: 'squat', label: 'Čučanj',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="6" r="3" fill="currentColor"/><path d="M14 12h12M20 12v10l-5 8M20 22l5 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><rect x="4" y="19" width="32" height="3" rx="1.5" fill="currentColor" opacity=".4"/></svg>` },
-  { id: 'deadlift', label: 'Mrtvo',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="6" r="3" fill="currentColor"/><path d="M20 9v12M14 28l6-7 6 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="29" width="32" height="4" rx="2" fill="currentColor" opacity=".5"/><rect x="4" y="26" width="6" height="10" rx="1.5" fill="currentColor" opacity=".7"/><rect x="30" y="26" width="6" height="10" rx="1.5" fill="currentColor" opacity=".7"/></svg>` },
-  { id: 'bench', label: 'Klupa',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="20" width="28" height="5" rx="2.5" fill="currentColor" opacity=".7"/><rect x="8" y="25" width="4" height="10" rx="2" fill="currentColor" opacity=".6"/><rect x="28" y="25" width="4" height="10" rx="2" fill="currentColor" opacity=".6"/><rect x="4" y="14" width="32" height="4" rx="2" fill="currentColor" opacity=".3"/><circle cx="20" cy="8" r="3" fill="currentColor"/></svg>` },
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="6" r="2.5" fill="currentColor"/><rect x="4" y="13" width="32" height="2.5" rx="1.25" fill="currentColor" opacity=".35"/><rect x="4" y="12" width="4.5" height="5" rx="1" fill="currentColor" opacity=".7"/><rect x="31.5" y="12" width="4.5" height="5" rx="1" fill="currentColor" opacity=".7"/><path d="M17 15.5c-.5 0-4 5-5.5 9.5l3 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 15.5c.5 0 4 5 5.5 9.5l-3 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 27.5l5.5 6 5.5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 15.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".6"/></svg>` },
+  { id: 'deadlift', label: 'Mrtvo dizanje',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="5.5" r="2.5" fill="currentColor"/><path d="M20 8v11" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M20 19c-3 0-6 1-7 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 19c3 0 6 1 7 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="3" y="28" width="34" height="3" rx="1.5" fill="currentColor" opacity=".45"/><rect x="3" y="26" width="5.5" height="7" rx="1.2" fill="currentColor" opacity=".75"/><rect x="31.5" y="26" width="5.5" height="7" rx="1.2" fill="currentColor" opacity=".75"/><path d="M13 22l-1 6M27 22l1 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity=".55"/></svg>` },
+  { id: 'bench', label: 'Bench press',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="6" r="2.5" fill="currentColor"/><path d="M20 8.5v7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="5" y="15.5" width="30" height="2.5" rx="1.25" fill="currentColor" opacity=".35"/><rect x="5" y="14.5" width="4.5" height="5" rx="1" fill="currentColor" opacity=".7"/><rect x="30.5" y="14.5" width="4.5" height="5" rx="1" fill="currentColor" opacity=".7"/><rect x="8" y="22" width="24" height="5.5" rx="2" fill="currentColor" opacity=".6"/><rect x="10" y="27.5" width="4" height="7" rx="1.5" fill="currentColor" opacity=".55"/><rect x="26" y="27.5" width="4" height="7" rx="1.5" fill="currentColor" opacity=".55"/></svg>` },
+  { id: 'kettlebell', label: 'Kettlebell',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 14c0-3.31 2.69-6 6-6s6 2.69 6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M12 16c-1 1-2 3-2 5a10 10 0 0 0 20 0c0-2-1-4-2-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" opacity=".5"/><ellipse cx="20" cy="24" rx="9" ry="9.5" fill="currentColor" opacity=".85"/><ellipse cx="20" cy="24" rx="5" ry="5.5" fill="currentColor" opacity="-.3"/><path d="M16.5 13.5h7" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="24" r="3" fill="white" opacity=".12"/></svg>` },
+  { id: 'dumbbell', label: 'Bučica',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="17" y="19" width="6" height="2" rx="1" fill="currentColor"/><rect x="9" y="16" width="3.5" height="8" rx="1.2" fill="currentColor" opacity=".9"/><rect x="7" y="17.5" width="3" height="5" rx="1" fill="currentColor" opacity=".7"/><rect x="27.5" y="16" width="3.5" height="8" rx="1.2" fill="currentColor" opacity=".9"/><rect x="30" y="17.5" width="3" height="5" rx="1" fill="currentColor" opacity=".7"/><rect x="12.5" y="19.2" width="15" height="1.6" rx=".8" fill="currentColor" opacity=".6"/></svg>` },
   { id: 'trophy', label: 'Trofej',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 6h16v14a8 8 0 0 1-16 0V6Z" fill="currentColor" opacity=".8"/><path d="M12 10H6a4 4 0 0 0 4 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M28 10h6a4 4 0 0 1-4 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><rect x="16" y="28" width="8" height="4" rx="1" fill="currentColor" opacity=".6"/><rect x="12" y="32" width="16" height="3" rx="1.5" fill="currentColor" opacity=".5"/></svg>` },
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 5h14v13a7 7 0 0 1-14 0V5Z" fill="currentColor" opacity=".85"/><path d="M13 9H7a4 4 0 0 0 4.5 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" opacity=".7"/><path d="M27 9h6a4 4 0 0 1-4.5 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" opacity=".7"/><rect x="17" y="26" width="6" height="4" rx="1" fill="currentColor" opacity=".6"/><rect x="13" y="30" width="14" height="3.5" rx="1.5" fill="currentColor" opacity=".55"/><path d="M17 13l2.5 3 3-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg>` },
   { id: 'flame', label: 'Plamen',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4C20 4 28 14 28 22a8 8 0 0 1-16 0c0-4 2-8 4-10-1 4 2 6 2 6s2-8 2-14Z" fill="currentColor" opacity=".9"/><path d="M20 26a3 3 0 0 0 3-3c0-2-3-5-3-5s-3 3-3 5a3 3 0 0 0 3 3Z" fill="white" opacity=".4"/></svg>` },
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 3c0 0 9 10 9 19a9 9 0 0 1-18 0c0-5 2.5-9 5-11.5-1.5 5 2.5 7 2.5 7S20 11 20 3Z" fill="currentColor" opacity=".9"/><path d="M20 28a4 4 0 0 0 4-4c0-3-4-7-4-7s-4 4-4 7a4 4 0 0 0 4 4Z" fill="white" opacity=".2"/><path d="M20 30a2 2 0 0 0 2-2c0-1.5-2-3.5-2-3.5s-2 2-2 3.5a2 2 0 0 0 2 2Z" fill="white" opacity=".35"/></svg>` },
   { id: 'lightning', label: 'Munja',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22 4L10 22h12l-4 14 18-20H24L22 4Z" fill="currentColor" opacity=".9"/></svg>` },
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M23 3L9 22h13l-5 15 19-22H23L23 3Z" fill="currentColor" opacity=".9"/><path d="M23 3L9 22h13l-5 15 19-22H23Z" stroke="currentColor" stroke-width=".5" stroke-linejoin="round" fill="none" opacity=".3"/></svg>` },
   { id: 'shield', label: 'Štit',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4L6 10v12c0 8 6 13 14 15 8-2 14-7 14-15V10L20 4Z" fill="currentColor" opacity=".8"/><path d="M13 20l5 5 9-9" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/></svg>` },
-  { id: 'mountain', label: 'Planina',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 34L14 14l6 8 4-6 12 18H4Z" fill="currentColor" opacity=".8"/><path d="M24 16l-2 3" stroke="white" stroke-width="2" stroke-linecap="round" opacity=".6"/></svg>` },
-  { id: 'star', label: 'Zvijezda',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4l4.9 10 11 1.6-8 7.8 1.9 11L20 29.4 10.2 34.4l1.9-11-8-7.8 11-1.6L20 4Z" fill="currentColor" opacity=".9"/></svg>` },
-  { id: 'target', label: 'Meta',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="16" stroke="currentColor" stroke-width="2.5" opacity=".4"/><circle cx="20" cy="20" r="10" stroke="currentColor" stroke-width="2.5" opacity=".65"/><circle cx="20" cy="20" r="4" fill="currentColor"/></svg>` },
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 3L5 9.5v12C5 30 11.5 35.5 20 38c8.5-2.5 15-8 15-16.5V9.5L20 3Z" fill="currentColor" opacity=".8"/><path d="M13 20l5 5.5 9-10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".6"/></svg>` },
   { id: 'crown', label: 'Kruna',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 28h28M6 28L8 14l8 8 4-10 4 10 8-8 2 14" fill="currentColor" opacity=".7"/><path d="M6 28h28M8 14l8 8 4-10 4 10 8-8L30 28H10L8 14Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/><circle cx="8" cy="14" r="2.5" fill="currentColor"/><circle cx="20" cy="10" r="2.5" fill="currentColor"/><circle cx="32" cy="14" r="2.5" fill="currentColor"/><rect x="8" y="28" width="24" height="5" rx="1" fill="currentColor" opacity=".5"/></svg>` },
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 29h28M7 13l5.5 8.5L20 9l7.5 12.5L33 13l-3 16H10L7 13Z" fill="currentColor" opacity=".8"/><circle cx="7" cy="13" r="2.5" fill="currentColor"/><circle cx="20" cy="9" r="2.5" fill="currentColor"/><circle cx="33" cy="13" r="2.5" fill="currentColor"/><rect x="9" y="29" width="22" height="5" rx="1.5" fill="currentColor" opacity=".55"/><path d="M14 21h12" stroke="white" stroke-width="1.2" opacity=".25" stroke-linecap="round"/></svg>` },
+  { id: 'skull', label: 'Lubanja',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 22c0-5.52 4.48-10 10-10s10 4.48 10 10c0 3.5-1.8 6.6-4.5 8.4V34h-11v-3.6C11.8 28.6 10 25.5 10 22Z" fill="currentColor" opacity=".85"/><rect x="14.5" y="34" width="11" height="3" rx="1" fill="currentColor" opacity=".5"/><rect x="14" y="31.5" width="2.5" height="2.5" rx=".5" fill="white" opacity=".15"/><rect x="23.5" y="31.5" width="2.5" height="2.5" rx=".5" fill="white" opacity=".15"/><ellipse cx="16" cy="22" rx="3" ry="3.5" fill="white" opacity=".2"/><ellipse cx="24" cy="22" rx="3" ry="3.5" fill="white" opacity=".2"/><path d="M18 27h4M20 25v4" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity=".18"/></svg>` },
+  { id: 'fist', label: 'Šaka',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="17" width="20" height="16" rx="4" fill="currentColor" opacity=".85"/><rect x="12" y="11" width="5" height="8" rx="2.5" fill="currentColor" opacity=".9"/><rect x="17.5" y="10" width="5" height="9" rx="2.5" fill="currentColor" opacity=".9"/><rect x="23" y="11" width="5" height="8" rx="2.5" fill="currentColor" opacity=".9"/><rect x="8" y="20" width="5" height="7" rx="2.5" fill="currentColor" opacity=".8"/><path d="M12 21h16M12 25h16" stroke="white" stroke-width=".8" opacity=".12"/></svg>` },
+  { id: 'wolf', label: 'Vuk',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 34C9 34 7 24 7 20c0-2 1-5 3-7L6 7l7 5c2-1 4.5-2 7-2s5 1 7 2l7-5-4 6c2 2 3 5 3 7 0 4-2 14-13 14Z" fill="currentColor" opacity=".85"/><path d="M6 7l4 6" stroke="currentColor" stroke-width="1" opacity=".4" stroke-linecap="round"/><path d="M34 7l-4 6" stroke="currentColor" stroke-width="1" opacity=".4" stroke-linecap="round"/><ellipse cx="15.5" cy="21" rx="2" ry="2.5" fill="white" opacity=".22"/><ellipse cx="24.5" cy="21" rx="2" ry="2.5" fill="white" opacity=".22"/><path d="M17 27.5c1 1.5 5 1.5 6 0" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity=".3"/></svg>` },
+  { id: 'bull', label: 'Bik',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 12c-3 0-5 2-5 4s1.5 3 3 3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".7"/><path d="M32 12c3 0 5 2 5 4s-1.5 3-3 3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".7"/><ellipse cx="20" cy="22" rx="13" ry="12" fill="currentColor" opacity=".85"/><ellipse cx="15" cy="20" rx="2.5" ry="3" fill="white" opacity=".2"/><ellipse cx="25" cy="20" rx="2.5" ry="3" fill="white" opacity=".2"/><ellipse cx="20" cy="27" rx="4" ry="2.5" fill="white" opacity=".15"/><circle cx="18" cy="27" r="1" fill="white" opacity=".3"/><circle cx="22" cy="27" r="1" fill="white" opacity=".3"/></svg>` },
+  { id: 'diamond', label: 'Dijamant',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4l16 10-16 22L4 14 20 4Z" fill="currentColor" opacity=".85"/><path d="M4 14h32M12 14L20 4M28 14L20 4M12 14L20 36M28 14L20 36" stroke="white" stroke-width="1" opacity=".18"/><path d="M14 14l6-8 6 8" fill="white" opacity=".12"/></svg>` },
+  { id: 'mountain', label: 'Planina',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 35L15 12l5 7 3-4 14 20H3Z" fill="currentColor" opacity=".8"/><path d="M15 12l5 7 3-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".5"/><path d="M20 12l-2 3-3-1" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity=".35"/><path d="M20 12l2 3 2.5-.5" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity=".22"/></svg>` },
+  { id: 'target', label: 'Meta',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="16" stroke="currentColor" stroke-width="2" opacity=".3"/><circle cx="20" cy="20" r="11" stroke="currentColor" stroke-width="2" opacity=".55"/><circle cx="20" cy="20" r="6" stroke="currentColor" stroke-width="2" opacity=".8"/><circle cx="20" cy="20" r="2.5" fill="currentColor"/><line x1="20" y1="4" x2="20" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".4"/><line x1="20" y1="31" x2="20" y2="36" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".4"/><line x1="4" y1="20" x2="9" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".4"/><line x1="31" y1="20" x2="36" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".4"/></svg>` },
+  { id: 'star', label: 'Zvijezda',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4l4.5 9.5 10.5 1.5-7.5 7.5 1.8 10.5L20 28.2l-9.3 4.8 1.8-10.5L5 15l10.5-1.5L20 4Z" fill="currentColor" opacity=".9"/><path d="M20 4l4.5 9.5 10.5 1.5-7.5 7.5 1.8 10.5L20 28.2l-9.3 4.8 1.8-10.5L5 15l10.5-1.5Z" stroke="white" stroke-width=".5" opacity=".2" stroke-linejoin="round"/></svg>` },
+  { id: 'anchor', label: 'Sidro',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="10" r="3.5" stroke="currentColor" stroke-width="2.2" fill="none"/><line x1="20" y1="13.5" x2="20" y2="34" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M12 34c1-6 4-10 8-10s7 4 8 10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none" opacity=".85"/><line x1="12" y1="18" x2="28" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".5"/><circle cx="12" cy="34" r="2.5" fill="currentColor" opacity=".7"/><circle cx="28" cy="34" r="2.5" fill="currentColor" opacity=".7"/></svg>` },
 ]
 
 export function AvatarSvg({ iconId, size = 32, color = 'currentColor' }: { iconId: string; size?: number; color?: string }) {
@@ -243,12 +259,44 @@ export function TrainingNav({ athleteName, isAdmin, onLogout, avatarIcon }: {
 }
 
 // ─── APP NAVBAR (sve app stranice: trening, profil, vježbe, admin) ─
-export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon }: {
-  athleteName: string; isAdmin: boolean; onLogout: () => void; avatarIcon?: string
+export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon, userId }: {
+  athleteName: string; isAdmin: boolean; onLogout: () => void; avatarIcon?: string; userId?: string
 }) {
   const [open, setOpen]       = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [notifs, setNotifs]   = useState<{id:string;message:string;sender_id:string;read:boolean;created_at:string}[]>([])
+  const [showNotifs, setShowNotifs] = useState(false)
   const dropRef = useRef<HTMLDivElement>(null)
+  const notifRef = useRef<HTMLDivElement>(null)
+  const unread = notifs.filter(n => !n.read).length
+
+  useEffect(() => {
+    if (!isAdmin || !userId) return
+    // Initial load
+    supabase.from('notifications').select('*').eq('recipient_id', userId).order('created_at', { ascending: false }).limit(30)
+      .then(({ data }) => setNotifs(data ?? []))
+    // Realtime subscription
+    const channel = supabase.channel('notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${userId}` },
+        payload => setNotifs(prev => [payload.new as any, ...prev]))
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [isAdmin, userId])
+
+  const markAllRead = async () => {
+    const ids = notifs.filter(n => !n.read).map(n => n.id)
+    if (!ids.length) return
+    await supabase.from('notifications').update({ read: true }).in('id', ids)
+    setNotifs(prev => prev.map(n => ({ ...n, read: true })))
+  }
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setShowNotifs(false)
+    }
+    if (showNotifs) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showNotifs])
   const initials = athleteName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
 
   useEffect(() => {
@@ -296,6 +344,37 @@ export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon }: {
           </div>
           <span style={{ fontSize: '0.62rem', color: isAdmin ? '#f87171' : '#4ade80', fontWeight: 600, fontFamily: 'var(--fm)', letterSpacing: '0.04em' }}>{isAdmin ? 'Admin' : 'Aktivan'}</span>
         </div>
+
+        {/* Notification bell — admin only */}
+        {isAdmin && (
+          <div ref={notifRef} style={{ position: 'relative' }}>
+            <button onClick={() => { setShowNotifs(o => !o); if (!showNotifs) markAllRead() }}
+              style={{ position: 'relative', background: unread > 0 ? 'rgba(251,191,36,0.1)' : 'transparent', border: `1px solid ${unread > 0 ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '10px', padding: '7px 9px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: unread > 0 ? '#fbbf24' : 'rgba(255,255,255,0.45)', transition: 'all 0.2s' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              {unread > 0 && (
+                <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#fbbf24', color: '#000', fontSize: '0.45rem', fontWeight: 800, fontFamily: 'var(--fm)', borderRadius: '10px', padding: '1px 5px', minWidth: '16px', textAlign: 'center' }}>{unread}</span>
+              )}
+            </button>
+            {showNotifs && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '300px', background: 'rgba(10,10,16,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.85)', zIndex: 300, overflow: 'hidden', backdropFilter: 'blur(40px)', animation: 'appnavDrop 0.2s cubic-bezier(0.16,1,0.3,1)' }}>
+                <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: '#fbbf24', fontFamily: 'var(--fm)', fontWeight: 700 }}>OBAVIJESTI</span>
+                  {notifs.length > 0 && <button onClick={markAllRead} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '0.55rem', fontFamily: 'var(--fm)', cursor: 'pointer', letterSpacing: '0.1em' }}>označi sve pročitano</button>}
+                </div>
+                <div style={{ maxHeight: '320px', overflowY: 'auto' as const }}>
+                  {notifs.length === 0 ? (
+                    <div style={{ padding: '24px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', fontFamily: 'var(--fm)' }}>Nema novih obavijesti</div>
+                  ) : notifs.map(n => (
+                    <div key={n.id} style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: n.read ? 'transparent' : 'rgba(251,191,36,0.04)', transition: 'background 0.2s' }}>
+                      <div style={{ fontSize: '0.78rem', color: n.read ? 'rgba(255,255,255,0.5)' : '#f0f0f5', fontFamily: 'var(--fm)', lineHeight: 1.5 }}>{n.message}</div>
+                      <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', marginTop: '4px' }}>{new Date(n.created_at).toLocaleString('hr-HR')}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Avatar / dropdown */}
         <div ref={dropRef} style={{ position: 'relative' }}>
@@ -1034,6 +1113,46 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, onUpdateWorko
 }
 
 // ─── WEEK PANEL ───────────────────────────────────────────────────
+// ─── WEEK NOTES MODAL ────────────────────────────────────────────
+function WeekNotesModal({ notes, isAdmin, onSave, onClose }: {
+  notes: string | null; isAdmin: boolean; onSave: (v: string) => void; onClose: () => void
+}) {
+  const [val, setVal] = useState(notes ?? '')
+  const [saving, setSaving] = useState(false)
+  const save = async () => { setSaving(true); await onSave(val); setSaving(false); onClose() }
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', animation: 'fadeIn 0.15s' }}
+      onClick={onClose}>
+      <div style={{ background: '#0d0d16', border: '1.5px solid rgba(251,191,36,0.25)', borderRadius: '14px', padding: '28px', maxWidth: '500px', width: '100%', boxShadow: '0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(251,191,36,0.08)', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+          <MessageSquare size={16} color="#fbbf24" />
+          <span style={{ fontSize: '0.7rem', letterSpacing: '0.2em', color: '#fbbf24', fontFamily: 'var(--fm)', fontWeight: 700 }}>KOMENTAR TJEDNA</span>
+          <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: '2px' }}>
+            <X size={14} />
+          </button>
+        </div>
+        {isAdmin ? (
+          <>
+            <textarea value={val} onChange={e => setVal(e.target.value)} rows={5} placeholder="Napiši komentar za ovaj tjedan..."
+              style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(251,191,36,0.2)', borderRadius: '9px', color: '#f0f0f5', padding: '12px 14px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box' as const, lineHeight: 1.7 }}
+              onFocus={e => e.target.style.borderColor = 'rgba(251,191,36,0.5)'}
+              onBlur={e => e.target.style.borderColor = 'rgba(251,191,36,0.2)'} />
+            <button onClick={save} disabled={saving}
+              style={{ marginTop: '12px', padding: '10px 24px', background: 'rgba(251,191,36,0.12)', border: '1.5px solid rgba(251,191,36,0.35)', borderRadius: '8px', color: '#fbbf24', fontFamily: 'var(--fm)', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.08em', cursor: 'pointer' }}>
+              {saving ? 'SPREMA...' : 'SPREMI'}
+            </button>
+          </>
+        ) : (
+          <div style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.8, fontFamily: 'var(--fm)', whiteSpace: 'pre-wrap' as const }}>
+            {notes || <span style={{ color: 'rgba(255,255,255,0.25)' }}>Nema komentara za ovaj tjedan.</span>}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onUpdateWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }: {
   week: Week; exercises: Exercise[]; isAdmin: boolean; userId: string
   onDeleteWeek: (id: string) => void; onUpdateWeek: (id: string, data: Partial<Week>) => void
@@ -1043,9 +1162,11 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onUp
   onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void
 }) {
   const [open, setOpen] = useState(true)
+  const [showNotes, setShowNotes] = useState(false)
   const done = week.workouts?.filter(w => w.completed).length ?? 0
   const total = week.workouts?.length ?? 0
   const pct = total > 0 ? (done / total) * 100 : 0
+  const hasNotes = !!(week.notes?.trim())
 
   return (
     <div style={{ marginBottom: '20px', border: '1px solid rgba(255,255,255,0.14)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)' }}>
@@ -1083,6 +1204,14 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onUp
             <div style={{ color: '#888', transition: 'transform 0.25s, color 0.2s', transform: open ? 'rotate(90deg)' : 'none' }}>
               <ChevronRight size={14} />
             </div>
+            {/* Week notes icon — always visible, yellow if has notes */}
+            <button onClick={e => { e.stopPropagation(); setShowNotes(true) }}
+              style={{ background: hasNotes ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${hasNotes ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '7px', padding: '5px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.15s', color: hasNotes ? '#fbbf24' : 'rgba(255,255,255,0.3)' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(251,191,36,0.5)'; (e.currentTarget as HTMLButtonElement).style.color = '#fbbf24' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = hasNotes ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLButtonElement).style.color = hasNotes ? '#fbbf24' : 'rgba(255,255,255,0.3)' }}>
+              <MessageSquare size={12} />
+              {hasNotes && <span style={{ fontSize: '0.48rem', fontWeight: 700, fontFamily: 'var(--fm)', letterSpacing: '0.05em' }}>KOMENTAR</span>}
+            </button>
             {isAdmin && (
               <button onClick={e => { e.stopPropagation(); onDeleteWeek(week.id) }} className="icon-btn-danger">
                 <Trash2 size={13} />
@@ -1131,6 +1260,15 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onUp
             </button>
           )}
         </div>
+      )}
+
+      {showNotes && (
+        <WeekNotesModal
+          notes={week.notes ?? null}
+          isAdmin={isAdmin}
+          onSave={v => onUpdateWeek(week.id, { notes: v || null })}
+          onClose={() => setShowNotes(false)}
+        />
       )}
     </div>
   )
