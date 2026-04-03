@@ -106,7 +106,7 @@ export default function Navbar({ variant = 'transparent', backLink }: NavbarProp
         {/* Logo */}
         <Link href="/" onClick={() => setMenuOpen(false)}
           style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#fff', zIndex: 1 }}>
-          <img src="/slike/logopng.png" alt="LWLUP"
+          <img src="/slike/logopng.png" alt="LWL UP"
             style={{ height: '60px', width: 'auto', transition: 'transform 0.3s' }}
             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1) rotate(-2deg)'}
             onMouseLeave={e => e.currentTarget.style.transform = 'scale(1) rotate(0deg)'}

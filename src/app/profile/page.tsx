@@ -247,6 +247,8 @@ export default function ProfilePage() {
   const [progressReps, setProgressReps] = useState<number>(1)
   const [prLift, setPrLift]           = useState<'squat'|'bench'|'deadlift'>('squat')
   const [prReps, setPrReps]           = useState(1)
+  const [isCoach, setIsCoach]         = useState(false)
+  const [assignedLifterIds, setAssignedLifterIds] = useState<string[]>([])
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const [editingORM, setEditingORM]   = useState(false)
   const [ormVals, setOrmVals]         = useState({ squat: '', bench: '', deadlift: '', body_weight: '', sex: 'male' as 'male'|'female' })
@@ -265,6 +267,12 @@ export default function ProfilePage() {
         supabase.from('leaderboard_view').select('*'),
         supabase.from('workouts').select('athlete_id, completed'),
       ])
+
+      if (prof?.role === 'trener') {
+        setIsCoach(true)
+        const { data: asgn } = await supabase.from('coach_assignments').select('lifter_id').eq('coach_id', user.id)
+        setAssignedLifterIds((asgn ?? []).map((a: any) => a.lifter_id))
+      }
 
       let compsData = null
       if (athleteStat?.id) {
@@ -342,6 +350,7 @@ export default function ProfilePage() {
 
   // ── Leaderboard sort by workout completion % ──────────────────
   const lbSorted = [...leaderboard]
+    .filter(e => !isCoach || assignedLifterIds.includes(e.id))
     .map(e => {
       const c = completions[e.id] ?? { total: 0, done: 0, pct: 0 }
       return { ...e, compTotal: c.total, compDone: c.done, compPct: c.pct }
@@ -363,11 +372,37 @@ export default function ProfilePage() {
   const trainingTotal = (profile.current_squat_1rm ?? 0) + (profile.current_bench_1rm ?? 0) + (profile.current_deadlift_1rm ?? 0)
 
   return (
-    <div style={{ background: '#06060a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
+    <div style={{ background: '#04040a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
 
-      {/* Bg glows */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.015) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
-      <div style={{ position: 'fixed', top: '-20vh', left: '-10vw', width: '60vw', height: '60vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse, rgba(56,100,255,0.05) 0%, transparent 70%)', filter: 'blur(50px)' }} />
+      {/* ── BACKGROUND ── */}
+      {/* Noise */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.35,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E")`,
+        backgroundSize: '200px 200px' }} />
+      {/* Grid — fades toward bottom */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+        backgroundImage: 'linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px)',
+        backgroundSize: '72px 72px',
+        maskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 72%)' }} />
+      {/* Aurora — top left, indigo */}
+      <div style={{ position: 'fixed', top: '-25vh', left: '-15vw', width: '80vw', height: '80vh', zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 40% 40%, rgba(79,70,229,0.15) 0%, rgba(59,130,246,0.07) 40%, transparent 70%)',
+        filter: 'blur(70px)', transform: 'rotate(-12deg)' }} />
+      {/* Aurora — bottom right, emerald */}
+      <div style={{ position: 'fixed', bottom: '-20vh', right: '-10vw', width: '65vw', height: '65vh', zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 60% 60%, rgba(16,185,129,0.11) 0%, rgba(5,150,105,0.05) 45%, transparent 70%)',
+        filter: 'blur(80px)' }} />
+      {/* Top beam */}
+      <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, height: '1px', zIndex: 0, pointerEvents: 'none',
+        background: 'linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.35) 30%, rgba(139,92,246,0.45) 50%, rgba(99,102,241,0.35) 70%, transparent 100%)',
+        boxShadow: '0 0 40px 8px rgba(99,102,241,0.1)' }} />
+      {/* Vignette */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.65) 100%)' }} />
+      {/* logopng — bottom right */}
+      <div style={{ position: 'fixed', bottom: '5vh', right: '2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.03, filter: 'blur(0.5px) grayscale(1)' }}>
+        <img src="/slike/logopng.png" alt="" style={{ width: '160px', height: 'auto' }} />
+      </div>
 
       <AppNav
         athleteName={profile?.full_name ?? ''}

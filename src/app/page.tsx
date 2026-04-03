@@ -196,7 +196,7 @@ export default function Landing() {
 
         <div style={{ position: 'relative', zIndex: 2, width: '100%', padding: '0 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', width: '100%', maxWidth: '600px' }}>
-            <img src="/slike/logopng.png" alt="LWLUP Logo" style={{ width: 'clamp(180px, 50vw, 480px)', height: 'auto', marginBottom: '28px', filter: 'drop-shadow(0 0 40px rgba(255,255,255,0.15))' }} />
+            <img src="/slike/logopng.png" alt="LWL UP Logo" style={{ width: 'clamp(180px, 50vw, 480px)', height: 'auto', marginBottom: '28px', filter: 'drop-shadow(0 0 40px rgba(255,255,255,0.15))' }} />
 
             {/* Quote — ograničena širina da ne prelama prerano */}
             <div style={{ width: '100%', maxWidth: '520px' }}>

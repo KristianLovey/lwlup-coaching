@@ -149,7 +149,9 @@ export function TrainingNav({ athleteName, isAdmin, onLogout, avatarIcon }: {
 
       {/* Logo */}
       <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', marginRight: '32px', flexShrink: 0 }}>
-        <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '28px', opacity: 0.95 }} />
+        <img src="/slike/logopng.png" alt="LWL UP" className="nav-logo" style={{ height: '36px', opacity: 0.95, transition: 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1), filter 0.25s ease' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.12)'; (e.currentTarget as HTMLImageElement).style.filter = 'drop-shadow(0 0 12px rgba(255,255,255,0.7)) drop-shadow(0 0 28px rgba(255,255,255,0.35))' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLImageElement).style.filter = 'none' }} />
       </Link>
 
       {/* Nav links — Apple style, center-left */}
@@ -259,8 +261,8 @@ export function TrainingNav({ athleteName, isAdmin, onLogout, avatarIcon }: {
 }
 
 // ─── APP NAVBAR (sve app stranice: trening, profil, vježbe, admin) ─
-export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon, userId }: {
-  athleteName: string; isAdmin: boolean; onLogout: () => void; avatarIcon?: string; userId?: string
+export function AppNav({ athleteName, isAdmin, isCoach, onLogout, avatarIcon, userId }: {
+  athleteName: string; isAdmin: boolean; isCoach?: boolean; onLogout: () => void; avatarIcon?: string; userId?: string
 }) {
   const [open, setOpen]       = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -327,7 +329,9 @@ export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon, userId }: {
 
       {/* Logo */}
       <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-        <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '28px', opacity: 0.95 }} />
+        <img src="/slike/logopng.png" alt="LWL UP" className="nav-logo" style={{ height: '36px', opacity: 0.95, transition: 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1), filter 0.25s ease' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.12)'; (e.currentTarget as HTMLImageElement).style.filter = 'drop-shadow(0 0 12px rgba(255,255,255,0.7)) drop-shadow(0 0 28px rgba(255,255,255,0.35))' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLImageElement).style.filter = 'none' }} />
       </Link>
 
       {/* Push avatar to right */}

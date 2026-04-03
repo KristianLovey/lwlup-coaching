@@ -219,6 +219,15 @@ h1, h2, h3, h4, h5 { color: var(--text-primary); }
 }
 
 /* ══════════════════════════════════════════
+   APP NAV — global (koristi se na svim app stranicama)
+══════════════════════════════════════════ */
+@media (max-width: 600px) {
+  .appnav-name   { display: none !important; }
+  .appnav-status { padding: 4px 8px !important; }
+  .appnav-status span { font-size: 0.55rem !important; }
+}
+
+/* ══════════════════════════════════════════
    SMALL MOBILE — ispod 480px
 ══════════════════════════════════════════ */
 @media (max-width: 480px) {

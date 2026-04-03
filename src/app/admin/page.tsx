@@ -868,10 +868,13 @@ export default function AdminPage() {
   const [selectedAthlete, setSelectedAthlete] = useState<AthleteProfile | null>(null)
   const [searchQ, setSearchQ] = useState('')
   const [managingUsers, setManagingUsers] = useState(false)
-  const [dashSection, setDashSection] = useState<'athletes' | 'competitions' | 'obavijesti'>('athletes')
+  const [dashSection, setDashSection] = useState<'athletes' | 'competitions' | 'obavijesti' | 'treneri'>('athletes')
   const [notifMsg, setNotifMsg] = useState('')
   const [notifSelected, setNotifSelected] = useState<string[]>([])
   const [notifSending, setNotifSending] = useState(false)
+  const [coaches, setCoaches] = useState<AthleteProfile[]>([])
+  const [assignments, setAssignments] = useState<Record<string, string>>({}) // lifter_id → coach_id
+  const [assignSaving, setAssignSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
@@ -933,21 +936,37 @@ export default function AdminPage() {
   }, [])
 
   const loadAthletes = async () => {
-    // Load all profiles with lifter or other roles
     const { data } = await supabase
       .from('profiles')
       .select('id, full_name, role, created_at')
       .order('full_name')
 
     if (data) {
-      // Load emails from auth.users - NOTE: requires service role in production
-      // For now we use profile data only
       const withBlocks = await Promise.all(data.map(async (p) => {
         const { data: blocks } = await supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', p.id)
         return { ...p, blocks: blocks ?? [] } as AthleteProfile
       }))
       setAthletes(withBlocks)
+      setCoaches(withBlocks.filter(p => p.role === 'trener'))
+
+      // Load existing assignments
+      const { data: asgn } = await supabase.from('coach_assignments').select('coach_id, lifter_id')
+      const map: Record<string, string> = {}
+      for (const a of (asgn ?? [])) map[a.lifter_id] = a.coach_id
+      setAssignments(map)
     }
+  }
+
+  const assignLifterToCoach = async (lifterId: string, coachId: string | null) => {
+    setAssignSaving(true)
+    if (!coachId) {
+      await supabase.from('coach_assignments').delete().eq('lifter_id', lifterId)
+      setAssignments(prev => { const n = { ...prev }; delete n[lifterId]; return n })
+    } else {
+      await supabase.from('coach_assignments').upsert({ coach_id: coachId, lifter_id: lifterId }, { onConflict: 'lifter_id' })
+      setAssignments(prev => ({ ...prev, [lifterId]: coachId }))
+    }
+    setAssignSaving(false)
   }
 
   const updateRole = async (athleteId: string, newRole: string) => {
@@ -997,13 +1016,36 @@ export default function AdminPage() {
   )
 
   return (
-    <div style={{ background: '#08080a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', position: 'relative' }}>
+    <div style={{ background: '#04040a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', position: 'relative' }}>
 
-      {/* BG */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
-        <div style={{ position: 'absolute', top: '-150px', right: '-150px', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(220,38,38,0.04) 0%,transparent 70%)' }} />
-        <div style={{ position: 'absolute', bottom: '-100px', left: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,255,255,0.02) 0%,transparent 70%)' }} />
+      {/* ── BACKGROUND ── */}
+      {/* Noise */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.35,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E")`,
+        backgroundSize: '200px 200px' }} />
+      {/* Grid */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+        backgroundImage: 'linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px)',
+        backgroundSize: '72px 72px',
+        maskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 72%)' }} />
+      {/* Aurora — top right, red tint (admin feel) */}
+      <div style={{ position: 'fixed', top: '-20vh', right: '-15vw', width: '70vw', height: '70vh', zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 60% 40%, rgba(220,38,38,0.1) 0%, rgba(239,68,68,0.05) 40%, transparent 70%)',
+        filter: 'blur(70px)', transform: 'rotate(10deg)' }} />
+      {/* Aurora — bottom left, indigo */}
+      <div style={{ position: 'fixed', bottom: '-20vh', left: '-10vw', width: '65vw', height: '65vh', zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 40% 60%, rgba(79,70,229,0.1) 0%, rgba(99,102,241,0.05) 45%, transparent 70%)',
+        filter: 'blur(80px)' }} />
+      {/* Top beam */}
+      <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, height: '1px', zIndex: 0, pointerEvents: 'none',
+        background: 'linear-gradient(90deg, transparent 0%, rgba(220,38,38,0.3) 30%, rgba(239,68,68,0.4) 50%, rgba(220,38,38,0.3) 70%, transparent 100%)',
+        boxShadow: '0 0 40px 8px rgba(220,38,38,0.08)' }} />
+      {/* Vignette */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.65) 100%)' }} />
+      {/* ipflogo — top left, very faint */}
+      <div style={{ position: 'fixed', top: '12vh', left: '-1vw', zIndex: 0, pointerEvents: 'none', opacity: 0.035, filter: 'blur(1px) grayscale(1)' }}>
+        <img src="/slike/ipflogo.png" alt="" style={{ width: '200px', height: 'auto' }} />
       </div>
 
       <AppNav athleteName={adminName} isAdmin={true} onLogout={handleLogout} />
@@ -1029,15 +1071,15 @@ export default function AdminPage() {
 
             {/* Hero */}
             <div style={{ marginBottom: '48px', animation: 'fadeUp 0.6s ease' }}>
-              <div style={{ fontSize: '0.52rem', letterSpacing: '0.6em', color: 'rgba(255,255,255,0.2)', marginBottom: '10px' }}>LWLUP · UPRAVLJANJE LIFERIMA</div>
+              <div style={{ fontSize: '0.52rem', letterSpacing: '0.6em', color: 'rgba(255,255,255,0.2)', marginBottom: '10px' }}>LWL UP · UPRAVLJANJE LIFERIMA</div>
               <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,4.5vw,4.5rem)', fontWeight: 800, lineHeight: 0.88, margin: '0 0 28px', letterSpacing: '-0.02em' }}>
                 ADMIN<br /><span style={{ color: 'rgba(255,255,255,0.15)' }}>PANEL</span>
               </h1>
 
               {/* Section switcher */}
               <div style={{ display: 'flex', gap: '4px', padding: '4px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', width: 'fit-content', marginBottom: '32px' }}>
-                {([['athletes', 'Lifteri'], ['competitions', 'Natjecanja'], ['obavijesti', 'Obavijesti']] as [string,string][]).map(([sec, label]) => (
-                  <button key={sec} onClick={() => setDashSection(sec as 'athletes'|'competitions'|'obavijesti')}
+                {([['athletes', 'Lifteri'], ['treneri', 'Treneri'], ['competitions', 'Natjecanja'], ['obavijesti', 'Obavijesti']] as [string,string][]).map(([sec, label]) => (
+                  <button key={sec} onClick={() => setDashSection(sec as any)}
                     style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 18px', background: dashSection === sec ? 'rgba(255,255,255,0.1)' : 'transparent', border: dashSection === sec ? '1px solid rgba(255,255,255,0.12)' : '1px solid transparent', borderRadius: '7px', cursor: 'pointer', fontSize: '0.72rem', fontFamily: 'var(--fm)', fontWeight: dashSection === sec ? 700 : 400, color: dashSection === sec ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'all 0.2s', letterSpacing: '0.04em' }}>
                     {sec === 'competitions' && <Trophy size={13} />}
                     {sec === 'obavijesti' && <Bell size={13} />}
@@ -1123,6 +1165,64 @@ export default function AdminPage() {
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {dashSection === 'treneri' && (
+              <div style={{ animation: 'fadeUp 0.3s ease', maxWidth: '780px' }}>
+                <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginBottom: '20px' }}>
+                  UPRAVLJANJE TRENERIMA — dodjeli liftera treneru ili promijeni rolu korisnika u trenera
+                </div>
+
+                {/* Coach-lifter assignment */}
+                <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', overflow: 'hidden', marginBottom: '28px' }}>
+                  <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>DODJELA LIFTERA TRENERU</span>
+                    {assignSaving && <span style={{ fontSize: '0.55rem', color: '#fbbf24', fontFamily: 'var(--fm)' }}>Sprema...</span>}
+                  </div>
+                  {athletes.filter(a => a.role === 'lifter' || a.role === 'trener').length === 0 ? (
+                    <div style={{ padding: '32px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>Nema korisnika.</div>
+                  ) : athletes.filter(a => a.role === 'lifter' || a.role === 'trener').map(lifter => (
+                    <div key={lifter.id} style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', fontFamily: 'var(--fm)' }}>{lifter.full_name}</div>
+                      </div>
+                      <select
+                        value={assignments[lifter.id] ?? ''}
+                        onChange={e => assignLifterToCoach(lifter.id, e.target.value || null)}
+                        style={{ background: '#0f0f14', border: '1px solid rgba(255,255,255,0.12)', color: assignments[lifter.id] ? '#fff' : 'rgba(255,255,255,0.35)', padding: '6px 12px', fontSize: '0.78rem', fontFamily: 'var(--fm)', borderRadius: '6px', outline: 'none', cursor: 'pointer', minWidth: '180px' }}>
+                        <option value="">— Bez trenera —</option>
+                        {coaches.map(c => (
+                          <option key={c.id} value={c.id}>{c.full_name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                  {coaches.length === 0 && (
+                    <div style={{ padding: '16px 20px', background: 'rgba(251,191,36,0.04)', borderTop: '1px solid rgba(255,255,255,0.04)', fontSize: '0.72rem', color: '#fbbf24', fontFamily: 'var(--fm)' }}>
+                      Nema trenera — promijeni rolu korisnika u "trener" ispod.
+                    </div>
+                  )}
+                </div>
+
+                {/* Role management for coaches */}
+                <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>ROLE KORISNIKA</div>
+                  {athletes.filter(a => a.role !== 'admin').map(a => (
+                    <div key={a.id} style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', fontFamily: 'var(--fm)' }}>{a.full_name}</div>
+                      </div>
+                      <select
+                        value={a.role}
+                        onChange={e => updateRole(a.id, e.target.value)}
+                        style={{ background: '#0f0f14', border: `1px solid ${a.role === 'trener' ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.12)'}`, color: a.role === 'trener' ? '#fbbf24' : '#fff', padding: '6px 12px', fontSize: '0.78rem', fontFamily: 'var(--fm)', borderRadius: '6px', outline: 'none', cursor: 'pointer' }}>
+                        <option value="lifter">Lifter</option>
+                        <option value="trener">Trener</option>
+                      </select>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

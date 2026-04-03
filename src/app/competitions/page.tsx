@@ -311,7 +311,7 @@ export default function CompetitionsPage() {
 
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(20px,4vw,60px)', background: 'rgba(5,5,5,0.97)', borderBottom: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(24px)', boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.4)' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#fff' }}>
-          <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '60px', width: 'auto', transition: 'transform 0.3s' }}
+          <img src="/slike/logopng.png" alt="LWL UP" style={{ height: '60px', width: 'auto', transition: 'transform 0.3s' }}
             onMouseEnter={e => (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.08)'}
             onMouseLeave={e => (e.currentTarget as HTMLImageElement).style.transform = 'scale(1)'} />
         </Link>
@@ -339,7 +339,7 @@ export default function CompetitionsPage() {
 
             <div className="comp-hero-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '32px', marginBottom: '40px' }}>
               <div>
-                <div style={{ fontSize: '0.7rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.3)', marginBottom: '14px' }}>LWLUP · NATJECANJA</div>
+                <div style={{ fontSize: '0.7rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.3)', marginBottom: '14px' }}>LWL UP · NATJECANJA</div>
                 <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem, 8vw, 6.5rem)', lineHeight: 0.88, margin: 0, letterSpacing: '-0.02em' }}>
                   KALENDAR<br /><span style={{ color: 'rgba(255,255,255,0.18)' }}>NATJECANJA</span>
                 </h1>

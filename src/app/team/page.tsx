@@ -140,7 +140,7 @@ export default function TeamPage() {
       {/* NAV */}
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 60px', background: 'rgba(5,5,5,0.97)', borderBottom: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(24px)', boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.4)' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '15px', textDecoration: 'none', color: '#fff' }}>
-          <img src="/slike/logopng.png" alt="LWLUP" style={{ height: '60px', width: 'auto', transition: 'transform 0.3s' }}
+          <img src="/slike/logopng.png" alt="LWL UP" style={{ height: '60px', width: 'auto', transition: 'transform 0.3s' }}
             onMouseEnter={e => (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.08)'}
             onMouseLeave={e => (e.currentTarget as HTMLImageElement).style.transform = 'scale(1)'} />
         </Link>
@@ -313,7 +313,7 @@ export default function TeamPage() {
             POSTANI DIO<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>TIMA</span>
           </h2>
           <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.6)', maxWidth: '600px', margin: '0 auto 50px', lineHeight: 1.85, fontWeight: 300 }}>
-            Tražiš zajednicu koja te razumije i sistem koji radi? Pridruži se LWLUP-u.
+            Tražiš zajednicu koja te razumije i sistem koji radi? Pridruži se LWL UP-u.
           </p>
           <Link href="/survey" style={{ textDecoration: 'none' }}>
             <button className="join-button" style={{ padding: '20px 60px', background: '#fff', color: '#000', border: 'none', fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.25em', cursor: 'pointer', transition: '0.4s', position: 'relative', overflow: 'hidden', fontFamily: 'var(--fm)' }}>

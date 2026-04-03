@@ -99,7 +99,7 @@ export default function NotFound() {
 
         {/* Bottom label */}
         <div style={{ marginTop: '60px', fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.1)' }}>
-          LWLUP · LIFT WITH LEVEL UP
+          LWL UP · LIFT WITH LEVEL UP
         </div>
       </div>
 

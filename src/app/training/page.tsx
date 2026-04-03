@@ -22,12 +22,18 @@ export default function TrainingPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [athleteName, setAthleteName] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isCoach, setIsCoach] = useState(false)
+  const [assignedLifters, setAssignedLifters] = useState<{id: string; full_name: string}[]>([])
+  const [viewingAthleteId, setViewingAthleteId] = useState<string | null>(null)
+  const [viewingAthleteName, setViewingAthleteName] = useState<string>('')
+  const [showLifterPicker, setShowLifterPicker] = useState(false)
   const [avatarIcon, setAvatarIcon] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'program' | 'hub' | 'meet'>('program')
   const [activeTool, setActiveTool] = useState<string | null>(null)
   const router = useRouter()
   const blockSelectorRef = useRef<HTMLDivElement>(null)
+  const lifterPickerRef = useRef<HTMLDivElement>(null)
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
 
@@ -42,6 +48,37 @@ export default function TrainingPage() {
   }, [showBlockSelector])
 
   useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (lifterPickerRef.current && !lifterPickerRef.current.contains(e.target as Node))
+        setShowLifterPicker(false)
+    }
+    if (showLifterPicker) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showLifterPicker])
+
+  const loadAthleteBlock = async (athleteId: string, name: string) => {
+    setLoading(true)
+    setViewingAthleteId(athleteId)
+    setViewingAthleteName(name)
+    setShowLifterPicker(false)
+    let { data: blockData } = await supabase
+      .from('blocks').select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))')
+      .eq('athlete_id', athleteId).eq('status', 'active').order('created_at', { ascending: false }).limit(1).single()
+    if (!blockData) blockData = null
+    if (blockData?.weeks) {
+      blockData.weeks.sort((a: Week, b: Week) => a.week_number - b.week_number)
+      blockData.weeks.forEach((w: Week) => {
+        w.workouts?.sort((a: Workout, b: Workout) => a.workout_date.localeCompare(b.workout_date))
+        w.workouts?.forEach((wo: Workout) => wo.workout_exercises?.sort((a: WorkoutExercise, b: WorkoutExercise) => a.exercise_order - b.exercise_order))
+      })
+    }
+    setBlock(blockData)
+    const { data: ab } = await supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', athleteId).order('created_at', { ascending: false })
+    setAllBlocks((ab ?? []) as BlockSummary[])
+    setLoading(false)
+  }
+
+  useEffect(() => {
     const init = async () => {
       setLoading(true)
       try {
@@ -50,14 +87,36 @@ export default function TrainingPage() {
         setUserId(user.id)
         const { data: profile } = await supabase.from('profiles').select('full_name, role, avatar_icon').eq('id', user.id).single()
         setAthleteName(profile?.full_name ?? user.email?.split('@')[0] ?? 'Atleta')
-        setIsAdmin(profile?.role === 'admin')
+        const role = profile?.role
+        setIsAdmin(role === 'admin')
+        setIsCoach(role === 'trener')
         setAvatarIcon(profile?.avatar_icon ?? 'barbell')
         const { data: exData } = await supabase.from('exercises').select('*').order('category').order('name')
         setExercises(exData ?? [])
+
+        // Fetch lifters list for admin (all) or coach (assigned only)
+        if (role === 'admin') {
+          const { data: allLifters } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .eq('role', 'lifter')
+            .order('full_name')
+          setAssignedLifters(allLifters ?? [])
+          setViewingAthleteId(user.id)
+        } else if (role === 'trener') {
+          const { data: asgn } = await supabase
+            .from('coach_assignments')
+            .select('lifter_id, profiles!lifter_id(id, full_name)')
+            .eq('coach_id', user.id)
+          const lifters = (asgn ?? []).map((a: any) => a.profiles).filter(Boolean)
+          setAssignedLifters(lifters)
+          setViewingAthleteId(user.id)
+        }
+
         let { data: blockData } = await supabase
           .from('blocks').select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))')
           .eq('athlete_id', user.id).eq('status', 'active').order('created_at', { ascending: false }).limit(1).single()
-        if (!blockData) {
+        if (!blockData && role !== 'trener') {
           const today = new Date(); const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
           const { data: nb } = await supabase.from('blocks').insert({ athlete_id: user.id, name: 'Moj program', start_date: today.toISOString().split('T')[0], end_date: endDate.toISOString().split('T')[0], status: 'active' }).select('*').single()
           blockData = { ...nb, weeks: [] }
@@ -77,6 +136,8 @@ export default function TrainingPage() {
     init()
   }, [])
 
+  const effectiveAthleteId = viewingAthleteId || userId
+
   const addWeek = async () => {
     if (!block || !userId) return; setSaving(true)
     const ew = block.weeks ?? []; const weekNum = ew.length + 1
@@ -91,7 +152,7 @@ export default function TrainingPage() {
   const addBlock = async (name: string) => {
     if (!userId) return; setSaving(true)
     const today = new Date(); const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
-    const { data } = await supabase.from('blocks').insert({ athlete_id: userId, name, start_date: today.toISOString().split('T')[0], end_date: endDate.toISOString().split('T')[0], status: 'active' }).select('id, name, status, start_date, end_date').single()
+    const { data } = await supabase.from('blocks').insert({ athlete_id: effectiveAthleteId, name, start_date: today.toISOString().split('T')[0], end_date: endDate.toISOString().split('T')[0], status: 'active' }).select('id, name, status, start_date, end_date').single()
     if (data) { setAllBlocks(b => [data as BlockSummary, ...b]); await switchBlock(data.id) }
     setSaving(false)
   }
@@ -123,7 +184,7 @@ export default function TrainingPage() {
     const week = block?.weeks?.find(w => w.id === weekId); if (!week) return
     const nd = week.workouts?.length ?? 0
     const d = new Date(week.start_date); d.setDate(d.getDate() + nd)
-    const { data, error } = await supabase.from('workouts').insert({ week_id: weekId, athlete_id: userId, day_name: `Dan ${nd + 1}`, workout_date: d.toISOString().split('T')[0], completed: false }).select('*').single()
+    const { data, error } = await supabase.from('workouts').insert({ week_id: weekId, athlete_id: effectiveAthleteId, day_name: `Dan ${nd + 1}`, workout_date: d.toISOString().split('T')[0], completed: false }).select('*').single()
     if (!error && data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? { ...w, workouts: [...(w.workouts ?? []), { ...data, workout_exercises: [] }] } : w) } : b)
     setSaving(false)
   }
@@ -147,23 +208,28 @@ export default function TrainingPage() {
 
   // ── Notify mentor when lifter saves actual data ─────────────────
   const notifyMentor = async (msg: string) => {
-    if (isAdmin || !userId) return
-    // Get admin user IDs from profiles
+    if (isAdmin || isCoach || !userId) return
+    const recipients: string[] = []
     const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin')
-    if (!admins?.length) return
-    const rows = admins.map(a => ({ recipient_id: a.id, sender_id: userId, message: msg, read: false }))
+    admins?.forEach(a => recipients.push(a.id))
+    const { data: asgn } = await supabase.from('coach_assignments').select('coach_id').eq('lifter_id', userId).single()
+    if (asgn?.coach_id) recipients.push(asgn.coach_id)
+    if (!recipients.length) return
+    const rows = recipients.map(r => ({ recipient_id: r, sender_id: userId, message: msg, read: false }))
     await supabase.from('notifications').insert(rows)
   }
 
+  const canEdit = isAdmin || isCoach
+
   const updateExercise = async (weId: string, data: Partial<WorkoutExercise>) => {
-    const filtered = isAdmin
+    const filtered = canEdit
       ? data
       : Object.fromEntries(Object.entries(data).filter(([k]) => LIFTER_FIELDS.includes(k as keyof WorkoutExercise)))
     if (Object.keys(filtered).length === 0) return
     await supabase.from('workout_exercises').update(filtered).eq('id', weId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.map(we => we.id === weId ? { ...we, ...filtered } : we) })) })) } : b)
     // Notify if lifter logged actual data
-    if (!isAdmin && (filtered.actual_weight_kg || filtered.actual_rpe || filtered.completed)) {
+    if (!canEdit && (filtered.actual_weight_kg || filtered.actual_rpe || filtered.completed)) {
       const exerciseName = block?.weeks?.flatMap(w => w.workouts ?? [])
         .flatMap(wo => wo.workout_exercises ?? [])
         .find(we => we.id === weId)?.exercise?.name ?? 'vježba'
@@ -181,74 +247,55 @@ export default function TrainingPage() {
   const pct = totalWorkouts > 0 ? Math.round((completedWorkouts / totalWorkouts) * 100) : 0
 
   return (
-    <div style={{ background: '#06060a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
+    <div style={{ background: '#04040a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
 
-      {/* ── Background layers ── */}
-      {/* Dot grid */}
+      {/* ── BACKGROUND ── */}
+      {/* Base noise texture */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.4,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E")`,
+        backgroundSize: '200px 200px' }} />
+      {/* Primary aurora — top left, deep blue-indigo */}
+      <div style={{ position: 'fixed', top: '-30vh', left: '-20vw', width: '90vw', height: '90vh', zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 40% 40%, rgba(79,70,229,0.18) 0%, rgba(59,130,246,0.09) 35%, transparent 70%)',
+        filter: 'blur(72px)', transform: 'rotate(-15deg)' }} />
+      {/* Secondary aurora — bottom right, emerald */}
+      <div style={{ position: 'fixed', bottom: '-25vh', right: '-15vw', width: '75vw', height: '75vh', zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 60% 60%, rgba(16,185,129,0.13) 0%, rgba(5,150,105,0.06) 40%, transparent 70%)',
+        filter: 'blur(80px)', transform: 'rotate(10deg)' }} />
+      {/* Accent orb — center, subtle purple */}
+      <div style={{ position: 'fixed', top: '30vh', left: '40vw', width: '50vw', height: '50vh', zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at center, rgba(139,92,246,0.07) 0%, transparent 65%)',
+        filter: 'blur(90px)' }} />
+      {/* Top beam — horizontal light streak */}
+      <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, height: '1px', zIndex: 0, pointerEvents: 'none',
+        background: 'linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.4) 30%, rgba(139,92,246,0.5) 50%, rgba(99,102,241,0.4) 70%, transparent 100%)',
+        boxShadow: '0 0 40px 8px rgba(99,102,241,0.12)' }} />
+      {/* Subtle grid */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-        backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.014) 1px, transparent 1px)',
-        backgroundSize: '28px 28px' }} />
-      {/* Blue top-left glow */}
-      <div style={{ position: 'fixed', top: '-25vh', left: '-15vw', width: '70vw', height: '70vh', zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at center, rgba(56,100,255,0.06) 0%, transparent 65%)', filter: 'blur(60px)' }} />
-      {/* Green bottom-right glow */}
-      <div style={{ position: 'fixed', bottom: '-20vh', right: '-10vw', width: '60vw', height: '60vh', zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at center, rgba(34,197,94,0.045) 0%, transparent 65%)', filter: 'blur(80px)' }} />
-      {/* Vignette */}
+        backgroundImage: 'linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px)',
+        backgroundSize: '72px 72px',
+        maskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 75%)' }} />
+      {/* Corner vignette */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 50% 30%, transparent 30%, rgba(0,0,0,0.55) 100%)' }} />
-
-      {/* ── Decorative geometric shapes (behind content) ── */}
-      {/* Large barbell outline — top right */}
-      <div style={{ position: 'fixed', top: '12vh', right: '-6vw', zIndex: 0, pointerEvents: 'none', opacity: 0.022, transform: 'rotate(-12deg)' }}>
-        <svg width="420" height="140" viewBox="0 0 420 140" fill="none">
-          <rect x="40" y="62" width="340" height="16" rx="8" fill="white"/>
-          <rect x="30" y="30" width="50" height="80" rx="12" fill="white"/>
-          <rect x="340" y="30" width="50" height="80" rx="12" fill="white"/>
-          <rect x="10" y="44" width="30" height="52" rx="8" fill="white"/>
-          <rect x="380" y="44" width="30" height="52" rx="8" fill="white"/>
-        </svg>
+        background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.7) 100%)' }} />
+      {/* plate.png — bottom left, large, rotated */}
+      <div style={{ position: 'fixed', bottom: '-8vh', left: '-8vw', zIndex: 0, pointerEvents: 'none', opacity: 0.07, transform: 'rotate(12deg)', filter: 'blur(1px)' }}>
+        <img src="/slike/plate.png" alt="" style={{ width: '380px', height: 'auto' }} />
       </div>
-      {/* Medium barbell — bottom left */}
-      <div style={{ position: 'fixed', bottom: '18vh', left: '-5vw', zIndex: 0, pointerEvents: 'none', opacity: 0.018, transform: 'rotate(8deg)' }}>
-        <svg width="300" height="100" viewBox="0 0 300 100" fill="none">
-          <rect x="30" y="44" width="240" height="12" rx="6" fill="white"/>
-          <rect x="22" y="20" width="36" height="60" rx="9" fill="white"/>
-          <rect x="242" y="20" width="36" height="60" rx="9" fill="white"/>
-          <rect x="8" y="30" width="22" height="40" rx="6" fill="white"/>
-          <rect x="270" y="30" width="22" height="40" rx="6" fill="white"/>
-        </svg>
+      {/* plate.png — top right, smaller */}
+      <div style={{ position: 'fixed', top: '6vh', right: '-6vw', zIndex: 0, pointerEvents: 'none', opacity: 0.05, transform: 'rotate(-18deg)', filter: 'blur(1.5px)' }}>
+        <img src="/slike/plate.png" alt="" style={{ width: '260px', height: 'auto' }} />
       </div>
-      {/* Kettlebell — center right */}
-      <div style={{ position: 'fixed', top: '38vh', right: '2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.025, transform: 'rotate(8deg)' }}>
-        <svg width="140" height="160" viewBox="0 0 140 160" fill="none">
-          <circle cx="70" cy="75" r="50" stroke="white" strokeWidth="7" fill="none"/>
-          <circle cx="70" cy="75" r="28" stroke="white" strokeWidth="4" fill="none"/>
-          <path d="M52 30 Q55 10 70 6 Q85 10 88 30" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none"/>
-          <path d="M45 28 Q38 20 36 28 Q34 38 52 38 Q60 38 60 30" stroke="white" strokeWidth="5" strokeLinecap="round" fill="none"/>
-          <path d="M95 28 Q102 20 104 28 Q106 38 88 38 Q80 38 80 30" stroke="white" strokeWidth="5" strokeLinecap="round" fill="none"/>
-        </svg>
+      {/* ipflogo.png — mid left, faded */}
+      <div style={{ position: 'fixed', top: '35vh', left: '-2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.04, filter: 'blur(1px) grayscale(1)' }}>
+        <img src="/slike/ipflogo.png" alt="" style={{ width: '220px', height: 'auto' }} />
       </div>
-      {/* Weight plate — left middle */}
-      <div style={{ position: 'fixed', top: '52vh', left: '2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.022, transform: 'rotate(-10deg)' }}>
-        <svg width="110" height="110" viewBox="0 0 110 110" fill="none">
-          <circle cx="55" cy="55" r="50" stroke="white" strokeWidth="7" fill="none"/>
-          <circle cx="55" cy="55" r="36" stroke="white" strokeWidth="4" fill="none"/>
-          <circle cx="55" cy="55" r="12" stroke="white" strokeWidth="5" fill="none"/>
-        </svg>
-      </div>
-      {/* Dumbbell — bottom right */}
-      <div style={{ position: 'fixed', bottom: '8vh', right: '4vw', zIndex: 0, pointerEvents: 'none', opacity: 0.018, transform: 'rotate(-20deg)' }}>
-        <svg width="200" height="70" viewBox="0 0 200 70" fill="none">
-          <rect x="70" y="30" width="60" height="10" rx="5" fill="white"/>
-          <rect x="20" y="18" width="28" height="34" rx="8" fill="white"/>
-          <rect x="6" y="24" width="18" height="22" rx="6" fill="white"/>
-          <rect x="152" y="18" width="28" height="34" rx="8" fill="white"/>
-          <rect x="176" y="24" width="18" height="22" rx="6" fill="white"/>
-        </svg>
+      {/* logopng.png — bottom right, very subtle */}
+      <div style={{ position: 'fixed', bottom: '6vh', right: '2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.035, filter: 'blur(0.5px) grayscale(1)' }}>
+        <img src="/slike/logopng.png" alt="" style={{ width: '180px', height: 'auto' }} />
       </div>
 
-      <AppNav athleteName={athleteName} isAdmin={isAdmin} onLogout={handleLogout} avatarIcon={avatarIcon} userId={userId ?? undefined} />
+      <AppNav athleteName={athleteName} isAdmin={isAdmin} isCoach={isCoach} onLogout={handleLogout} avatarIcon={avatarIcon} userId={userId ?? undefined} />
 
       {/* ─── HEADER ──────────────────────────────────────────────── */}
       <div style={{ paddingTop: '56px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
@@ -257,6 +304,44 @@ export default function TrainingPage() {
           background: 'linear-gradient(180deg, rgba(56,100,255,0.04) 0%, transparent 100%)' }} />
 
         <div className='page-header' style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 32px 0', position: 'relative', zIndex: 1 }}>
+
+          {/* Athlete picker — admin and coach */}
+          {(isAdmin || isCoach) && (
+            <div ref={lifterPickerRef} style={{ position: 'relative', marginBottom: '20px', width: 'fit-content' }}>
+              <button onClick={() => setShowLifterPicker(o => !o)}
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', cursor: 'pointer', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.78rem' }}>
+                <span style={{ fontSize: '0.52rem', letterSpacing: '0.2em', color: '#888' }}>PREGLED:</span>
+                <span style={{ fontWeight: 600 }}>{viewingAthleteName || athleteName}</span>
+                <ChevronDown size={12} color="#555" style={{ transform: showLifterPicker ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+              </button>
+              {showLifterPicker && (
+                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 100, background: '#09090e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', boxShadow: '0 16px 48px rgba(0,0,0,0.8)', minWidth: '220px', overflow: 'hidden', animation: 'dropDown 0.18s ease' }}>
+                  {/* Own block */}
+                  <button onClick={() => { setViewingAthleteId(userId); setViewingAthleteName(''); setShowLifterPicker(false); loadAthleteBlock(userId!, athleteName) }}
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 14px', background: viewingAthleteId === userId ? '#111113' : 'transparent', border: 'none', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.82rem', textAlign: 'left' as const }}>
+                    <span style={{ fontSize: '0.5rem', letterSpacing: '0.15em', color: '#888', fontFamily: 'var(--fm)' }}>MOJ TRENING</span>
+                    {viewingAthleteId === userId && <Check size={12} color="#22c55e" style={{ marginLeft: 'auto' }} />}
+                  </button>
+                  {/* Lifters */}
+                  {assignedLifters.length > 0 && (
+                    <div style={{ padding: '5px 14px 3px', fontSize: '0.48rem', letterSpacing: '0.2em', color: '#444', fontFamily: 'var(--fm)' }}>LIFTERI</div>
+                  )}
+                  {assignedLifters.map(l => (
+                    <button key={l.id} onClick={() => loadAthleteBlock(l.id, l.full_name)}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 14px', background: viewingAthleteId === l.id ? '#111113' : 'transparent', border: 'none', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.82rem', textAlign: 'left' as const, transition: 'background 0.12s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#111113'}
+                      onMouseLeave={e => e.currentTarget.style.background = viewingAthleteId === l.id ? '#111113' : 'transparent'}>
+                      {l.full_name}
+                      {viewingAthleteId === l.id && <Check size={12} color="#22c55e" style={{ marginLeft: 'auto' }} />}
+                    </button>
+                  ))}
+                  {assignedLifters.length === 0 && (
+                    <div style={{ padding: '12px 14px', fontSize: '0.72rem', color: '#444', fontFamily: 'var(--fm)' }}>Nema dodijeljenih liftera</div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Tab switcher */}
           <div style={{ display: 'flex', gap: '4px', marginBottom: '28px', animation: 'fadeUp 0.4s ease', padding: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.07)', width: 'fit-content' }}>
@@ -329,7 +414,7 @@ export default function TrainingPage() {
                 </div>
 
                 {/* New block */}
-                {isAdmin && (
+                {canEdit && (
                   <button onClick={async () => { const n = prompt('Naziv novog bloka:'); if (n?.trim()) await addBlock(n.trim()) }}
                     className="action-btn" style={{ padding: '0 16px', borderRadius: 0 }}>
                     <Plus size={12} /> NOVI BLOK
@@ -394,12 +479,12 @@ export default function TrainingPage() {
                 </div>
               )}
               {block.weeks?.map(week => (
-                <WeekPanel key={week.id} week={week} exercises={exercises} isAdmin={isAdmin} userId={userId ?? ''}
+                <WeekPanel key={week.id} week={week} exercises={exercises} isAdmin={canEdit} userId={userId ?? ''}
                   onDeleteWeek={deleteWeek} onUpdateWeek={updateWeek} onAddWorkout={addWorkout}
                   onUpdateWorkout={updateWorkout} onDeleteWorkout={deleteWorkout}
                   onAddExercise={addExercise} onUpdateExercise={updateExercise} onDeleteExercise={deleteExercise} />
               ))}
-              {isAdmin && (
+              {canEdit && (
                 <button onClick={addWeek} className="add-week-btn">
                   <Plus size={13} /> DODAJ TJEDAN {block.weeks ? block.weeks.length + 1 : 1}
                 </button>

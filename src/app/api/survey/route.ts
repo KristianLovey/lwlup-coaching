@@ -87,7 +87,7 @@ function buildEmail(data: Record<string, string>): string {
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
           <td>
-            <div style="font-size:9px;letter-spacing:0.55em;color:#444;margin-bottom:16px;font-weight:700">LWLUP COACHING</div>
+            <div style="font-size:9px;letter-spacing:0.55em;color:#444;margin-bottom:16px;font-weight:700">LWL UP COACHING</div>
             <div style="font-size:32px;font-weight:800;color:#fff;line-height:1;letter-spacing:-0.02em">NOVA PRIJAVA</div>
             <div style="font-size:13px;color:#444;margin-top:8px">${new Date().toLocaleDateString('hr-HR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
           </td>
@@ -149,7 +149,7 @@ function buildEmail(data: Record<string, string>): string {
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
           <td>
-            <div style="font-size:10px;letter-spacing:0.3em;color:#333;font-weight:700">LWLUP COACHING SYSTEM</div>
+            <div style="font-size:10px;letter-spacing:0.3em;color:#333;font-weight:700">LWL UP COACHING SYSTEM</div>
             <div style="font-size:11px;color:#2a2a2a;margin-top:4px">Automatski generiran upitnik</div>
           </td>
           <td align="right">
@@ -176,7 +176,7 @@ export async function POST(req: NextRequest) {
     const subject = `Nova prijava — ${val(data.full_name)}${tot ? ` · ${tot}kg total` : ''}${data.experience === 'Napredni' ? ' ★' : ''}`
 
     const { error } = await resend.emails.send({
-      from: 'LWLUP Forma <onboarding@resend.dev>', // zamijeni s tvojom domenom kad verificiraš
+      from: 'LWL UP Forma <onboarding@resend.dev>', // zamijeni s tvojom domenom kad verificiraš
       to: process.env.CONTACT_EMAIL!,
       subject,
       html: buildEmail(data),
