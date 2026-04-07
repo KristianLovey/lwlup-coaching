@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
   GripVertical, Loader2, LogOut, Home, FolderOpen,
-  User, Shield, X, ChevronLeft, Dumbbell, BarChart2, Send, MessageSquare
+  User, Shield, X, ChevronLeft, Dumbbell, BarChart2, Send, MessageSquare, Copy
 } from 'lucide-react'
 import type { Exercise, WorkoutExercise, Workout, Week, CoachTip, SetLog, Competition } from './types'
 
@@ -1157,9 +1157,9 @@ function WeekNotesModal({ notes, isAdmin, onSave, onClose }: {
   )
 }
 
-export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onUpdateWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }: {
+export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCopyWeek, onUpdateWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }: {
   week: Week; exercises: Exercise[]; isAdmin: boolean; userId: string
-  onDeleteWeek: (id: string) => void; onUpdateWeek: (id: string, data: Partial<Week>) => void
+  onDeleteWeek: (id: string) => void; onCopyWeek: (id: string) => void; onUpdateWeek: (id: string, data: Partial<Week>) => void
   onAddWorkout: (weekId: string) => void
   onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void
   onAddExercise: (workoutId: string, ex: Exercise) => void
@@ -1217,9 +1217,18 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onUp
               {hasNotes && <span style={{ fontSize: '0.48rem', fontWeight: 700, fontFamily: 'var(--fm)', letterSpacing: '0.05em' }}>KOMENTAR</span>}
             </button>
             {isAdmin && (
-              <button onClick={e => { e.stopPropagation(); onDeleteWeek(week.id) }} className="icon-btn-danger">
-                <Trash2 size={13} />
-              </button>
+              <>
+                <button onClick={e => { e.stopPropagation(); onCopyWeek(week.id) }}
+                  title="Kopiraj tjedan"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', width: '28px', height: '28px', borderRadius: '7px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
+                  <Copy size={12} />
+                </button>
+                <button onClick={e => { e.stopPropagation(); onDeleteWeek(week.id) }} className="icon-btn-danger">
+                  <Trash2 size={13} />
+                </button>
+              </>
             )}
           </div>
         </div>

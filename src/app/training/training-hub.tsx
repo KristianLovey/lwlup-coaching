@@ -366,7 +366,6 @@ const HUB_TOOLS = [
   { id:'guide-wc',  label:'Water Cut Guide',  sub:'Protokol dehidracije',             color:'#34d399', badge:'GUIDE'},
   { id:'guide-rpe', label:'RPE Guide',        sub:'Kako koristiti RPE',               color:'#fbbf24', badge:'GUIDE'},
   { id:'guide-peak',label:'Peaking Guide',    sub:'Priprema za natjecanje',           color:'#a78bfa', badge:'GUIDE'},
-  { id:'weight',    label:'Praćenje kilaze',  sub:'Dnevni unos i tjedna projekcija',  color:'#f472b6', badge:'LOG'  },
   { id:'progress',  label:'Graf napretka',   sub:'Kilaze kroz blokove po liftu/RPE', color:'#22d3ee', badge:'GRAF' },
   { id:'nutrition', label:'Prehrana & Kalorije', sub:'TDEE, makrosi i dnevni log',    color:'#f97316', badge:'LOG'  },
 ]
@@ -616,252 +615,6 @@ function ProgressGraph({ userId }: { userId: string }) {
   )
 }
 
-// ─── WEIGHT TRACKER ─────────────────────────────────────────────
-type WeightEntry = { id: string; weight_kg: number; logged_at: string; notes: string | null }
-
-const DAY_NAMES = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub']
-
-function getWeekKey(dateStr: string) {
-  const d = new Date(dateStr)
-  const day = d.getDay() === 0 ? 7 : d.getDay() // Mon=1 ... Sun=7
-  const mon = new Date(d); mon.setDate(d.getDate() - (day - 1))
-  return mon.toISOString().split('T')[0]
-}
-
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr)
-  return `${DAY_NAMES[d.getDay()]} ${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.`
-}
-
-function linReg(pts: {x:number;y:number}[]) {
-  const n = pts.length
-  if (n < 2) return null
-  const sumX = pts.reduce((s,p)=>s+p.x,0), sumY = pts.reduce((s,p)=>s+p.y,0)
-  const sumXY = pts.reduce((s,p)=>s+p.x*p.y,0), sumXX = pts.reduce((s,p)=>s+p.x*p.x,0)
-  const slope = (n*sumXY - sumX*sumY) / (n*sumXX - sumX*sumX)
-  const intercept = (sumY - slope*sumX) / n
-  return { slope, intercept }
-}
-
-function WeightTracker({ userId }: { userId: string }) {
-  const [entries, setEntries] = useState<WeightEntry[]>([])
-  const [weight, setWeight]   = useState('')
-  const [date, setDate]       = useState(() => new Date().toISOString().split('T')[0])
-  const [notes, setNotes]     = useState('')
-  const [saving, setSaving]   = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null)
-
-  const COLOR = '#f472b6'
-
-  useEffect(() => {
-    supabase
-      .from('weight_logs')
-      .select('id, weight_kg, logged_at, notes')
-      .eq('user_id', userId)
-      .order('logged_at', { ascending: true })
-      .limit(180)
-      .then(({ data }) => { setEntries(data ?? []); setLoading(false) })
-  }, [userId])
-
-  async function addEntry() {
-    const kg = parseFloat(weight)
-    if (!kg || kg < 20 || kg > 400 || !date) return
-    setSaving(true)
-    // upsert by date — replace existing entry for same day
-    const existing = entries.find(e => e.logged_at === date)
-    if (existing) {
-      const { data, error } = await supabase
-        .from('weight_logs').update({ weight_kg: kg, notes: notes || null })
-        .eq('id', existing.id).select('id, weight_kg, logged_at, notes').single()
-      if (!error && data) setEntries(prev => prev.map(e => e.id === data.id ? data : e))
-    } else {
-      const { data, error } = await supabase
-        .from('weight_logs').insert({ user_id: userId, weight_kg: kg, logged_at: date, notes: notes || null })
-        .select('id, weight_kg, logged_at, notes').single()
-      if (!error && data) setEntries(prev => [...prev, data].sort((a,b) => a.logged_at.localeCompare(b.logged_at)))
-    }
-    setWeight(''); setNotes('')
-    setSaving(false)
-  }
-
-  async function deleteEntry(id: string) {
-    await supabase.from('weight_logs').delete().eq('id', id)
-    setEntries(prev => prev.filter(e => e.id !== id))
-  }
-
-  // Group entries by ISO week (Mon–Sun)
-  const weeks = (() => {
-    const map = new Map<string, WeightEntry[]>()
-    for (const e of entries) {
-      const wk = getWeekKey(e.logged_at)
-      if (!map.has(wk)) map.set(wk, [])
-      map.get(wk)!.push(e)
-    }
-    // Sort weeks desc (newest first)
-    return Array.from(map.entries()).sort((a,b) => b[0].localeCompare(a[0]))
-  })()
-
-  // Per-week projection: use entries from this week + previous week
-  function weekProjection(weekKey: string) {
-    const wIdx = weeks.findIndex(([k]) => k === weekKey)
-    const relevant: WeightEntry[] = []
-    for (let i = wIdx; i < Math.min(wIdx + 2, weeks.length); i++) relevant.push(...weeks[i][1])
-    if (relevant.length < 2) return null
-    const base = new Date(relevant[0].logged_at).getTime()
-    const pts = relevant.map(e => ({ x: (new Date(e.logged_at).getTime() - base) / 86400000, y: e.weight_kg }))
-    const reg = linReg(pts)
-    if (!reg) return null
-    const lastX = pts[pts.length - 1].x
-    const endX = lastX + 7
-    const projEnd = +(reg.intercept + reg.slope * endX).toFixed(2)
-    const weeklyChange = +(reg.slope * 7).toFixed(2)
-    return { projEnd, weeklyChange }
-  }
-
-  // Full chart (all entries)
-  function FullChart() {
-    if (entries.length < 2) return null
-    const W = 400, H = 110, PL = 36, PR = 12, PT = 12, PB = 16
-    const ys = entries.map(e => e.weight_kg)
-    const minY = Math.floor(Math.min(...ys)) - 1
-    const maxY = Math.ceil(Math.max(...ys)) + 1
-    const toX = (i: number) => PL + (i / (entries.length - 1)) * (W - PL - PR)
-    const toY = (v: number) => PT + (1 - (v - minY) / (maxY - minY)) * (H - PT - PB)
-    const pts = entries.map((e, i) => `${toX(i)},${toY(e.weight_kg)}`).join(' ')
-    const yTicks = [minY, Math.round((minY + maxY) / 2), maxY]
-    return (
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '110px', overflow: 'visible' }}>
-        <defs>
-          <linearGradient id="wgfull" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={COLOR} stopOpacity="0.2" />
-            <stop offset="100%" stopColor={COLOR} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {yTicks.map(v => (
-          <g key={v}>
-            <line x1={PL} y1={toY(v)} x2={W - PR} y2={toY(v)} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-            <text x={PL - 4} y={toY(v) + 3} textAnchor="end" fontSize="7" fill="rgba(255,255,255,0.2)" fontFamily="var(--fm)">{v}</text>
-          </g>
-        ))}
-        <polygon points={`${PL},${H - PB} ${pts} ${toX(entries.length-1)},${H - PB}`} fill="url(#wgfull)" />
-        <polyline points={pts} fill="none" stroke={COLOR} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
-        {entries.map((e, i) => (
-          <g key={e.id} onMouseEnter={() => setHoverIdx(i)} onMouseLeave={() => setHoverIdx(null)} style={{ cursor: 'pointer' }}>
-            <circle cx={toX(i)} cy={toY(e.weight_kg)} r={hoverIdx === i ? 5 : 2.5} fill={hoverIdx === i ? '#fff' : COLOR} stroke={COLOR} strokeWidth="1.5" style={{ transition: 'r 0.1s' }} />
-            {hoverIdx === i && (
-              <text x={toX(i)} y={toY(e.weight_kg) - 8} textAnchor="middle" fontSize="8.5" fill="#fff" fontFamily="var(--fm)" fontWeight="700">{e.weight_kg}kg</text>
-            )}
-          </g>
-        ))}
-      </svg>
-    )
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
-
-      {/* Input */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-        <CalcInput label="Datum" value={date} onChange={setDate} color={COLOR} type="date" />
-        <CalcInput label="Kilaza (kg)" value={weight} onChange={setWeight} color={COLOR} step="0.1" placeholder="npr. 92.5" />
-        <CalcInput label="Bilješka" value={notes} onChange={setNotes} color={COLOR} type="text" placeholder="npr. natašte" />
-      </div>
-      <button onClick={addEntry} disabled={saving || !weight}
-        style={{ padding: '12px', background: weight ? `${COLOR}18` : 'rgba(255,255,255,0.03)', border: `1.5px solid ${weight ? COLOR+'44' : 'rgba(255,255,255,0.07)'}`, borderRadius: '10px', color: weight ? COLOR : 'rgba(255,255,255,0.3)', fontSize: '0.8rem', fontWeight: 700, fontFamily: 'var(--fm)', letterSpacing: '0.06em', cursor: weight ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}>
-        {saving ? 'SPREMA...' : '+ SPREMI UNOS'}
-      </button>
-
-      {loading && <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', textAlign: 'center' as const, padding: '20px 0' }}>UČITAVANJE...</div>}
-
-      {/* Full chart */}
-      {entries.length >= 2 && (
-        <div style={{ padding: '16px 20px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px' }}>
-          <div style={{ fontSize: '0.52rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>
-            UKUPNI GRAFIKON · {entries.length} unosa · {entries[0].logged_at} – {entries[entries.length-1].logged_at}
-          </div>
-          <FullChart />
-        </div>
-      )}
-
-      {/* Weeks */}
-      {weeks.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '12px' }}>
-          {weeks.map(([weekKey, wEntries]) => {
-            const proj = weekProjection(weekKey)
-            const avg = +(wEntries.reduce((s,e) => s+e.weight_kg, 0) / wEntries.length).toFixed(2)
-            const monDate = new Date(weekKey)
-            const sunDate = new Date(weekKey); sunDate.setDate(monDate.getDate() + 6)
-            const weekLabel = `${monDate.getDate().toString().padStart(2,'0')}.${(monDate.getMonth()+1).toString().padStart(2,'0')} – ${sunDate.getDate().toString().padStart(2,'0')}.${(sunDate.getMonth()+1).toString().padStart(2,'0')}.${sunDate.getFullYear()}`
-            return (
-              <div key={weekKey} style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden' }}>
-                {/* Week header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div>
-                    <span style={{ fontSize: '0.58rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700 }}>TJEDAN · </span>
-                    <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)' }}>{weekLabel}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                    <div style={{ textAlign: 'right' as const }}>
-                      <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', letterSpacing: '0.1em' }}>PROSJEK</div>
-                      <div style={{ fontFamily: 'var(--fd)', fontSize: '1rem', color: '#fff', lineHeight: 1 }}>{avg}kg</div>
-                    </div>
-                    {proj && (
-                      <div style={{ textAlign: 'right' as const }}>
-                        <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', letterSpacing: '0.1em' }}>PROJ. SLJ. TJ.</div>
-                        <div style={{ fontFamily: 'var(--fd)', fontSize: '1rem', color: COLOR, lineHeight: 1 }}>{proj.projEnd}kg</div>
-                      </div>
-                    )}
-                    {proj && (
-                      <div style={{ fontSize: '0.65rem', fontWeight: 700, fontFamily: 'var(--fm)', color: proj.weeklyChange < 0 ? '#44cc88' : proj.weeklyChange > 0 ? '#f87171' : 'rgba(255,255,255,0.3)', minWidth: '48px', textAlign: 'right' as const }}>
-                        {proj.weeklyChange > 0 ? '+' : ''}{proj.weeklyChange}kg/tj
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {/* Day rows */}
-                <div>
-                  {wEntries.map((e, i) => {
-                    const prevEntry = i < wEntries.length - 1 ? wEntries[i + 1] : entries[entries.findIndex(x => x.id === e.id) - 1]
-                    const diff = prevEntry ? +(e.weight_kg - prevEntry.weight_kg).toFixed(2) : null
-                    return (
-                      <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 16px', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
-                        {/* Date */}
-                        <div style={{ width: '90px', flexShrink: 0 }}>
-                          <div style={{ fontSize: '0.62rem', color: COLOR, fontFamily: 'var(--fm)', fontWeight: 700 }}>{formatDate(e.logged_at)}</div>
-                          <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>{e.logged_at}</div>
-                        </div>
-                        {/* Weight */}
-                        <div style={{ fontFamily: 'var(--fd)', fontSize: '1.25rem', color: '#fff', minWidth: '64px' }}>{e.weight_kg}kg</div>
-                        {/* Diff */}
-                        {diff !== null && (
-                          <span style={{ fontSize: '0.62rem', fontWeight: 700, fontFamily: 'var(--fm)', color: diff < 0 ? '#44cc88' : diff > 0 ? '#f87171' : 'rgba(255,255,255,0.3)' }}>
-                            {diff > 0 ? '+' : ''}{diff}
-                          </span>
-                        )}
-                        {/* Notes */}
-                        {e.notes && <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{e.notes}</span>}
-                        {/* Delete */}
-                        <button onClick={() => deleteEntry(e.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.12)', cursor: 'pointer', fontSize: '0.75rem', fontFamily: 'var(--fm)', padding: '2px 6px', borderRadius: '4px', transition: 'color 0.15s', flexShrink: 0 }}
-                          onMouseEnter={e2 => (e2.currentTarget as HTMLButtonElement).style.color = '#f87171'}
-                          onMouseLeave={e2 => (e2.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.12)'}>×</button>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {!loading && entries.length === 0 && (
-        <div style={{ textAlign: 'center' as const, padding: '30px 0', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', fontFamily: 'var(--fm)' }}>Još nema unosa. Odaberi datum i dodaj kilažu iznad.</div>
-      )}
-    </div>
-  )
-}
-
 // ─── NUTRITION TRACKER ──────────────────────────────────────────
 type NutritionSettings = {
   weight_kg: number; height_cm: number; age: number
@@ -952,14 +705,20 @@ function NutritionTracker({ userId }: { userId: string }) {
 
   const saveLog = async () => {
     if (!logDate) return; setSaving(true)
-    const existing = logs.find(l => l.date === logDate)
-    const data = { user_id: userId, date: logDate, ...logDraft }
-    if (existing) {
-      const { data: updated } = await supabase.from('nutrition_logs').update(data).eq('id', existing.id).select('*').single()
-      if (updated) setLogs(prev => prev.map(l => l.date === logDate ? updated as NutritionLog : l))
-    } else {
-      const { data: inserted } = await supabase.from('nutrition_logs').insert(data).select('*').single()
-      if (inserted) setLogs(prev => [inserted as NutritionLog, ...prev])
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id: _id, user_id: _uid, date: _d, ...rest } = logDraft as Partial<NutritionLog> & { user_id?: string }
+    const data = { user_id: userId, date: logDate, ...rest }
+    const { data: upserted } = await supabase
+      .from('nutrition_logs')
+      .upsert(data, { onConflict: 'user_id,date' })
+      .select('*').single()
+    if (upserted) {
+      setLogs(prev => {
+        const exists = prev.some(l => l.date === logDate)
+        return exists
+          ? prev.map(l => l.date === logDate ? upserted as NutritionLog : l)
+          : [upserted as NutritionLog, ...prev]
+      })
     }
     setSaving(false)
   }
@@ -1232,8 +991,6 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
             {active === 'rpe'      && <RpeCalc />}
             {active === 'gl'       && <GlCalc />}
             {active === 'watercut' && <WaterCutCalc />}
-            {active === 'weight'    && userId && <WeightTracker userId={userId} />}
-            {active === 'weight'    && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje kilaze.</div>}
             {active === 'progress'  && userId && <ProgressGraph userId={userId} />}
             {active === 'progress'  && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za prikaz grafa.</div>}
             {active === 'nutrition' && userId && <NutritionTracker userId={userId} />}

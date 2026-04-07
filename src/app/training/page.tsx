@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { Loader2, Plus, Check, FolderOpen, ChevronDown, X } from 'lucide-react'
+import { Loader2, Plus, Check, FolderOpen, ChevronDown, X, Copy } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { Block, BlockSummary, Week, Exercise, WorkoutExercise, Workout } from './types'
 import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-components'
@@ -174,6 +174,100 @@ export default function TrainingPage() {
   const deleteWeek = async (weekId: string) => {
     await supabase.from('weeks').delete().eq('id', weekId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.filter(w => w.id !== weekId) } : b)
+  }
+
+  const copyWeek = async (weekId: string) => {
+    if (!block) return; setSaving(true)
+    const src = block.weeks?.find(w => w.id === weekId)
+    if (!src) { setSaving(false); return }
+    const ew = block.weeks ?? []
+    const weekNum = ew.length + 1
+    const lastEnd = new Date(ew[ew.length - 1].end_date)
+    const startDate = new Date(lastEnd); startDate.setDate(lastEnd.getDate() + 1)
+    const endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 6)
+    const { data: newWeek } = await supabase.from('weeks').insert({
+      block_id: block.id, week_number: weekNum,
+      start_date: startDate.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
+      notes: src.notes,
+    }).select('*').single()
+    if (!newWeek) { setSaving(false); return }
+    const newWorkouts: Workout[] = []
+    for (let i = 0; i < (src.workouts?.length ?? 0); i++) {
+      const wo = src.workouts![i]
+      const d = new Date(startDate); d.setDate(startDate.getDate() + i)
+      const { data: nwo } = await supabase.from('workouts').insert({
+        week_id: newWeek.id, athlete_id: effectiveAthleteId,
+        day_name: wo.day_name, workout_date: d.toISOString().split('T')[0],
+        completed: false, notes: wo.notes,
+      }).select('*').single()
+      if (!nwo) continue
+      const newExercises: WorkoutExercise[] = []
+      for (const ex of (wo.workout_exercises ?? [])) {
+        const { data: nex } = await supabase.from('workout_exercises').insert({
+          workout_id: nwo.id, exercise_id: ex.exercise_id,
+          exercise_order: ex.exercise_order,
+          planned_sets: ex.planned_sets, planned_reps: ex.planned_reps,
+          planned_weight_kg: ex.planned_weight_kg, planned_rpe: ex.planned_rpe,
+          planned_rest_seconds: ex.planned_rest_seconds, planned_tempo: ex.planned_tempo,
+          target_rpe: ex.target_rpe, coach_note: ex.coach_note,
+        }).select('*, exercise:exercises(*)').single()
+        if (nex) newExercises.push(nex as WorkoutExercise)
+      }
+      newWorkouts.push({ ...nwo, workout_exercises: newExercises })
+    }
+    setBlock(b => b ? { ...b, weeks: [...(b.weeks ?? []), { ...newWeek, workouts: newWorkouts }] } : b)
+    setSaving(false)
+  }
+
+  const copyBlock = async () => {
+    if (!block) return
+    const name = prompt(`Kopiraj blok "${block.name}" pod nazivom:`)
+    if (!name?.trim()) return
+    setSaving(true)
+    const today = new Date()
+    const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
+    const { data: nb } = await supabase.from('blocks').insert({
+      athlete_id: effectiveAthleteId, name: name.trim(),
+      start_date: today.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
+      status: 'active',
+    }).select('id, name, status, start_date, end_date').single()
+    if (!nb) { setSaving(false); return }
+    for (let wi = 0; wi < (block.weeks?.length ?? 0); wi++) {
+      const sw = block.weeks![wi]
+      const wStart = new Date(today); wStart.setDate(today.getDate() + wi * 7)
+      const wEnd = new Date(wStart); wEnd.setDate(wStart.getDate() + 6)
+      const { data: nw } = await supabase.from('weeks').insert({
+        block_id: nb.id, week_number: sw.week_number,
+        start_date: wStart.toISOString().split('T')[0],
+        end_date: wEnd.toISOString().split('T')[0], notes: sw.notes,
+      }).select('*').single()
+      if (!nw) continue
+      for (let di = 0; di < (sw.workouts?.length ?? 0); di++) {
+        const wo = sw.workouts![di]
+        const d = new Date(wStart); d.setDate(wStart.getDate() + di)
+        const { data: nwo } = await supabase.from('workouts').insert({
+          week_id: nw.id, athlete_id: effectiveAthleteId,
+          day_name: wo.day_name, workout_date: d.toISOString().split('T')[0],
+          completed: false, notes: wo.notes,
+        }).select('*').single()
+        if (!nwo) continue
+        for (const ex of (wo.workout_exercises ?? [])) {
+          await supabase.from('workout_exercises').insert({
+            workout_id: nwo.id, exercise_id: ex.exercise_id,
+            exercise_order: ex.exercise_order,
+            planned_sets: ex.planned_sets, planned_reps: ex.planned_reps,
+            planned_weight_kg: ex.planned_weight_kg, planned_rpe: ex.planned_rpe,
+            planned_rest_seconds: ex.planned_rest_seconds, planned_tempo: ex.planned_tempo,
+            target_rpe: ex.target_rpe, coach_note: ex.coach_note,
+          })
+        }
+      }
+    }
+    setAllBlocks(bs => [nb as BlockSummary, ...bs])
+    await switchBlock(nb.id)
+    setSaving(false)
   }
   const updateWeek = async (weekId: string, data: Partial<Week>) => {
     await supabase.from('weeks').update(data).eq('id', weekId)
@@ -413,12 +507,18 @@ export default function TrainingPage() {
                     }} />
                 </div>
 
-                {/* New block */}
+                {/* New block / Copy block */}
                 {canEdit && (
-                  <button onClick={async () => { const n = prompt('Naziv novog bloka:'); if (n?.trim()) await addBlock(n.trim()) }}
-                    className="action-btn" style={{ padding: '0 16px', borderRadius: 0 }}>
-                    <Plus size={12} /> NOVI BLOK
-                  </button>
+                  <>
+                    <button onClick={async () => { const n = prompt('Naziv novog bloka:'); if (n?.trim()) await addBlock(n.trim()) }}
+                      className="action-btn" style={{ padding: '0 16px', borderRadius: 0 }}>
+                      <Plus size={12} /> NOVI BLOK
+                    </button>
+                    <button onClick={copyBlock}
+                      className="action-btn" style={{ padding: '0 16px', borderRadius: 0 }}>
+                      <Copy size={12} /> KOPIRAJ BLOK
+                    </button>
+                  </>
                 )}
 
                 {saving && (
@@ -480,7 +580,7 @@ export default function TrainingPage() {
               )}
               {block.weeks?.map(week => (
                 <WeekPanel key={week.id} week={week} exercises={exercises} isAdmin={canEdit} userId={userId ?? ''}
-                  onDeleteWeek={deleteWeek} onUpdateWeek={updateWeek} onAddWorkout={addWorkout}
+                  onDeleteWeek={deleteWeek} onCopyWeek={copyWeek} onUpdateWeek={updateWeek} onAddWorkout={addWorkout}
                   onUpdateWorkout={updateWorkout} onDeleteWorkout={deleteWorkout}
                   onAddExercise={addExercise} onUpdateExercise={updateExercise} onDeleteExercise={deleteExercise} />
               ))}
