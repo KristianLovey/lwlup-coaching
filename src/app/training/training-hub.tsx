@@ -368,6 +368,7 @@ const HUB_TOOLS = [
   { id:'guide-peak',label:'Peaking Guide',    sub:'Priprema za natjecanje',           color:'#a78bfa', badge:'GUIDE'},
   { id:'weight',    label:'Praćenje kilaze',  sub:'Dnevni unos i tjedna projekcija',  color:'#f472b6', badge:'LOG'  },
   { id:'progress',  label:'Graf napretka',   sub:'Kilaze kroz blokove po liftu/RPE', color:'#22d3ee', badge:'GRAF' },
+  { id:'nutrition', label:'Prehrana & Kalorije', sub:'TDEE, makrosi i dnevni log',    color:'#f97316', badge:'LOG'  },
 ]
 
 const GUIDE_CONTENT: Record<string,{title:string;body:string[]}> = {
@@ -861,6 +862,314 @@ function WeightTracker({ userId }: { userId: string }) {
   )
 }
 
+// ─── NUTRITION TRACKER ──────────────────────────────────────────
+type NutritionSettings = {
+  weight_kg: number; height_cm: number; age: number
+  sex: 'male'|'female'; activity_level: string; refeed_kcal: number | null
+}
+type NutritionLog = {
+  id: string; date: string; day_type: 'heavy'|'light'|'rest'|'refeed'
+  calories: number|null; protein_g: number|null; carbs_g: number|null
+  fat_g: number|null; body_weight: number|null; steps: number|null; notes: string|null
+}
+
+const ACTIVITY_LEVELS = [
+  { id: 'sedentary',   label: 'Sjedilački',        mult: 1.2   },
+  { id: 'light',       label: 'Lagano aktivan',    mult: 1.375 },
+  { id: 'moderate',    label: 'Umjereno aktivan',  mult: 1.55  },
+  { id: 'active',      label: 'Aktivan',            mult: 1.725 },
+  { id: 'very_active', label: 'Vrlo aktivan',       mult: 1.9   },
+]
+
+const DAY_TYPES: { id: 'heavy'|'light'|'rest'|'refeed'; label: string; color: string; kcalMult: number; stepsMin: number; stepsMax: number }[] = [
+  { id: 'heavy',  label: 'Težak dan',  color: '#f59e0b', kcalMult: 1.12, stepsMin: 6000,  stepsMax: 8000  },
+  { id: 'light',  label: 'Lagan dan',  color: '#6b8cff', kcalMult: 1.00, stepsMin: 8000,  stepsMax: 10000 },
+  { id: 'rest',   label: 'Dan odmora', color: '#22c55e', kcalMult: 0.85, stepsMin: 8000,  stepsMax: 10000 },
+  { id: 'refeed', label: 'Refeed dan', color: '#a78bfa', kcalMult: 1.25, stepsMin: 6000,  stepsMax: 8000  },
+]
+
+function calcBMR(s: NutritionSettings) {
+  // Mifflin-St Jeor
+  const base = 10 * s.weight_kg + 6.25 * s.height_cm - 5 * s.age
+  return s.sex === 'male' ? base + 5 : base - 161
+}
+
+function calcTDEE(s: NutritionSettings) {
+  const mult = ACTIVITY_LEVELS.find(a => a.id === s.activity_level)?.mult ?? 1.55
+  return Math.round(calcBMR(s) * mult)
+}
+
+function calcMacros(kcal: number, weightKg: number) {
+  const protein = Math.round(weightKg * 2.2)
+  const fat     = Math.round((kcal * 0.25) / 9)
+  const carbs   = Math.round((kcal - protein * 4 - fat * 9) / 4)
+  return { protein, fat, carbs }
+}
+
+function NutritionTracker({ userId }: { userId: string }) {
+  const COLOR = '#f97316'
+  const [tab, setTab] = useState<'settings'|'plan'|'log'>('settings')
+  const [settings, setSettings] = useState<NutritionSettings>({
+    weight_kg: 80, height_cm: 178, age: 25, sex: 'male', activity_level: 'moderate', refeed_kcal: null
+  })
+  const [logs, setLogs] = useState<NutritionLog[]>([])
+  const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0])
+  const [logDraft, setLogDraft] = useState<Partial<NutritionLog>>({ day_type: 'heavy' })
+  const [saving, setSaving] = useState(false)
+  const [loadingSettings, setLoadingSettings] = useState(true)
+  const [settingsSaved, setSettingsSaved] = useState(false)
+  const [refeedInput, setRefeedInput] = useState('')
+
+  // Load settings + logs
+  useEffect(() => {
+    const load = async () => {
+      const { data: s } = await supabase.from('nutrition_settings').select('*').eq('user_id', userId).maybeSingle()
+      if (s) {
+        setSettings({ weight_kg: s.weight_kg, height_cm: s.height_cm, age: s.age, sex: s.sex, activity_level: s.activity_level, refeed_kcal: s.refeed_kcal })
+        setRefeedInput(s.refeed_kcal ? String(s.refeed_kcal) : '')
+      }
+      const { data: l } = await supabase.from('nutrition_logs').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(30)
+      setLogs((l ?? []) as NutritionLog[])
+      setLoadingSettings(false)
+    }
+    load()
+  }, [userId])
+
+  // When date changes, preload existing log
+  useEffect(() => {
+    const existing = logs.find(l => l.date === logDate)
+    if (existing) setLogDraft(existing)
+    else setLogDraft({ day_type: 'heavy' })
+  }, [logDate, logs])
+
+  const saveSettings = async () => {
+    setSaving(true)
+    const data = { ...settings, refeed_kcal: refeedInput ? parseInt(refeedInput) : null, user_id: userId }
+    await supabase.from('nutrition_settings').upsert(data, { onConflict: 'user_id' })
+    setSettings(prev => ({ ...prev, refeed_kcal: data.refeed_kcal }))
+    setSaving(false); setSettingsSaved(true); setTimeout(() => setSettingsSaved(false), 2000)
+  }
+
+  const saveLog = async () => {
+    if (!logDate) return; setSaving(true)
+    const existing = logs.find(l => l.date === logDate)
+    const data = { user_id: userId, date: logDate, ...logDraft }
+    if (existing) {
+      const { data: updated } = await supabase.from('nutrition_logs').update(data).eq('id', existing.id).select('*').single()
+      if (updated) setLogs(prev => prev.map(l => l.date === logDate ? updated as NutritionLog : l))
+    } else {
+      const { data: inserted } = await supabase.from('nutrition_logs').insert(data).select('*').single()
+      if (inserted) setLogs(prev => [inserted as NutritionLog, ...prev])
+    }
+    setSaving(false)
+  }
+
+  const tdee = calcTDEE(settings)
+  const bmr  = Math.round(calcBMR(settings))
+
+  const inp = (label: string, key: keyof NutritionSettings, max: string, step = '1') => (
+    <CalcInput label={label} color={COLOR} step={step} max={max}
+      value={String(settings[key] ?? '')}
+      onChange={v => setSettings(s => ({ ...s, [key]: parseFloat(v) || 0 }))} />
+  )
+
+  if (loadingSettings) return <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', padding: '24px 0', textAlign: 'center' as const }}>Učitavanje...</div>
+
+  return (
+    <div>
+      {/* Tab switcher */}
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', padding: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.07)', width: 'fit-content' }}>
+        {(['settings','plan','log'] as const).map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            style={{ padding: '7px 18px', background: tab === t ? `${COLOR}18` : 'transparent', border: tab === t ? `1px solid ${COLOR}40` : '1px solid transparent', borderRadius: '8px', cursor: 'pointer', fontSize: '0.72rem', fontFamily: 'var(--fm)', fontWeight: tab === t ? 700 : 400, color: tab === t ? COLOR : 'rgba(255,255,255,0.4)', transition: 'all 0.2s' }}>
+            {t === 'settings' ? 'Podešavanja' : t === 'plan' ? 'Plan kalorija' : 'Dnevni log'}
+          </button>
+        ))}
+      </div>
+
+      {/* ── SETTINGS TAB ── */}
+      {tab === 'settings' && (
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '24px' }}>
+          <SectionTitle>Osobni podaci</SectionTitle>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: '12px' }}>
+            {inp('Tjelesna masa (kg)', 'weight_kg', '300', '0.5')}
+            {inp('Visina (cm)', 'height_cm', '250')}
+            {inp('Godine', 'age', '100')}
+          </div>
+
+          {/* Sex */}
+          <div>
+            <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', fontFamily: 'var(--fm)', marginBottom: '8px', fontWeight: 600 }}>SPOL</div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {(['male','female'] as const).map(s => (
+                <button key={s} onClick={() => setSettings(prev => ({ ...prev, sex: s }))}
+                  style={{ padding: '8px 20px', background: settings.sex === s ? `${COLOR}18` : 'rgba(255,255,255,0.03)', border: `1.5px solid ${settings.sex === s ? COLOR+'55' : 'rgba(255,255,255,0.1)'}`, borderRadius: '9px', cursor: 'pointer', color: settings.sex === s ? COLOR : 'rgba(255,255,255,0.5)', fontSize: '0.8rem', fontFamily: 'var(--fm)', fontWeight: settings.sex === s ? 700 : 400, transition: 'all 0.2s' }}>
+                  {s === 'male' ? 'Muški' : 'Ženski'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Activity level */}
+          <div>
+            <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', fontFamily: 'var(--fm)', marginBottom: '8px', fontWeight: 600 }}>RAZINA AKTIVNOSTI</div>
+            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '6px' }}>
+              {ACTIVITY_LEVELS.map(a => (
+                <button key={a.id} onClick={() => setSettings(prev => ({ ...prev, activity_level: a.id }))}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: settings.activity_level === a.id ? `${COLOR}10` : 'rgba(255,255,255,0.02)', border: `1.5px solid ${settings.activity_level === a.id ? COLOR+'40' : 'rgba(255,255,255,0.07)'}`, borderRadius: '9px', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left' as const }}>
+                  <span style={{ fontSize: '0.82rem', color: settings.activity_level === a.id ? COLOR : 'rgba(255,255,255,0.6)', fontFamily: 'var(--fm)', fontWeight: settings.activity_level === a.id ? 600 : 400 }}>{a.label}</span>
+                  <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>×{a.mult}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Refeed kcal — coach sets */}
+          <div>
+            <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', fontFamily: 'var(--fm)', marginBottom: '8px', fontWeight: 600 }}>REFEED KALORIJE (postavlja trener)</div>
+            <CalcInput label="kcal za refeed dan" color='#a78bfa' value={refeedInput} onChange={setRefeedInput} placeholder="npr. 3200" />
+          </div>
+
+          <button onClick={saveSettings} disabled={saving}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px 28px', background: settingsSaved ? 'rgba(34,197,94,0.15)' : `${COLOR}18`, border: `1.5px solid ${settingsSaved ? '#22c55e66' : COLOR+'44'}`, borderRadius: '10px', cursor: 'pointer', color: settingsSaved ? '#22c55e' : COLOR, fontSize: '0.78rem', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.05em', transition: 'all 0.2s', width: 'fit-content' }}>
+            {saving ? 'Sprema...' : settingsSaved ? '✓ Spremljeno' : 'Spremi podešavanja'}
+          </button>
+        </div>
+      )}
+
+      {/* ── PLAN TAB ── */}
+      {tab === 'plan' && (
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
+          {/* TDEE summary */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: '10px' }}>
+            <ResultCard label="BMR" value={bmr} unit="kcal" color="#888" sub="Bazalni metabolizam" />
+            <ResultCard label="Održavanje (TDEE)" value={tdee} unit="kcal" color={COLOR} sub={`Faktor: ×${ACTIVITY_LEVELS.find(a => a.id === settings.activity_level)?.mult}`} />
+          </div>
+
+          {/* Day schemes */}
+          <SectionTitle>Shema po tipu dana</SectionTitle>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '10px' }}>
+            {DAY_TYPES.map(dt => {
+              const kcal = dt.id === 'refeed'
+                ? (settings.refeed_kcal ?? Math.round(tdee * dt.kcalMult))
+                : Math.round(tdee * dt.kcalMult)
+              const { protein, fat, carbs } = calcMacros(kcal, settings.weight_kg)
+              const isRefeed = dt.id === 'refeed'
+              return (
+                <div key={dt.id} style={{ padding: '16px 20px', background: `${dt.color}08`, border: `1.5px solid ${dt.color}28`, borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap' as const, gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: dt.color, boxShadow: `0 0 6px ${dt.color}` }} />
+                      <span style={{ fontSize: '0.88rem', fontWeight: 700, color: dt.color, fontFamily: 'var(--fm)' }}>{dt.label}</span>
+                      {isRefeed && !settings.refeed_kcal && <span style={{ fontSize: '0.55rem', color: '#a78bfa88', fontFamily: 'var(--fm)', background: '#a78bfa14', padding: '2px 8px', borderRadius: '4px', border: '1px solid #a78bfa25' }}>procjena — trener može upisati</span>}
+                    </div>
+                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 800, color: dt.color, lineHeight: 1 }}>{kcal} <span style={{ fontSize: '0.9rem', fontWeight: 400, color: `${dt.color}88` }}>kcal</span></div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px' }}>
+                    {[
+                      { label: 'Protein', val: protein, unit: 'g', color: '#f59e0b' },
+                      { label: 'Ugljikohidrati', val: carbs,   unit: 'g', color: '#6b8cff' },
+                      { label: 'Masti',   val: fat,     unit: 'g', color: '#f472b6' },
+                      { label: 'Koraci',  val: `${dt.stepsMin/1000}k–${dt.stepsMax/1000}k`, unit: '', color: '#22c55e' },
+                    ].map(m => (
+                      <div key={m.label} style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '10px 12px', textAlign: 'center' as const }}>
+                        <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em', fontFamily: 'var(--fm)', marginBottom: '4px' }}>{m.label.toUpperCase()}</div>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: m.color, fontFamily: 'var(--fd)', lineHeight: 1 }}>{m.val}<span style={{ fontSize: '0.6rem', color: `${m.color}88`, marginLeft: '2px' }}>{m.unit}</span></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', lineHeight: 1.7, padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+            Protein: 2.2g/kg • Masti: 25% kalorija • Ugljikohidrati: ostatak kalorija<br/>
+            Preporuke koraka su okvirne — prilagodi prema uputama trenera.
+          </div>
+        </div>
+      )}
+
+      {/* ── LOG TAB ── */}
+      {tab === 'log' && (
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
+          {/* Date + day type */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', alignItems: 'end' }}>
+            <CalcInput label="Datum" color={COLOR} type="date" value={logDate} onChange={setLogDate} max="2100-01-01" />
+            <div>
+              <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', fontFamily: 'var(--fm)', marginBottom: '8px', fontWeight: 600 }}>TIP DANA</div>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const }}>
+                {DAY_TYPES.map(dt => (
+                  <button key={dt.id} onClick={() => setLogDraft(d => ({ ...d, day_type: dt.id }))}
+                    style={{ padding: '7px 12px', background: logDraft.day_type === dt.id ? `${dt.color}18` : 'rgba(255,255,255,0.03)', border: `1.5px solid ${logDraft.day_type === dt.id ? dt.color+'50' : 'rgba(255,255,255,0.08)'}`, borderRadius: '8px', cursor: 'pointer', color: logDraft.day_type === dt.id ? dt.color : 'rgba(255,255,255,0.4)', fontSize: '0.7rem', fontFamily: 'var(--fm)', fontWeight: logDraft.day_type === dt.id ? 700 : 400, transition: 'all 0.15s' }}>
+                    {dt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Macro inputs */}
+          <SectionTitle>Makrosi i metrike</SectionTitle>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: '10px' }}>
+            {[
+              { label: 'Kalorije (kcal)', key: 'calories' as keyof NutritionLog, color: COLOR },
+              { label: 'Protein (g)',      key: 'protein_g' as keyof NutritionLog, color: '#f59e0b' },
+              { label: 'Ugljikohidrati (g)', key: 'carbs_g' as keyof NutritionLog, color: '#6b8cff' },
+              { label: 'Masti (g)',        key: 'fat_g' as keyof NutritionLog, color: '#f472b6' },
+              { label: 'Tjel. masa (kg)',  key: 'body_weight' as keyof NutritionLog, color: '#22c55e', step: '0.1' },
+              { label: 'Koraci',           key: 'steps' as keyof NutritionLog, color: '#34d399' },
+            ].map(f => (
+              <CalcInput key={f.key} label={f.label} color={f.color} step={(f as any).step ?? '1'}
+                value={logDraft[f.key] != null ? String(logDraft[f.key]) : ''}
+                onChange={v => setLogDraft(d => ({ ...d, [f.key]: parseFloat(v) || null }))} />
+            ))}
+          </div>
+
+          {/* Notes */}
+          <div>
+            <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', fontFamily: 'var(--fm)', marginBottom: '6px', fontWeight: 600 }}>BILJEŠKA</div>
+            <textarea value={logDraft.notes ?? ''} onChange={e => setLogDraft(d => ({ ...d, notes: e.target.value || null }))} rows={2} placeholder="Kako si se osjećao/la, što si jeo/la..."
+              style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.1)', color: '#f0f0f5', padding: '10px 14px', borderRadius: '10px', outline: 'none', resize: 'vertical', fontFamily: 'var(--fm)', fontSize: '0.85rem', lineHeight: 1.6, boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
+              onFocus={e => e.target.style.borderColor = COLOR}
+              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+          </div>
+
+          <button onClick={saveLog} disabled={saving}
+            style={{ padding: '11px 28px', background: `${COLOR}18`, border: `1.5px solid ${COLOR}44`, borderRadius: '10px', cursor: 'pointer', color: COLOR, fontSize: '0.78rem', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.05em', width: 'fit-content', transition: 'all 0.2s' }}>
+            {saving ? 'Sprema...' : 'Spremi unos'}
+          </button>
+
+          {/* Log history */}
+          {logs.length > 0 && (
+            <>
+              <SectionTitle>Povijest ({logs.length} unosa)</SectionTitle>
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '6px' }}>
+                {logs.map(l => {
+                  const dt = DAY_TYPES.find(d => d.id === l.day_type)
+                  return (
+                    <div key={l.id} style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' as const }}>
+                      <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--fm)', minWidth: '80px' }}>{l.date}</div>
+                      {dt && <span style={{ fontSize: '0.58rem', fontWeight: 700, color: dt.color, background: `${dt.color}14`, padding: '2px 8px', borderRadius: '5px', border: `1px solid ${dt.color}25`, fontFamily: 'var(--fm)' }}>{dt.label}</span>}
+                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' as const, flex: 1 }}>
+                        {l.calories   && <span style={{ fontSize: '0.75rem', color: COLOR, fontFamily: 'var(--fm)', fontWeight: 600 }}>{l.calories} kcal</span>}
+                        {l.protein_g  && <span style={{ fontSize: '0.75rem', color: '#f59e0b', fontFamily: 'var(--fm)' }}>P: {l.protein_g}g</span>}
+                        {l.carbs_g    && <span style={{ fontSize: '0.75rem', color: '#6b8cff', fontFamily: 'var(--fm)' }}>U: {l.carbs_g}g</span>}
+                        {l.fat_g      && <span style={{ fontSize: '0.75rem', color: '#f472b6', fontFamily: 'var(--fm)' }}>M: {l.fat_g}g</span>}
+                        {l.body_weight && <span style={{ fontSize: '0.75rem', color: '#22c55e', fontFamily: 'var(--fm)' }}>{l.body_weight} kg</span>}
+                        {l.steps      && <span style={{ fontSize: '0.75rem', color: '#34d399', fontFamily: 'var(--fm)' }}>{l.steps.toLocaleString()} koraka</span>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function HubTab({ athleteName, userId }: { athleteName: string; userId?: string }) {
   const [active, setActive] = useState<string | null>(null)
   const activeTool = HUB_TOOLS.find(t => t.id === active)
@@ -927,6 +1236,8 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
             {active === 'weight'    && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje kilaze.</div>}
             {active === 'progress'  && userId && <ProgressGraph userId={userId} />}
             {active === 'progress'  && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za prikaz grafa.</div>}
+            {active === 'nutrition' && userId && <NutritionTracker userId={userId} />}
+            {active === 'nutrition' && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje prehrane.</div>}
             {['guide-wc','guide-rpe','guide-peak'].includes(active) && (() => {
               const g = GUIDE_CONTENT[active]
               if (!g) return null
