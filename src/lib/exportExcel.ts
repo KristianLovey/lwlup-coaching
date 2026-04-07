@@ -12,7 +12,8 @@ const BORDER_COL: RGB = { argb: 'FFCCCCCC' }
 const thin  = { style: 'thin'  as const, color: BORDER_COL }
 const thick = { style: 'medium' as const, color: BLACK }
 
-function allBorders(t = thin) {
+type BorderSide = { style: 'thin' | 'medium'; color: RGB }
+function allBorders(t: BorderSide = thin) {
   return { top: t, bottom: t, left: t, right: t }
 }
 
