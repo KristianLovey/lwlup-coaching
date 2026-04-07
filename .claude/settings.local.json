@@ -7,7 +7,11 @@
       "Bash(ls -la /Users/kristianlovey/Documents/lwlup/.env*)",
       "Bash(grep -n \"set_logs\\\\|notifications\" /Users/kristianlovey/Documents/lwlup/src/app/training/*.tsx)",
       "Bash(grep -r \"toast\\\\|notification\" /Users/kristianlovey/Documents/lwlup/src --include=*.tsx --include=*.ts)",
-      "WebFetch(domain:www.calculator.net)"
+      "WebFetch(domain:www.calculator.net)",
+      "Bash(npm run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }
