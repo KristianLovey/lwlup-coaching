@@ -385,8 +385,8 @@ function WorkoutCard({ workout, exercises, onUpdateWorkout, onDeleteWorkout, onA
 }
 
 // ── Week Panel ─────────────────────────────────────────────────────
-function WeekPanel({ week, exercises, onDeleteWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onReorderExercises, onUpdateWeekNotes }:
-  { week: Week; exercises: Exercise[]; onDeleteWeek: (id: string) => void; onAddWorkout: (weekId: string) => void; onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void; onAddExercise: (workoutId: string, ex: Exercise) => void; onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void; onReorderExercises: (workoutId: string, orderedIds: string[]) => void; onUpdateWeekNotes: (id: string, notes: string) => void }) {
+function WeekPanel({ week, exercises, onDeleteWeek, onCopyWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onReorderExercises, onUpdateWeekNotes }:
+  { week: Week; exercises: Exercise[]; onDeleteWeek: (id: string) => void; onCopyWeek: (id: string) => void; onAddWorkout: (weekId: string) => void; onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void; onAddExercise: (workoutId: string, ex: Exercise) => void; onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void; onReorderExercises: (workoutId: string, orderedIds: string[]) => void; onUpdateWeekNotes: (id: string, notes: string) => void }) {
   const [open, setOpen] = useState(true)
   const [weekNote, setWeekNote] = useState(week.notes ?? '')
   const completedCount = week.workouts?.filter(w => w.completed).length ?? 0
@@ -411,6 +411,10 @@ function WeekPanel({ week, exercises, onDeleteWeek, onAddWorkout, onUpdateWorkou
           )}
         </div>
         <div style={{ color: 'rgba(255,255,255,0.25)', transition: 'transform 0.3s', transform: open ? 'rotate(90deg)' : 'none' }}><ChevronRight size={14} /></div>
+        <div onClick={e => { e.stopPropagation(); onCopyWeek(week.id) }} style={{ color: 'rgba(255,255,255,0.15)', cursor: 'pointer', padding: '4px' }} title="Kopiraj tjedan"
+          onMouseEnter={e => e.currentTarget.style.color = '#60a5fa'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.15)'}>
+          <Copy size={13} />
+        </div>
         <div onClick={e => { e.stopPropagation(); onDeleteWeek(week.id) }} style={{ color: 'rgba(255,255,255,0.15)', cursor: 'pointer', padding: '4px' }}
           onMouseEnter={e => e.currentTarget.style.color = '#ff4444'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.15)'}>
           <Trash2 size={13} />
@@ -604,6 +608,50 @@ function AthletePanel({
     setBlock(b => b ? { ...b, weeks: b.weeks?.filter(w => w.id !== weekId) } : b)
   }
 
+  const copyWeek = async (weekId: string) => {
+    if (!block) return
+    setSaving(true)
+    const src = block.weeks?.find(w => w.id === weekId)
+    if (!src) { setSaving(false); return }
+    const ew = block.weeks ?? []
+    const weekNum = ew.length + 1
+    const lastEnd = new Date(ew[ew.length - 1].end_date)
+    const startDate = new Date(lastEnd); startDate.setDate(lastEnd.getDate() + 1)
+    const endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 6)
+    const { data: newWeek } = await supabase.from('weeks').insert({
+      block_id: block.id, week_number: weekNum,
+      start_date: startDate.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
+      notes: src.notes,
+    }).select('*').single()
+    if (!newWeek) { setSaving(false); return }
+    const newWorkouts: Workout[] = []
+    for (let i = 0; i < (src.workouts?.length ?? 0); i++) {
+      const wo = src.workouts![i]
+      const d = new Date(startDate); d.setDate(startDate.getDate() + i)
+      const { data: nwo } = await supabase.from('workouts').insert({
+        week_id: newWeek.id, athlete_id: athlete.id,
+        day_name: wo.day_name, workout_date: d.toISOString().split('T')[0],
+        completed: false, notes: wo.notes,
+      }).select('*').single()
+      if (!nwo) continue
+      const newExercises: WorkoutExercise[] = []
+      for (const ex of (wo.workout_exercises ?? [])) {
+        const { data: nex } = await supabase.from('workout_exercises').insert({
+          workout_id: nwo.id, exercise_id: ex.exercise_id,
+          exercise_order: ex.exercise_order,
+          planned_sets: ex.planned_sets, planned_reps: ex.planned_reps,
+          planned_weight_kg: ex.planned_weight_kg, planned_rpe: ex.planned_rpe,
+          planned_rest_seconds: ex.planned_rest_seconds, planned_tempo: ex.planned_tempo,
+        }).select('*, exercise:exercises(*)').single()
+        if (nex) newExercises.push(nex as WorkoutExercise)
+      }
+      newWorkouts.push({ ...nwo, workout_exercises: newExercises })
+    }
+    setBlock(b => b ? { ...b, weeks: [...(b.weeks ?? []), { ...newWeek, workouts: newWorkouts }] } : b)
+    setSaving(false)
+  }
+
   const updateWeekNotes = async (weekId: string, notes: string) => {
     await supabase.from('weeks').update({ notes: notes || null }).eq('id', weekId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? { ...w, notes: notes || null } : w) } : b)
@@ -788,7 +836,7 @@ function AthletePanel({
                 <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '16px' }}>BLOK JE PRAZAN — DODAJ TJEDAN</div>
               )}
               {block.weeks?.map(week => (
-                <WeekPanel key={week.id} week={week} exercises={exercises} onDeleteWeek={deleteWeek} onAddWorkout={addWorkout} onUpdateWorkout={updateWorkout} onDeleteWorkout={deleteWorkout} onAddExercise={addExercise} onUpdateExercise={updateExercise} onDeleteExercise={deleteExercise} onReorderExercises={reorderExercises} onUpdateWeekNotes={updateWeekNotes} />
+                <WeekPanel key={week.id} week={week} exercises={exercises} onDeleteWeek={deleteWeek} onCopyWeek={copyWeek} onAddWorkout={addWorkout} onUpdateWorkout={updateWorkout} onDeleteWorkout={deleteWorkout} onAddExercise={addExercise} onUpdateExercise={updateExercise} onDeleteExercise={deleteExercise} onReorderExercises={reorderExercises} onUpdateWeekNotes={updateWeekNotes} />
               ))}
               <button onClick={addWeek} style={{ width: '100%', padding: '16px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '0.68rem', letterSpacing: '0.3em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
