@@ -281,6 +281,72 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ══ KATEGORIJE ═══════════════════════════════════════════ */}
+      <section id="kategorije" style={{ background: '#050505', borderTop: '1px solid rgba(255,255,255,0.06)', padding: 'clamp(80px,12vw,140px) clamp(20px,5vw,60px)' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 'clamp(40px,6vw,80px)' }}>
+            <div style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.25)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>POWERLIFTING NATJECANJA</div>
+            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 0.9, marginBottom: '20px' }}>KATEGORIJE<br /><span style={{ color: 'rgba(255,255,255,0.2)' }}>NATJECANJA</span></h2>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.82rem,2vw,0.95rem)', maxWidth: '600px', margin: '0 auto', lineHeight: 1.8 }}>
+              Natjecatelji se raspoređuju prema spolu, dobi i tjelesnoj težini — svaki ima jednake uvjete za borbu za vrh.
+            </p>
+          </div>
+
+          {/* Dobne kategorije */}
+          <div style={{ marginBottom: 'clamp(40px,6vw,72px)' }}>
+            <div style={{ fontSize: '0.6rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.3)', marginBottom: '20px', fontFamily: 'var(--fm)', textAlign: 'center' }}>DOBNE KATEGORIJE</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              {[
+                { name: 'KADETI',     age: '14–18 god.', color: '#60a5fa' },
+                { name: 'JUNIORI',    age: '19–23 god.', color: '#a78bfa' },
+                { name: 'OPEN',       age: '24–39 god.', color: '#f0f0f0' },
+                { name: 'MASTERS 1',  age: '40–49 god.', color: '#facc15' },
+                { name: 'MASTERS 2',  age: '50–59 god.', color: '#fb923c' },
+                { name: 'MASTERS 3+', age: '60+ god.',   color: '#f87171' },
+              ].map((cat, i) => (
+                <div key={i} style={{ padding: 'clamp(18px,3vw,28px) clamp(12px,2vw,20px)', background: '#06060a', textAlign: 'center', transition: 'background 0.3s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#101014'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#06060a'}>
+                  <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1rem,2vw,1.3rem)', color: cat.color, marginBottom: '6px', letterSpacing: '0.03em' }}>{cat.name}</div>
+                  <div style={{ fontSize: 'clamp(0.62rem,1.5vw,0.72rem)', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.12em' }}>{cat.age}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Težinske kategorije */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(16px,3vw,32px)' }} className="cat-weight-grid">
+            {/* Muške */}
+            <div style={{ border: '1px solid rgba(255,255,255,0.08)', background: '#06060a' }}>
+              <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '8px', height: '8px', background: '#60a5fa', borderRadius: '50%' }} />
+                <span style={{ fontSize: '0.62rem', letterSpacing: '0.35em', color: '#60a5fa', fontFamily: 'var(--fm)', fontWeight: 700 }}>MUŠKARCI</span>
+              </div>
+              <div style={{ padding: '16px 24px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {['-59','-66','-74','-83','-93','-105','-120','+120'].map(kg => (
+                  <div key={kg} style={{ padding: '6px 14px', background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.15)', fontSize: 'clamp(0.7rem,1.8vw,0.82rem)', color: '#93c5fd', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.05em' }}>{kg} kg</div>
+                ))}
+              </div>
+            </div>
+            {/* Ženske */}
+            <div style={{ border: '1px solid rgba(255,255,255,0.08)', background: '#06060a' }}>
+              <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '8px', height: '8px', background: '#f472b6', borderRadius: '50%' }} />
+                <span style={{ fontSize: '0.62rem', letterSpacing: '0.35em', color: '#f472b6', fontFamily: 'var(--fm)', fontWeight: 700 }}>ŽENE</span>
+              </div>
+              <div style={{ padding: '16px 24px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {['-47','-52','-57','-63','-69','-76','-84','+84'].map(kg => (
+                  <div key={kg} style={{ padding: '6px 14px', background: 'rgba(244,114,182,0.07)', border: '1px solid rgba(244,114,182,0.15)', fontSize: 'clamp(0.7rem,1.8vw,0.82rem)', color: '#f9a8d4', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.05em' }}>{kg} kg</div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '0.62rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.15em', fontFamily: 'var(--fm)' }}>
+            KATEGORIJE PO IPF STANDARDU · SVAKA KOMBINACIJA DOBI I KATEGORIJE = ZASEBNO NATJECANJE
+          </div>
+        </div>
+      </section>
+
       {/* ══ FOUNDERS ══════════════════════════════════════════════ */}
       <section id="coach" style={{ background: '#0a0a0a', borderTop: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: 'clamp(60px,10vw,100px) clamp(20px,5vw,60px) clamp(40px,6vw,60px)' }}>
@@ -431,6 +497,7 @@ export default function Landing() {
 
         /* ══ MOBILE ═══════════════════════════════════════════════ */
         @media (max-width: 768px) {
+          .cat-weight-grid { grid-template-columns: 1fr !important; }
           .founder-row { grid-template-columns: 1fr !important; min-height: unset; }
           .founder-row-reverse .founder-img-wrap { order: 1; }
           .founder-row-reverse .founder-text-wrap { order: 2; }

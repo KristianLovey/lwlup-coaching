@@ -706,6 +706,22 @@ function AthletePanel({
       : wo) })) } : b)
   }
 
+  const deleteBlock = async (blockId: string) => {
+    if (!confirm('Briši ovaj blok? Ova radnja je nepovratna i briše sve tjedne i treninge.')) return
+    setSaving(true)
+    await supabase.from('blocks').delete().eq('id', blockId)
+    const remaining = allBlocks.filter(b => b.id !== blockId)
+    setAllBlocks(remaining)
+    if (block?.id === blockId) {
+      if (remaining.length > 0) {
+        await switchBlock(remaining[0].id)
+      } else {
+        setBlock(null)
+      }
+    }
+    setSaving(false)
+  }
+
   const duplicateBlockTo = async (targetAthleteId: string, newName: string) => {
     if (!duplicateBlock) return
     setSaving(true)
@@ -786,11 +802,18 @@ function AthletePanel({
                 <ChevronDown size={13} color="rgba(255,255,255,0.3)" style={{ marginLeft: 'auto', transform: showBlockMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
               {block && (
-                <button onClick={() => setDuplicateBlock(block)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: '0.62rem', letterSpacing: '0.18em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', flexShrink: 0 }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'transparent' }}>
-                  <Copy size={12} /> DUPLICIRAJ
-                </button>
+                <>
+                  <button onClick={() => setDuplicateBlock(block)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: '0.62rem', letterSpacing: '0.18em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', flexShrink: 0 }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'transparent' }}>
+                    <Copy size={12} /> DUPLICIRAJ
+                  </button>
+                  <button onClick={() => deleteBlock(block.id)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', color: 'rgba(239,68,68,0.5)', fontSize: '0.62rem', letterSpacing: '0.18em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', flexShrink: 0 }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.06)' }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'rgba(239,68,68,0.5)'; e.currentTarget.style.background = 'transparent' }}>
+                    <Trash2 size={12} /> BRIŠI BLOK
+                  </button>
+                </>
               )}
               <button onClick={createBlock} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: '0.62rem', letterSpacing: '0.18em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', flexShrink: 0 }}
                 onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
@@ -995,7 +1018,7 @@ export default function AdminPage() {
         return { ...p, blocks: blocks ?? [] } as AthleteProfile
       }))
       setAthletes(withBlocks)
-      setCoaches(withBlocks.filter(p => p.role === 'trener'))
+      setCoaches(withBlocks.filter(p => p.role === 'trener' || p.role === 'admin'))
 
       // Load existing assignments
       const { data: asgn } = await supabase.from('coach_assignments').select('coach_id, lifter_id')

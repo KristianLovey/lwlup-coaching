@@ -226,12 +226,21 @@ export default function TeamPage() {
               >
                 {/* IMAGE */}
                 <div style={{ height: '400px', overflow: 'hidden', position: 'relative', background: '#000' }}>
-                  <img
-                    src={member.img ?? '/slike/placeholder-athlete.jpg'}
-                    alt={member.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', filter: hoveredMember === member.id ? 'grayscale(0.2) brightness(0.75)' : 'grayscale(0.6) brightness(0.6)', transform: hoveredMember === member.id ? 'scale(1.08)' : 'scale(1)', transition: '0.8s cubic-bezier(0.16,1,0.3,1)' }}
-                    onError={e => { (e.currentTarget as HTMLImageElement).src = '/slike/placeholder-athlete.jpg' }}
-                  />
+                  {member.img ? (
+                    <img
+                      src={member.img}
+                      alt={member.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', filter: hoveredMember === member.id ? 'grayscale(0.2) brightness(0.75)' : 'grayscale(0.6) brightness(0.6)', transform: hoveredMember === member.id ? 'scale(1.08)' : 'scale(1)', transition: '0.8s cubic-bezier(0.16,1,0.3,1)' }}
+                      onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+                    />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(160deg, #0d0d0d 0%, #060606 100%)' }}>
+                      <svg width="80" height="80" viewBox="0 0 80 80" fill="none" opacity="0.12">
+                        <circle cx="40" cy="28" r="16" fill="#fff" />
+                        <path d="M8 72c0-17.673 14.327-32 32-32s32 14.327 32 32" fill="#fff" />
+                      </svg>
+                    </div>
+                  )}
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(10,10,10,0.9) 0%, transparent 60%)' }} />
                   {member.nickname && (
                     <div style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(0,0,0,0.85)', padding: '6px 16px', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)' }}>
@@ -260,7 +269,7 @@ export default function TeamPage() {
                   {member.total > 0 ? (
                     <>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                        {[['SQUAT', member.squat], ['BENCH', member.bench], ['DEAD', member.deadlift]].map(([label, val], li) => (
+                        {[['SQUAT', member.squat], ['BENCH', member.bench], ['DEADLIFT', member.deadlift]].map(([label, val], li) => (
                           <div key={li} style={{ padding: '16px 0', borderRight: li < 2 ? '1px solid rgba(255,255,255,0.08)' : 'none', paddingLeft: li > 0 ? '16px' : '0', paddingRight: li < 2 ? '16px' : '0' }}>
                             <div style={{ fontSize: '0.55rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)', marginBottom: '6px' }}>{label}</div>
                             <div style={{ fontFamily: 'var(--fd)', fontSize: '1.7rem', color: '#fff', lineHeight: 1 }}>{val}</div>

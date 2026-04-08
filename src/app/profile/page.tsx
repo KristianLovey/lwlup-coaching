@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Loader2, Edit3, X } from 'lucide-react'
 import { AppNav, AVATARS, AvatarSvg } from '../training/training-components'
+import { CATEGORY_GROUPS } from '@/lib/exercises'
 
 const supabase = createClient()
 
@@ -204,6 +205,121 @@ function ProgressChart({ data, color, label }: {
 }
 
 
+// ─── MUSCLE GROUP COLORS ──────────────────────────────────────────
+const GROUP_COLORS: Record<string, string> = {
+  'SQUAT':      '#6b8cff',
+  'BENCH':      '#f59e0b',
+  'DEADLIFT':   '#22c55e',
+  'CHEST':      '#ec4899',
+  'SHOULDERS':  '#a78bfa',
+  'BACK':       '#06b6d4',
+  'BICEPS':     '#f97316',
+  'TRICEPS':    '#14b8a6',
+  'QUADS':      '#84cc16',
+  'HAMSTRINGS': '#eab308',
+  'GLUTES':     '#fb7185',
+}
+
+type MuscleEntry = { group: string; sets: number; tonnage: number; color: string }
+
+// ─── MUSCLE DONUT CHART ───────────────────────────────────────────
+function MuscleDonut({ data, view }: { data: MuscleEntry[]; view: 'percent' | 'tonnage' }) {
+  const [hovered, setHovered] = useState<string | null>(null)
+
+  const getValue = (d: MuscleEntry) => view === 'percent' ? d.sets : d.tonnage
+  const total = data.reduce((s, d) => s + getValue(d), 0)
+
+  if (total === 0) return (
+    <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#333', fontSize: '0.72rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)' }}>
+      NEMA PODATAKA U AKTIVNOM BLOKU
+    </div>
+  )
+
+  const CX = 100, CY = 100, R = 82, r = 50
+  let angle = -Math.PI / 2
+
+  const slices = data
+    .filter(d => getValue(d) > 0)
+    .map(d => {
+      const pct = getValue(d) / total
+      const span = pct * 2 * Math.PI
+      const s = { ...d, start: angle, end: angle + span, pct }
+      angle += span
+      return s
+    })
+
+  const pt = (a: number, radius: number) => ({
+    x: CX + radius * Math.cos(a),
+    y: CY + radius * Math.sin(a),
+  })
+
+  const arc = (sa: number, ea: number) => {
+    const o1 = pt(sa, R), o2 = pt(ea, R)
+    const i1 = pt(ea, r), i2 = pt(sa, r)
+    const lg = ea - sa > Math.PI ? 1 : 0
+    return `M${o1.x} ${o1.y} A${R} ${R} 0 ${lg} 1 ${o2.x} ${o2.y} L${i1.x} ${i1.y} A${r} ${r} 0 ${lg} 0 ${i2.x} ${i2.y}Z`
+  }
+
+  const hov = hovered ? slices.find(s => s.group === hovered) : null
+  const sorted = [...slices].sort((a, b) => b.pct - a.pct)
+
+  return (
+    <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <svg width={200} height={200} viewBox="0 0 200 200">
+          {slices.map(s => {
+            const isHov = s.group === hovered
+            const gap = 0.018
+            return (
+              <path key={s.group}
+                d={arc(s.start + gap, s.end - gap)}
+                fill={isHov ? s.color : `${s.color}b0`}
+                stroke="none"
+                transform={isHov ? `translate(${Math.cos((s.start+s.end)/2)*4} ${Math.sin((s.start+s.end)/2)*4})` : ''}
+                onMouseEnter={() => setHovered(s.group)}
+                onMouseLeave={() => setHovered(null)}
+                style={{ cursor: 'pointer', transition: 'fill 0.15s, transform 0.15s' }}
+              />
+            )
+          })}
+        </svg>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+          {hov ? (
+            <>
+              <div style={{ fontFamily: 'var(--fd)', fontSize: '1.5rem', color: hov.color, lineHeight: 1 }}>{Math.round(hov.pct * 100)}%</div>
+              <div style={{ fontSize: '0.48rem', color: '#888', letterSpacing: '0.1em', textAlign: 'center', maxWidth: '60px', marginTop: '4px' }}>{hov.group}</div>
+              <div style={{ fontSize: '0.58rem', color: '#666', marginTop: '3px' }}>
+                {view === 'percent' ? `${hov.sets} ser.` : `${(hov.tonnage / 1000).toFixed(1)}t`}
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', color: '#555', lineHeight: 1 }}>{slices.length}</div>
+              <div style={{ fontSize: '0.46rem', color: '#444', letterSpacing: '0.1em', marginTop: '4px' }}>GRUPE</div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div style={{ flex: 1, minWidth: '160px', display: 'flex', flexDirection: 'column' as const, gap: '5px' }}>
+        {sorted.map(s => (
+          <div key={s.group}
+            onMouseEnter={() => setHovered(s.group)}
+            onMouseLeave={() => setHovered(null)}
+            style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer', opacity: hovered && hovered !== s.group ? 0.35 : 1, transition: 'opacity 0.15s' }}>
+            <div style={{ width: '7px', height: '7px', background: s.color, flexShrink: 0, borderRadius: '2px' }} />
+            <div style={{ flex: 1, fontSize: '0.68rem', color: '#c0c0c0', fontFamily: 'var(--fm)' }}>{s.group}</div>
+            <div style={{ fontSize: '0.62rem', color: s.color, fontFamily: 'var(--fd)', fontWeight: 700 }}>
+              {view === 'percent' ? `${s.sets}s` : `${(s.tonnage / 1000).toFixed(1)}t`}
+            </div>
+            <div style={{ fontSize: '0.58rem', color: '#444', minWidth: '30px', textAlign: 'right' }}>{Math.round(s.pct * 100)}%</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── AVATAR PICKER MODAL ──────────────────────────────────────────
 function AvatarPicker({ current, onSelect, onClose }: {
   current: string; onSelect: (id: string) => void; onClose: () => void
@@ -247,6 +363,11 @@ export default function ProfilePage() {
   const [progressReps, setProgressReps] = useState<number>(1)
   const [prLift, setPrLift]           = useState<'squat'|'bench'|'deadlift'>('squat')
   const [prReps, setPrReps]           = useState(1)
+  const [muscleData, setMuscleData]   = useState<MuscleEntry[]>([])
+  const [muscleView, setMuscleView]   = useState<'percent'|'tonnage'>('percent')
+  const [addingBW, setAddingBW]       = useState(false)
+  const [newBWDate, setNewBWDate]     = useState(new Date().toISOString().split('T')[0])
+  const [newBWVal, setNewBWVal]       = useState('')
   const [isCoach, setIsCoach]         = useState(false)
   const [assignedLifterIds, setAssignedLifterIds] = useState<string[]>([])
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
@@ -302,6 +423,47 @@ export default function ProfilePage() {
       setPrLogs((prs ?? []) as PrLog[])
       setLeaderboard((lb ?? []) as LeaderboardEntry[])
       if (prof) setOrmVals({ squat: String(prof.current_squat_1rm ?? ''), bench: String(prof.current_bench_1rm ?? ''), deadlift: String(prof.current_deadlift_1rm ?? ''), body_weight: String(prof.body_weight ?? ''), sex: (prof.sex ?? 'male') as 'male'|'female' })
+
+      // ── Muscle group data from active block ──────────────────────
+      try {
+        const { data: blockRow } = await supabase
+          .from('blocks').select('id').eq('athlete_id', user.id).eq('status', 'active')
+          .order('created_at', { ascending: false }).limit(1).maybeSingle()
+        if (blockRow) {
+          const { data: wks } = await supabase.from('weeks').select('id').eq('block_id', blockRow.id)
+          const wkIds = (wks ?? []).map((w: any) => w.id)
+          if (wkIds.length > 0) {
+            const { data: wos } = await supabase.from('workouts').select('id').in('week_id', wkIds)
+            const woIds = (wos ?? []).map((w: any) => w.id)
+            if (woIds.length > 0) {
+              const { data: weRows } = await supabase
+                .from('workout_exercises')
+                .select('planned_sets, planned_reps, planned_weight_kg, exercise:exercises(category)')
+                .in('workout_id', woIds)
+              const groupMap: Record<string, { sets: number; tonnage: number }> = {}
+              for (const we of (weRows ?? [])) {
+                const cat = (we.exercise as any)?.category as string
+                if (!cat) continue
+                let grp: string | null = null
+                for (const [g, cats] of Object.entries(CATEGORY_GROUPS)) {
+                  if ((cats as string[]).includes(cat)) { grp = g; break }
+                }
+                if (!grp) continue
+                if (!groupMap[grp]) groupMap[grp] = { sets: 0, tonnage: 0 }
+                const sets = we.planned_sets ?? 1
+                const reps = parseInt(String(we.planned_reps ?? '5')) || 5
+                const kg = we.planned_weight_kg ?? 0
+                groupMap[grp].sets += sets
+                groupMap[grp].tonnage += sets * reps * kg
+              }
+              setMuscleData(Object.entries(groupMap).map(([group, v]) => ({
+                group, ...v, color: GROUP_COLORS[group] ?? '#888'
+              })))
+            }
+          }
+        }
+      } catch { /* ignore muscle data errors */ }
+
       setLoading(false)
     }
     init()
@@ -339,6 +501,19 @@ export default function ProfilePage() {
   const deletePrLog = async (id: string) => {
     await supabase.from('pr_logs').delete().eq('id', id)
     setPrLogs(p => p.filter(x => x.id !== id))
+  }
+
+  const addBwLog = async () => {
+    if (!userId || !newBWVal || !newBWDate) return
+    const kg = parseFloat(newBWVal)
+    if (isNaN(kg) || kg <= 0) return
+    const { data: row } = await supabase.from('pr_logs').insert({
+      athlete_id: userId, lift: 'other', reps: 1,
+      weight_kg: kg, date: newBWDate, source: 'body_weight', notes: 'Tjelesna težina'
+    }).select('*').single()
+    if (row) setPrLogs(p => [row as PrLog, ...p])
+    setNewBWVal('')
+    setAddingBW(false)
   }
 
   // ── Best lift by reps ──────────────────────────────────────────
@@ -540,6 +715,93 @@ export default function ProfilePage() {
                 })()}
               </div>
             </div>
+
+            {/* ── MUSCLE GROUP PIE CHART ── */}
+            <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: '#0e0e14', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <div style={{ fontSize: '0.5rem', letterSpacing: '0.4em', color: '#666', marginBottom: '3px', fontFamily: 'var(--fm)' }}>AKTIVNI BLOK</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e0e0e0' }}>RASPODJELA MIŠIĆNIH SKUPINA</div>
+                </div>
+                <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', overflow: 'hidden' }}>
+                  {(['percent', 'tonnage'] as const).map(v => (
+                    <button key={v} onClick={() => setMuscleView(v)}
+                      style={{ padding: '6px 16px', background: muscleView === v ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: muscleView === v ? '#fff' : '#666', cursor: 'pointer', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s' }}>
+                      {v === 'percent' ? '% SERIJA' : 'TONAZA'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ padding: '20px', background: '#09090e' }}>
+                <MuscleDonut data={muscleData} view={muscleView} />
+              </div>
+            </div>
+
+            {/* ── BODY WEIGHT CHART ── */}
+            {(() => {
+              const bwLogs = [...prLogs]
+                .filter(p => p.source === 'body_weight')
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .map(p => ({ date: p.date, value: p.weight_kg }))
+              return (
+                <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: '#0e0e14', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    <div>
+                      <div style={{ fontSize: '0.5rem', letterSpacing: '0.4em', color: '#666', marginBottom: '3px', fontFamily: 'var(--fm)' }}>TRACKER</div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e0e0e0' }}>TJELESNA TEŽINA</div>
+                    </div>
+                    <button onClick={() => setAddingBW(a => !a)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: addingBW ? 'rgba(255,255,255,0.08)' : 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#aaa', cursor: 'pointer', borderRadius: '7px', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s' }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                      onMouseLeave={e => e.currentTarget.style.color = '#aaa'}>
+                      <Plus size={11} /> DODAJ UNOS
+                    </button>
+                  </div>
+                  {addingBW && (
+                    <div style={{ padding: '14px 20px', background: '#0d0d13', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '10px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '5px' }}>
+                        <div style={{ fontSize: '0.46rem', color: '#666', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>DATUM</div>
+                        <input type="date" value={newBWDate} onChange={e => setNewBWDate(e.target.value)}
+                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#e0e0e0', padding: '7px 10px', borderRadius: '6px', outline: 'none', fontSize: '0.82rem', fontFamily: 'var(--fm)' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '5px' }}>
+                        <div style={{ fontSize: '0.46rem', color: '#666', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>TEŽINA (kg)</div>
+                        <input type="number" step="0.1" min="30" max="300" value={newBWVal} onChange={e => setNewBWVal(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') addBwLog() }}
+                          placeholder="npr. 84.5"
+                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#e0e0e0', padding: '7px 10px', borderRadius: '6px', outline: 'none', fontSize: '0.82rem', fontFamily: 'var(--fm)', width: '120px' }} />
+                      </div>
+                      <button onClick={addBwLog}
+                        style={{ padding: '8px 18px', background: '#fff', border: 'none', color: '#000', borderRadius: '6px', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>
+                        SPREMI
+                      </button>
+                      <button onClick={() => { setAddingBW(false); setNewBWVal('') }}
+                        style={{ padding: '8px 12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: '#555', borderRadius: '6px', cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'var(--fm)' }}>
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                  <div style={{ padding: '20px 20px 12px', background: '#09090e' }}>
+                    <ProgressChart data={bwLogs} color="#a78bfa" label="body-weight" />
+                  </div>
+                  {bwLogs.length > 0 && (
+                    <div style={{ padding: '8px 20px 14px', background: '#09090e', display: 'flex', gap: '20px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                      {[
+                        { label: 'TRENUTNA', val: `${bwLogs[bwLogs.length - 1].value} kg` },
+                        { label: 'POČETNA',  val: `${bwLogs[0].value} kg` },
+                        { label: 'PROMJENA', val: (() => { const d = bwLogs[bwLogs.length-1].value - bwLogs[0].value; return `${d > 0 ? '+' : ''}${d.toFixed(1)} kg` })() },
+                        { label: 'UNOSA',    val: String(bwLogs.length) },
+                      ].map((s, i) => (
+                        <div key={i} style={{ textAlign: 'center' }}>
+                          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', color: '#e0e0e0', lineHeight: 1 }}>{s.val}</div>
+                          <div style={{ fontSize: '0.46rem', color: '#555', letterSpacing: '0.18em', marginTop: '3px' }}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* Admin-logged competition history */}
             <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>

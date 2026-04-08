@@ -23,17 +23,12 @@ export default function TrainingPage() {
   const [athleteName, setAthleteName] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
   const [isCoach, setIsCoach] = useState(false)
-  const [assignedLifters, setAssignedLifters] = useState<{id: string; full_name: string}[]>([])
-  const [viewingAthleteId, setViewingAthleteId] = useState<string | null>(null)
-  const [viewingAthleteName, setViewingAthleteName] = useState<string>('')
-  const [showLifterPicker, setShowLifterPicker] = useState(false)
   const [avatarIcon, setAvatarIcon] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'program' | 'hub' | 'meet'>('program')
   const [activeTool, setActiveTool] = useState<string | null>(null)
   const router = useRouter()
   const blockSelectorRef = useRef<HTMLDivElement>(null)
-  const lifterPickerRef = useRef<HTMLDivElement>(null)
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
 
@@ -46,37 +41,6 @@ export default function TrainingPage() {
     if (showBlockSelector) document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [showBlockSelector])
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (lifterPickerRef.current && !lifterPickerRef.current.contains(e.target as Node))
-        setShowLifterPicker(false)
-    }
-    if (showLifterPicker) document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [showLifterPicker])
-
-  const loadAthleteBlock = async (athleteId: string, name: string) => {
-    setLoading(true)
-    setViewingAthleteId(athleteId)
-    setViewingAthleteName(name)
-    setShowLifterPicker(false)
-    let { data: blockData } = await supabase
-      .from('blocks').select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))')
-      .eq('athlete_id', athleteId).eq('status', 'active').order('created_at', { ascending: false }).limit(1).single()
-    if (!blockData) blockData = null
-    if (blockData?.weeks) {
-      blockData.weeks.sort((a: Week, b: Week) => a.week_number - b.week_number)
-      blockData.weeks.forEach((w: Week) => {
-        w.workouts?.sort((a: Workout, b: Workout) => a.workout_date.localeCompare(b.workout_date))
-        w.workouts?.forEach((wo: Workout) => wo.workout_exercises?.sort((a: WorkoutExercise, b: WorkoutExercise) => a.exercise_order - b.exercise_order))
-      })
-    }
-    setBlock(blockData)
-    const { data: ab } = await supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', athleteId).order('created_at', { ascending: false })
-    setAllBlocks((ab ?? []) as BlockSummary[])
-    setLoading(false)
-  }
 
   useEffect(() => {
     const init = async () => {
@@ -93,25 +57,6 @@ export default function TrainingPage() {
         setAvatarIcon(profile?.avatar_icon ?? 'barbell')
         const { data: exData } = await supabase.from('exercises').select('*').order('category').order('name')
         setExercises(exData ?? [])
-
-        // Fetch lifters list for admin (all) or coach (assigned only)
-        if (role === 'admin') {
-          const { data: allLifters } = await supabase
-            .from('profiles')
-            .select('id, full_name')
-            .eq('role', 'lifter')
-            .order('full_name')
-          setAssignedLifters(allLifters ?? [])
-          setViewingAthleteId(user.id)
-        } else if (role === 'trener') {
-          const { data: asgn } = await supabase
-            .from('coach_assignments')
-            .select('lifter_id, profiles!lifter_id(id, full_name)')
-            .eq('coach_id', user.id)
-          const lifters = (asgn ?? []).map((a: any) => a.profiles).filter(Boolean)
-          setAssignedLifters(lifters)
-          setViewingAthleteId(user.id)
-        }
 
         let { data: blockData } = await supabase
           .from('blocks').select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))')
@@ -136,7 +81,7 @@ export default function TrainingPage() {
     init()
   }, [])
 
-  const effectiveAthleteId = viewingAthleteId || userId
+  const effectiveAthleteId = userId
 
   const addWeek = async () => {
     if (!block || !userId) return; setSaving(true)
@@ -269,6 +214,21 @@ export default function TrainingPage() {
     await switchBlock(nb.id)
     setSaving(false)
   }
+  const deleteBlock = async () => {
+    if (!block) return
+    if (!confirm(`Briši blok "${block.name}"? Ova radnja je nepovratna i briše sve tjedne i treninge.`)) return
+    setSaving(true)
+    await supabase.from('blocks').delete().eq('id', block.id)
+    const remaining = allBlocks.filter(b => b.id !== block.id)
+    setAllBlocks(remaining)
+    if (remaining.length > 0) {
+      await switchBlock(remaining[0].id)
+    } else {
+      setBlock(null)
+    }
+    setSaving(false)
+  }
+
   const updateWeek = async (weekId: string, data: Partial<Week>) => {
     await supabase.from('weeks').update(data).eq('id', weekId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? { ...w, ...data } : w) } : b)
@@ -399,44 +359,6 @@ export default function TrainingPage() {
 
         <div className='page-header' style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 32px 0', position: 'relative', zIndex: 1 }}>
 
-          {/* Athlete picker — admin and coach */}
-          {(isAdmin || isCoach) && (
-            <div ref={lifterPickerRef} style={{ position: 'relative', marginBottom: '20px', width: 'fit-content' }}>
-              <button onClick={() => setShowLifterPicker(o => !o)}
-                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', cursor: 'pointer', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.78rem' }}>
-                <span style={{ fontSize: '0.52rem', letterSpacing: '0.2em', color: '#888' }}>PREGLED:</span>
-                <span style={{ fontWeight: 600 }}>{viewingAthleteName || athleteName}</span>
-                <ChevronDown size={12} color="#555" style={{ transform: showLifterPicker ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-              </button>
-              {showLifterPicker && (
-                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 100, background: '#09090e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', boxShadow: '0 16px 48px rgba(0,0,0,0.8)', minWidth: '220px', overflow: 'hidden', animation: 'dropDown 0.18s ease' }}>
-                  {/* Own block */}
-                  <button onClick={() => { setViewingAthleteId(userId); setViewingAthleteName(''); setShowLifterPicker(false); loadAthleteBlock(userId!, athleteName) }}
-                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 14px', background: viewingAthleteId === userId ? '#111113' : 'transparent', border: 'none', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.82rem', textAlign: 'left' as const }}>
-                    <span style={{ fontSize: '0.5rem', letterSpacing: '0.15em', color: '#888', fontFamily: 'var(--fm)' }}>MOJ TRENING</span>
-                    {viewingAthleteId === userId && <Check size={12} color="#22c55e" style={{ marginLeft: 'auto' }} />}
-                  </button>
-                  {/* Lifters */}
-                  {assignedLifters.length > 0 && (
-                    <div style={{ padding: '5px 14px 3px', fontSize: '0.48rem', letterSpacing: '0.2em', color: '#444', fontFamily: 'var(--fm)' }}>LIFTERI</div>
-                  )}
-                  {assignedLifters.map(l => (
-                    <button key={l.id} onClick={() => loadAthleteBlock(l.id, l.full_name)}
-                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 14px', background: viewingAthleteId === l.id ? '#111113' : 'transparent', border: 'none', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.82rem', textAlign: 'left' as const, transition: 'background 0.12s' }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#111113'}
-                      onMouseLeave={e => e.currentTarget.style.background = viewingAthleteId === l.id ? '#111113' : 'transparent'}>
-                      {l.full_name}
-                      {viewingAthleteId === l.id && <Check size={12} color="#22c55e" style={{ marginLeft: 'auto' }} />}
-                    </button>
-                  ))}
-                  {assignedLifters.length === 0 && (
-                    <div style={{ padding: '12px 14px', fontSize: '0.72rem', color: '#444', fontFamily: 'var(--fm)' }}>Nema dodijeljenih liftera</div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Tab switcher */}
           <div style={{ display: 'flex', gap: '4px', marginBottom: '28px', animation: 'fadeUp 0.4s ease', padding: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.07)', width: 'fit-content' }}>
             {([['program','Program'],['hub','Hub & Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label])=>(
@@ -517,6 +439,12 @@ export default function TrainingPage() {
                     <button onClick={copyBlock}
                       className="action-btn" style={{ padding: '0 16px', borderRadius: 0 }}>
                       <Copy size={12} /> KOPIRAJ BLOK
+                    </button>
+                    <button onClick={deleteBlock}
+                      className="action-btn" style={{ padding: '0 16px', borderRadius: 0, color: 'rgba(239,68,68,0.6)' }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(239,68,68,0.6)'}>
+                      BRIŠI BLOK
                     </button>
                   </>
                 )}
