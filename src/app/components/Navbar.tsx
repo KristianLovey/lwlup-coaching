@@ -16,6 +16,7 @@ const NAV_LINKS: [string, string][] = [
   ['SUSTAV',       '#system'],
   ['TIM',          '/team'],
   ['NATJECANJA',   '/competitions'],
+  ['REKORDI',      '/records'],
 ]
 
 export default function Navbar({ variant = 'transparent', backLink }: NavbarProps) {

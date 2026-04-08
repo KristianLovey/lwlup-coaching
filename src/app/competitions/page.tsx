@@ -1,8 +1,8 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import Link from 'next/link'
-import { MapPin, Calendar, Trophy, Users, ChevronRight, Loader2, ExternalLink, ArrowLeft } from 'lucide-react'
+import { MapPin, Calendar, Trophy, Users, ChevronRight, Loader2, ExternalLink } from 'lucide-react'
 import Footer from '@/app/components/Footer'
+import Navbar from '@/app/components/Navbar'
 import { createClient } from '@/lib/supabase/client'
 
 const supabase = createClient()
@@ -309,26 +309,7 @@ export default function CompetitionsPage() {
       <div className="star-field" />
       <ParticleCanvas />
 
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(20px,4vw,60px)', background: 'rgba(5,5,5,0.97)', borderBottom: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(24px)', boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.4)' }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#fff' }}>
-          <img src="/slike/logopng.png" alt="LWL UP" style={{ height: '60px', width: 'auto', transition: 'transform 0.3s' }}
-            onMouseEnter={e => (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.08)'}
-            onMouseLeave={e => (e.currentTarget as HTMLImageElement).style.transform = 'scale(1)'} />
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-          <Link href="/team" style={{ color: 'rgba(255,255,255,0.45)', textDecoration: 'none', fontSize: '0.72rem', letterSpacing: '0.25em', fontWeight: 700, transition: '0.2s', fontFamily: 'var(--fm)' }}
-            onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#fff'}
-            onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.45)'}>
-            TIM
-          </Link>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'rgba(255,255,255,0.45)', textDecoration: 'none', fontSize: '0.75rem', letterSpacing: '0.25em', fontWeight: 700, transition: '0.2s' }}
-            onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#fff'}
-            onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.45)'}>
-            <ArrowLeft size={14} /> NATRAG
-          </Link>
-          
-        </div>
-      </nav>
+      <Navbar variant="solid" />
 
       {/* HERO */}
       <section style={{ paddingTop: 'clamp(80px,12vw,130px)', paddingBottom: '48px', position: 'relative', overflow: 'hidden' }}>
