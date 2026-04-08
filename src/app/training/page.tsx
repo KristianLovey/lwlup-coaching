@@ -96,6 +96,11 @@ export default function TrainingPage() {
 
   const addBlock = async (name: string) => {
     if (!userId) return; setSaving(true)
+    // Deactivate current block before creating new one
+    if (block) {
+      await supabase.from('blocks').update({ status: 'planned' }).eq('id', block.id)
+      setAllBlocks(bs => bs.map(b => b.id === block.id ? { ...b, status: 'planned' } : b))
+    }
     const today = new Date(); const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
     const { data } = await supabase.from('blocks').insert({ athlete_id: effectiveAthleteId, name, start_date: today.toISOString().split('T')[0], end_date: endDate.toISOString().split('T')[0], status: 'active' }).select('id, name, status, start_date, end_date').single()
     if (data) { setAllBlocks(b => [data as BlockSummary, ...b]); await switchBlock(data.id) }
@@ -104,6 +109,15 @@ export default function TrainingPage() {
 
   const switchBlock = async (blockId: string) => {
     setLoading(true)
+    // Deactivate the current block
+    if (block && block.id !== blockId) {
+      await supabase.from('blocks').update({ status: 'planned' }).eq('id', block.id)
+      setAllBlocks(bs => bs.map(b => b.id === block.id ? { ...b, status: 'planned' } : b))
+    }
+    // Activate the new block
+    await supabase.from('blocks').update({ status: 'active' }).eq('id', blockId)
+    setAllBlocks(bs => bs.map(b => b.id === blockId ? { ...b, status: 'active' } : b))
+
     const { data } = await supabase.from('blocks').select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))').eq('id', blockId).single()
     if (data) {
       data.weeks?.sort((a: Week, b: Week) => a.week_number - b.week_number)
@@ -111,7 +125,7 @@ export default function TrainingPage() {
         w.workouts?.sort((a: Workout, b: Workout) => a.workout_date.localeCompare(b.workout_date))
         w.workouts?.forEach((wo: Workout) => wo.workout_exercises?.sort((a: WorkoutExercise, b: WorkoutExercise) => a.exercise_order - b.exercise_order))
       })
-      setBlock(data)
+      setBlock({ ...data, status: 'active' })
     }
     setShowBlockSelector(false); setLoading(false)
   }
@@ -305,33 +319,37 @@ export default function TrainingPage() {
 
       {/* ── BACKGROUND ── */}
       {/* Base noise texture */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.4,
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E")`,
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.55,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.09'/%3E%3C/svg%3E")`,
         backgroundSize: '200px 200px' }} />
-      {/* Primary aurora — top left, deep blue-indigo */}
-      <div style={{ position: 'fixed', top: '-30vh', left: '-20vw', width: '90vw', height: '90vh', zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 40% 40%, rgba(79,70,229,0.18) 0%, rgba(59,130,246,0.09) 35%, transparent 70%)',
-        filter: 'blur(72px)', transform: 'rotate(-15deg)' }} />
-      {/* Secondary aurora — bottom right, emerald */}
-      <div style={{ position: 'fixed', bottom: '-25vh', right: '-15vw', width: '75vw', height: '75vh', zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 60% 60%, rgba(16,185,129,0.13) 0%, rgba(5,150,105,0.06) 40%, transparent 70%)',
-        filter: 'blur(80px)', transform: 'rotate(10deg)' }} />
-      {/* Accent orb — center, subtle purple */}
-      <div style={{ position: 'fixed', top: '30vh', left: '40vw', width: '50vw', height: '50vh', zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at center, rgba(139,92,246,0.07) 0%, transparent 65%)',
+      {/* Primary aurora — top left, electric indigo */}
+      <div style={{ position: 'fixed', top: '-25vh', left: '-15vw', width: '85vw', height: '85vh', zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 40% 40%, rgba(79,70,229,0.28) 0%, rgba(99,102,241,0.14) 35%, transparent 68%)',
+        filter: 'blur(60px)', transform: 'rotate(-15deg)' }} />
+      {/* Secondary aurora — bottom right, deep violet */}
+      <div style={{ position: 'fixed', bottom: '-20vh', right: '-10vw', width: '70vw', height: '70vh', zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 60% 60%, rgba(109,40,217,0.18) 0%, rgba(79,70,229,0.08) 40%, transparent 70%)',
+        filter: 'blur(70px)', transform: 'rotate(10deg)' }} />
+      {/* Accent orb — top right, warm red/amber */}
+      <div style={{ position: 'fixed', top: '5vh', right: '5vw', width: '55vw', height: '55vh', zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at center, rgba(239,68,68,0.07) 0%, rgba(220,38,38,0.03) 50%, transparent 70%)',
+        filter: 'blur(80px)' }} />
+      {/* Center power orb */}
+      <div style={{ position: 'fixed', top: '30vh', left: '35vw', width: '50vw', height: '50vh', zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at center, rgba(99,102,241,0.09) 0%, transparent 65%)',
         filter: 'blur(90px)' }} />
-      {/* Top beam — horizontal light streak */}
+      {/* Top beam — bright horizontal light streak */}
       <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, height: '1px', zIndex: 0, pointerEvents: 'none',
-        background: 'linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.4) 30%, rgba(139,92,246,0.5) 50%, rgba(99,102,241,0.4) 70%, transparent 100%)',
-        boxShadow: '0 0 40px 8px rgba(99,102,241,0.12)' }} />
-      {/* Subtle grid */}
+        background: 'linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.65) 25%, rgba(139,92,246,0.85) 50%, rgba(99,102,241,0.65) 75%, transparent 100%)',
+        boxShadow: '0 0 50px 10px rgba(99,102,241,0.2)' }} />
+      {/* Sharp grid — more visible, with clipping mask */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-        backgroundImage: 'linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px)',
-        backgroundSize: '72px 72px',
-        maskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 75%)' }} />
-      {/* Corner vignette */}
+        backgroundImage: 'linear-gradient(rgba(255,255,255,0.032) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.032) 1px, transparent 1px)',
+        backgroundSize: '64px 64px',
+        maskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 72%)' }} />
+      {/* Corner vignette — deeper */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.7) 100%)' }} />
+        background: 'radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(0,0,0,0.8) 100%)' }} />
       {/* plate.png — bottom left, large, rotated */}
       <div style={{ position: 'fixed', bottom: '-8vh', left: '-8vw', zIndex: 0, pointerEvents: 'none', opacity: 0.07, transform: 'rotate(12deg)', filter: 'blur(1px)' }}>
         <img src="/slike/plate.png" alt="" style={{ width: '380px', height: 'auto' }} />
@@ -360,10 +378,10 @@ export default function TrainingPage() {
         <div className='page-header' style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 32px 0', position: 'relative', zIndex: 1 }}>
 
           {/* Tab switcher */}
-          <div style={{ display: 'flex', gap: '4px', marginBottom: '28px', animation: 'fadeUp 0.4s ease', padding: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.07)', width: 'fit-content' }}>
+          <div className="tab-switcher" style={{ display: 'flex', gap: '3px', marginBottom: '28px', animation: 'fadeUp 0.4s ease', padding: '3px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', width: 'fit-content', overflowX: 'auto' as const }}>
             {([['program','Program'],['hub','Hub & Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label])=>(
               <button key={tab} onClick={()=>setActiveTab(tab as 'program'|'hub'|'meet')}
-                style={{ padding:'8px 20px', background: activeTab===tab ? 'rgba(255,255,255,0.1)' : 'transparent', border: activeTab===tab ? '1px solid rgba(255,255,255,0.12)' : '1px solid transparent', borderRadius: '9px', cursor:'pointer', fontSize:'0.78rem', fontFamily:'var(--fm)', fontWeight: activeTab===tab ? 600 : 400, color: activeTab===tab ? '#fff' : 'rgba(255,255,255,0.45)', transition:'all 0.2s', whiteSpace:'nowrap' as const, letterSpacing: '0.01em' }}>
+                style={{ padding:'8px 22px', background: activeTab===tab ? 'rgba(99,102,241,0.18)' : 'transparent', border: activeTab===tab ? '1px solid rgba(99,102,241,0.4)' : '1px solid transparent', borderRadius: '8px', cursor:'pointer', fontSize:'0.75rem', fontFamily:'var(--fm)', fontWeight: activeTab===tab ? 700 : 400, color: activeTab===tab ? '#a5b4fc' : 'rgba(255,255,255,0.4)', transition:'all 0.18s', whiteSpace:'nowrap' as const, letterSpacing: activeTab===tab ? '0.04em' : '0.02em', textTransform: 'uppercase' as const, boxShadow: activeTab===tab ? '0 0 20px rgba(99,102,241,0.15), inset 0 1px 0 rgba(255,255,255,0.08)' : 'none' }}>
                 {label}
               </button>
             ))}
@@ -376,23 +394,23 @@ export default function TrainingPage() {
                 <span style={{ display: 'inline-block', width: '18px', height: '1px', background: 'rgba(255,255,255,0.2)' }} />
                 {loading ? '...' : athleteName}
               </div>
-              <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.6rem,4vw,3rem)', fontWeight: 800, lineHeight: 0.92, margin: 0, letterSpacing: '-0.03em', color: '#f5f5f7' }}>
+              <h1 className="page-title-h1" style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.8rem,4.5vw,3.2rem)', fontWeight: 900, lineHeight: 0.9, margin: 0, letterSpacing: '-0.04em', background: 'linear-gradient(135deg, #ffffff 0%, #c7d2fe 60%, #a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                 {loading ? 'Učitavanje…' : (block?.name ?? 'Moj program')}
               </h1>
             </div>
 
             {/* Stats row */}
             {!loading && block && (
-              <div className="stats-row" style={{ display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', overflow: 'hidden' }}>
+              <div className="stats-row" style={{ display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07)' }}>
                 {[
-                  { val: block.weeks?.length ?? 0, label: 'Tjedana' },
-                  { val: totalWorkouts, label: 'Treninga' },
-                  { val: `${completedWorkouts}/${totalWorkouts}`, label: 'Završeno', accent: completedWorkouts > 0 },
-                  { val: `${pct}%`, label: 'Napredak', accent: pct > 50 },
+                  { val: block.weeks?.length ?? 0, label: 'TJEDANA' },
+                  { val: totalWorkouts, label: 'TRENINGA' },
+                  { val: `${completedWorkouts}/${totalWorkouts}`, label: 'ZAVRŠENO', accent: completedWorkouts > 0 },
+                  { val: `${pct}%`, label: 'NAPREDAK', accent: pct > 50 },
                 ].map((s, i) => (
-                  <div key={i} style={{ padding: '12px 20px', background: '#08080e', textAlign: 'center', minWidth: '76px' }}>
-                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, lineHeight: 1, color: s.accent ? '#4ade80' : '#f0f0f5' }}>{s.val}</div>
-                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', marginTop: '5px', fontFamily: 'var(--fm)', fontWeight: 400 }}>{s.label}</div>
+                  <div key={i} style={{ padding: '14px 20px', background: '#060610', textAlign: 'center', minWidth: '80px', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
+                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1.7rem', fontWeight: 800, lineHeight: 1, color: s.accent ? '#4ade80' : '#f0f0f8', letterSpacing: '-0.02em' }}>{s.val}</div>
+                    <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', marginTop: '6px', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.18em' }}>{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -564,49 +582,49 @@ export default function TrainingPage() {
 
         /* ── Done badge ── */
         .done-badge {
-          display:flex; align-items:center; gap:5px;
-          padding:5px 10px; border:1px solid rgba(255,255,255,0.1);
-          cursor:pointer; transition:all 0.2s; border-radius:5px;
-          background:#0f0f12;
+          display:flex; align-items:center; gap:6px;
+          padding:6px 12px; border:1px solid rgba(255,255,255,0.12);
+          cursor:pointer; transition:all 0.2s; border-radius:6px;
+          background:rgba(255,255,255,0.04);
         }
-        .done-badge span { font-size:0.55rem; letter-spacing:0.18em; color:#444; font-family:var(--fm); font-weight:700; }
-        .done-badge:hover { border-color:rgba(255,255,255,0.3); }
-        .done-badge-active { border-color:#22c55e44 !important; background:#0a1a0e !important; }
-        .done-badge-active span { color:#22c55e !important; }
+        .done-badge span { font-size:0.54rem; letter-spacing:0.2em; color:#555; font-family:var(--fm); font-weight:800; }
+        .done-badge:hover { border-color:rgba(255,255,255,0.28); background:rgba(255,255,255,0.07); }
+        .done-badge-active { border-color:rgba(34,197,94,0.45) !important; background:rgba(34,197,94,0.1) !important; box-shadow:0 0 18px rgba(34,197,94,0.15) !important; }
+        .done-badge-active span { color:#4ade80 !important; }
 
         /* ── Add buttons ── */
         .add-btn {
-          width:100%; padding:9px; background:transparent;
-          border:1px dashed rgba(255,255,255,0.1); color:#444; cursor:pointer;
+          width:100%; padding:10px; background:rgba(99,102,241,0.04);
+          border:1px dashed rgba(99,102,241,0.2); color:rgba(129,140,248,0.5); cursor:pointer;
           display:flex; align-items:center; justify-content:center;
-          gap:7px; font-size:0.62rem; letter-spacing:0.2em;
-          font-family:var(--fm); transition:all 0.2s; border-radius:6px;
+          gap:7px; font-size:0.6rem; letter-spacing:0.22em;
+          font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:6px;
         }
-        .add-btn:hover { border-color:rgba(255,255,255,0.35); color:#888; background:#0f0f12; }
+        .add-btn:hover { border-color:rgba(99,102,241,0.55); color:#818cf8; background:rgba(99,102,241,0.09); }
 
         .add-week-btn {
-          width:100%; padding:16px; background:transparent;
-          border:1px dashed rgba(255,255,255,0.1); color:#444; cursor:pointer;
+          width:100%; padding:18px; background:rgba(99,102,241,0.03);
+          border:1px dashed rgba(99,102,241,0.18); color:rgba(129,140,248,0.4); cursor:pointer;
           display:flex; align-items:center; justify-content:center;
-          gap:10px; font-size:0.68rem; letter-spacing:0.28em;
-          font-family:var(--fm); font-weight:700; transition:all 0.2s;
+          gap:10px; font-size:0.66rem; letter-spacing:0.3em;
+          font-family:var(--fm); font-weight:800; transition:all 0.2s;
           border-radius:8px; margin-top:8px;
         }
-        .add-week-btn:hover { border-color:#333; color:#aaa; background:#0c0c0e; }
+        .add-week-btn:hover { border-color:rgba(99,102,241,0.5); color:#818cf8; background:rgba(99,102,241,0.08); }
 
         /* ── Action btn ── */
         .action-btn {
           display:flex; align-items:center; gap:7px;
-          background:transparent; border:none; border-left:1px solid rgba(255,255,255,0.09);
-          color:#555; cursor:pointer; font-size:0.6rem; letter-spacing:0.18em;
-          font-family:var(--fm); font-weight:700; transition:all 0.15s; white-space:nowrap;
+          background:transparent; border:none; border-left:1px solid rgba(255,255,255,0.08);
+          color:#555; cursor:pointer; font-size:0.58rem; letter-spacing:0.2em;
+          font-family:var(--fm); font-weight:800; transition:all 0.15s; white-space:nowrap;
         }
-        .action-btn:hover { color:#aaa; background:#111113; }
+        .action-btn:hover { color:#c7d2fe; background:rgba(99,102,241,0.08); }
 
         /* ── Workout card hover ── */
         .workout-card:hover {
-          border-color: #252532 !important;
-          box-shadow: 0 8px 40px rgba(0,0,0,0.5) !important;
+          border-color: rgba(99,102,241,0.3) !important;
+          box-shadow: 0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.1) !important;
         }
 
         /* ── Exercise row table ── */
@@ -730,10 +748,14 @@ export default function TrainingPage() {
         }
 
         /* ─ Workout card header: stack on very small ─ */
-        @media (max-width: 480px) {
-          .workout-header-inner { flex-wrap: wrap !important; gap: 8px !important; }
-          .workout-header-inner .workout-controls { width: 100%; justify-content: flex-end; }
-          .workout-header-inner .workout-name { font-size: 0.88rem !important; }
+        @media (max-width: 500px) {
+          .workout-header-inner { flex-wrap: wrap !important; gap: 8px !important; padding: 12px 14px !important; }
+          .workout-controls { width: 100% !important; justify-content: flex-end !important; }
+        }
+        /* ─ Tab switcher: scrollable on narrow screens ─ */
+        @media (max-width: 400px) {
+          .tab-switcher { max-width: 100% !important; }
+          .tab-switcher button { padding: 7px 12px !important; font-size: 0.65rem !important; }
         }
 
         /* ─ Hide default number input spinners (use custom StepInput instead) ─ */
@@ -741,20 +763,28 @@ export default function TrainingPage() {
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
 
-        /* ─ Exercise row: hide RPE column on very small screens ─ */
-        @media (max-width: 520px) {
+        /* ─ Exercise row: hide RPE column on small screens ─ */
+        @media (max-width: 540px) {
           .ex-col-rpe { display: none !important; }
           .ex-row-main { grid-template-columns: 28px 1fr 56px 64px 56px 28px !important; }
         }
-        @media (max-width: 400px) {
+        @media (max-width: 420px) {
           .ex-col-sets { display: none !important; }
           .ex-row-main { grid-template-columns: 28px 1fr 64px 56px 28px !important; }
         }
 
-        /* ─ Set log rows: tighter on mobile ─ */
-        @media (max-width: 520px) {
-          .set-log-row { grid-template-columns: 28px 1fr 1fr 28px !important; }
-          .set-log-rpe { display: none !important; }
+        /* ─ Set log: same responsive columns as exercise rows ─ */
+        @media (max-width: 600px) {
+          .set-log-header { grid-template-columns: 28px 1fr 72px 56px 56px 28px !important; }
+          .set-log-row    { grid-template-columns: 28px 1fr 72px 56px 56px 28px !important; }
+          .set-log-header .ex-col-rpe,
+          .set-log-row .ex-col-rpe { display: none !important; }
+        }
+        @media (max-width: 430px) {
+          .set-log-header { grid-template-columns: 1fr 60px 56px 30px !important; }
+          .set-log-row    { grid-template-columns: 1fr 60px 56px 30px !important; }
+          .set-log-header .ex-col-sets,
+          .set-log-row .ex-col-sets { display: none !important; }
         }
 
         /* ─ Table footer: stack on mobile ─ */
@@ -770,9 +800,9 @@ export default function TrainingPage() {
           }
           .ex-col-kg, .ex-col-rpe { display: none !important; }
         }
-        @media (max-width: 420px) {
+        @media (max-width: 430px) {
           .ex-row-main {
-            grid-template-columns: 1fr 48px 48px 28px !important;
+            grid-template-columns: 1fr 50px 50px 30px !important;
           }
           .ex-col-grip { display: none !important; }
         }

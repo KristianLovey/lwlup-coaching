@@ -73,38 +73,6 @@ function formatWorkoutDate(dateStr: string): string {
   } catch { return dateStr }
 }
 
-// ─── CUSTOM NUMBER STEP INPUT ─────────────────────────────────────
-function StepInput({ value, onChange, placeholder, step = 2.5, color = '#6b8cff' }: {
-  value: number | null; onChange: (v: string) => void; placeholder?: string; step?: number; color?: string
-}) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'stretch', background: '#0a0a12', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', overflow: 'hidden', height: '30px' }}>
-      <button type="button" tabIndex={-1}
-        onClick={() => onChange(value !== null ? String(Math.max(0, value - step)) : '0')}
-        style={{ padding: '0 8px', background: 'rgba(255,255,255,0.03)', border: 'none', borderRight: '1px solid rgba(255,255,255,0.08)', color: '#555', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, flexShrink: 0, transition: 'color 0.15s, background 0.15s', fontFamily: 'var(--fm)' }}
-        onMouseEnter={e => { e.currentTarget.style.color = '#bbb'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
-        onMouseLeave={e => { e.currentTarget.style.color = '#555'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}>
-        −
-      </button>
-      <input
-        type="number" step={step} value={value ?? ''}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder ?? '—'}
-        style={{ flex: 1, background: 'transparent', border: 'none', color: '#e0e0e0', padding: '0 4px', fontSize: '0.82rem', outline: 'none', fontFamily: 'var(--fm)', textAlign: 'center', minWidth: 0, width: '100%' }}
-        onFocus={e => { (e.target.closest('div') as HTMLElement)!.style.borderColor = color + '66' }}
-        onBlur={e => { (e.target.closest('div') as HTMLElement)!.style.borderColor = 'rgba(255,255,255,0.1)' }}
-      />
-      <button type="button" tabIndex={-1}
-        onClick={() => onChange(String((value ?? 0) + step))}
-        style={{ padding: '0 8px', background: 'rgba(255,255,255,0.03)', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.08)', color: '#555', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, flexShrink: 0, transition: 'color 0.15s, background 0.15s', fontFamily: 'var(--fm)' }}
-        onMouseEnter={e => { e.currentTarget.style.color = '#bbb'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
-        onMouseLeave={e => { e.currentTarget.style.color = '#555'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}>
-        +
-      </button>
-    </div>
-  )
-}
-
 // ─── NAVBAR ───────────────────────────────────────────────────────
 export function TrainingNav({ athleteName, isAdmin, onLogout, avatarIcon }: {
   athleteName: string; isAdmin: boolean; onLogout: () => void; avatarIcon?: string
@@ -742,57 +710,93 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceCom
     )
   }
 
-  // Lifter: one input group per set
+  // Lifter: aligned table rows (one per set, no repeated labels)
+  const targetRpe = we.target_rpe ?? we.planned_rpe
+  // Grid: SET-label | REPS | KG | RPE | done
+  const SLR_GRID = '52px 1fr 1fr 80px 44px'
+  const cellStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)' }
+  const inputStyle: React.CSSProperties = { width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#e8e8ff', padding: '5px 6px', fontSize: '1rem', outline: 'none', fontFamily: 'var(--fm)', fontWeight: 700, textAlign: 'center', boxSizing: 'border-box' }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px 0 4px' }}>
-      {saving && <div style={{ fontSize: '0.48rem', color: '#555', letterSpacing: '0.2em', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}><Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} /> SNIMANJE...</div>}
+    <div>
+      {saving && (
+        <div style={{ fontSize: '0.44rem', color: '#555', letterSpacing: '0.2em', padding: '3px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <Loader2 size={9} style={{ animation: 'spin 1s linear infinite' }} /> SNIMANJE...
+        </div>
+      )}
+
+      {/* Single header row */}
+      <div className="set-log-header" style={{ display: 'grid', gridTemplateColumns: SLR_GRID, background: 'rgba(0,0,0,0.25)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ ...cellStyle, justifyContent: 'flex-start', padding: '5px 14px' }}>
+          <span style={{ fontSize: '0.4rem', color: '#444', letterSpacing: '0.25em', fontWeight: 700, fontFamily: 'var(--fm)' }}>SET</span>
+        </div>
+        <div style={{ ...cellStyle, padding: '5px 0' }}>
+          <span style={{ fontSize: '0.4rem', color: '#aaa', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>REPS</span>
+        </div>
+        <div style={{ ...cellStyle, padding: '5px 0' }}>
+          <span style={{ fontSize: '0.4rem', color: '#818cf8', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>KG</span>
+        </div>
+        <div className="slr-rpe" style={{ ...cellStyle, padding: '5px 0' }}>
+          <span style={{ fontSize: '0.4rem', color: '#facc15', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
+            RPE{targetRpe ? ` · ${targetRpe}` : ''}
+          </span>
+        </div>
+        <div />
+      </div>
+
       {logs.map((log, i) => (
-        <div key={i} className="set-log-row" style={{ display: 'grid', gridTemplateColumns: '36px 1fr 1fr 1fr 32px', gap: '6px', alignItems: 'center', padding: '8px 10px', background: log.completed ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.02)', border: `1px solid ${log.completed ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '7px', transition: 'all 0.2s' }}>
-          {/* Set number */}
-          <div style={{ textAlign: 'center', fontSize: '0.6rem', fontWeight: 800, color: log.completed ? '#22c55e' : '#555', fontFamily: 'var(--fd)' }}>S{log.set_number}</div>
-          {/* KG */}
-          <div>
-            <div style={{ fontSize: '0.44rem', color: '#6b8cff', letterSpacing: '0.2em', marginBottom: '3px' }}>KG</div>
-            <StepInput
-              value={log.weight_kg}
-              onChange={v => saveSet(log.set_number, 'weight_kg', v)}
-              placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : '—'}
-              step={2.5}
-              color="#6b8cff"
-            />
+        <div key={i} className="set-log-row" style={{ display: 'grid', gridTemplateColumns: SLR_GRID, alignItems: 'stretch', background: log.completed ? 'rgba(34,197,94,0.07)' : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.013)', borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.15s' }}>
+
+          {/* Set label */}
+          <div style={{ ...cellStyle, justifyContent: 'flex-start', padding: '10px 14px', gap: '8px' }}>
+            <div style={{ width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0, background: log.completed ? '#22c55e' : 'rgba(255,255,255,0.15)', boxShadow: log.completed ? '0 0 5px rgba(34,197,94,0.5)' : 'none', transition: 'all 0.2s' }} />
+            <span style={{ fontSize: '0.68rem', fontWeight: 900, color: log.completed ? '#22c55e' : '#6366f1', fontFamily: 'var(--fd)', letterSpacing: '0.06em' }}>S{log.set_number}</span>
           </div>
-          {/* Reps */}
-          <div>
-            <div style={{ fontSize: '0.44rem', color: '#aaa', letterSpacing: '0.2em', marginBottom: '3px' }}>PONOV</div>
+
+          {/* REPS input */}
+          <div style={{ ...cellStyle, padding: '8px 10px' }}>
             <input
               type="text" value={log.reps ?? ''}
               onChange={e => saveSet(log.set_number, 'reps', e.target.value)}
               placeholder={we.planned_reps ?? '—'}
-              style={{ width: '100%', background: '#0a0a12', border: '1px solid rgba(255,255,255,0.1)', color: '#e0e0e0', padding: '5px 8px', fontSize: '0.82rem', outline: 'none', borderRadius: '5px', fontFamily: 'var(--fm)', boxSizing: 'border-box' }}
-              onFocus={e => e.target.style.borderColor = 'rgba(255,255,255,0.3)'}
-              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+              style={inputStyle}
+              onFocus={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.6)')}
+              onBlur={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)')}
             />
           </div>
-          {/* RPE */}
-          <div className="set-log-rpe">
-            <div style={{ fontSize: '0.44rem', color: '#facc15', letterSpacing: '0.2em', marginBottom: '3px' }}>
-              RPE{(we.target_rpe ?? we.planned_rpe) ? ` (cilj: ${we.target_rpe ?? we.planned_rpe})` : ''}
-            </div>
+
+          {/* KG input — plain, no +/- */}
+          <div style={{ ...cellStyle, padding: '8px 10px', background: 'rgba(99,102,241,0.04)' }}>
+            <input
+              type="number" step="2.5" value={log.weight_kg ?? ''}
+              onChange={e => saveSet(log.set_number, 'weight_kg', e.target.value)}
+              placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : '—'}
+              style={{ ...inputStyle, color: '#c7d2fe' }}
+              onFocus={e => (e.target.style.borderBottomColor = 'rgba(129,140,248,0.8)')}
+              onBlur={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)')}
+            />
+          </div>
+
+          {/* RPE input */}
+          <div className="slr-rpe" style={{ ...cellStyle, padding: '8px 10px' }}>
             <input
               type="number" step="0.5" min="1" max="10" value={log.rpe ?? ''}
               onChange={e => saveSet(log.set_number, 'rpe', e.target.value)}
               placeholder="—"
-              style={{ width: '100%', background: '#0a0a12', border: '1px solid rgba(255,255,255,0.1)', color: log.rpe && (we.target_rpe ?? we.planned_rpe) ? (Number(log.rpe) - Number(we.target_rpe ?? we.planned_rpe) > 1 ? '#f87171' : Number(log.rpe) - Number(we.target_rpe ?? we.planned_rpe) > 0 ? '#facc15' : '#4ade80') : '#e0e0e0', padding: '5px 8px', fontSize: '0.82rem', outline: 'none', borderRadius: '5px', fontFamily: 'var(--fm)', boxSizing: 'border-box' }}
-              onFocus={e => e.target.style.borderColor = 'rgba(250,204,21,0.4)'}
-              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+              style={{ ...inputStyle, color: log.rpe && targetRpe ? (Number(log.rpe) - Number(targetRpe) > 1 ? '#f87171' : Number(log.rpe) - Number(targetRpe) > 0 ? '#facc15' : '#4ade80') : '#e0e0e0' }}
+              onFocus={e => (e.target.style.borderBottomColor = 'rgba(250,204,21,0.7)')}
+              onBlur={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)')}
             />
           </div>
+
           {/* Done toggle */}
-          <button onClick={() => markSetDone(log.set_number)}
-            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: log.completed ? '#22c55e' : '#444', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.2s' }}
-            title={log.completed ? 'Poništi' : 'Označi kao odrađeno'}>
-            <Check size={14} strokeWidth={log.completed ? 3 : 1.5} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button onClick={() => markSetDone(log.set_number)}
+              style={{ background: log.completed ? 'rgba(34,197,94,0.15)' : 'transparent', border: 'none', cursor: 'pointer', color: log.completed ? '#22c55e' : '#444', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+              title={log.completed ? 'Poništi' : 'Odrađeno'}>
+              <Check size={14} strokeWidth={log.completed ? 3 : 1.5} />
+            </button>
+          </div>
         </div>
       ))}
     </div>
@@ -839,10 +843,10 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
         </div>
 
         {/* Exercise name */}
-        <div style={{ padding: '13px 14px', borderRight: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '3px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#f0f0f0', fontFamily: 'var(--fm)' }}>{we.exercise?.name ?? '—'}</span>
+        <div style={{ padding: '12px 14px', borderRight: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '3px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={we.completed ? '#4ade80' : '#6366f1'} strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: we.completed ? '#86efac' : '#f4f4ff', fontFamily: 'var(--fm)', letterSpacing: '-0.01em' }}>{we.exercise?.name ?? '—'}</span>
           </div>
           {/* Coach note — always visible to lifter as instruction */}
           {we.coach_note && (
@@ -854,7 +858,7 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
 
         {/* SETS */}
         <div className="ex-col-sets" style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ padding: '5px 8px 3px', fontSize: '0.44rem', color: '#666', letterSpacing: '0.2em', textAlign: 'center' }}>SERI</div>
+          <div style={{ padding: '5px 8px 3px', fontSize: '0.44rem', color: '#666', letterSpacing: '0.2em', textAlign: 'center' }}>SETS</div>
           <div style={{ padding: '4px 8px 10px', textAlign: 'center' }}>
             {isAdmin
               ? <EditableField value={we.planned_sets} placeholder="3" type="number" small onSave={v => save('planned_sets', v, true)} />
@@ -865,7 +869,7 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
 
         {/* REPS */}
         <div className="ex-col-reps" style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ padding: '5px 8px 3px', fontSize: '0.44rem', color: '#666', letterSpacing: '0.2em', textAlign: 'center' }}>PONOV</div>
+          <div style={{ padding: '5px 8px 3px', fontSize: '0.44rem', color: '#666', letterSpacing: '0.2em', textAlign: 'center' }}>REPS</div>
           <div style={{ padding: '4px 8px 10px', textAlign: 'center' }}>
             {isAdmin
               ? <EditableField value={we.planned_reps} placeholder="5" small onSave={v => save('planned_reps', v)} />
@@ -929,7 +933,7 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
 
       {/* ── Expanded details ── */}
       {expanded && (
-        <div style={{ background: '#080810', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ background: '#060610', borderBottom: '1px solid rgba(255,255,255,0.08)', borderTop: '1px solid rgba(99,102,241,0.1)' }}>
           {isAdmin ? (
             /* Admin: tempo, odmor, coach_note */
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0' }}>
@@ -969,8 +973,8 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
         </div>
       )}
 
-      {/* Set log section — shown always (below main row) */}
-      <div style={{ padding: '0 16px 0 44px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      {/* Set log section — aligned with table columns */}
+      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
         <SetLogSection
           we={we} userId={userId} isAdmin={isAdmin}
           onAggregateUpdate={data => onUpdate(we.id, data)}
@@ -980,10 +984,11 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
 
       {/* Expand toggle */}
       <button onClick={() => setExpanded(!expanded)}
-        style={{ display: 'block', width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '4px 44px', cursor: 'pointer', color: '#555', fontSize: '0.48rem', letterSpacing: '0.18em', fontFamily: 'var(--fm)', textAlign: 'left', transition: 'color 0.15s' }}
-        onMouseEnter={e => e.currentTarget.style.color = '#888'}
-        onMouseLeave={e => e.currentTarget.style.color = '#555'}>
-        {expanded ? '▲ SAKRIJ' : '▼ DETALJI'}
+        style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', background: expanded ? 'rgba(99,102,241,0.06)' : 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '6px 44px', cursor: 'pointer', color: expanded ? '#818cf8' : '#555', fontSize: '0.46rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', textAlign: 'left' as const, transition: 'all 0.15s', fontWeight: 700 }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#818cf8'; e.currentTarget.style.background = 'rgba(99,102,241,0.06)' }}
+        onMouseLeave={e => { e.currentTarget.style.color = expanded ? '#818cf8' : '#555'; e.currentTarget.style.background = expanded ? 'rgba(99,102,241,0.06)' : 'transparent' }}>
+        <span style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>▼</span>
+        {expanded ? 'SAKRIJ DETALJE' : 'PRIKAŽI DETALJE'}
       </button>
     </div>
   )
@@ -1019,38 +1024,38 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, onUpdateWorko
 
   return (
     <>
-      {/* Outer card: sharp border, white/dark editorial split */}
-      <div className="workout-card" style={{ border: '1px solid rgba(255,255,255,0.15)', marginBottom: '10px', overflow: 'hidden', borderRadius: '10px', boxShadow: '0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.03)' }}>
+      {/* Outer card: sharp border */}
+      <div className="workout-card" style={{ border: '1px solid rgba(255,255,255,0.12)', marginBottom: '10px', overflow: 'hidden', borderRadius: '8px', boxShadow: '0 4px 28px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02)' }}>
 
-        {/* ── Day header — light editorial strip ── */}
+        {/* ── Day header — sharp editorial strip ── */}
         <div
-          style={{ background: workout.completed ? '#0c1a10' : 'rgba(255,255,255,0.07)', borderBottom: open ? '1px solid rgba(255,255,255,0.12)' : 'none', cursor: 'pointer', padding: '0' }}
+          style={{ background: workout.completed ? '#0a1c0e' : '#0c0c18', borderBottom: open ? '1px solid rgba(255,255,255,0.1)' : 'none', cursor: 'pointer', padding: '0' }}
           onClick={() => setOpen(!open)}>
-          {/* Top accent line */}
-          <div style={{ height: '3px', background: workout.completed ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'linear-gradient(90deg, #2a2a3a, #1a1a28)', boxShadow: workout.completed ? '0 0 10px rgba(34,197,94,0.3)' : 'none', transition: 'all 0.3s' }} />
+          {/* Top accent line — thicker, more vivid */}
+          <div style={{ height: '3px', background: workout.completed ? 'linear-gradient(90deg, #22c55e 0%, #16a34a 60%, #15803d 100%)' : 'linear-gradient(90deg, rgba(99,102,241,0.6) 0%, rgba(139,92,246,0.7) 50%, rgba(99,102,241,0.4) 100%)', boxShadow: workout.completed ? '0 0 14px rgba(34,197,94,0.4)' : '0 0 12px rgba(99,102,241,0.25)', transition: 'all 0.3s' }} />
 
-          <div className='workout-header-inner' style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            {/* Day label pill */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '0' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={workout.completed ? '#22c55e' : '#4a4a6a'} strokeWidth="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <div style={{ fontSize: '0.78rem', fontWeight: 600, color: workout.completed ? '#4ade80' : '#9090b0', fontFamily: 'var(--fm)', letterSpacing: '0.02em' }}>
+          <div className='workout-header-inner' style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            {/* Day label */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: '0' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={workout.completed ? '#22c55e' : '#5555aa'} strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <div style={{ fontSize: '0.72rem', fontWeight: 600, color: workout.completed ? '#4ade80' : '#7070a0', fontFamily: 'var(--fm)', letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>
                 {formatWorkoutDate(workout.workout_date)}
               </div>
             </div>
 
-            {/* Workout name — large */}
+            {/* Workout name — large, bold */}
             <div style={{ flex: 1 }} onClick={e => e.stopPropagation()}>
-              <div style={{ fontSize: '1rem', fontWeight: 800, color: '#f0f0f0', fontFamily: 'var(--fd)', letterSpacing: '0.01em', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: '1rem', fontWeight: 900, color: workout.completed ? '#86efac' : '#f0f0ff', fontFamily: 'var(--fd)', letterSpacing: '0.02em', textTransform: 'uppercase' as const }}>
                 <EditableField value={workout.day_name} placeholder="DAN TRENINGA" onSave={v => onUpdateWorkout(workout.id, { day_name: v })} />
               </div>
             </div>
 
             {/* Right controls */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+            <div className="workout-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
               {/* Ex count badge */}
               {exCount > 0 && (
-                <div style={{ fontSize: '0.58rem', color: '#bbb', background: '#0e0e16', border: '1px solid rgba(255,255,255,0.12)', padding: '3px 10px', borderRadius: '20px', letterSpacing: '0.1em' }}>
-                  {exCount} vj.
+                <div style={{ fontSize: '0.54rem', color: '#8888bb', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '3px 10px', borderRadius: '20px', letterSpacing: '0.12em', fontWeight: 700 }}>
+                  {exCount} VJ
                 </div>
               )}
               {/* Completed toggle */}
@@ -1063,7 +1068,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, onUpdateWorko
                 }
               }}
                 className={`done-badge${workout.completed ? ' done-badge-active' : ''}`}>
-                {workout.completed ? <Check size={10} color="#22c55e" /> : <div style={{ width: '9px', height: '9px', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '2px' }} />}
+                {workout.completed ? <Check size={10} color="#22c55e" strokeWidth={3} /> : <div style={{ width: '8px', height: '8px', border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: '2px' }} />}
                 <span>{workout.completed ? 'GOTOVO' : 'ODRADITI'}</span>
               </div>
               {/* Delete */}
@@ -1071,22 +1076,22 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, onUpdateWorko
                 <Trash2 size={11} />
               </button>
               {/* Expand arrow */}
-              <div style={{ color: '#444', transition: 'transform 0.25s', transform: open ? 'rotate(90deg)' : 'none' }}>
+              <div style={{ color: open ? '#818cf8' : '#444', transition: 'transform 0.25s, color 0.2s', transform: open ? 'rotate(90deg)' : 'none' }}>
                 <ChevronRight size={14} />
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── Exercise table — dark with clean grid ── */}
+        {/* ── Exercise table — dark with sharp grid ── */}
         {open && (
-          <div style={{ background: '#09090e', animation: 'fadeUp 0.2s ease' }}>
+          <div style={{ background: '#07070e', animation: 'fadeUp 0.2s ease' }}>
             {/* Table header row */}
             {exCount > 0 && (
-              <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 72px 80px 80px 64px 28px', borderBottom: '2px solid rgba(255,255,255,0.1)', background: '#0d0d14' }}>
-                <div style={{ borderRight: '1px solid rgba(255,255,255,0.07)' }} />
-                {['VJEŽBA', 'SERI', 'PONOV', isAdmin ? 'KG PLAN' : 'KG', isAdmin ? 'RPE CILJ' : 'RPE', ''].map((h, i) => (
-                  <div key={i} style={{ padding: '8px 16px', fontSize: '0.48rem', color: i === 3 && !isAdmin ? '#6b8cff' : i === 4 && !isAdmin ? '#facc15' : '#666', letterSpacing: '0.25em', fontWeight: 700, fontFamily: 'var(--fm)', textAlign: i > 0 ? 'center' : 'left', borderRight: i < 5 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>{h}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 72px 80px 80px 64px 28px', borderBottom: '2px solid rgba(255,255,255,0.12)', background: '#0b0b16' }}>
+                <div style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }} />
+                {['VJEŽBA', 'SETS', 'REPS', isAdmin ? 'KG PLAN' : 'KG', isAdmin ? 'RPE CILJ' : 'RPE', ''].map((h, i) => (
+                  <div key={i} style={{ padding: '9px 16px', fontSize: '0.46rem', color: i === 3 && !isAdmin ? '#818cf8' : i === 4 && !isAdmin ? '#facc15' : '#555', letterSpacing: '0.28em', fontWeight: 800, fontFamily: 'var(--fm)', textAlign: i > 0 ? 'center' : 'left', borderRight: i < 5 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>{h}</div>
                 ))}
               </div>
             )}
@@ -1097,7 +1102,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, onUpdateWorko
             ))}
 
             {/* Add vježbu + bilješka footer */}
-            <div className="ex-table-footer" style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+            <div className="ex-table-footer" style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: '10px', alignItems: 'flex-start', background: 'rgba(0,0,0,0.15)' }}>
               {isAdmin && (
                 <button onClick={() => setShowPicker(true)} className="add-btn" style={{ flex: 'none' }}>
                   <Plus size={11} /> DODAJ VJEŽBU
@@ -1173,24 +1178,24 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
   const hasNotes = !!(week.notes?.trim())
 
   return (
-    <div style={{ marginBottom: '20px', border: '1px solid rgba(255,255,255,0.14)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)' }}>
+    <div style={{ marginBottom: '20px', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 48px rgba(0,0,0,0.6), inset 4px 0 0 rgba(99,102,241,0.7), 0 0 0 1px rgba(255,255,255,0.03)' }}>
 
       {/* ── Week header — editorial black band ── */}
-      <div style={{ background: 'linear-gradient(160deg, #0f0f18 0%, #0a0a12 100%)', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.08)' : 'none' }}
+      <div style={{ background: 'linear-gradient(160deg, #0e0e1c 0%, #080810 100%)', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.09)' : 'none' }}
         onClick={() => setOpen(!open)}>
 
         {/* Top: large week label row */}
         <div style={{ padding: 'clamp(14px,3vw,20px) clamp(16px,4vw,24px) 0', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
-            {/* Giant W number */}
-            <span style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.8rem,4vw,3.2rem)', fontWeight: 700, lineHeight: 1, color: 'rgba(255,255,255,0.92)', letterSpacing: '-0.04em' }}>
+            {/* Giant W number — accent color */}
+            <span style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,4.5vw,3.6rem)', fontWeight: 900, lineHeight: 1, background: 'linear-gradient(135deg, #818cf8 0%, #6366f1 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '-0.05em' }}>
               W{week.week_number}
             </span>
             <div>
-              <div style={{ fontSize: '0.88rem', color: '#aaa', fontWeight: 500, fontFamily: 'var(--fm)', letterSpacing: '0.05em' }}>
-                TJEDAN {week.week_number}
+              <div style={{ fontSize: '0.82rem', color: '#b0b0c8', fontWeight: 600, fontFamily: 'var(--fm)', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
+                Tjedan {week.week_number}
               </div>
-              <div style={{ fontSize: '0.58rem', color: '#777', letterSpacing: '0.1em', marginTop: '1px' }}>
+              <div style={{ fontSize: '0.56rem', color: '#555', letterSpacing: '0.1em', marginTop: '2px' }}>
                 {week.start_date} — {week.end_date}
               </div>
             </div>
@@ -1198,11 +1203,11 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '4px' }}>
             {/* Progress pill */}
             {total > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#0f0f18', border: '1px solid rgba(255,255,255,0.12)', padding: '5px 12px', borderRadius: '20px' }}>
-                <div style={{ width: '48px', height: '2px', background: 'rgba(255,255,255,0.1)', borderRadius: '1px', position: 'relative', overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', inset: '0 auto 0 0', width: `${pct}%`, background: '#22c55e', boxShadow: '0 0 6px rgba(34,197,94,0.5)', transition: 'width 0.5s' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '6px 14px', borderRadius: '20px' }}>
+                <div style={{ width: '52px', height: '3px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', inset: '0 auto 0 0', width: `${pct}%`, background: pct === 100 ? '#22c55e' : 'linear-gradient(90deg, #6366f1, #818cf8)', boxShadow: pct === 100 ? '0 0 8px rgba(34,197,94,0.6)' : '0 0 8px rgba(99,102,241,0.5)', transition: 'width 0.5s cubic-bezier(0.16,1,0.3,1)', borderRadius: '2px' }} />
                 </div>
-                <span style={{ fontSize: '0.56rem', color: '#aaa', fontFamily: 'var(--fm)', fontWeight: 700 }}>{done}/{total}</span>
+                <span style={{ fontSize: '0.54rem', color: pct === 100 ? '#4ade80' : '#8888bb', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.05em' }}>{done}/{total}</span>
               </div>
             )}
             <div style={{ color: '#888', transition: 'transform 0.25s, color 0.2s', transform: open ? 'rotate(90deg)' : 'none' }}>
@@ -1233,26 +1238,22 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
           </div>
         </div>
 
-        {/* Day grid overview — like the reference screenshot */}
+        {/* Day grid overview */}
         {total > 0 && (
-          <div className="day-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(total, 7)}, 1fr)`, margin: '16px 0 0', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <div className="day-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(total, 7)}, 1fr)`, margin: '16px 0 0', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
             {week.workouts?.map((w, i) => (
-              <div key={w.id} style={{ padding: '10px 14px', borderRight: i < total - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none', background: w.completed ? '#0b1a10' : '#0c0c12', transition: 'background 0.2s' }}>
+              <div key={w.id} style={{ padding: '10px 12px', borderRight: i < total - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none', background: w.completed ? 'rgba(34,197,94,0.06)' : 'rgba(0,0,0,0.2)', transition: 'background 0.2s' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '5px' }}>
-                  <span style={{ fontSize: '0.5rem', letterSpacing: '0.2em', color: '#888', fontFamily: 'var(--fm)', fontWeight: 700 }}>
-                    DAN {i + 1}
+                  <span style={{ fontSize: '0.48rem', letterSpacing: '0.22em', color: w.completed ? '#4ade80' : '#666', fontFamily: 'var(--fm)', fontWeight: 800 }}>
+                    D{i + 1}
                   </span>
-                  {w.completed && (
-                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', border: '1px solid #22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Check size={8} color="#22c55e" strokeWidth={3} />
-                    </div>
-                  )}
+                  {w.completed && <Check size={9} color="#22c55e" strokeWidth={3} />}
                 </div>
-                <div style={{ fontSize: '0.72rem', fontWeight: 600, color: w.completed ? '#4ade80' : '#e0e0e0', fontFamily: 'var(--fm)', lineHeight: 1.2, letterSpacing: '-0.01em' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: w.completed ? '#4ade80' : '#c0c0d8', fontFamily: 'var(--fm)', lineHeight: 1.2, letterSpacing: '-0.01em' }}>
                   {w.day_name}
                 </div>
                 {/* Bottom accent */}
-                <div style={{ height: '2px', marginTop: '8px', background: w.completed ? '#22c55e' : 'rgba(255,255,255,0.1)', borderRadius: '1px', boxShadow: w.completed ? '0 0 6px rgba(34,197,94,0.4)' : 'none' }} />
+                <div style={{ height: '2px', marginTop: '8px', background: w.completed ? '#22c55e' : 'rgba(99,102,241,0.25)', borderRadius: '1px', boxShadow: w.completed ? '0 0 8px rgba(34,197,94,0.4)' : 'none' }} />
               </div>
             ))}
           </div>
@@ -1261,7 +1262,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
 
       {/* ── Workout cards ── */}
       {open && (
-        <div style={{ padding: '16px', background: '#0b0b12' }}>
+        <div style={{ padding: '14px', background: '#08080f' }}>
           {week.workouts?.map(w => (
             <WorkoutCard key={w.id} workout={w} exercises={exercises} isAdmin={isAdmin} userId={userId}
               onUpdateWorkout={onUpdateWorkout} onDeleteWorkout={onDeleteWorkout}

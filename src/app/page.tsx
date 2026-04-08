@@ -249,37 +249,6 @@ export default function Landing() {
       {/* ══ BIG THREE ═════════════════════════════════════════════ */}
       <BigThree />
 
-      {/* ══ ABOUT CLUB ════════════════════════════════════════════ */}
-      <section id="club" style={{ padding: 'clamp(80px,12vw,180px) clamp(20px,5vw,60px)', maxWidth: '1400px', margin: '0 auto' }}>
-        <div ref={clubReveal.ref} style={{ opacity: clubReveal.visible ? 1 : 0, transform: clubReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
-          <div className="club-grid">
-            <div style={{ position: 'relative' }}>
-              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,8vw,6rem)', lineHeight: 0.9, marginBottom: 'clamp(20px,4vw,40px)' }}>
-                STVORENI<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>U ŽELJEZU</span>
-              </h2>
-              <p style={{ fontSize: 'clamp(0.9rem,2.5vw,1.2rem)', lineHeight: 1.8, color: 'rgba(255,255,255,0.7)', marginBottom: '24px' }}>
-                LWL UP nije samo klub — to je zajednica snage u kojoj natjecatelji ruše granice ljudskog potencijala. Klub su 2023. godine osnovali Walter Smajlović i Luka Grežina radi okupljanja ljudi s istim ciljem; postići što veći total. Od tada podižemo standarde powerliftinga u Hrvatskoj.
-              </p>
-              <div className="club-info-cards">
-                {[['Zajednica', 'Treniramo zajedno, natječemo se zajedno, rastemo zajedno.'], ['Stručnost', 'Svaka serija ima svrhu. Svaki postotak je izračunat.']].map(([t, d]) => (
-                  <div key={t} className="info-card" style={{ cursor: 'pointer', transition: '0.3s' }}>
-                    <h4 style={{ color: '#fff', fontSize: 'clamp(0.95rem,2vw,1.1rem)', marginBottom: '8px' }}>{t}</h4>
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.8rem,1.8vw,0.9rem)' }}>{d}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="club-images">
-              <div style={{ height: 'clamp(200px,35vw,400px)', overflow: 'hidden', borderRadius: '4px', marginTop: 'clamp(0px,4vw,40px)' }}>
-                <img src="/slike/IMG_1844.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: '0.8s' }} alt="Club" className="club-img" />
-              </div>
-              <div style={{ height: 'clamp(200px,35vw,400px)', overflow: 'hidden', borderRadius: '4px' }}>
-                <img src="/slike/IMG_1890.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: '0.8s' }} alt="Club" className="club-img" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ══ KATEGORIJE ═══════════════════════════════════════════ */}
       <section id="kategorije" style={{ background: '#050505', borderTop: '1px solid rgba(255,255,255,0.06)', padding: 'clamp(80px,12vw,140px) clamp(20px,5vw,60px)' }}>
@@ -346,6 +315,40 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* ══ ABOUT CLUB ════════════════════════════════════════════ */}
+      <section id="club" style={{ padding: 'clamp(80px,12vw,180px) clamp(20px,5vw,60px)', maxWidth: '1400px', margin: '0 auto' }}>
+        <div ref={clubReveal.ref} style={{ opacity: clubReveal.visible ? 1 : 0, transform: clubReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
+          <div className="club-grid">
+            <div style={{ position: 'relative' }}>
+              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,8vw,6rem)', lineHeight: 0.9, marginBottom: 'clamp(20px,4vw,40px)' }}>
+                STVORENI<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>U ŽELJEZU</span>
+              </h2>
+              <p style={{ fontSize: 'clamp(0.9rem,2.5vw,1.2rem)', lineHeight: 1.8, color: 'rgba(255,255,255,0.7)', marginBottom: '24px' }}>
+                LWL UP nije samo klub — to je zajednica snage u kojoj natjecatelji ruše granice ljudskog potencijala. Klub su 2023. godine osnovali Walter Smajlović i Luka Grežina radi okupljanja ljudi s istim ciljem; postići što veći total. Od tada podižemo standarde powerliftinga u Hrvatskoj.
+              </p>
+              <div className="club-info-cards">
+                {[['Zajednica', 'Treniramo zajedno, natječemo se zajedno, rastemo zajedno.'], ['Stručnost', 'Svaka serija ima svrhu. Svaki postotak je izračunat.']].map(([t, d]) => (
+                  <div key={t} className="info-card" style={{ cursor: 'pointer', transition: '0.3s' }}>
+                    <h4 style={{ color: '#fff', fontSize: 'clamp(0.95rem,2vw,1.1rem)', marginBottom: '8px' }}>{t}</h4>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.8rem,1.8vw,0.9rem)' }}>{d}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="club-images">
+              <div style={{ height: 'clamp(200px,35vw,400px)', overflow: 'hidden', borderRadius: '4px', marginTop: 'clamp(0px,4vw,40px)' }}>
+                <img src="/slike/IMG_1844.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: '0.8s' }} alt="Club" className="club-img" />
+              </div>
+              <div style={{ height: 'clamp(200px,35vw,400px)', overflow: 'hidden', borderRadius: '4px' }}>
+                <img src="/slike/IMG_1890.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: '0.8s' }} alt="Club" className="club-img" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      
 
       {/* ══ FOUNDERS ══════════════════════════════════════════════ */}
       <section id="coach" style={{ background: '#0a0a0a', borderTop: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
