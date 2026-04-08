@@ -229,7 +229,7 @@ export default function RecordsPage() {
 
   return (
     <div style={{ background: '#050505', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
-      <Navbar variant="solid" />
+      <Navbar variant="solid" simple />
 
       {/* HERO */}
       <section style={{ paddingTop: 'clamp(100px,14vw,150px)', paddingBottom: '40px', position: 'relative' }}>

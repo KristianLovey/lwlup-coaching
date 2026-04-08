@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 type NavbarProps = {
   variant?: 'transparent' | 'solid'
   backLink?: { href: string; label: string }
+  simple?: boolean
 }
 
 const NAV_LINKS: [string, string][] = [
@@ -19,7 +20,7 @@ const NAV_LINKS: [string, string][] = [
   ['REKORDI',      '/records'],
 ]
 
-export default function Navbar({ variant = 'transparent', backLink }: NavbarProps) {
+export default function Navbar({ variant = 'transparent', backLink, simple }: NavbarProps) {
   const [scrollY, setScrollY]         = useState(0)
   const [menuOpen, setMenuOpen]       = useState(false)
   const [hoveredLink, setHoveredLink] = useState<string | null>(null)
@@ -116,7 +117,13 @@ export default function Navbar({ variant = 'transparent', backLink }: NavbarProp
 
         {/* Desktop nav */}
         <div className="nav-desktop">
-          {backLink ? (
+          {simple ? (
+            <Link href="/"
+              style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '0.7rem', letterSpacing: '0.2em', fontWeight: 600, transition: '0.3s', fontFamily: 'var(--fm)' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+            >← POČETNA</Link>
+          ) : backLink ? (
             <Link href={backLink.href}
               style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '0.75rem', letterSpacing: '0.2em', fontWeight: 600, transition: '0.3s', fontFamily: 'var(--fm)' }}
               onMouseEnter={e => e.currentTarget.style.color = '#fff'}
@@ -160,25 +167,41 @@ export default function Navbar({ variant = 'transparent', backLink }: NavbarProp
         visibility: menuOpen ? 'visible' : 'hidden',
       }}>
         <div style={{ flex: 1 }}>
-          {NAV_LINKS.map(([label, href], i) => (
-            <a key={label} href={href} onClick={() => setMenuOpen(false)}
-              onMouseEnter={() => setHoveredLink(label)}
-              onMouseLeave={() => setHoveredLink(null)}
+          {simple ? (
+            <Link href="/" onClick={() => setMenuOpen(false)}
               style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 fontSize: 'clamp(1.8rem,7vw,2.4rem)', fontFamily: 'var(--fd)', fontWeight: 700,
-                letterSpacing: '0.04em',
-                color: hoveredLink === label ? 'rgba(255,255,255,0.45)' : '#fff',
-                textDecoration: 'none', padding: '18px 0',
+                letterSpacing: '0.04em', color: '#fff', textDecoration: 'none', padding: '18px 0',
                 borderBottom: '1px solid rgba(255,255,255,0.07)',
                 opacity: menuOpen ? 1 : 0,
-                transform: menuOpen ? (hoveredLink === label ? 'translateX(8px)' : 'translateX(0)') : 'translateX(-16px)',
-                transition: `opacity 0.35s ${i * 0.06 + 0.05}s ease, transform 0.35s ${i * 0.06 + 0.05}s ease, color 0.2s ease`,
+                transform: menuOpen ? 'translateX(0)' : 'translateX(-16px)',
+                transition: 'opacity 0.35s 0.05s ease, transform 0.35s 0.05s ease',
               }}>
-              {label}
-              <span style={{ fontSize: '1rem', color: hoveredLink === label ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)', transition: 'all 0.2s' }}>→</span>
-            </a>
-          ))}
+              POČETNA
+              <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
+            </Link>
+          ) : (
+            NAV_LINKS.map(([label, href], i) => (
+              <a key={label} href={href} onClick={() => setMenuOpen(false)}
+                onMouseEnter={() => setHoveredLink(label)}
+                onMouseLeave={() => setHoveredLink(null)}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  fontSize: 'clamp(1.8rem,7vw,2.4rem)', fontFamily: 'var(--fd)', fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  color: hoveredLink === label ? 'rgba(255,255,255,0.45)' : '#fff',
+                  textDecoration: 'none', padding: '18px 0',
+                  borderBottom: '1px solid rgba(255,255,255,0.07)',
+                  opacity: menuOpen ? 1 : 0,
+                  transform: menuOpen ? (hoveredLink === label ? 'translateX(8px)' : 'translateX(0)') : 'translateX(-16px)',
+                  transition: `opacity 0.35s ${i * 0.06 + 0.05}s ease, transform 0.35s ${i * 0.06 + 0.05}s ease, color 0.2s ease`,
+                }}>
+                {label}
+                <span style={{ fontSize: '1rem', color: hoveredLink === label ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)', transition: 'all 0.2s' }}>→</span>
+              </a>
+            ))
+          )}
         </div>
 
         <div style={{
