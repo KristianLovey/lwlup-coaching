@@ -1,13 +1,11 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Footer from '@/app/components/Footer'
 import Navbar from '@/app/components/Navbar'
 import { Search, Trophy } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
-// Club members to highlight when they hold a record
-const CLUB_MEMBERS = [
-  'Walter Smajlović',
-]
+const supabase = createClient()
 
 type RecordEntry = {
   lifter: string
@@ -54,7 +52,7 @@ const MEN_RECORDS: Records = {
     total:    { lifter: 'Tea Kalogjera',    weight: 617.5, date: '2024-07-23', fed: 'IPF'  },
   },
   '83': {
-    squat:    { lifter: 'Walter Smajlović', weight: 285,   date: '2025-03-18', fed: 'EPF'  },
+    squat:    { lifter: 'Walter Smajlović', weight: 262.5,   date: '2025-03-18', fed: 'EPF'  },
     bench:    { lifter: 'Tea Kalogjera',    weight: 182.5, date: '2022-03-12', fed: 'EPF'  },
     deadlift: { lifter: 'Luka Benčić',      weight: 305.5, date: '2025-05-30', fed: 'HPLS' },
     total:    { lifter: 'Walter Smajlović', weight: 735,   date: '2025-03-18', fed: 'EPF'  },
@@ -151,11 +149,11 @@ const LIFTS: { key: keyof CategoryRecords; label: string }[] = [
   { key: 'total',    label: 'TOTAL'      },
 ]
 
-function isClubMember(name: string) {
-  return CLUB_MEMBERS.some(m => name.toLowerCase().includes(m.toLowerCase()) || m.toLowerCase().includes(name.toLowerCase()))
+function isClubMember(name: string, members: string[]) {
+  return members.some(m => name.toLowerCase().includes(m.toLowerCase()) || m.toLowerCase().includes(name.toLowerCase()))
 }
 
-function RecordCell({ entry, highlight }: { entry: RecordEntry | null; highlight: boolean }) {
+function RecordCell({ entry, highlight, clubMembers }: { entry: RecordEntry | null; highlight: boolean; clubMembers: string[] }) {
   if (!entry) {
     return (
       <td style={{ padding: '14px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.15)', fontSize: '0.75rem', textAlign: 'center' }}>
@@ -164,7 +162,7 @@ function RecordCell({ entry, highlight }: { entry: RecordEntry | null; highlight
     )
   }
 
-  const isClub = isClubMember(entry.lifter)
+  const isClub = isClubMember(entry.lifter, clubMembers)
   const nameMatch = highlight && isClub
 
   return (
@@ -189,7 +187,7 @@ function RecordCell({ entry, highlight }: { entry: RecordEntry | null; highlight
               fontSize: '0.48rem', letterSpacing: '0.2em', padding: '2px 6px',
               background: 'rgba(250,204,21,0.15)', color: '#facc15',
               border: '1px solid rgba(250,204,21,0.3)', fontWeight: 700,
-            }}>KLUB</span>
+            }}>LWL UP</span>
           )}
         </div>
         <span style={{ fontSize: '0.7rem', color: nameMatch ? 'rgba(250,204,21,0.8)' : 'rgba(255,255,255,0.5)', fontWeight: nameMatch ? 700 : 400 }}>
@@ -207,6 +205,12 @@ export default function RecordsPage() {
   const [gender, setGender] = useState<'men' | 'women'>('men')
   const [search, setSearch] = useState('')
   const [liftFilter, setLiftFilter] = useState<'all' | keyof CategoryRecords>('all')
+  const [clubMembers, setClubMembers] = useState<string[]>([])
+
+  useEffect(() => {
+    supabase.from('athlete_stats').select('name').eq('is_active', true)
+      .then(({ data }) => { if (data) setClubMembers(data.map((r: any) => r.name)) })
+  }, [])
 
   const records  = gender === 'men' ? MEN_RECORDS : WOMEN_RECORDS
   const classes  = gender === 'men' ? MEN_CLASSES : WOMEN_CLASSES
@@ -333,7 +337,7 @@ export default function RecordsPage() {
                             const entry = cat[l.key]
                             const isHighlighted = highlight && !!entry && entry.lifter.toLowerCase().includes(search.trim().toLowerCase())
                             return (
-                              <RecordCell key={l.key} entry={entry} highlight={isHighlighted} />
+                              <RecordCell key={l.key} entry={entry} highlight={isHighlighted} clubMembers={clubMembers} />
                             )
                           })}
                         </tr>

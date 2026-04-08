@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { ArrowRight, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -21,11 +22,18 @@ const NAV_LINKS: [string, string][] = [
 ]
 
 export default function Navbar({ variant = 'transparent', backLink, simple }: NavbarProps) {
+  const pathname = usePathname()
   const [scrollY, setScrollY]         = useState(0)
   const [menuOpen, setMenuOpen]       = useState(false)
   const [hoveredLink, setHoveredLink] = useState<string | null>(null)
   const [loggedIn, setLoggedIn]       = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
+
+  // resolve anchor links: on non-home pages, prepend '/'
+  const resolveHref = (href: string) => {
+    if (href.startsWith('#') && pathname !== '/') return '/' + href
+    return href
+  }
 
   // ── Auth state ────────────────────────────────────────────────────
   useEffect(() => {
@@ -132,7 +140,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '36px' }}>
               {NAV_LINKS.map(([label, href]) => (
-                <a key={label} href={href}
+                <a key={label} href={resolveHref(href)}
                   style={{ fontSize: '0.7rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)', textDecoration: 'none', transition: 'all 0.3s', fontWeight: 600 }}
                   onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'translateY(-2px)' }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.transform = 'translateY(0)' }}
@@ -162,8 +170,9 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
         background: '#050505', display: 'flex', flexDirection: 'column',
         padding: '32px 24px 60px', overflowY: 'auto',
         opacity: menuOpen ? 1 : 0,
+        transform: menuOpen ? 'translateY(0)' : 'translateY(-12px)',
         pointerEvents: menuOpen ? 'all' : 'none',
-        transition: 'opacity 0.25s ease',
+        transition: 'opacity 0.3s ease, transform 0.3s ease',
         visibility: menuOpen ? 'visible' : 'hidden',
       }}>
         <div style={{ flex: 1 }}>
@@ -183,7 +192,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
             </Link>
           ) : (
             NAV_LINKS.map(([label, href], i) => (
-              <a key={label} href={href} onClick={() => setMenuOpen(false)}
+              <a key={label} href={resolveHref(href)} onClick={() => setMenuOpen(false)}
                 onMouseEnter={() => setHoveredLink(label)}
                 onMouseLeave={() => setHoveredLink(null)}
                 style={{
