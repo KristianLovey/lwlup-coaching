@@ -12,7 +12,7 @@ type NavbarProps = {
 }
 
 const NAV_LINKS: [string, string][] = [
-  ['POWERLIFTING', '#info'],
+  ['POWERLIFTING', '#kategorije'],
   ['O KLUBU',      '#club'],
   ['OSNIVAČI',      '#coach'],
   ['SUSTAV',       '#system'],

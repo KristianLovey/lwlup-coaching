@@ -58,7 +58,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
   onDelete: (id: string) => void
 }) {
   const meta = LIFT_META[lift]
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
   // Warmups — dynamic array built from DB fields

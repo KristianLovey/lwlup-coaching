@@ -138,7 +138,7 @@ export default function TeamPage() {
       <div className="star-field" />
       <ParticleCanvas />
 
-      <Navbar variant="solid" simple />
+      <Navbar variant="solid" />
 
       {/* HERO */}
       <section style={{ paddingTop: '160px', paddingBottom: '80px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>

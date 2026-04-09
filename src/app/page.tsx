@@ -181,7 +181,7 @@ export default function Landing() {
     <div style={{ background: '#050505', color: '#fff', overflowX: 'hidden', fontFamily: 'var(--fm)', position: 'relative' }}>
       <div className="star-field" />
       <NetworkCanvas />
-      <Navbar variant="transparent" />
+      <Navbar variant="solid" />
       <ScrollToTop />
 
       {/* ══ HERO ══════════════════════════════════════════════════ */}

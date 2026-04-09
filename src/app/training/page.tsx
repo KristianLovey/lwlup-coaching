@@ -351,19 +351,19 @@ export default function TrainingPage() {
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
         background: 'radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(0,0,0,0.8) 100%)' }} />
       {/* plate.png — bottom left, large, rotated */}
-      <div style={{ position: 'fixed', bottom: '-8vh', left: '-8vw', zIndex: 0, pointerEvents: 'none', opacity: 0.07, transform: 'rotate(12deg)', filter: 'blur(1px)' }}>
+      <div className="bg-decorative" style={{ position: 'fixed', bottom: '-8vh', left: '-8vw', zIndex: 0, pointerEvents: 'none', opacity: 0.07, transform: 'rotate(12deg)', filter: 'blur(1px)' }}>
         <img src="/slike/plate.png" alt="" style={{ width: '380px', height: 'auto' }} />
       </div>
       {/* plate.png — top right, smaller */}
-      <div style={{ position: 'fixed', top: '6vh', right: '-6vw', zIndex: 0, pointerEvents: 'none', opacity: 0.05, transform: 'rotate(-18deg)', filter: 'blur(1.5px)' }}>
+      <div className="bg-decorative" style={{ position: 'fixed', top: '6vh', right: '-6vw', zIndex: 0, pointerEvents: 'none', opacity: 0.05, transform: 'rotate(-18deg)', filter: 'blur(1.5px)' }}>
         <img src="/slike/plate.png" alt="" style={{ width: '260px', height: 'auto' }} />
       </div>
       {/* ipflogo.png — mid left, faded */}
-      <div style={{ position: 'fixed', top: '35vh', left: '-2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.04, filter: 'blur(1px) grayscale(1)' }}>
+      <div className="bg-decorative" style={{ position: 'fixed', top: '35vh', left: '-2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.04, filter: 'blur(1px) grayscale(1)' }}>
         <img src="/slike/ipflogo.png" alt="" style={{ width: '220px', height: 'auto' }} />
       </div>
       {/* logopng.png — bottom right, very subtle */}
-      <div style={{ position: 'fixed', bottom: '6vh', right: '2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.035, filter: 'blur(0.5px) grayscale(1)' }}>
+      <div className="bg-decorative" style={{ position: 'fixed', bottom: '6vh', right: '2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.035, filter: 'blur(0.5px) grayscale(1)' }}>
         <img src="/slike/logopng.png" alt="" style={{ width: '180px', height: 'auto' }} />
       </div>
 
@@ -381,6 +381,7 @@ export default function TrainingPage() {
           <div className="tab-switcher" style={{ display: 'flex', gap: '3px', marginBottom: '28px', animation: 'fadeUp 0.4s ease', padding: '3px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', width: 'fit-content', overflowX: 'auto' as const }}>
             {([['program','Program'],['hub','Hub & Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label])=>(
               <button key={tab} onClick={()=>setActiveTab(tab as 'program'|'hub'|'meet')}
+                className={`tab-btn${activeTab===tab ? ' tab-btn-active' : ''}`}
                 style={{ padding:'8px 22px', background: activeTab===tab ? 'rgba(99,102,241,0.18)' : 'transparent', border: activeTab===tab ? '1px solid rgba(99,102,241,0.4)' : '1px solid transparent', borderRadius: '8px', cursor:'pointer', fontSize:'0.75rem', fontFamily:'var(--fm)', fontWeight: activeTab===tab ? 700 : 400, color: activeTab===tab ? '#a5b4fc' : 'rgba(255,255,255,0.4)', transition:'all 0.18s', whiteSpace:'nowrap' as const, letterSpacing: activeTab===tab ? '0.04em' : '0.02em', textTransform: 'uppercase' as const, boxShadow: activeTab===tab ? '0 0 20px rgba(99,102,241,0.15), inset 0 1px 0 rgba(255,255,255,0.08)' : 'none' }}>
                 {label}
               </button>
@@ -388,9 +389,9 @@ export default function TrainingPage() {
           </div>
 
           {/* Page title row — only in program tab */}
-          {activeTab === 'program' && <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '28px', gap: '20px', flexWrap: 'wrap', animation: 'fadeUp 0.5s ease 0.05s both' }}>
+          {activeTab === 'program' && <div className="page-title-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '28px', gap: '20px', flexWrap: 'wrap', animation: 'fadeUp 0.5s ease 0.05s both' }}>
             <div>
-              <div style={{ fontSize: '0.6rem', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px', fontFamily: 'var(--fm)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className="athlete-name-label" style={{ fontSize: '0.6rem', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px', fontFamily: 'var(--fm)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ display: 'inline-block', width: '18px', height: '1px', background: 'rgba(255,255,255,0.2)' }} />
                 {loading ? '...' : athleteName}
               </div>
@@ -437,7 +438,7 @@ export default function TrainingPage() {
                 </button>
 
                 {/* Name edit */}
-                <div style={{ padding: '12px 16px', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '8px', minWidth: '160px' }}>
+                <div className="block-bar-name" style={{ padding: '12px 16px', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '8px', minWidth: '160px' }}>
                   <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: '#888', flexShrink: 0 }}>NAZIV</div>
                   <EditableField value={block.name} placeholder="Naziv programa"
                     onSave={async v => {
@@ -718,27 +719,107 @@ export default function TrainingPage() {
 
         /* ─ Header + content padding ─ */
         @media (max-width: 768px) {
-          .page-header  { padding: 16px 16px 0 !important; }
-          .page-content { padding: 0 16px 80px !important; }
+          .page-header  { padding: 14px 16px 0 !important; }
+          .page-content { padding: 0 16px 100px !important; }
+        }
+
+        /* ─ Hide decorative background images on mobile ─ */
+        @media (max-width: 768px) {
+          .bg-decorative { display: none !important; }
+        }
+
+        /* ─ Tab switcher → fixed bottom navigation bar ─ */
+        @media (max-width: 768px) {
+          .tab-switcher {
+            position: fixed !important;
+            bottom: 0 !important; left: 0 !important; right: 0 !important;
+            width: 100% !important; max-width: 100% !important;
+            margin: 0 !important; padding: 0 !important;
+            border-radius: 0 !important;
+            border: none !important;
+            border-top: 1px solid rgba(255,255,255,0.1) !important;
+            background: rgba(4,4,10,0.96) !important;
+            backdrop-filter: blur(28px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+            z-index: 999 !important;
+            gap: 0 !important;
+            overflow: visible !important;
+            height: 64px !important;
+            align-items: stretch !important;
+            animation: none !important;
+            box-shadow: 0 -1px 0 rgba(255,255,255,0.06), 0 -12px 40px rgba(0,0,0,0.6) !important;
+          }
+          .tab-btn {
+            flex: 1 !important;
+            border-radius: 0 !important;
+            border: none !important;
+            border-top: 2px solid transparent !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 8px 4px 12px !important;
+            font-size: 0.55rem !important;
+            letter-spacing: 0.08em !important;
+            color: rgba(255,255,255,0.38) !important;
+            height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 4px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            transition: color 0.15s, border-color 0.15s !important;
+          }
+          .tab-btn-active {
+            border-top-color: #818cf8 !important;
+            color: #a5b4fc !important;
+            background: rgba(99,102,241,0.06) !important;
+            font-weight: 700 !important;
+          }
         }
 
         /* ─ Block selector bar: stack vertically on mobile ─ */
         @media (max-width: 640px) {
-          .block-bar { flex-direction: column !important; }
-          .block-bar > * { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.07) !important; width: 100% !important; min-width: 0 !important; }
+          .block-bar { flex-direction: column !important; border-radius: 14px !important; }
+          .block-bar > * { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.07) !important; width: 100% !important; min-width: 0 !important; padding: 14px 16px !important; box-sizing: border-box !important; }
           .block-bar > *:last-child { border-bottom: none !important; }
+          .action-btn { padding: 14px 16px !important; font-size: 0.68rem !important; letter-spacing: 0.1em !important; justify-content: flex-start !important; min-height: 48px !important; border-left: none !important; }
         }
 
-        /* ─ Stats pills: 2×2 on small screens ─ */
-        @media (max-width: 560px) {
-          .stats-row { flex-wrap: wrap !important; }
-          .stats-row > div { min-width: 60px !important; padding: 10px 14px !important; }
-        }
-
-        /* ─ Week header: shrink W number ─ */
+        /* ─ Title row + header: compact on mobile ─ */
         @media (max-width: 640px) {
-          .week-w-num { font-size: 2.2rem !important; }
-          .week-header-top { padding: 14px 16px 0 !important; }
+          .page-header { padding: 22px 16px 0 !important; }
+          .page-title-row { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; margin-bottom: 12px !important; }
+          .page-title-h1 { font-size: 1.7rem !important; margin-bottom: 0 !important; }
+          .athlete-name-label { display: none !important; }
+        }
+
+        /* ─ Stats: compact single row on mobile ─ */
+        @media (max-width: 640px) {
+          .stats-row {
+            display: flex !important;
+            width: 100% !important; gap: 0 !important;
+            grid-template-columns: unset !important;
+          }
+          .stats-row > div { flex: 1 !important; min-width: 0 !important; padding: 10px 6px !important; border-right: 1px solid rgba(255,255,255,0.07) !important; border-bottom: none !important; }
+          .stats-row > div:nth-child(4) { border-right: none !important; }
+          .stats-row > div > div:first-child { font-size: 1.25rem !important; }
+          .stats-row > div > div:last-child { font-size: 0.42rem !important; margin-top: 2px !important; letter-spacing: 0.12em !important; }
+        }
+
+        /* ─ Block bar: only show switcher on mobile ─ */
+        @media (max-width: 640px) {
+          .block-bar-name { display: none !important; }
+          .block-bar .action-btn { display: none !important; }
+          /* Remove divider since only the switcher button is visible */
+          .block-bar > * { border-bottom: none !important; }
+        }
+
+        /* ─ Week header: compact on mobile ─ */
+        @media (max-width: 640px) {
+          .week-w-num { font-size: 1.8rem !important; }
+          .week-header-top { padding: 12px 16px 0 !important; }
+          .week-date-range { display: none !important; }
         }
 
         /* ─ Day grid: scroll horizontally on mobile ─ */
@@ -752,10 +833,20 @@ export default function TrainingPage() {
           .workout-header-inner { flex-wrap: wrap !important; gap: 8px !important; padding: 12px 14px !important; }
           .workout-controls { width: 100% !important; justify-content: flex-end !important; }
         }
-        /* ─ Tab switcher: scrollable on narrow screens ─ */
-        @media (max-width: 400px) {
-          .tab-switcher { max-width: 100% !important; }
-          .tab-switcher button { padding: 7px 12px !important; font-size: 0.65rem !important; }
+
+        /* ─ Exercise rows: teal left accent — signals exercise level in hierarchy ─ */
+        .ex-row-wrap { border-left: 2px solid rgba(20,184,166,0.18); }
+        .ex-row-main:hover ~ * .ex-row-wrap, .ex-row-wrap:hover { border-left-color: rgba(20,184,166,0.35); }
+
+        /* ─ Block bar: bigger touch target for switcher ─ */
+        @media (max-width: 640px) {
+          .block-bar > button:first-child { min-height: 56px !important; }
+        }
+
+        /* ─ Competition banner: better mobile layout ─ */
+        @media (max-width: 500px) {
+          .comp-days-pill { min-width: 70px !important; padding: 0 16px !important; }
+          .comp-days-num { font-size: 1.6rem !important; }
         }
 
         /* ─ Hide default number input spinners (use custom StepInput instead) ─ */
@@ -803,12 +894,6 @@ export default function TrainingPage() {
         @media (max-width: 480px) {
           .gl-lifts-grid { grid-template-columns: 1fr !important; }
           .gl-total-grid { grid-template-columns: repeat(2,1fr) !important; }
-        }
-
-        /* ─ Tab switcher: full width on mobile ─ */
-        @media (max-width: 480px) {
-          .tab-switcher { width: 100% !important; }
-          .tab-switcher button { flex: 1; padding: 8px 10px !important; font-size: 0.7rem !important; }
         }
 
         /* ─ Hub tool grid: 1 col on very small ─ */

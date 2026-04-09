@@ -567,8 +567,8 @@ export function CompetitionBanner({ userId }: { userId: string }) {
 
         {/* Days out pill */}
         {selected && daysOut !== null && (
-          <div style={{ padding: '0 24px', background: daysOut <= 14 ? 'rgba(239,68,68,0.12)' : daysOut <= 30 ? 'rgba(250,204,21,0.08)' : 'rgba(34,197,94,0.08)', borderRight: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: '90px' }}>
-            <div style={{ fontFamily: 'var(--fd)', fontSize: '2rem', fontWeight: 800, lineHeight: 1, color: daysOut <= 14 ? '#ef4444' : daysOut <= 30 ? '#facc15' : '#22c55e' }}>{daysOut}</div>
+          <div className="comp-days-pill" style={{ padding: '0 24px', background: daysOut <= 14 ? 'rgba(239,68,68,0.12)' : daysOut <= 30 ? 'rgba(250,204,21,0.08)' : 'rgba(34,197,94,0.08)', borderRight: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: '90px' }}>
+            <div className="comp-days-num" style={{ fontFamily: 'var(--fd)', fontSize: '2rem', fontWeight: 800, lineHeight: 1, color: daysOut <= 14 ? '#ef4444' : daysOut <= 30 ? '#facc15' : '#22c55e' }}>{daysOut}</div>
             <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: '#666', marginTop: '3px', fontFamily: 'var(--fm)', fontWeight: 700 }}>DAYS OUT</div>
           </div>
         )}
@@ -840,8 +840,13 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceCom
             />
           </div>
 
-          {/* RPE input */}
-          <div className="slr-rpe" style={{ ...cellStyle, padding: '10px 12px' }}>
+          {/* RPE input — plan label above, actual input below */}
+          <div className="slr-rpe" style={{ ...cellStyle, padding: '6px 10px', flexDirection: 'column', gap: '2px', alignItems: 'stretch', justifyContent: 'center' }}>
+            {targetRpe && (
+              <div style={{ fontSize: '0.44rem', color: 'rgba(250,204,21,0.5)', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.06em', textAlign: 'center', lineHeight: 1 }}>
+                @{targetRpe}
+              </div>
+            )}
             <input
               type="number" step="0.5" min="1" max="10" value={log.rpe ?? ''}
               onChange={e => saveSet(log.set_number, 'rpe', e.target.value)}
@@ -1072,18 +1077,10 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, onUpdateWorko
         <div
           style={{ background: workout.completed ? '#0a1c0e' : '#0c0c18', borderBottom: open ? '1px solid rgba(255,255,255,0.1)' : 'none', cursor: 'pointer', padding: '0' }}
           onClick={() => setOpen(!open)}>
-          {/* Top accent line — thicker, more vivid */}
-          <div style={{ height: '3px', background: workout.completed ? 'linear-gradient(90deg, #22c55e 0%, #16a34a 60%, #15803d 100%)' : 'linear-gradient(90deg, rgba(99,102,241,0.6) 0%, rgba(139,92,246,0.7) 50%, rgba(99,102,241,0.4) 100%)', boxShadow: workout.completed ? '0 0 14px rgba(34,197,94,0.4)' : '0 0 12px rgba(99,102,241,0.25)', transition: 'all 0.3s' }} />
+          {/* Top accent line — amber for active days, green for completed */}
+          <div style={{ height: '3px', background: workout.completed ? 'linear-gradient(90deg, #22c55e 0%, #16a34a 60%, #15803d 100%)' : 'linear-gradient(90deg, rgba(245,158,11,0.55) 0%, rgba(251,191,36,0.75) 50%, rgba(245,158,11,0.4) 100%)', boxShadow: workout.completed ? '0 0 14px rgba(34,197,94,0.4)' : '0 0 10px rgba(245,158,11,0.2)', transition: 'all 0.3s' }} />
 
           <div className='workout-header-inner' style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-            {/* Day label */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: '0' }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={workout.completed ? '#22c55e' : '#5555aa'} strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <div style={{ fontSize: '0.72rem', fontWeight: 600, color: workout.completed ? '#4ade80' : '#7070a0', fontFamily: 'var(--fm)', letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>
-                {formatWorkoutDate(workout.workout_date)}
-              </div>
-            </div>
-
             {/* Workout name — large, bold */}
             <div style={{ flex: 1 }} onClick={e => e.stopPropagation()}>
               <div style={{ fontSize: '1rem', fontWeight: 900, color: workout.completed ? '#86efac' : '#f0f0ff', fontFamily: 'var(--fd)', letterSpacing: '0.02em', textTransform: 'uppercase' as const }}>
@@ -1217,17 +1214,17 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
         onClick={() => setOpen(!open)}>
 
         {/* Top: large week label row */}
-        <div style={{ padding: 'clamp(14px,3vw,20px) clamp(16px,4vw,24px) 0', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+        <div className="week-header-top" style={{ padding: 'clamp(14px,3vw,20px) clamp(16px,4vw,24px) 0', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
             {/* Giant W number — accent color */}
-            <span style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,4.5vw,3.6rem)', fontWeight: 900, lineHeight: 1, background: 'linear-gradient(135deg, #818cf8 0%, #6366f1 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '-0.05em' }}>
+            <span className="week-w-num" style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,4.5vw,3.6rem)', fontWeight: 900, lineHeight: 1, background: 'linear-gradient(135deg, #818cf8 0%, #6366f1 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '-0.05em' }}>
               W{week.week_number}
             </span>
             <div>
               <div style={{ fontSize: '0.82rem', color: '#b0b0c8', fontWeight: 600, fontFamily: 'var(--fm)', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
                 Tjedan {week.week_number}
               </div>
-              <div style={{ fontSize: '0.56rem', color: '#555', letterSpacing: '0.1em', marginTop: '2px' }}>
+              <div className="week-date-range" style={{ fontSize: '0.56rem', color: '#555', letterSpacing: '0.1em', marginTop: '2px' }}>
                 {week.start_date} — {week.end_date}
               </div>
             </div>

@@ -309,7 +309,7 @@ export default function CompetitionsPage() {
       <div className="star-field" />
       <ParticleCanvas />
 
-      <Navbar variant="solid" simple />
+      <Navbar variant="solid" />
 
       {/* HERO */}
       <section style={{ paddingTop: 'clamp(80px,12vw,130px)', paddingBottom: '48px', position: 'relative', overflow: 'hidden' }}>

@@ -137,7 +137,7 @@ function isClubMember(name: string, members: string[]) {
 function RecordCell({ entry, highlight, clubMembers }: { entry: RecordEntry | null; highlight: boolean; clubMembers: string[] }) {
   if (!entry) {
     return (
-      <td style={{ padding: '14px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.15)', fontSize: '0.75rem', textAlign: 'center' }}>
+      <td style={{ padding: '14px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.28)', fontSize: '0.75rem', textAlign: 'center' }}>
         —
       </td>
     )
@@ -145,20 +145,20 @@ function RecordCell({ entry, highlight, clubMembers }: { entry: RecordEntry | nu
   const isClub = isClubMember(entry.lifter, clubMembers)
   const nameMatch = highlight && isClub
   return (
-    <td style={{ padding: '14px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: nameMatch ? 'rgba(250,204,21,0.06)' : 'transparent', transition: 'background 0.2s' }}>
+    <td style={{ padding: '14px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)', background: nameMatch ? 'rgba(250,204,21,0.07)' : 'rgba(255,255,255,0.015)', transition: 'background 0.2s' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', fontWeight: 800, color: nameMatch ? '#facc15' : '#fff' }}>
-            {entry.weight} <span style={{ fontSize: '0.65rem', fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>kg</span>
+            {entry.weight} <span style={{ fontSize: '0.65rem', fontWeight: 400, color: 'rgba(255,255,255,0.55)' }}>kg</span>
           </span>
           {isClub && (
             <span style={{ fontSize: '0.48rem', letterSpacing: '0.2em', padding: '2px 6px', background: 'rgba(250,204,21,0.15)', color: '#facc15', border: '1px solid rgba(250,204,21,0.3)', fontWeight: 700 }}>LWL UP</span>
           )}
         </div>
-        <span style={{ fontSize: '0.7rem', color: nameMatch ? 'rgba(250,204,21,0.8)' : 'rgba(255,255,255,0.5)', fontWeight: nameMatch ? 700 : 400 }}>
+        <span style={{ fontSize: '0.7rem', color: nameMatch ? 'rgba(250,204,21,0.9)' : 'rgba(255,255,255,0.82)', fontWeight: nameMatch ? 700 : 500 }}>
           {entry.lifter}
         </span>
-        <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.42)', letterSpacing: '0.05em' }}>
           {new Date(entry.date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: 'numeric' })} · {entry.fed}
         </span>
       </div>
@@ -208,17 +208,17 @@ export default function RecordsPage() {
 
   return (
     <div style={{ background: '#050505', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
-      <Navbar variant="solid" simple />
+      <Navbar variant="solid" />
 
       {/* HERO */}
       <section style={{ paddingTop: 'clamp(100px,14vw,150px)', paddingBottom: '40px', position: 'relative' }}>
         <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '800px', height: '400px', background: 'radial-gradient(ellipse at center top, rgba(255,255,255,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '0 clamp(16px,4vw,60px)', position: 'relative', zIndex: 1 }}>
-          <div style={{ fontSize: '0.65rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.3)', marginBottom: '14px' }}>
+          <div style={{ fontSize: '0.65rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.55)', marginBottom: '14px' }}>
             LWL UP · REKORDI
           </div>
           <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,8vw,6rem)', lineHeight: 0.88, margin: '0 0 40px', letterSpacing: '-0.02em' }}>
-            DRŽAVNI<br /><span style={{ color: 'rgba(255,255,255,0.18)' }}>REKORDI</span>
+            DRŽAVNI<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>REKORDI</span>
           </h1>
 
           {/* Controls */}
@@ -227,7 +227,7 @@ export default function RecordsPage() {
             <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
               {(['men','women'] as const).map(g => (
                 <button key={g} onClick={() => { setGender(g); setAgeFilter('Open') }}
-                  style={{ padding: '10px 24px', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.2em', cursor: 'pointer', fontFamily: 'var(--fm)', border: 'none', transition: 'all 0.2s', background: gender === g ? '#fff' : 'transparent', color: gender === g ? '#000' : 'rgba(255,255,255,0.4)' }}>
+                  style={{ padding: '10px 24px', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.2em', cursor: 'pointer', fontFamily: 'var(--fm)', border: 'none', transition: 'all 0.2s', background: gender === g ? '#fff' : 'transparent', color: gender === g ? '#000' : 'rgba(255,255,255,0.65)' }}>
                   {g === 'men' ? 'MUŠKARCI' : 'ŽENE'}
                 </button>
               ))}
@@ -236,12 +236,12 @@ export default function RecordsPage() {
             {/* Age category */}
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               <button onClick={() => setAgeFilter('all')}
-                style={{ padding: '10px 14px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.12em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${ageFilter === 'all' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: ageFilter === 'all' ? 'rgba(255,255,255,0.08)' : 'transparent', color: ageFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'all 0.2s' }}>
+                style={{ padding: '10px 14px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.12em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${ageFilter === 'all' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: ageFilter === 'all' ? 'rgba(255,255,255,0.08)' : 'transparent', color: ageFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.65)', transition: 'all 0.2s' }}>
                 SVE DOB.
               </button>
               {availableAgeCats.map(age => (
                 <button key={age} onClick={() => setAgeFilter(age)}
-                  style={{ padding: '10px 14px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.12em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${ageFilter === age ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: ageFilter === age ? 'rgba(255,255,255,0.08)' : 'transparent', color: ageFilter === age ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'all 0.2s' }}>
+                  style={{ padding: '10px 14px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.12em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${ageFilter === age ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: ageFilter === age ? 'rgba(255,255,255,0.08)' : 'transparent', color: ageFilter === age ? '#fff' : 'rgba(255,255,255,0.65)', transition: 'all 0.2s' }}>
                   {age.toUpperCase()}
                 </button>
               ))}
@@ -252,12 +252,12 @@ export default function RecordsPage() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', marginTop: '12px' }}>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               <button onClick={() => setLiftFilter('all')}
-                style={{ padding: '10px 16px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.15em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${liftFilter === 'all' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: liftFilter === 'all' ? 'rgba(255,255,255,0.08)' : 'transparent', color: liftFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'all 0.2s' }}>
+                style={{ padding: '10px 16px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.15em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${liftFilter === 'all' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: liftFilter === 'all' ? 'rgba(255,255,255,0.08)' : 'transparent', color: liftFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.65)', transition: 'all 0.2s' }}>
                 SVE
               </button>
               {LIFTS.map(l => (
                 <button key={l.key} onClick={() => setLiftFilter(l.key)}
-                  style={{ padding: '10px 16px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.15em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${liftFilter === l.key ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: liftFilter === l.key ? 'rgba(255,255,255,0.08)' : 'transparent', color: liftFilter === l.key ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'all 0.2s' }}>
+                  style={{ padding: '10px 16px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.15em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${liftFilter === l.key ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: liftFilter === l.key ? 'rgba(255,255,255,0.08)' : 'transparent', color: liftFilter === l.key ? '#fff' : 'rgba(255,255,255,0.65)', transition: 'all 0.2s' }}>
                   {l.label}
                 </button>
               ))}
@@ -293,8 +293,8 @@ export default function RecordsPage() {
                 {/* Weight class header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 0 10px' }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                    <span style={{ fontFamily: 'var(--fd)', fontSize: '2.2rem', fontWeight: 800, color: 'rgba(255,255,255,0.1)', lineHeight: 1 }}>{cls}</span>
-                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.2em' }}>KG</span>
+                    <span style={{ fontFamily: 'var(--fd)', fontSize: '2.2rem', fontWeight: 800, color: 'rgba(255,255,255,0.55)', lineHeight: 1 }}>{cls}</span>
+                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.2em' }}>KG</span>
                   </div>
                   <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
                 </div>
@@ -307,12 +307,12 @@ export default function RecordsPage() {
                   return (
                     <div key={age} style={{ marginBottom: '16px' }}>
                       {/* Age category label */}
-                      <div style={{ fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.3)', fontWeight: 700, padding: '6px 0 4px', borderBottom: '1px solid rgba(255,255,255,0.04)', marginBottom: '2px' }}>
+                      <div style={{ fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.55)', fontWeight: 700, padding: '6px 0 4px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '2px' }}>
                         {age.toUpperCase()}
                       </div>
 
                       {!hasAny ? (
-                        <div style={{ padding: '14px 0', color: 'rgba(255,255,255,0.12)', fontSize: '0.7rem', letterSpacing: '0.2em' }}>
+                        <div style={{ padding: '14px 0', color: 'rgba(255,255,255,0.35)', fontSize: '0.7rem', letterSpacing: '0.2em' }}>
                           NEMA UPISANIH REKORDI
                         </div>
                       ) : (
@@ -321,7 +321,7 @@ export default function RecordsPage() {
                             <thead>
                               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                                 {visibleLifts.map(l => (
-                                  <th key={l.key} style={{ padding: '10px 12px', textAlign: 'left', fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.25)', fontWeight: 700, fontFamily: 'var(--fm)' }}>
+                                  <th key={l.key} style={{ padding: '10px 12px', textAlign: 'left', fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.5)', fontWeight: 700, fontFamily: 'var(--fm)' }}>
                                     {l.label}
                                   </th>
                                 ))}
@@ -351,7 +351,7 @@ export default function RecordsPage() {
       <Footer />
 
       <style>{`
-        input::placeholder { color: rgba(255,255,255,0.2); }
+        input::placeholder { color: rgba(255,255,255,0.38); }
         @media (max-width: 768px) { table { font-size: 0.85rem; } }
       `}</style>
     </div>
