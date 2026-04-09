@@ -664,12 +664,14 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceCom
     const updated = logs.map(s => s.set_number === setNum ? { ...s, [field]: val } : s)
     setLogs(updated)
 
-    await supabase.from('set_logs').upsert({
+    const { error: setErr } = await supabase.from('set_logs').upsert({
       workout_exercise_id: we.id,
       athlete_id: userId,
       set_number: setNum,
       [field]: val,
-    }, { onConflict: 'workout_exercise_id,set_number' })
+    }, { onConflict: 'workout_exercise_id,athlete_id,set_number' })
+
+    if (setErr) console.error('set_logs upsert error:', setErr)
 
     // Update aggregate actual_ on workout_exercises so progress tracking still works
     const completed = updated.filter(s => s.weight_kg || s.reps)

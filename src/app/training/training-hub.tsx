@@ -660,6 +660,177 @@ function calcMacros(kcal: number, weightKg: number) {
   return { protein, fat, carbs }
 }
 
+// ─── WEIGHT CHART ─────────────────────────────────────────────────
+function WeightChart({ pts, toSvgX, toSvgY, minW, maxW }: {
+  pts: { id: string; date: string; weight_kg: number }[]
+  toSvgX: (i: number) => number
+  toSvgY: (w: number) => number
+  minW: number; maxW: number
+}) {
+  const [mounted, setMounted] = useState(false)
+  const [hovered, setHovered] = useState<number | null>(null)
+  useEffect(() => { const t = setTimeout(() => setMounted(true), 60); return () => clearTimeout(t) }, [])
+
+  if (pts.length < 1) return null
+
+  const W = 300; const H = 80
+  const last  = pts[pts.length - 1].weight_kg
+  const first = pts[0].weight_kg
+  const diff  = last - first
+  const isUp  = pts.length >= 2 ? last >= pts[pts.length - 2].weight_kg : false
+
+  // Sharp linear path (no bezier — cleaner, more professional)
+  const pathD  = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${toSvgX(i)},${toSvgY(p.weight_kg)}`).join(' ')
+  const areaD  = `${pathD} L ${toSvgX(pts.length - 1)},${H} L ${toSvgX(0)},${H} Z`
+
+  // Y-axis labels (3 levels)
+  const range  = maxW - minW
+  const yTicks = [0.2, 0.5, 0.8].map(f => ({
+    y: Math.round(H - f * H),
+    val: (minW + f * range).toFixed(1),
+  }))
+
+  // Tooltip position
+  const hov = hovered !== null ? pts[hovered] : null
+  const hovX = hovered !== null ? toSvgX(hovered) : 0
+  const hovY = hovered !== null ? toSvgY(pts[hovered].weight_kg) : 0
+
+  return (
+    <div style={{ animation: mounted ? 'wChartIn 0.5s cubic-bezier(0.16,1,0.3,1) both' : 'none', borderRadius: '14px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(8,8,12,0.8)' }}>
+
+      {/* Top stats bar */}
+      <div style={{ display: 'flex', alignItems: 'stretch', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ flex: 1, padding: '16px 20px' }}>
+          <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '6px' }}>TRENUTNA</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.9rem', fontWeight: 800, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em' }}>
+            {last}<span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400 }}>kg</span>
+          </div>
+        </div>
+
+        <div style={{ width: '1px', background: 'rgba(255,255,255,0.06)' }} />
+
+        <div style={{ flex: 1, padding: '16px 20px' }}>
+          <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '6px' }}>PROMJENA</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.9rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em', color: diff === 0 ? 'rgba(255,255,255,0.3)' : diff > 0 ? '#f87171' : '#4ade80' }}>
+            {diff > 0 ? '+' : ''}{diff.toFixed(1)}<span style={{ fontSize: '0.8rem', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400, opacity: 0.6 }}>kg</span>
+          </div>
+        </div>
+
+        <div style={{ width: '1px', background: 'rgba(255,255,255,0.06)' }} />
+
+        <div style={{ flex: 1, padding: '16px 20px' }}>
+          <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '6px' }}>TREND</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.9rem', fontWeight: 800, lineHeight: 1, color: isUp ? '#f87171' : '#4ade80' }}>
+            {isUp ? '↑' : '↓'}<span style={{ fontSize: '0.7rem', marginLeft: '4px', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.05em' }}>{pts.length} unosa</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Chart area */}
+      <div style={{ padding: '16px 0 0', position: 'relative' as const }}>
+        <svg width="100%" viewBox={`0 0 ${W} ${H + 4}`} style={{ display: 'block', overflow: 'visible' }}
+          onMouseLeave={() => setHovered(null)}>
+          <defs>
+            <linearGradient id="wAreaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#f472b6" stopOpacity="0.1" />
+              <stop offset="100%" stopColor="#f472b6" stopOpacity="0" />
+            </linearGradient>
+            <clipPath id="wClip">
+              <rect x="0" y="0" width={W} height={H + 4}
+                style={{ animation: mounted ? 'wClipIn 1.1s cubic-bezier(0.16,1,0.3,1) both' : 'none' }} />
+            </clipPath>
+          </defs>
+
+          {/* Y grid */}
+          {yTicks.map(t => (
+            <line key={t.y} x1="0" y1={t.y} x2={W} y2={t.y} stroke="rgba(255,255,255,0.04)" strokeWidth="1" strokeDasharray="3,4" />
+          ))}
+
+          {/* Area + line — clipped for draw-in animation */}
+          <g clipPath="url(#wClip)">
+            <path d={areaD} fill="url(#wAreaGrad)" />
+            <path d={pathD} fill="none" stroke="#f472b6" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" opacity="0.9" />
+          </g>
+
+          {/* Hover targets — invisible wide rects per segment */}
+          {pts.map((_, i) => {
+            const x0 = i === 0 ? 0 : (toSvgX(i - 1) + toSvgX(i)) / 2
+            const x1 = i === pts.length - 1 ? W : (toSvgX(i) + toSvgX(i + 1)) / 2
+            return (
+              <rect key={i} x={x0} y={0} width={x1 - x0} height={H}
+                fill="transparent" onMouseEnter={() => setHovered(i)} style={{ cursor: 'crosshair' }} />
+            )
+          })}
+
+          {/* Hover dot + line */}
+          {hovered !== null && (
+            <g style={{ animation: 'wDotIn 0.15s ease both' }}>
+              <line x1={hovX} y1={0} x2={hovX} y2={H} stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="3,3" />
+              <circle cx={hovX} cy={hovY} r="5" fill="#08080c" stroke="#f472b6" strokeWidth="1.5" />
+              <circle cx={hovX} cy={hovY} r="2" fill="#f472b6" />
+            </g>
+          )}
+
+          {/* Last point permanent dot */}
+          {pts.length >= 1 && (
+            <g style={{ animation: mounted ? 'wDotIn 0.3s 1s ease both' : 'none', opacity: mounted ? 1 : 0 }}>
+              <circle cx={toSvgX(pts.length - 1)} cy={toSvgY(last)} r="4" fill="#08080c" stroke="#f472b6" strokeWidth="1.5" />
+              <circle cx={toSvgX(pts.length - 1)} cy={toSvgY(last)} r="1.5" fill="#f472b6" />
+            </g>
+          )}
+        </svg>
+
+        {/* Tooltip */}
+        {hov && (
+          <div style={{
+            position: 'absolute' as const,
+            top: '8px',
+            left: `clamp(8px, ${(hovX / W) * 100}%, calc(100% - 90px))`,
+            transform: 'translateX(-50%)',
+            background: 'rgba(12,12,18,0.96)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '8px',
+            padding: '7px 11px',
+            pointerEvents: 'none' as const,
+            animation: 'wDotIn 0.12s ease both',
+            zIndex: 10,
+          }}>
+            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)', whiteSpace: 'nowrap' as const }}>
+              {hov.weight_kg} <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.35)', fontWeight: 400 }}>kg</span>
+            </div>
+            <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', marginTop: '2px', whiteSpace: 'nowrap' as const }}>
+              {new Date(hov.date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: '2-digit' })}
+            </div>
+          </div>
+        )}
+
+        {/* Y labels */}
+        <div style={{ position: 'absolute' as const, right: '8px', top: '16px', display: 'flex', flexDirection: 'column' as const, height: `${H}px`, justifyContent: 'space-between', pointerEvents: 'none' as const }}>
+          {[...yTicks].reverse().map(t => (
+            <div key={t.y} style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.15)', fontFamily: 'var(--fm)', fontWeight: 600, lineHeight: 1 }}>{t.val}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* Date range footer */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 16px 14px', borderTop: '1px solid rgba(255,255,255,0.04)', marginTop: '4px' }}>
+        <span style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', letterSpacing: '0.05em' }}>
+          {new Date(pts[0].date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: 'numeric' })}
+        </span>
+        <span style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', letterSpacing: '0.05em' }}>
+          {new Date(pts[pts.length - 1].date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: 'numeric' })}
+        </span>
+      </div>
+
+      <style>{`
+        @keyframes wChartIn { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+        @keyframes wClipIn  { from { width:0 } to { width:${W}px } }
+        @keyframes wDotIn   { from { opacity:0; transform:scale(0.6) } to { opacity:1; transform:scale(1) } }
+      `}</style>
+    </div>
+  )
+}
+
 // ─── WEIGHT TRACKER ──────────────────────────────────────────────
 type WeightEntry = { id: string; date: string; weight_kg: number }
 
@@ -675,7 +846,7 @@ function WeightTracker({ userId }: { userId: string }) {
     supabase.from('pr_logs')
       .select('id, date, weight_kg')
       .eq('athlete_id', userId)
-      .eq('source', 'body_weight')
+      .eq('lift', 'other').eq('notes', 'Tjelesna težina')
       .order('date', { ascending: false })
       .limit(60)
       .then(({ data }) => { setEntries((data ?? []) as WeightEntry[]); setLoading(false) })
@@ -684,10 +855,16 @@ function WeightTracker({ userId }: { userId: string }) {
   const save = async () => {
     if (!kg || !date) return
     setSaving(true)
-    const { data } = await supabase.from('pr_logs').insert({
-      athlete_id: userId, lift: null, reps: null,
-      weight_kg: parseFloat(kg), date, source: 'body_weight', notes: 'Tjelesna težina',
+    // Dohvati trenutnog auth usera direktno — ne oslanjaj se na prop
+    const { data: { user } } = await supabase.auth.getUser()
+    const authId = user?.id
+    console.log('userId prop:', userId, 'auth.uid:', authId)
+    if (!authId) { setSaving(false); return }
+    const { data, error } = await supabase.from('pr_logs').insert({
+      athlete_id: authId, lift: 'other', reps: 0,
+      weight_kg: parseFloat(kg), date, source: 'manual', notes: 'Tjelesna težina',
     }).select('id, date, weight_kg').single()
+    if (error) console.error('pr_logs insert error:', JSON.stringify(error), 'code:', error.code, 'message:', error.message, 'details:', error.details, 'hint:', error.hint)
     if (data) setEntries(prev => [data as WeightEntry, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
     setKg(''); setSaving(false)
   }
@@ -703,47 +880,15 @@ function WeightTracker({ userId }: { userId: string }) {
   const maxW = pts.length ? Math.max(...pts.map(p => p.weight_kg)) + 1 : 100
   const toSvgX = (i: number) => pts.length < 2 ? 50 : Math.round((i / (pts.length - 1)) * 280)
   const toSvgY = (w: number) => Math.round(60 - ((w - minW) / (maxW - minW)) * 56)
-  const polyline = pts.map((p, i) => `${toSvgX(i)},${toSvgY(p.weight_kg)}`).join(' ')
+
 
   if (loading) return <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', padding: '24px 0', textAlign: 'center' as const }}>Učitavanje...</div>
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '24px' }}>
 
-      {/* Sparkline chart */}
-      {pts.length >= 2 && (
-        <div style={{ background: 'rgba(34,197,94,0.04)', border: '1px solid rgba(34,197,94,0.14)', borderRadius: '14px', padding: '16px 20px' }}>
-          <div style={{ fontSize: '0.52rem', color: 'rgba(34,197,94,0.6)', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '10px' }}>TIJEK KILAZE</div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px' }}>
-            <svg width="100%" viewBox="0 0 280 64" style={{ flex: 1, overflow: 'visible' }}>
-              <defs>
-                <linearGradient id="wGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#22c55e" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              {pts.length >= 2 && (
-                <polygon points={`0,64 ${polyline} 280,64`} fill="url(#wGrad)" />
-              )}
-              <polyline points={polyline} fill="none" stroke="#22c55e" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
-              {pts.map((p, i) => (
-                <circle key={i} cx={toSvgX(i)} cy={toSvgY(p.weight_kg)} r="3" fill="#22c55e" opacity="0.85" />
-              ))}
-            </svg>
-            <div style={{ flexShrink: 0, textAlign: 'right' as const }}>
-              <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', marginBottom: '2px' }}>ZADNJE</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: COLOR, fontFamily: 'var(--fd)', lineHeight: 1 }}>
-                {pts[pts.length - 1].weight_kg}<span style={{ fontSize: '0.75rem', color: `${COLOR}88`, marginLeft: '3px' }}>kg</span>
-              </div>
-              {pts.length >= 2 && (
-                <div style={{ fontSize: '0.62rem', color: `${COLOR}cc`, fontFamily: 'var(--fm)', marginTop: '2px' }}>
-                  {pts[pts.length-1].weight_kg >= pts[pts.length-2].weight_kg ? '▲' : '▼'}{Math.abs(pts[pts.length-1].weight_kg - pts[pts.length-2].weight_kg).toFixed(1)} kg
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Chart */}
+      {pts.length >= 1 && <WeightChart pts={pts} toSvgX={toSvgX} toSvgY={toSvgY} minW={minW} maxW={maxW} />}
 
       {/* Input form */}
       <SectionTitle>Novi unos</SectionTitle>
