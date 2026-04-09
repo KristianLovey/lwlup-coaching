@@ -763,51 +763,20 @@ export default function TrainingPage() {
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
 
-        /* ─ Exercise row: hide RPE column on small screens ─ */
-        @media (max-width: 540px) {
-          .ex-col-rpe { display: none !important; }
-          .ex-row-main { grid-template-columns: 28px 1fr 56px 64px 56px 28px !important; }
+        /* ─ Set log (lifter, 5 cols: 52px 1fr 1fr 88px 48px): tighten on mobile ─ */
+        @media (max-width: 480px) {
+          .set-log-header, .set-log-row {
+            grid-template-columns: 44px 1fr 1fr 64px 36px !important;
+          }
         }
-        @media (max-width: 420px) {
-          .ex-col-sets { display: none !important; }
-          .ex-row-main { grid-template-columns: 28px 1fr 64px 56px 28px !important; }
-        }
-
-        /* ─ Set log: same responsive columns as exercise rows ─ */
-        @media (max-width: 600px) {
-          .set-log-header { grid-template-columns: 28px 1fr 72px 56px 56px 28px !important; }
-          .set-log-row    { grid-template-columns: 28px 1fr 72px 56px 56px 28px !important; }
-          .set-log-header .ex-col-rpe,
-          .set-log-row .ex-col-rpe { display: none !important; }
-        }
-        @media (max-width: 430px) {
-          .set-log-header { grid-template-columns: 1fr 60px 56px 30px !important; }
-          .set-log-row    { grid-template-columns: 1fr 60px 56px 30px !important; }
-          .set-log-header .ex-col-sets,
-          .set-log-row .ex-col-sets { display: none !important; }
+        @media (max-width: 360px) {
+          /* Hide REPS col on very small screens, keep KG */
+          .set-log-header > *:nth-child(3),
+          .set-log-row    > *:nth-child(3) { display: none !important; }
+          .set-log-header, .set-log-row    { grid-template-columns: 44px 1fr 64px 36px !important; }
         }
 
         /* ─ Table footer: stack on mobile ─ */
-        @media (max-width: 520px) {
-          .ex-table-footer { flex-direction: column !important; }
-          .ex-table-footer > * { border-left: none !important; padding-left: 0 !important; }
-        }
-
-        /* ─ Exercise table: hide KG+RPE cols on mobile, show stacked ─ */
-        @media (max-width: 600px) {
-          .ex-row-main {
-            grid-template-columns: 28px 1fr 56px 56px 28px !important;
-          }
-          .ex-col-kg, .ex-col-rpe { display: none !important; }
-        }
-        @media (max-width: 430px) {
-          .ex-row-main {
-            grid-template-columns: 1fr 50px 50px 30px !important;
-          }
-          .ex-col-grip { display: none !important; }
-        }
-
-        /* ─ Exercise table footer: stack on mobile ─ */
         @media (max-width: 480px) {
           .ex-table-footer { flex-direction: column !important; gap: 8px !important; }
           .ex-table-footer > * { border-left: none !important; padding-left: 0 !important; }

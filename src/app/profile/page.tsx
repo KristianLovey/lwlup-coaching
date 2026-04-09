@@ -365,9 +365,6 @@ export default function ProfilePage() {
   const [prReps, setPrReps]           = useState(1)
   const [muscleData, setMuscleData]   = useState<MuscleEntry[]>([])
   const [muscleView, setMuscleView]   = useState<'percent'|'tonnage'>('percent')
-  const [addingBW, setAddingBW]       = useState(false)
-  const [newBWDate, setNewBWDate]     = useState(new Date().toISOString().split('T')[0])
-  const [newBWVal, setNewBWVal]       = useState('')
   const [isCoach, setIsCoach]         = useState(false)
   const [assignedLifterIds, setAssignedLifterIds] = useState<string[]>([])
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
@@ -503,18 +500,6 @@ export default function ProfilePage() {
     setPrLogs(p => p.filter(x => x.id !== id))
   }
 
-  const addBwLog = async () => {
-    if (!userId || !newBWVal || !newBWDate) return
-    const kg = parseFloat(newBWVal)
-    if (isNaN(kg) || kg <= 0) return
-    const { data: row } = await supabase.from('pr_logs').insert({
-      athlete_id: userId, lift: 'other', reps: 1,
-      weight_kg: kg, date: newBWDate, source: 'body_weight', notes: 'Tjelesna težina'
-    }).select('*').single()
-    if (row) setPrLogs(p => [row as PrLog, ...p])
-    setNewBWVal('')
-    setAddingBW(false)
-  }
 
   // ── Best lift by reps ──────────────────────────────────────────
   const bestByReps = (lift: 'squat'|'bench'|'deadlift', reps: number): PrLog | null => {
@@ -737,71 +722,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* ── BODY WEIGHT CHART ── */}
-            {(() => {
-              const bwLogs = [...prLogs]
-                .filter(p => p.source === 'body_weight')
-                .sort((a, b) => a.date.localeCompare(b.date))
-                .map(p => ({ date: p.date, value: p.weight_kg }))
-              return (
-                <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: '#0e0e14', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                    <div>
-                      <div style={{ fontSize: '0.5rem', letterSpacing: '0.4em', color: '#666', marginBottom: '3px', fontFamily: 'var(--fm)' }}>TRACKER</div>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e0e0e0' }}>TJELESNA TEŽINA</div>
-                    </div>
-                    <button onClick={() => setAddingBW(a => !a)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: addingBW ? 'rgba(255,255,255,0.08)' : 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#aaa', cursor: 'pointer', borderRadius: '7px', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s' }}
-                      onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                      onMouseLeave={e => e.currentTarget.style.color = '#aaa'}>
-                      <Plus size={11} /> DODAJ UNOS
-                    </button>
-                  </div>
-                  {addingBW && (
-                    <div style={{ padding: '14px 20px', background: '#0d0d13', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '10px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '5px' }}>
-                        <div style={{ fontSize: '0.46rem', color: '#666', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>DATUM</div>
-                        <input type="date" value={newBWDate} onChange={e => setNewBWDate(e.target.value)}
-                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#e0e0e0', padding: '7px 10px', borderRadius: '6px', outline: 'none', fontSize: '0.82rem', fontFamily: 'var(--fm)' }} />
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '5px' }}>
-                        <div style={{ fontSize: '0.46rem', color: '#666', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>TEŽINA (kg)</div>
-                        <input type="number" step="0.1" min="30" max="300" value={newBWVal} onChange={e => setNewBWVal(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter') addBwLog() }}
-                          placeholder="npr. 84.5"
-                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#e0e0e0', padding: '7px 10px', borderRadius: '6px', outline: 'none', fontSize: '0.82rem', fontFamily: 'var(--fm)', width: '120px' }} />
-                      </div>
-                      <button onClick={addBwLog}
-                        style={{ padding: '8px 18px', background: '#fff', border: 'none', color: '#000', borderRadius: '6px', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>
-                        SPREMI
-                      </button>
-                      <button onClick={() => { setAddingBW(false); setNewBWVal('') }}
-                        style={{ padding: '8px 12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: '#555', borderRadius: '6px', cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'var(--fm)' }}>
-                        ✕
-                      </button>
-                    </div>
-                  )}
-                  <div style={{ padding: '20px 20px 12px', background: '#09090e' }}>
-                    <ProgressChart data={bwLogs} color="#a78bfa" label="body-weight" />
-                  </div>
-                  {bwLogs.length > 0 && (
-                    <div style={{ padding: '8px 20px 14px', background: '#09090e', display: 'flex', gap: '20px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                      {[
-                        { label: 'TRENUTNA', val: `${bwLogs[bwLogs.length - 1].value} kg` },
-                        { label: 'POČETNA',  val: `${bwLogs[0].value} kg` },
-                        { label: 'PROMJENA', val: (() => { const d = bwLogs[bwLogs.length-1].value - bwLogs[0].value; return `${d > 0 ? '+' : ''}${d.toFixed(1)} kg` })() },
-                        { label: 'UNOSA',    val: String(bwLogs.length) },
-                      ].map((s, i) => (
-                        <div key={i} style={{ textAlign: 'center' }}>
-                          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', color: '#e0e0e0', lineHeight: 1 }}>{s.val}</div>
-                          <div style={{ fontSize: '0.46rem', color: '#555', letterSpacing: '0.18em', marginTop: '3px' }}>{s.label}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )
-            })()}
 
             {/* Admin-logged competition history */}
             <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>

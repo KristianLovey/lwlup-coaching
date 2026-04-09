@@ -120,13 +120,13 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
   const best = goodLifts.length > 0 ? Math.max(...goodLifts) : null
 
   return (
-    <div style={{ border: `1.5px solid ${open ? meta.color + '30' : 'rgba(255,255,255,0.08)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'border-color 0.25s', boxShadow: open ? `0 4px 24px ${meta.color}0a` : 'none' }}>
+    <div style={{ border: `1.5px solid ${open ? meta.color + '55' : 'rgba(255,255,255,0.13)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'border-color 0.25s', boxShadow: open ? `0 4px 24px ${meta.color}18` : '0 2px 8px rgba(0,0,0,0.35)', background: '#0f0f18' }}>
 
       {/* Header */}
       <div onClick={() => setOpen(o => !o)}
-        style={{ padding: '14px 20px', background: open ? `${meta.color}08` : 'rgba(255,255,255,0.02)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px', userSelect: 'none' as const, transition: 'background 0.2s' }}>
+        style={{ padding: '14px 20px', background: open ? `${meta.color}18` : 'rgba(255,255,255,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px', userSelect: 'none' as const, transition: 'background 0.2s' }}>
         {/* Short badge */}
-        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${meta.color}14`, border: `1.5px solid ${meta.color}28`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${meta.color}22`, border: `1.5px solid ${meta.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <span style={{ fontFamily: 'var(--fd)', fontSize: '0.8rem', fontWeight: 800, color: meta.color, letterSpacing: '-0.01em' }}>{meta.short}</span>
         </div>
         <div style={{ flex: 1 }}>
@@ -150,7 +150,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
 
       {/* Body */}
       {open && (
-        <div style={{ padding: '20px', background: 'rgba(255,255,255,0.01)', display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
+        <div style={{ padding: '20px', background: '#0f0f18', display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
 
           {/* Warmups — admin fills, lifter reads */}
           <div>
@@ -197,8 +197,8 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
             ].map(row => {
               const hasRange = row.min || row.max
               return (
-                <div key={row.n} style={{ display: 'grid', gridTemplateColumns: isAdmin ? '1fr 1fr 1fr 1fr 40px' : '1fr 1fr 40px', gap: '8px', alignItems: 'end', marginBottom: '8px', padding: '12px 14px', background: row.good === true ? 'rgba(34,197,94,0.05)' : row.good === false ? 'rgba(248,113,113,0.05)' : 'rgba(255,255,255,0.02)', border: `1px solid ${row.good === true ? 'rgba(34,197,94,0.15)' : row.good === false ? 'rgba(248,113,113,0.12)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', transition: 'all 0.2s' }}>
-                  <div style={{ gridColumn: isAdmin ? '1 / 3' : '1 / 2' }}>
+                <div key={row.n} className={`meet-attempt-row${isAdmin ? ' meet-attempt-admin' : ''}`} style={{ display: 'grid', gridTemplateColumns: isAdmin ? '1fr 1fr 1fr 1fr 40px' : '1fr 1fr 40px', gap: '8px', alignItems: 'end', marginBottom: '8px', padding: '12px 14px', background: row.good === true ? 'rgba(34,197,94,0.05)' : row.good === false ? 'rgba(248,113,113,0.05)' : 'rgba(255,255,255,0.02)', border: `1px solid ${row.good === true ? 'rgba(34,197,94,0.15)' : row.good === false ? 'rgba(248,113,113,0.12)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', transition: 'all 0.2s' }}>
+                  <div className="meet-minmax" style={{ gridColumn: isAdmin ? '1 / 3' : '1 / 2' }}>
                     {isAdmin ? (
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                         <MeetInput label={`A${row.n} min`} value={row.min} onChange={row.setMin} color={meta.color} placeholder="kg" />
@@ -214,11 +214,11 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
                     )}
                   </div>
                   {/* Actual column — lifter fills on meet day */}
-                  <div style={{ gridColumn: isAdmin ? '3 / 4' : '2 / 3' }}>
+                  <div className="meet-actual" style={{ gridColumn: isAdmin ? '3 / 4' : '2 / 3' }}>
                     <MeetInput label="Podignuto" value={row.act} onChange={row.setAct} color={row.good === true ? '#4ade80' : row.good === false ? '#f87171' : 'rgba(255,255,255,0.5)'} placeholder="kg" disabled={isAdmin} />
                   </div>
                   {/* Good/No lift toggle */}
-                  <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '4px' }}>
+                  <div className="meet-toggle" style={{ display: 'flex', flexDirection: 'column' as const, gap: '4px' }}>
                     <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', marginBottom: '2px', textAlign: 'center' as const }}>Ret</div>
                     <button onClick={() => row.setGood(row.good === true ? null : true)}
                       style={{ padding: '7px', borderRadius: '7px', border: `1px solid ${row.good === true ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`, background: row.good === true ? 'rgba(34,197,94,0.12)' : 'transparent', cursor: 'pointer', fontSize: '0.7rem', transition: 'all 0.15s' }}>
@@ -418,7 +418,7 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
 
       {/* Total summary */}
       {(bestByLift.squat || bestByLift.bench || bestByLift.deadlift) && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px', marginBottom: '24px', animation: 'popIn 0.35s ease' }}>
+        <div className="meet-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px', marginBottom: '24px', animation: 'popIn 0.35s ease' }}>
           {(['squat','bench','deadlift'] as Lift[]).map(lift => (
             <div key={lift} style={{ padding: '14px 16px', background: `${LIFT_META[lift].color}0a`, border: `1.5px solid ${LIFT_META[lift].color}22`, borderRadius: '12px', textAlign: 'center' as const }}>
               <div style={{ fontSize: '0.52rem', color: LIFT_META[lift].color, letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '4px' }}>{LIFT_META[lift].short}</div>
@@ -427,7 +427,7 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
               </div>
             </div>
           ))}
-          <div style={{ padding: '14px 16px', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: '12px', textAlign: 'center' as const }}>
+          <div style={{ padding: '14px 16px', background: '#0f0f18', border: '1.5px solid rgba(255,255,255,0.13)', borderRadius: '12px', textAlign: 'center' as const }}>
             <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '4px' }}>TOTAL</div>
             <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: total ? '#f0f0f5' : 'rgba(255,255,255,0.2)', lineHeight: 1 }}>
               {total ?? '—'}
@@ -452,7 +452,7 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
       </div>
 
       {/* Lifter notes */}
-      <div style={{ marginTop: '20px', padding: '16px 20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
+      <div style={{ marginTop: '20px', padding: '16px 20px', background: '#0f0f18', border: '1px solid rgba(255,255,255,0.13)', borderRadius: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
           <div style={{ height: '1px', width: '16px', background: 'rgba(255,255,255,0.12)' }} />
           <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>MOJE BILJEŠKE S NATJECANJA</span>
@@ -478,6 +478,33 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
         @keyframes fadeUp  { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:none } }
         @keyframes popIn   { from { opacity:0; transform:scale(0.96) translateY(4px) } to { opacity:1; transform:none } }
         @keyframes dropDown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:none } }
+
+        /* ── Meet summary: 2×2 on mobile ── */
+        @media (max-width: 520px) {
+          .meet-summary-grid { grid-template-columns: repeat(2,1fr) !important; }
+        }
+
+        /* ── Meet attempt row: stack on mobile ── */
+        @media (max-width: 500px) {
+          .meet-attempt-admin {
+            grid-template-columns: 1fr 40px !important;
+            grid-template-rows: auto auto !important;
+            align-items: stretch !important;
+          }
+          .meet-attempt-admin .meet-minmax {
+            grid-column: 1 / 2 !important;
+            grid-row: 1 !important;
+          }
+          .meet-attempt-admin .meet-actual {
+            grid-column: 1 / 2 !important;
+            grid-row: 2 !important;
+          }
+          .meet-attempt-admin .meet-toggle {
+            grid-column: 2 / 3 !important;
+            grid-row: 1 / 3 !important;
+            justify-content: center !important;
+          }
+        }
       `}</style>
     </div>
   )

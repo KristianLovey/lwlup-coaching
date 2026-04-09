@@ -251,68 +251,87 @@ export default function Landing() {
 
 
       {/* ══ KATEGORIJE ═══════════════════════════════════════════ */}
-      <section id="kategorije" style={{ background: '#050505', borderTop: '1px solid rgba(255,255,255,0.06)', padding: 'clamp(80px,12vw,140px) clamp(20px,5vw,60px)' }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 'clamp(40px,6vw,80px)' }}>
-            <div style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.25)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>POWERLIFTING NATJECANJA</div>
-            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 0.9, marginBottom: '20px' }}>KATEGORIJE<br /><span style={{ color: 'rgba(255,255,255,0.2)' }}>NATJECANJA</span></h2>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.82rem,2vw,0.95rem)', maxWidth: '600px', margin: '0 auto', lineHeight: 1.8 }}>
-              Natjecatelji se raspoređuju prema spolu, dobi i tjelesnoj težini — svaki ima jednake uvjete za borbu za vrh.
+      <section id="kategorije" style={{ background: '#050508', borderTop: '1px solid rgba(255,255,255,0.06)', padding: 'clamp(80px,12vw,140px) clamp(20px,5vw,60px)' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: 'clamp(48px,7vw,88px)' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+              <div style={{ height: '1px', width: '32px', background: 'rgba(255,255,255,0.15)' }} />
+              <span style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>POWERLIFTING NATJECANJA</span>
+              <div style={{ height: '1px', width: '32px', background: 'rgba(255,255,255,0.15)' }} />
+            </div>
+            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 0.9, marginBottom: '20px' }}>
+              KATEGORIJE<br /><span style={{ color: 'rgba(255,255,255,0.18)' }}>NATJECANJA</span>
+            </h2>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.82rem,2vw,0.95rem)', maxWidth: '540px', margin: '0 auto', lineHeight: 1.9 }}>
+              Natjecatelji se raspoređuju prema spolu, dobi i tjelesnoj težini.
             </p>
           </div>
 
           {/* Dobne kategorije */}
-          <div style={{ marginBottom: 'clamp(40px,6vw,72px)' }}>
-            <div style={{ fontSize: '0.6rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.3)', marginBottom: '20px', fontFamily: 'var(--fm)', textAlign: 'center' }}>DOBNE KATEGORIJE</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ marginBottom: 'clamp(40px,6vw,64px)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.06)' }} />
+              <span style={{ fontSize: '0.52rem', letterSpacing: '0.38em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>DOBNE KATEGORIJE</span>
+              <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.06)' }} />
+            </div>
+            <div className="age-cat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
               {[
-                { name: 'KADETI',     age: '14–18 god.', color: '#60a5fa' },
-                { name: 'JUNIORI',    age: '19–23 god.', color: '#a78bfa' },
-                { name: 'OPEN',       age: '24–39 god.', color: '#f0f0f0' },
-                { name: 'MASTERS 1',  age: '40–49 god.', color: '#facc15' },
-                { name: 'MASTERS 2',  age: '50–59 god.', color: '#fb923c' },
-                { name: 'MASTERS 3+', age: '60+ god.',   color: '#f87171' },
+                { name: 'KADETI',     age: '14 – 18',  color: '#60a5fa' },
+                { name: 'JUNIORI',    age: '19 – 23',  color: '#a78bfa' },
+                { name: 'OPEN',       age: '24 – 39',  color: '#e2e8f0' },
+                { name: 'MASTERS 1',  age: '40 – 49',  color: '#facc15' },
+                { name: 'MASTERS 2',  age: '50 – 59',  color: '#fb923c' },
+                { name: 'MASTERS 3+', age: '60+',      color: '#f87171' },
               ].map((cat, i) => (
-                <div key={i} style={{ padding: 'clamp(18px,3vw,28px) clamp(12px,2vw,20px)', background: '#06060a', textAlign: 'center', transition: 'background 0.3s' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#101014'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#06060a'}>
-                  <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1rem,2vw,1.3rem)', color: cat.color, marginBottom: '6px', letterSpacing: '0.03em' }}>{cat.name}</div>
-                  <div style={{ fontSize: 'clamp(0.62rem,1.5vw,0.72rem)', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.12em' }}>{cat.age}</div>
+                <div key={i} style={{ borderRadius: '12px', overflow: 'hidden', border: `1px solid ${cat.color}22`, background: '#08080f', transition: 'transform 0.2s, box-shadow 0.2s' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 8px 24px ${cat.color}18` }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}>
+                  {/* Color accent top bar */}
+                  <div style={{ height: '3px', background: cat.color, opacity: 0.7 }} />
+                  <div style={{ padding: '18px 16px 20px', textAlign: 'center' }}>
+                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1.15rem', color: cat.color, marginBottom: '8px', letterSpacing: '0.02em' }}>{cat.name}</div>
+                    <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', fontFamily: 'var(--fm)' }}>{cat.age} god.</div>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Težinske kategorije */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(16px,3vw,32px)' }} className="cat-weight-grid">
-            {/* Muške */}
-            <div style={{ border: '1px solid rgba(255,255,255,0.08)', background: '#06060a' }}>
-              <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '8px', height: '8px', background: '#60a5fa', borderRadius: '50%' }} />
-                <span style={{ fontSize: '0.62rem', letterSpacing: '0.35em', color: '#60a5fa', fontFamily: 'var(--fm)', fontWeight: 700 }}>MUŠKARCI</span>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(12px,3vw,24px)' }} className="cat-weight-grid">
+            {[
+              { label: 'MUŠKARCI', color: '#60a5fa', pillColor: '#93c5fd', pillBg: 'rgba(96,165,250,0.08)', pillBorder: 'rgba(96,165,250,0.2)', cats: ['-59','-66','-74','-83','-93','-105','-120','+120'] },
+              { label: 'ŽENE',     color: '#f472b6', pillColor: '#f9a8d4', pillBg: 'rgba(244,114,182,0.08)', pillBorder: 'rgba(244,114,182,0.2)', cats: ['-47','-52','-57','-63','-69','-76','-84','+84'] },
+            ].map(g => (
+              <div key={g.label} style={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${g.color}22`, background: '#08080f' }}>
+                {/* Header */}
+                <div style={{ padding: '16px 22px', borderBottom: `1px solid ${g.color}14`, display: 'flex', alignItems: 'center', gap: '10px', background: `${g.color}08` }}>
+                  <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: g.color, boxShadow: `0 0 8px ${g.color}` }} />
+                  <span style={{ fontSize: '0.6rem', letterSpacing: '0.35em', color: g.color, fontFamily: 'var(--fm)', fontWeight: 700 }}>{g.label}</span>
+                </div>
+                {/* Pills */}
+                <div style={{ padding: '18px 20px', display: 'flex', flexWrap: 'wrap' as const, gap: '8px' }}>
+                  {g.cats.map(kg => (
+                    <div key={kg} style={{ padding: '6px 14px', background: g.pillBg, border: `1px solid ${g.pillBorder}`, borderRadius: '6px', fontSize: 'clamp(0.7rem,1.8vw,0.82rem)', color: g.pillColor, fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.04em' }}>
+                      {kg} kg
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div style={{ padding: '16px 24px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {['-59','-66','-74','-83','-93','-105','-120','+120'].map(kg => (
-                  <div key={kg} style={{ padding: '6px 14px', background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.15)', fontSize: 'clamp(0.7rem,1.8vw,0.82rem)', color: '#93c5fd', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.05em' }}>{kg} kg</div>
-                ))}
-              </div>
-            </div>
-            {/* Ženske */}
-            <div style={{ border: '1px solid rgba(255,255,255,0.08)', background: '#06060a' }}>
-              <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '8px', height: '8px', background: '#f472b6', borderRadius: '50%' }} />
-                <span style={{ fontSize: '0.62rem', letterSpacing: '0.35em', color: '#f472b6', fontFamily: 'var(--fm)', fontWeight: 700 }}>ŽENE</span>
-              </div>
-              <div style={{ padding: '16px 24px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {['-47','-52','-57','-63','-69','-76','-84','+84'].map(kg => (
-                  <div key={kg} style={{ padding: '6px 14px', background: 'rgba(244,114,182,0.07)', border: '1px solid rgba(244,114,182,0.15)', fontSize: 'clamp(0.7rem,1.8vw,0.82rem)', color: '#f9a8d4', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.05em' }}>{kg} kg</div>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
-          <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '0.62rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.15em', fontFamily: 'var(--fm)' }}>
-            KATEGORIJE PO IPF STANDARDU · SVAKA KOMBINACIJA DOBI I KATEGORIJE = ZASEBNO NATJECANJE
+
+          {/* Footer note */}
+          <div style={{ marginTop: '28px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+            <div style={{ height: '1px', width: '24px', background: 'rgba(255,255,255,0.08)' }} />
+            <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.18)', letterSpacing: '0.14em', fontFamily: 'var(--fm)' }}>
+              IPF STANDARD · SVAKA KOMBINACIJA DOBI I KATEGORIJE = ZASEBNO NATJECANJE
+            </span>
+            <div style={{ height: '1px', width: '24px', background: 'rgba(255,255,255,0.08)' }} />
           </div>
+
         </div>
       </section>
 
@@ -517,6 +536,17 @@ export default function Landing() {
         }
         @media (max-width: 480px) {
           .features-grid { grid-template-columns: 1fr !important; }
+        }
+
+        /* ─ Age category cards: tighter on very small phones ─ */
+        @media (max-width: 400px) {
+          .age-cat-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important; }
+        }
+
+        /* ─ Weight category grid: already 1-col at 768px ─ */
+        /* ─ Category section header: reduce font on mobile ─ */
+        @media (max-width: 480px) {
+          .cat-section-header { font-size: clamp(1.6rem, 8vw, 2.2rem) !important; }
         }
       `}</style>
     </div>

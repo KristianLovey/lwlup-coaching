@@ -628,7 +628,6 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceCom
 
   // Initialise logs array — one entry per planned set
   useEffect(() => {
-    if (isAdmin) return
     supabase.from('set_logs')
       .select('set_number, weight_kg, reps, rpe, completed')
       .eq('workout_exercise_id', we.id)
@@ -698,22 +697,80 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceCom
   }
 
   if (isAdmin) {
-    // Admin sees a summary of planned sets
+    // Admin/coach: per-set planning rows — KG target + RPE per set
+    // Stored in set_logs with admin's userId (doesn't conflict with lifter's actuals)
+    const adminCellStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', borderRight: '1px solid rgba(255,255,255,0.06)' }
+    const adminInputStyle: React.CSSProperties = {
+      width: '100%', background: 'transparent', border: 'none',
+      borderBottom: '1px solid rgba(255,255,255,0.14)', color: '#c7d2fe',
+      padding: '5px 6px', fontSize: '0.95rem', outline: 'none',
+      fontFamily: 'var(--fm)', fontWeight: 700, textAlign: 'center', boxSizing: 'border-box',
+    }
+    const COACH_GRID = '48px 1fr 88px'
     return (
-      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', padding: '8px 0 0' }}>
-        {Array.from({ length: plannedSets }, (_, i) => (
-          <div key={i} style={{ padding: '4px 10px', background: '#111118', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '5px', fontSize: '0.62rem', color: '#888', fontFamily: 'var(--fm)' }}>
-            Set {i + 1} · {we.planned_reps ?? '?'} reps · {we.planned_weight_kg ? `${we.planned_weight_kg}kg` : '—'}
+      <div>
+        {saving && (
+          <div style={{ fontSize: '0.44rem', color: '#555', letterSpacing: '0.2em', padding: '3px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Loader2 size={9} style={{ animation: 'spin 1s linear infinite' }} /> SNIMANJE...
           </div>
-        ))}
+        )}
+        {/* Column headers */}
+        <div style={{ display: 'grid', gridTemplateColumns: COACH_GRID, background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div style={{ padding: '6px 14px', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ fontSize: '0.38rem', color: '#444', letterSpacing: '0.25em', fontWeight: 700, fontFamily: 'var(--fm)' }}>SET</span>
+          </div>
+          <div style={{ padding: '6px 0', textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ fontSize: '0.38rem', color: '#818cf8', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>KILAZA (kg)</span>
+          </div>
+          <div style={{ padding: '6px 0', textAlign: 'center' }}>
+            <span style={{ fontSize: '0.38rem', color: '#facc15', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
+              RPE CILJ{we.target_rpe ? ` · ${we.target_rpe}` : ''}
+            </span>
+          </div>
+        </div>
+        {/* Per-set rows */}
+        {Array.from({ length: plannedSets }, (_, i) => {
+          const log = logs[i] ?? { set_number: i + 1, weight_kg: null, reps: null, rpe: null, completed: false }
+          return (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: COACH_GRID, alignItems: 'stretch', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.012)', borderBottom: '1px solid rgba(255,255,255,0.05)', minHeight: '48px' }}>
+              {/* Set label */}
+              <div style={{ ...adminCellStyle, padding: '0 14px', gap: '8px' }}>
+                <div style={{ width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0, background: 'rgba(99,102,241,0.5)' }} />
+                <span style={{ fontSize: '0.7rem', fontWeight: 900, color: '#6366f1', fontFamily: 'var(--fd)', letterSpacing: '0.06em' }}>S{i + 1}</span>
+              </div>
+              {/* KG input */}
+              <div style={{ ...adminCellStyle, padding: '8px 12px' }}>
+                <input
+                  type="number" step="2.5" value={log.weight_kg ?? ''}
+                  onChange={e => saveSet(log.set_number, 'weight_kg', e.target.value)}
+                  placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : '—'}
+                  style={adminInputStyle}
+                  onFocus={e => (e.target.style.borderBottomColor = 'rgba(129,140,248,0.8)')}
+                  onBlur={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.14)')}
+                />
+              </div>
+              {/* RPE input */}
+              <div style={{ display: 'flex', alignItems: 'center', padding: '8px 12px' }}>
+                <input
+                  type="number" step="0.5" min="1" max="10" value={log.rpe ?? ''}
+                  onChange={e => saveSet(log.set_number, 'rpe', e.target.value)}
+                  placeholder={we.target_rpe ? String(we.target_rpe) : '—'}
+                  style={{ ...adminInputStyle, color: '#facc15' }}
+                  onFocus={e => (e.target.style.borderBottomColor = 'rgba(250,204,21,0.7)')}
+                  onBlur={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.14)')}
+                />
+              </div>
+            </div>
+          )
+        })}
       </div>
     )
   }
 
-  // Lifter: aligned table rows (one per set, no repeated labels)
+  // Lifter: aligned table rows — KG + REPS + RPE
   const targetRpe = we.target_rpe ?? we.planned_rpe
-  // Grid: SET-label | REPS | KG | RPE | done
-  const SLR_GRID = '52px 1fr 1fr 80px 44px'
+  // Grid: SET | KG | REPS | RPE | done  — first col matches exercise row (52px)
+  const SLR_GRID = '52px 1fr 1fr 88px 48px'
   const cellStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)' }
   const inputStyle: React.CSSProperties = { width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#e8e8ff', padding: '5px 6px', fontSize: '1rem', outline: 'none', fontFamily: 'var(--fm)', fontWeight: 700, textAlign: 'center', boxSizing: 'border-box' }
 
@@ -727,16 +784,20 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceCom
 
       {/* Single header row */}
       <div className="set-log-header" style={{ display: 'grid', gridTemplateColumns: SLR_GRID, background: 'rgba(0,0,0,0.25)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-        <div style={{ ...cellStyle, justifyContent: 'flex-start', padding: '5px 14px' }}>
+        <div style={{ ...cellStyle, justifyContent: 'flex-start', padding: '6px 14px' }}>
           <span style={{ fontSize: '0.4rem', color: '#444', letterSpacing: '0.25em', fontWeight: 700, fontFamily: 'var(--fm)' }}>SET</span>
         </div>
-        <div style={{ ...cellStyle, padding: '5px 0' }}>
-          <span style={{ fontSize: '0.4rem', color: '#aaa', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>REPS</span>
+        <div style={{ ...cellStyle, padding: '6px 0' }}>
+          <span style={{ fontSize: '0.4rem', color: '#818cf8', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
+            KG{we.planned_weight_kg ? ` · ${we.planned_weight_kg}` : ''}
+          </span>
         </div>
-        <div style={{ ...cellStyle, padding: '5px 0' }}>
-          <span style={{ fontSize: '0.4rem', color: '#818cf8', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>KG</span>
+        <div style={{ ...cellStyle, padding: '6px 0' }}>
+          <span style={{ fontSize: '0.4rem', color: '#aaa', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
+            REPS{we.planned_reps ? ` · ${we.planned_reps}` : ''}
+          </span>
         </div>
-        <div className="slr-rpe" style={{ ...cellStyle, padding: '5px 0' }}>
+        <div className="slr-rpe" style={{ ...cellStyle, padding: '6px 0' }}>
           <span style={{ fontSize: '0.4rem', color: '#facc15', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
             RPE{targetRpe ? ` · ${targetRpe}` : ''}
           </span>
@@ -745,28 +806,16 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceCom
       </div>
 
       {logs.map((log, i) => (
-        <div key={i} className="set-log-row" style={{ display: 'grid', gridTemplateColumns: SLR_GRID, alignItems: 'stretch', background: log.completed ? 'rgba(34,197,94,0.07)' : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.013)', borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.15s' }}>
+        <div key={i} className="set-log-row" style={{ display: 'grid', gridTemplateColumns: SLR_GRID, alignItems: 'stretch', background: log.completed ? 'rgba(34,197,94,0.07)' : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.013)', borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.15s', minHeight: '52px' }}>
 
           {/* Set label */}
-          <div style={{ ...cellStyle, justifyContent: 'flex-start', padding: '10px 14px', gap: '8px' }}>
+          <div style={{ ...cellStyle, justifyContent: 'flex-start', padding: '12px 14px', gap: '8px' }}>
             <div style={{ width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0, background: log.completed ? '#22c55e' : 'rgba(255,255,255,0.15)', boxShadow: log.completed ? '0 0 5px rgba(34,197,94,0.5)' : 'none', transition: 'all 0.2s' }} />
             <span style={{ fontSize: '0.68rem', fontWeight: 900, color: log.completed ? '#22c55e' : '#6366f1', fontFamily: 'var(--fd)', letterSpacing: '0.06em' }}>S{log.set_number}</span>
           </div>
 
-          {/* REPS input */}
-          <div style={{ ...cellStyle, padding: '8px 10px' }}>
-            <input
-              type="text" value={log.reps ?? ''}
-              onChange={e => saveSet(log.set_number, 'reps', e.target.value)}
-              placeholder={we.planned_reps ?? '—'}
-              style={inputStyle}
-              onFocus={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.6)')}
-              onBlur={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)')}
-            />
-          </div>
-
-          {/* KG input — plain, no +/- */}
-          <div style={{ ...cellStyle, padding: '8px 10px', background: 'rgba(99,102,241,0.04)' }}>
+          {/* KG input */}
+          <div style={{ ...cellStyle, padding: '10px 12px', background: 'rgba(99,102,241,0.04)' }}>
             <input
               type="number" step="2.5" value={log.weight_kg ?? ''}
               onChange={e => saveSet(log.set_number, 'weight_kg', e.target.value)}
@@ -777,8 +826,20 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceCom
             />
           </div>
 
+          {/* REPS input */}
+          <div style={{ ...cellStyle, padding: '10px 12px' }}>
+            <input
+              type="text" value={log.reps ?? ''}
+              onChange={e => saveSet(log.set_number, 'reps', e.target.value)}
+              placeholder={we.planned_reps ?? '—'}
+              style={inputStyle}
+              onFocus={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.6)')}
+              onBlur={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)')}
+            />
+          </div>
+
           {/* RPE input */}
-          <div className="slr-rpe" style={{ ...cellStyle, padding: '8px 10px' }}>
+          <div className="slr-rpe" style={{ ...cellStyle, padding: '10px 12px' }}>
             <input
               type="number" step="0.5" min="1" max="10" value={log.rpe ?? ''}
               onChange={e => saveSet(log.set_number, 'rpe', e.target.value)}
@@ -816,165 +877,141 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
   const save = (field: keyof WorkoutExercise, val: string, isNum = false) =>
     onUpdate(we.id, { [field]: isNum ? (val ? Number(val) : null) : (val || null) })
 
-  // ── RPE comparison helper ───────────────────────────────────────
-  const rpeColor = (actual: number | null, target: number | null) => {
-    if (!actual || !target) return '#e0e0e0'
-    const diff = actual - target
-    if (diff <= 0) return '#4ade80'       // at or below target → green
-    if (diff === 1) return '#facc15'      // 1 over → yellow
-    return '#f87171'                      // 2+ over → red
-  }
+  // "!" badge — only for admin to toggle coach notes
+  const hasNote = !!we.coach_note
 
   return (
     <div className="ex-row-wrap">
       {/* ── Main row ── */}
-      <div className="ex-row-main" style={{ display: 'grid', gridTemplateColumns: '28px 1fr 64px 72px 80px 64px 28px', alignItems: 'stretch', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-
-        {/* Grip (admin only) */}
-        <div className="ex-col-grip" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.08)', padding: '0 4px' }}>
-          {isAdmin
-            ? <GripVertical size={12} color="#555" style={{ cursor: 'grab' }} />
-            : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={we.completed ? '#4ade80' : '#555'} strokeWidth="2.5">
-                {we.completed
-                  ? <><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></>
-                  : <circle cx="12" cy="12" r="8"/>}
-              </svg>
-          }
-        </div>
-
-        {/* Exercise name */}
-        <div style={{ padding: '12px 14px', borderRight: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '3px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={we.completed ? '#4ade80' : '#6366f1'} strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: we.completed ? '#86efac' : '#f4f4ff', fontFamily: 'var(--fm)', letterSpacing: '-0.01em' }}>{we.exercise?.name ?? '—'}</span>
+      {isAdmin ? (
+        /* Admin: compact 3-col — grip | name+info | delete */
+        <div className="ex-row-main" style={{ display: 'grid', gridTemplateColumns: '48px 1fr 44px', alignItems: 'stretch', borderBottom: '1px solid rgba(255,255,255,0.08)', minHeight: '58px' }}>
+          {/* Grip */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+            <GripVertical size={13} color="#555" style={{ cursor: 'grab' }} />
           </div>
-          {/* Coach note — always visible to lifter as instruction */}
-          {we.coach_note && (
-            <div style={{ fontSize: '0.62rem', color: '#f59e0b', letterSpacing: '0.04em', paddingLeft: '18px', lineHeight: 1.4 }}>
-              ↳ {we.coach_note}
-            </div>
-          )}
-        </div>
-
-        {/* SETS */}
-        <div className="ex-col-sets" style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ padding: '5px 8px 3px', fontSize: '0.44rem', color: '#666', letterSpacing: '0.2em', textAlign: 'center' }}>SETS</div>
-          <div style={{ padding: '4px 8px 10px', textAlign: 'center' }}>
-            {isAdmin
-              ? <EditableField value={we.planned_sets} placeholder="3" type="number" small onSave={v => save('planned_sets', v, true)} />
-              : <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e0e0e0', fontFamily: 'var(--fm)' }}>{we.planned_sets ?? '—'}</span>
-            }
-          </div>
-        </div>
-
-        {/* REPS */}
-        <div className="ex-col-reps" style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ padding: '5px 8px 3px', fontSize: '0.44rem', color: '#666', letterSpacing: '0.2em', textAlign: 'center' }}>REPS</div>
-          <div style={{ padding: '4px 8px 10px', textAlign: 'center' }}>
-            {isAdmin
-              ? <EditableField value={we.planned_reps} placeholder="5" small onSave={v => save('planned_reps', v)} />
-              : <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e0e0e0', fontFamily: 'var(--fm)' }}>{we.planned_reps ?? '—'}</span>
-            }
-          </div>
-        </div>
-
-        {/* KG — lifter fills actual, admin fills planned */}
-        <div className="ex-col-kg" style={{ borderRight: '1px solid rgba(255,255,255,0.08)', background: isAdmin ? 'transparent' : 'rgba(56,100,255,0.04)' }}>
-          <div style={{ padding: '5px 8px 3px', fontSize: '0.44rem', color: isAdmin ? '#666' : '#6b8cff', letterSpacing: '0.2em', textAlign: 'center' }}>
-            {isAdmin ? 'KG PLAN' : 'KG ODIG'}
-          </div>
-          <div style={{ padding: '4px 8px 10px', textAlign: 'center' }}>
-            {isAdmin
-              ? <EditableField value={we.planned_weight_kg} placeholder="—" type="number" small onSave={v => save('planned_weight_kg', v, true)} />
-              : <>
-                  {we.planned_weight_kg && (
-                    <div style={{ fontSize: '0.52rem', color: '#555', marginBottom: '3px' }}>{we.planned_weight_kg}kg plan</div>
-                  )}
-                  <EditableField value={we.actual_weight_kg} placeholder="upiši" type="number" small onSave={v => save('actual_weight_kg', v, true)} />
-                </>
-            }
-          </div>
-        </div>
-
-        {/* RPE — admin sets target, lifter fills actual */}
-        <div className="ex-col-rpe" style={{ borderRight: '1px solid rgba(255,255,255,0.08)', background: isAdmin ? 'transparent' : 'rgba(250,204,21,0.04)' }}>
-          <div style={{ padding: '5px 8px 3px', fontSize: '0.44rem', color: isAdmin ? '#666' : '#facc15', letterSpacing: '0.2em', textAlign: 'center' }}>
-            {isAdmin ? 'RPE CILJ' : 'RPE ODIJ'}
-          </div>
-          <div style={{ padding: '4px 8px 10px', textAlign: 'center' }}>
-            {isAdmin
-              ? <EditableField value={we.target_rpe ?? we.planned_rpe} placeholder="—" type="number" small onSave={v => save('target_rpe', v, true)} />
-              : <>
-                  {we.target_rpe && (
-                    <div style={{ fontSize: '0.52rem', color: '#888', marginBottom: '3px' }}>cilj: {we.target_rpe}</div>
-                  )}
-                  <div style={{ color: rpeColor(we.actual_rpe, we.target_rpe ?? we.planned_rpe) }}>
-                    <EditableField value={we.actual_rpe} placeholder="upiši" type="number" small onSave={v => save('actual_rpe', v, true)} />
-                  </div>
-                </>
-            }
-          </div>
-        </div>
-
-        {/* Delete (admin) or complete toggle (lifter) */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {isAdmin
-            ? <button onClick={() => onDelete(we.id)} className="icon-btn-danger"><Trash2 size={11} /></button>
-            : <button
-                onClick={() => { const nd = !we.completed; onUpdate(we.id, { completed: nd }); setForceComplete(nd) }}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: we.completed ? '#4ade80' : '#444', padding: '4px', transition: 'color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                title={we.completed ? 'Označi kao neodrađeno' : 'Označi kao odrađeno'}
-              >
-                <Check size={13} />
+          {/* Name + inline plan info */}
+          <div style={{ padding: '13px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f4f4ff', fontFamily: 'var(--fm)', letterSpacing: '-0.01em' }}>{we.exercise?.name ?? '—'}</span>
+              {/* "!" badge — click to expand notes */}
+              <button onClick={() => setExpanded(!expanded)}
+                style={{ background: hasNote ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${hasNote ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '4px', color: hasNote ? '#f59e0b' : '#555', fontSize: '0.58rem', fontWeight: 800, padding: '2px 7px', cursor: 'pointer', fontFamily: 'var(--fm)', letterSpacing: '0.08em', transition: 'all 0.15s' }}>
+                {expanded ? '▲' : (hasNote ? '! BILJEŠKA' : '+ BILJEŠKA')}
               </button>
-          }
+            </div>
+            {/* Inline plan: sets × reps + kg plan + RPE cilj — all editable */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingLeft: '18px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.6rem', color: '#555', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>
+                <EditableField value={we.planned_sets} placeholder="3" type="number" small onSave={v => save('planned_sets', v, true)} />
+              </span>
+              <span style={{ fontSize: '0.6rem', color: '#444' }}>×</span>
+              <span style={{ fontSize: '0.6rem', color: '#555', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>
+                <EditableField value={we.planned_reps} placeholder="5 reps" small onSave={v => save('planned_reps', v)} />
+              </span>
+              <span style={{ fontSize: '0.6rem', color: '#333' }}>·</span>
+              <span style={{ fontSize: '0.6rem', color: '#818cf8', letterSpacing: '0.08em' }}>
+                <EditableField value={we.planned_weight_kg} placeholder="kg plan" type="number" small onSave={v => save('planned_weight_kg', v, true)} />
+              </span>
+              <span style={{ fontSize: '0.6rem', color: '#333' }}>·</span>
+              <span style={{ fontSize: '0.6rem', color: '#facc15', letterSpacing: '0.08em' }}>
+                RPE <EditableField value={we.target_rpe ?? we.planned_rpe} placeholder="—" type="number" small onSave={v => save('target_rpe', v, true)} />
+              </span>
+            </div>
+            {/* Coach note — shown when present */}
+            {we.coach_note && (
+              <div style={{ fontSize: '0.63rem', color: '#f59e0b', letterSpacing: '0.04em', paddingLeft: '18px', lineHeight: 1.5 }}>
+                ↳ {we.coach_note}
+              </div>
+            )}
+          </div>
+          {/* Delete */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
+            <button onClick={() => onDelete(we.id)} className="icon-btn-danger"><Trash2 size={12} /></button>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* Lifter: 3-col — status | name+coach note | done */
+        <div className="ex-row-main" style={{ display: 'grid', gridTemplateColumns: '52px 1fr 44px', alignItems: 'stretch', borderBottom: '1px solid rgba(255,255,255,0.08)', minHeight: '58px' }}>
+          {/* Status dot */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={we.completed ? '#4ade80' : '#555'} strokeWidth="2.5">
+              {we.completed
+                ? <><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></>
+                : <circle cx="12" cy="12" r="8"/>}
+            </svg>
+          </div>
+          {/* Name + coach instruction */}
+          <div style={{ padding: '13px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '5px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={we.completed ? '#4ade80' : '#6366f1'} strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <span style={{ fontSize: '0.95rem', fontWeight: 700, color: we.completed ? '#86efac' : '#f4f4ff', fontFamily: 'var(--fm)', letterSpacing: '-0.01em' }}>{we.exercise?.name ?? '—'}</span>
+              {/* Plan label inline */}
+              {(we.planned_sets || we.planned_reps) && (
+                <span style={{ fontSize: '0.6rem', color: '#555', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px', padding: '2px 7px', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>
+                  {we.planned_sets}×{we.planned_reps}{we.planned_weight_kg ? ` · ${we.planned_weight_kg}kg` : ''}
+                  {(we.target_rpe ?? we.planned_rpe) ? ` @ RPE ${we.target_rpe ?? we.planned_rpe}` : ''}
+                </span>
+              )}
+            </div>
+            {/* Coach note — always visible as instruction */}
+            {we.coach_note && (
+              <div style={{ fontSize: '0.65rem', color: '#f59e0b', letterSpacing: '0.04em', paddingLeft: '18px', lineHeight: 1.5 }}>
+                ↳ {we.coach_note}
+              </div>
+            )}
+          </div>
+          {/* Done toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
+            <button
+              onClick={() => { const nd = !we.completed; onUpdate(we.id, { completed: nd }); setForceComplete(nd) }}
+              style={{ background: we.completed ? 'rgba(34,197,94,0.12)' : 'transparent', border: 'none', cursor: 'pointer', color: we.completed ? '#4ade80' : '#444', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+              title={we.completed ? 'Označi kao neodrađeno' : 'Označi kao odrađeno'}>
+              <Check size={14} strokeWidth={we.completed ? 3 : 1.5} />
+            </button>
+          </div>
+        </div>
+      )}
 
-      {/* ── Expanded details ── */}
+      {/* ── Expanded details (admin: tempo/odmor/bilješka, lifter: moja bilješka) ── */}
       {expanded && (
         <div style={{ background: '#060610', borderBottom: '1px solid rgba(255,255,255,0.08)', borderTop: '1px solid rgba(99,102,241,0.1)' }}>
           {isAdmin ? (
-            /* Admin: tempo, odmor, coach_note */
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0' }}>
               {[
                 { label: 'TEMPO', key: 'planned_tempo' as keyof WorkoutExercise, ph: '3010' },
                 { label: 'ODMOR (sek)', key: 'planned_rest_seconds' as keyof WorkoutExercise, ph: '90', type: 'number' },
-                { label: 'BILJEŠKA TRENERA', key: 'coach_note' as keyof WorkoutExercise, ph: 'Uputa za lifera...' },
+                { label: 'BILJEŠKA TRENERA', key: 'coach_note' as keyof WorkoutExercise, ph: 'Uputa za liftera...' },
               ].map((f, fi) => (
-                <div key={String(f.key)} style={{ padding: '10px 14px', borderRight: fi < 2 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
-                  <div style={{ fontSize: '0.46rem', color: '#666', letterSpacing: '0.2em', marginBottom: '5px' }}>{f.label}</div>
-                  <EditableField value={we[f.key] as string | number | null} placeholder={f.ph} type={f.type}
-                    onSave={v => save(f.key, v)} />
+                <div key={String(f.key)} style={{ padding: '12px 16px', borderRight: fi < 2 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
+                  <div style={{ fontSize: '0.46rem', color: '#666', letterSpacing: '0.2em', marginBottom: '6px' }}>{f.label}</div>
+                  <EditableField value={we[f.key] as string | number | null} placeholder={f.ph} type={f.type} onSave={v => save(f.key, v)} />
                 </div>
               ))}
             </div>
           ) : (
-            /* Lifter: planned info (read-only) + actual_note */
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0' }}>
-              <div style={{ padding: '10px 14px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
-                <div style={{ fontSize: '0.46rem', color: '#666', letterSpacing: '0.2em', marginBottom: '5px' }}>TEMPO / ODMOR</div>
-                <div style={{ fontSize: '0.78rem', color: '#aaa' }}>
-                  {we.planned_tempo || '—'} · {we.planned_rest_seconds ? `${we.planned_rest_seconds}s` : '—'}
+            /* Lifter: only comment — tempo/odmor shown as info */
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
+              {(we.planned_tempo || we.planned_rest_seconds) && (
+                <div style={{ padding: '12px 16px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ fontSize: '0.46rem', color: '#555', letterSpacing: '0.2em', marginBottom: '5px' }}>TEMPO / ODMOR</div>
+                  <div style={{ fontSize: '0.78rem', color: '#888' }}>
+                    {we.planned_tempo || '—'} · {we.planned_rest_seconds ? `${we.planned_rest_seconds}s` : '—'}
+                  </div>
                 </div>
-              </div>
-              <div style={{ padding: '10px 14px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
-                <div style={{ fontSize: '0.46rem', color: '#facc15', letterSpacing: '0.2em', marginBottom: '5px' }}>BILJEŠKA TRENERA</div>
-                <div style={{ fontSize: '0.78rem', color: '#facc15', lineHeight: 1.5 }}>
-                  {we.coach_note || <span style={{ color: '#444' }}>—</span>}
-                </div>
-              </div>
-              <div style={{ padding: '10px 14px' }}>
-                <div style={{ fontSize: '0.46rem', color: '#6b8cff', letterSpacing: '0.2em', marginBottom: '5px' }}>MOJA BILJEŠKA</div>
-                <EditableField value={we.actual_note} placeholder="Upiši dojam..." onSave={v => save('actual_note', v)} />
+              )}
+              <div style={{ padding: '12px 16px' }}>
+                <div style={{ fontSize: '0.46rem', color: '#6b8cff', letterSpacing: '0.2em', marginBottom: '6px' }}>MOJA BILJEŠKA</div>
+                <EditableField value={we.actual_note} placeholder="Upiši komentar..." onSave={v => save('actual_note', v)} />
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Set log section — aligned with table columns */}
-      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+      {/* Set log section */}
+      <div>
         <SetLogSection
           we={we} userId={userId} isAdmin={isAdmin}
           onAggregateUpdate={data => onUpdate(we.id, data)}
@@ -982,14 +1019,16 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
         />
       </div>
 
-      {/* Expand toggle */}
-      <button onClick={() => setExpanded(!expanded)}
-        style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', background: expanded ? 'rgba(99,102,241,0.06)' : 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '6px 44px', cursor: 'pointer', color: expanded ? '#818cf8' : '#555', fontSize: '0.46rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', textAlign: 'left' as const, transition: 'all 0.15s', fontWeight: 700 }}
-        onMouseEnter={e => { e.currentTarget.style.color = '#818cf8'; e.currentTarget.style.background = 'rgba(99,102,241,0.06)' }}
-        onMouseLeave={e => { e.currentTarget.style.color = expanded ? '#818cf8' : '#555'; e.currentTarget.style.background = expanded ? 'rgba(99,102,241,0.06)' : 'transparent' }}>
-        <span style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>▼</span>
-        {expanded ? 'SAKRIJ DETALJE' : 'PRIKAŽI DETALJE'}
-      </button>
+      {/* Lifter: inline comment field — always visible */}
+      {!isAdmin && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <span style={{ fontSize: '0.42rem', color: '#444', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>KOMENTAR</span>
+          <div style={{ flex: 1 }}>
+            <EditableField value={we.actual_note} placeholder="Dodaj komentar na vježbu..." onSave={v => save('actual_note', v)} />
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
@@ -1086,15 +1125,6 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, onUpdateWorko
         {/* ── Exercise table — dark with sharp grid ── */}
         {open && (
           <div style={{ background: '#07070e', animation: 'fadeUp 0.2s ease' }}>
-            {/* Table header row */}
-            {exCount > 0 && (
-              <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 72px 80px 80px 64px 28px', borderBottom: '2px solid rgba(255,255,255,0.12)', background: '#0b0b16' }}>
-                <div style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }} />
-                {['VJEŽBA', 'SETS', 'REPS', isAdmin ? 'KG PLAN' : 'KG', isAdmin ? 'RPE CILJ' : 'RPE', ''].map((h, i) => (
-                  <div key={i} style={{ padding: '9px 16px', fontSize: '0.46rem', color: i === 3 && !isAdmin ? '#818cf8' : i === 4 && !isAdmin ? '#facc15' : '#555', letterSpacing: '0.28em', fontWeight: 800, fontFamily: 'var(--fm)', textAlign: i > 0 ? 'center' : 'left', borderRight: i < 5 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>{h}</div>
-                ))}
-              </div>
-            )}
 
             {/* Exercises */}
             {workout.workout_exercises?.map(we => (

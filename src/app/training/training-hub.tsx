@@ -367,6 +367,7 @@ const HUB_TOOLS = [
   { id:'guide-rpe', label:'RPE Guide',        sub:'Kako koristiti RPE',               color:'#fbbf24', badge:'GUIDE'},
   { id:'guide-peak',label:'Peaking Guide',    sub:'Priprema za natjecanje',           color:'#a78bfa', badge:'GUIDE'},
   { id:'progress',  label:'Graf napretka',   sub:'Kilaze kroz blokove po liftu/RPE', color:'#22d3ee', badge:'GRAF' },
+  { id:'weight',    label:'Tjelesna kilaza', sub:'Unos i praćenje kilaze kroz dane',  color:'#f472b6', badge:'LOG'  },
   { id:'nutrition', label:'Prehrana & Kalorije', sub:'TDEE, makrosi i dnevni log',    color:'#f97316', badge:'LOG'  },
 ]
 
@@ -659,6 +660,126 @@ function calcMacros(kcal: number, weightKg: number) {
   return { protein, fat, carbs }
 }
 
+// ─── WEIGHT TRACKER ──────────────────────────────────────────────
+type WeightEntry = { id: string; date: string; weight_kg: number }
+
+function WeightTracker({ userId }: { userId: string }) {
+  const COLOR = '#f472b6'
+  const [entries, setEntries] = useState<WeightEntry[]>([])
+  const [date, setDate]       = useState(new Date().toISOString().split('T')[0])
+  const [kg, setKg]           = useState('')
+  const [saving, setSaving]   = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.from('pr_logs')
+      .select('id, date, weight_kg')
+      .eq('athlete_id', userId)
+      .eq('source', 'body_weight')
+      .order('date', { ascending: false })
+      .limit(60)
+      .then(({ data }) => { setEntries((data ?? []) as WeightEntry[]); setLoading(false) })
+  }, [userId])
+
+  const save = async () => {
+    if (!kg || !date) return
+    setSaving(true)
+    const { data } = await supabase.from('pr_logs').insert({
+      athlete_id: userId, lift: null, reps: null,
+      weight_kg: parseFloat(kg), date, source: 'body_weight', notes: 'Tjelesna težina',
+    }).select('id, date, weight_kg').single()
+    if (data) setEntries(prev => [data as WeightEntry, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
+    setKg(''); setSaving(false)
+  }
+
+  const remove = async (id: string) => {
+    await supabase.from('pr_logs').delete().eq('id', id)
+    setEntries(prev => prev.filter(e => e.id !== id))
+  }
+
+  // Simple mini sparkline from entries
+  const pts = [...entries].reverse()
+  const minW = pts.length ? Math.min(...pts.map(p => p.weight_kg)) - 1 : 0
+  const maxW = pts.length ? Math.max(...pts.map(p => p.weight_kg)) + 1 : 100
+  const toSvgX = (i: number) => pts.length < 2 ? 50 : Math.round((i / (pts.length - 1)) * 280)
+  const toSvgY = (w: number) => Math.round(60 - ((w - minW) / (maxW - minW)) * 56)
+  const polyline = pts.map((p, i) => `${toSvgX(i)},${toSvgY(p.weight_kg)}`).join(' ')
+
+  if (loading) return <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', padding: '24px 0', textAlign: 'center' as const }}>Učitavanje...</div>
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '24px' }}>
+
+      {/* Sparkline chart */}
+      {pts.length >= 2 && (
+        <div style={{ background: 'rgba(34,197,94,0.04)', border: '1px solid rgba(34,197,94,0.14)', borderRadius: '14px', padding: '16px 20px' }}>
+          <div style={{ fontSize: '0.52rem', color: 'rgba(34,197,94,0.6)', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '10px' }}>TIJEK KILAZE</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px' }}>
+            <svg width="100%" viewBox="0 0 280 64" style={{ flex: 1, overflow: 'visible' }}>
+              <defs>
+                <linearGradient id="wGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#22c55e" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {pts.length >= 2 && (
+                <polygon points={`0,64 ${polyline} 280,64`} fill="url(#wGrad)" />
+              )}
+              <polyline points={polyline} fill="none" stroke="#22c55e" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
+              {pts.map((p, i) => (
+                <circle key={i} cx={toSvgX(i)} cy={toSvgY(p.weight_kg)} r="3" fill="#22c55e" opacity="0.85" />
+              ))}
+            </svg>
+            <div style={{ flexShrink: 0, textAlign: 'right' as const }}>
+              <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', marginBottom: '2px' }}>ZADNJE</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: COLOR, fontFamily: 'var(--fd)', lineHeight: 1 }}>
+                {pts[pts.length - 1].weight_kg}<span style={{ fontSize: '0.75rem', color: `${COLOR}88`, marginLeft: '3px' }}>kg</span>
+              </div>
+              {pts.length >= 2 && (
+                <div style={{ fontSize: '0.62rem', color: `${COLOR}cc`, fontFamily: 'var(--fm)', marginTop: '2px' }}>
+                  {pts[pts.length-1].weight_kg >= pts[pts.length-2].weight_kg ? '▲' : '▼'}{Math.abs(pts[pts.length-1].weight_kg - pts[pts.length-2].weight_kg).toFixed(1)} kg
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Input form */}
+      <SectionTitle>Novi unos</SectionTitle>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', alignItems: 'end' }}>
+        <CalcInput label="Datum" color={COLOR} type="date" value={date} onChange={setDate} max="2100-01-01" />
+        <CalcInput label="Kilaza (kg)" color={COLOR} step="0.1" value={kg} onChange={setKg} placeholder="npr. 82.5" />
+      </div>
+      <button onClick={save} disabled={saving || !kg}
+        style={{ padding: '11px 28px', background: `${COLOR}18`, border: `1.5px solid ${COLOR}44`, borderRadius: '10px', cursor: kg ? 'pointer' : 'not-allowed', color: kg ? COLOR : 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.05em', width: 'fit-content', transition: 'all 0.2s', opacity: kg ? 1 : 0.5 }}>
+        {saving ? 'Sprema...' : '+ Dodaj unos'}
+      </button>
+
+      {/* History */}
+      {entries.length > 0 && (
+        <>
+          <SectionTitle>Povijest ({entries.length} unosa)</SectionTitle>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '5px' }}>
+            {entries.map(e => (
+              <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '9px' }}>
+                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--fm)', minWidth: '84px' }}>{e.date}</span>
+                <span style={{ fontSize: '1rem', fontWeight: 800, color: COLOR, fontFamily: 'var(--fd)', flex: 1 }}>{e.weight_kg} <span style={{ fontSize: '0.65rem', fontWeight: 400, color: `${COLOR}88` }}>kg</span></span>
+                <button onClick={() => remove(e.id)}
+                  style={{ background: 'transparent', border: 'none', color: 'rgba(255,80,80,0.35)', cursor: 'pointer', fontSize: '0.7rem', padding: '4px 6px', borderRadius: '5px', transition: 'all 0.15s', fontFamily: 'var(--fm)' }}
+                  onMouseEnter={e2 => (e2.currentTarget.style.color = '#f87171')}
+                  onMouseLeave={e2 => (e2.currentTarget.style.color = 'rgba(255,80,80,0.35)')}>
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 function NutritionTracker({ userId }: { userId: string }) {
   const COLOR = '#f97316'
   const [tab, setTab] = useState<'settings'|'plan'|'log'>('settings')
@@ -875,7 +996,6 @@ function NutritionTracker({ userId }: { userId: string }) {
               { label: 'Protein (g)',      key: 'protein_g' as keyof NutritionLog, color: '#f59e0b' },
               { label: 'Ugljikohidrati (g)', key: 'carbs_g' as keyof NutritionLog, color: '#6b8cff' },
               { label: 'Masti (g)',        key: 'fat_g' as keyof NutritionLog, color: '#f472b6' },
-              { label: 'Tjel. masa (kg)',  key: 'body_weight' as keyof NutritionLog, color: '#22c55e', step: '0.1' },
               { label: 'Koraci',           key: 'steps' as keyof NutritionLog, color: '#34d399' },
             ].map(f => (
               <CalcInput key={f.key} label={f.label} color={f.color} step={(f as any).step ?? '1'}
@@ -914,7 +1034,6 @@ function NutritionTracker({ userId }: { userId: string }) {
                         {l.protein_g  && <span style={{ fontSize: '0.75rem', color: '#f59e0b', fontFamily: 'var(--fm)' }}>P: {l.protein_g}g</span>}
                         {l.carbs_g    && <span style={{ fontSize: '0.75rem', color: '#6b8cff', fontFamily: 'var(--fm)' }}>U: {l.carbs_g}g</span>}
                         {l.fat_g      && <span style={{ fontSize: '0.75rem', color: '#f472b6', fontFamily: 'var(--fm)' }}>M: {l.fat_g}g</span>}
-                        {l.body_weight && <span style={{ fontSize: '0.75rem', color: '#22c55e', fontFamily: 'var(--fm)' }}>{l.body_weight} kg</span>}
                         {l.steps      && <span style={{ fontSize: '0.75rem', color: '#34d399', fontFamily: 'var(--fm)' }}>{l.steps.toLocaleString()} koraka</span>}
                       </div>
                     </div>
@@ -938,29 +1057,29 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
 
       {/* Tools grid */}
       <SectionTitle>Kalkulatori & Vodiči</SectionTitle>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(clamp(180px,26vw,260px),1fr))', gap: '8px', marginBottom: '20px' }}>
+      <div className="hub-tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(clamp(160px,26vw,260px),1fr))', gap: '8px', marginBottom: '20px' }}>
         {HUB_TOOLS.map((tool, i) => {
           const isActive = active === tool.id
           return (
             <button key={tool.id} onClick={() => setActive(isActive ? null : tool.id)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', textAlign: 'left' as const,
-                background: isActive ? `${tool.color}10` : 'rgba(255,255,255,0.03)',
-                border: `1.5px solid ${isActive ? tool.color + '44' : 'rgba(255,255,255,0.07)'}`,
+                background: isActive ? `${tool.color}1a` : 'rgba(255,255,255,0.07)',
+                border: `1.5px solid ${isActive ? tool.color + '60' : 'rgba(255,255,255,0.13)'}`,
                 borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
-                boxShadow: isActive ? `0 4px 20px ${tool.color}18` : 'none',
+                boxShadow: isActive ? `0 4px 20px ${tool.color}22` : '0 2px 8px rgba(0,0,0,0.3)',
               }}
-              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)' } }}
-              onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' } }}>
+              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.11)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' } }}
+              onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.13)' } }}>
               {/* Icon dot */}
-              <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: `${tool.color}14`, border: `1px solid ${tool.color}2a`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: tool.color, boxShadow: isActive ? `0 0 8px ${tool.color}` : 'none', transition: 'box-shadow 0.2s' }} />
+              <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: `${tool.color}22`, border: `1px solid ${tool.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: tool.color, boxShadow: isActive ? `0 0 8px ${tool.color}` : `0 0 4px ${tool.color}88`, transition: 'box-shadow 0.2s' }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: isActive ? tool.color : '#e8e8f0', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}>{tool.label}</div>
-                <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '1px', fontFamily: 'var(--fm)' }}>{tool.sub}</div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: isActive ? tool.color : '#f0f0f8', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}>{tool.label}</div>
+                <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.45)', marginTop: '1px', fontFamily: 'var(--fm)' }}>{tool.sub}</div>
               </div>
-              <span style={{ fontSize: '0.5rem', fontWeight: 700, color: tool.badge === 'CALC' ? tool.color : 'rgba(255,255,255,0.3)', background: tool.badge === 'CALC' ? `${tool.color}14` : 'rgba(255,255,255,0.04)', padding: '3px 8px', borderRadius: '5px', border: `1px solid ${tool.badge === 'CALC' ? tool.color + '25' : 'rgba(255,255,255,0.06)'}`, letterSpacing: '0.06em', fontFamily: 'var(--fm)', flexShrink: 0 }}>
+              <span style={{ fontSize: '0.5rem', fontWeight: 700, color: tool.color, background: `${tool.color}1a`, padding: '3px 8px', borderRadius: '5px', border: `1px solid ${tool.color}35`, letterSpacing: '0.06em', fontFamily: 'var(--fm)', flexShrink: 0 }}>
                 {tool.badge}
               </span>
             </button>
@@ -970,9 +1089,9 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
 
       {/* Active tool panel */}
       {active && activeTool && (
-        <div style={{ border: `1.5px solid ${activeTool.color}28`, borderRadius: '16px', overflow: 'hidden', boxShadow: `0 12px 48px rgba(0,0,0,0.4), 0 0 0 1px ${activeTool.color}0a`, animation: 'panelIn 0.3s cubic-bezier(0.16,1,0.3,1)' }}>
+        <div style={{ border: `1.5px solid ${activeTool.color}55`, borderRadius: '16px', overflow: 'hidden', boxShadow: `0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px ${activeTool.color}18`, animation: 'panelIn 0.3s cubic-bezier(0.16,1,0.3,1)', background: '#0f0f18' }}>
           {/* Panel header */}
-          <div style={{ padding: '16px 24px', background: `${activeTool.color}08`, borderBottom: `1px solid ${activeTool.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ padding: '16px 24px', background: `${activeTool.color}18`, borderBottom: `1px solid ${activeTool.color}35`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: activeTool.color, boxShadow: `0 0 8px ${activeTool.color}` }} />
               <div>
@@ -987,12 +1106,14 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
             </button>
           </div>
           {/* Content */}
-          <div style={{ padding: 'clamp(20px,4vw,32px)', background: 'rgba(255,255,255,0.01)' }}>
+          <div style={{ padding: 'clamp(20px,4vw,32px)', background: '#0f0f18' }}>
             {active === 'rpe'      && <RpeCalc />}
             {active === 'gl'       && <GlCalc />}
             {active === 'watercut' && <WaterCutCalc />}
             {active === 'progress'  && userId && <ProgressGraph userId={userId} />}
             {active === 'progress'  && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za prikaz grafa.</div>}
+            {active === 'weight'    && userId && <WeightTracker userId={userId} />}
+            {active === 'weight'    && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje kilaze.</div>}
             {active === 'nutrition' && userId && <NutritionTracker userId={userId} />}
             {active === 'nutrition' && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje prehrane.</div>}
             {['guide-wc','guide-rpe','guide-peak'].includes(active) && (() => {
