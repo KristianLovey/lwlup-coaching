@@ -653,7 +653,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceCom
       supabase.from('set_logs').upsert({
         workout_exercise_id: we.id, athlete_id: userId,
         set_number: log.set_number, completed: forceComplete,
-      }, { onConflict: 'workout_exercise_id,set_number' })
+      }, { onConflict: 'workout_exercise_id,athlete_id,set_number' })
     ))
   }, [forceComplete]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -671,7 +671,8 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceCom
       [field]: val,
     }, { onConflict: 'workout_exercise_id,athlete_id,set_number' })
 
-    if (setErr) console.error('set_logs upsert error:', setErr)
+    if (setErr) console.error('set_logs upsert error:', JSON.stringify(setErr))
+    else console.log('set_logs upsert OK — we:', we.id, 'set:', setNum, field, val)
 
     // Update aggregate actual_ on workout_exercises so progress tracking still works
     const completed = updated.filter(s => s.weight_kg || s.reps)
@@ -892,19 +893,43 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
   const loadHistory = async () => {
     if (historyLoading) return
     setHistoryLoading(true)
-    // Dohvati set_logs za istu vježbu iz prošlog tjedna
-    const { data } = await supabase
-      .from('set_logs')
-      .select('set_number, weight_kg, reps, rpe, completed, workout_exercises!inner(exercise_id, workouts!inner(workout_date, weeks!inner(week_number, block_id)))')
-      .eq('athlete_id', userId)
-      .eq('workout_exercises.exercise_id', we.exercise_id)
-      .order('set_number')
-    // Filtriraj samo prošli tjedan
-    const prevWeekLogs = (data ?? []).filter((row: any) => {
-      const wn = row.workout_exercises?.workouts?.weeks?.week_number
-      return weekNumber && wn === weekNumber - 1
-    })
-    setHistoryLogs(prevWeekLogs.length ? prevWeekLogs : (data ?? []).slice(0, 6))
+    try {
+      // Find workout_exercise IDs for the same exercise in the previous week
+      // by joining through workouts → weeks filtered by week_number
+      const targetWeek = weekNumber ? weekNumber - 1 : null
+      if (!targetWeek || targetWeek < 1) {
+        setHistoryLogs([])
+        setHistoryLoading(false)
+        return
+      }
+
+      // Get workout_exercise IDs for the same exercise in previous week of same block
+      const { data: weData } = await supabase
+        .from('workout_exercises')
+        .select('id, workouts!inner(weeks!inner(week_number))')
+        .eq('exercise_id', we.exercise_id)
+        .eq('workouts.weeks.week_number', targetWeek)
+
+      if (!weData || weData.length === 0) {
+        setHistoryLogs([])
+        setHistoryLoading(false)
+        return
+      }
+
+      const weIds = weData.map((r: any) => r.id)
+
+      const { data } = await supabase
+        .from('set_logs')
+        .select('set_number, weight_kg, reps, rpe, completed')
+        .eq('athlete_id', userId)
+        .in('workout_exercise_id', weIds)
+        .order('set_number')
+
+      setHistoryLogs(data ?? [])
+    } catch (e) {
+      console.error('loadHistory error:', e)
+      setHistoryLogs([])
+    }
     setHistoryLoading(false)
   }
 
@@ -1125,7 +1150,10 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
   onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void
   onDeleteExercise: (id: string) => void
 }) {
-  const [open, setOpen] = useState(false)
+  const ssKey = `workout-open-${workout.id}`
+  const [open, setOpen] = useState(() => {
+    try { const v = sessionStorage.getItem(ssKey); return v === 'true' } catch { return false }
+  })
   const [showPicker, setShowPicker] = useState(false)
   const exCount = workout.workout_exercises?.length ?? 0
 
@@ -1152,7 +1180,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
         {/* ── Day header — sharp editorial strip ── */}
         <div
           style={{ background: workout.completed ? '#0a1c0e' : '#0c0c18', borderBottom: open ? '1px solid rgba(255,255,255,0.1)' : 'none', cursor: 'pointer', padding: '0' }}
-          onClick={() => setOpen(!open)}>
+          onClick={() => { const next = !open; setOpen(next); try { sessionStorage.setItem(ssKey, String(next)) } catch {} }}>
           {/* Top accent line — amber for active days, green for completed */}
           <div style={{ height: '3px', background: workout.completed ? 'linear-gradient(90deg, #22c55e 0%, #16a34a 60%, #15803d 100%)' : 'linear-gradient(90deg, rgba(245,158,11,0.55) 0%, rgba(251,191,36,0.75) 50%, rgba(245,158,11,0.4) 100%)', boxShadow: workout.completed ? '0 0 14px rgba(34,197,94,0.4)' : '0 0 10px rgba(245,158,11,0.2)', transition: 'all 0.3s' }} />
 
@@ -1275,11 +1303,17 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
   onAddExercise: (workoutId: string, ex: Exercise) => void
   onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void
 }) {
-  const [open, setOpen] = useState(true)
+  const ssKey = `week-open-${week.id}`
+  const [open, setOpen] = useState(() => {
+    try { const v = sessionStorage.getItem(ssKey); return v === null ? true : v === 'true' } catch { return true }
+  })
   const [showNotes, setShowNotes] = useState(false)
+  const allExercises = week.workouts?.flatMap(w => w.workout_exercises ?? []) ?? []
+  const totalEx = allExercises.length
+  const doneEx = allExercises.filter(e => e.completed).length
   const done = week.workouts?.filter(w => w.completed).length ?? 0
   const total = week.workouts?.length ?? 0
-  const pct = total > 0 ? (done / total) * 100 : 0
+  const pct = totalEx > 0 ? (doneEx / totalEx) * 100 : (total > 0 ? (done / total) * 100 : 0)
   const hasNotes = !!(week.notes?.trim())
 
   return (
@@ -1287,7 +1321,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
 
       {/* ── Week header — editorial black band ── */}
       <div style={{ background: 'linear-gradient(160deg, #0e0e1c 0%, #080810 100%)', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.09)' : 'none' }}
-        onClick={() => setOpen(!open)}>
+        onClick={() => { const next = !open; setOpen(next); try { sessionStorage.setItem(ssKey, String(next)) } catch {} }}>
 
         {/* Top: large week label row */}
         <div className="week-header-top" style={{ padding: 'clamp(14px,3vw,20px) clamp(16px,4vw,24px) 0', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
@@ -1312,7 +1346,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
                 <div style={{ width: '52px', height: '3px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', inset: '0 auto 0 0', width: `${pct}%`, background: pct === 100 ? '#22c55e' : 'linear-gradient(90deg, #6366f1, #818cf8)', boxShadow: pct === 100 ? '0 0 8px rgba(34,197,94,0.6)' : '0 0 8px rgba(99,102,241,0.5)', transition: 'width 0.5s cubic-bezier(0.16,1,0.3,1)', borderRadius: '2px' }} />
                 </div>
-                <span style={{ fontSize: '0.54rem', color: pct === 100 ? '#4ade80' : '#8888bb', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.05em' }}>{done}/{total}</span>
+                <span style={{ fontSize: '0.54rem', color: pct === 100 ? '#4ade80' : '#8888bb', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.05em' }}>{totalEx > 0 ? `${doneEx}/${totalEx}` : `${done}/${total}`}</span>
               </div>
             )}
             <div style={{ color: '#888', transition: 'transform 0.25s, color 0.2s', transform: open ? 'rotate(90deg)' : 'none' }}>
@@ -1343,8 +1377,8 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
           </div>
         </div>
 
-        {/* Day grid overview */}
-        {total > 0 && (
+        {/* Day grid overview — only when collapsed */}
+        {total > 0 && !open && (
           <div className="day-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(total, 7)}, 1fr)`, margin: '16px 0 0', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
             {week.workouts?.map((w, i) => (
               <div key={w.id} style={{ padding: '10px 12px', borderRight: i < total - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none', background: w.completed ? 'rgba(34,197,94,0.06)' : 'rgba(0,0,0,0.2)', transition: 'background 0.2s' }}>
