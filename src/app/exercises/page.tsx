@@ -370,8 +370,8 @@ export default function ExerciseLibraryPage() {
         </div>
 
         {/* ── Category filter bar ── */}
-        <div ref={filterBarRef} style={{ opacity: ready ? 1 : 0, transition: 'opacity 0.6s ease 0.3s', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(6,6,10,0.92)', backdropFilter: 'blur(16px)', position: 'sticky', top: '56px', zIndex: 150, overflow: 'visible' }}>
-          <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 clamp(16px,4vw,48px)', display: 'flex', alignItems: 'stretch', gap: '0' }}>
+        <div ref={filterBarRef} className="ex-filter-bar" style={{ opacity: ready ? 1 : 0, transition: 'opacity 0.6s ease 0.3s', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(6,6,10,0.92)', backdropFilter: 'blur(16px)', position: 'sticky', top: '56px', zIndex: 150, overflow: 'auto' }}>
+          <div className="ex-top-filters" style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 clamp(16px,4vw,48px)', display: 'flex', alignItems: 'stretch', gap: '0', minWidth: 'max-content' }}>
 
             {TOP_FILTERS.map((tf, i) => {
               const isActive  = topFilter === tf.id
@@ -486,7 +486,7 @@ export default function ExerciseLibraryPage() {
           )}
 
           {/* Cards grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(240px,25vw,320px), 1fr))', gap: 'clamp(10px,2vw,16px)' }}>
+          <div className="ex-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(240px,25vw,320px), 1fr))', gap: 'clamp(10px,2vw,16px)' }}>
             {filtered.map((ex, i) => (
               <ExCard key={ex.id} ex={ex} index={i} onClick={() => setSelectedExercise(ex)} />
             ))}
@@ -504,7 +504,7 @@ export default function ExerciseLibraryPage() {
         return (
           <div
             ref={dropdownRef}
-            style={{ position: 'fixed', top: `${dropdownPos.top}px`, left: `${dropdownPos.left}px`, minWidth: '220px', background: '#09090e', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: '10px', boxShadow: `0 24px 64px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05), 0 -2px 0 ${tf.color}66`, overflow: 'hidden', animation: 'dropDown 0.18s ease', zIndex: 99999, pointerEvents: 'all' }}>
+            style={{ position: 'fixed', top: `${dropdownPos.top}px`, left: `${Math.min(dropdownPos.left, window.innerWidth - 236)}px`, minWidth: '220px', maxWidth: 'calc(100vw - 16px)', background: '#09090e', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: '10px', boxShadow: `0 24px 64px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05), 0 -2px 0 ${tf.color}66`, overflow: 'hidden', animation: 'dropDown 0.18s ease', zIndex: 99999, pointerEvents: 'all' }}>
             {/* All in group */}
             <button onClick={() => { setSubCat(null); setTopFilter(openDropdown!); setOpenDropdown(null) }}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', background: !subCat ? `${tf.color}15` : 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', textAlign: 'left', transition: 'background 0.12s' }}
@@ -536,8 +536,9 @@ export default function ExerciseLibraryPage() {
       })()}
 
       <style>{`
-        @keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
-        @keyframes slideUp { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:none } }
+        @keyframes fadeIn   { from { opacity:0 } to { opacity:1 } }
+        @keyframes slideUp  { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:none } }
+        @keyframes dropDown { from { opacity:0; transform:translateY(-8px) } to { opacity:1; transform:none } }
 
         /* ── Card hover ── */
         .ex-card:hover {
@@ -559,15 +560,28 @@ export default function ExerciseLibraryPage() {
           .ex-stats-bar { display: none !important; }
           .ex-hero-row { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
         }
-        @media (max-width: 600px) {
-          .ex-filter-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-          .ex-filter-bar > div { min-width: max-content; padding-right: 8px; }
+
+        /* Filter bar: horizontally scrollable strip */
+        .ex-filter-bar {
+          overflow-x: auto !important;
+          overflow-y: visible;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
         }
+        .ex-filter-bar::-webkit-scrollbar { display: none; }
+        .ex-top-filters { min-width: max-content; }
+
+        @media (max-width: 600px) {
+          .ex-top-filters button { height: 42px !important; padding: 0 12px !important; font-size: 0.58rem !important; }
+        }
+
+        /* Card grid: 1 col on small phones */
+        @media (max-width: 420px) {
+          .ex-card-grid { grid-template-columns: 1fr !important; }
+        }
+
         @media (max-width: 480px) {
           .ex-card { border-radius: 8px !important; }
-        }
-        @media (max-width: 400px) {
-          .ex-top-filters button { font-size: 0.52rem !important; padding: 0 10px !important; }
         }
       `}</style>
     </div>

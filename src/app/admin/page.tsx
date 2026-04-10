@@ -191,7 +191,7 @@ function ExerciseRow({ we, onUpdate, onDelete, dragHandleProps, isDragging }: {
   return (
     <div style={{ border: `1px solid ${isDragging ? 'rgba(107,140,255,0.5)' : 'rgba(255,255,255,0.06)'}`, marginBottom: '4px', background: isDragging ? 'rgba(107,140,255,0.06)' : 'rgba(255,255,255,0.02)', transition: 'border-color 0.18s, background 0.18s' }}>
       <div className="ex-row-grid" style={{ display: 'grid', gridTemplateColumns: '24px 1fr 60px 80px 80px 60px 32px', gap: '8px', alignItems: 'center', padding: '10px 12px' }}>
-        <div {...dragHandleProps} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none', padding: '4px', color: isDragging ? 'rgba(107,140,255,0.8)' : 'rgba(255,255,255,0.2)', transition: 'color 0.18s', ...(dragHandleProps?.style) }}>
+        <div className="ex-row-drag" {...dragHandleProps} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none', padding: '4px', color: isDragging ? 'rgba(107,140,255,0.8)' : 'rgba(255,255,255,0.2)', transition: 'color 0.18s', ...(dragHandleProps?.style) }}>
           <GripVertical size={14} />
         </div>
         <div>
@@ -199,13 +199,13 @@ function ExerciseRow({ we, onUpdate, onDelete, dragHandleProps, isDragging }: {
           <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>{we.exercise?.category}</div>
         </div>
         {[
-          { label: 'SETS', key: 'planned_sets' as keyof WorkoutExercise, type: 'number' },
-          { label: 'REPS', key: 'planned_reps' as keyof WorkoutExercise, type: 'text' },
-          { label: 'KG', key: 'planned_weight_kg' as keyof WorkoutExercise, type: 'number' },
-          { label: 'RPE', key: 'planned_rpe' as keyof WorkoutExercise, type: 'number' },
+          { label: 'SETS', key: 'planned_sets' as keyof WorkoutExercise, type: 'number', cls: 'ex-row-sets' },
+          { label: 'REPS', key: 'planned_reps' as keyof WorkoutExercise, type: 'text', cls: '' },
+          { label: 'KG', key: 'planned_weight_kg' as keyof WorkoutExercise, type: 'number', cls: '' },
+          { label: 'RPE', key: 'planned_rpe' as keyof WorkoutExercise, type: 'number', cls: 'ex-row-rpe' },
         ].map(f => (
-          <div key={f.key} style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em', marginBottom: '3px' }}>{f.label}</div>
+          <div key={f.key} className={f.cls} style={{ textAlign: 'center' }}>
+            <div className="ex-label" style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em', marginBottom: '3px' }}>{f.label}</div>
             <EditableField value={we[f.key] as string | number | null} placeholder="—" type={f.type} small
               onSave={v => onUpdate(we.id, { [f.key]: f.type === 'number' ? (v ? Number(v) : null) : (v || null) })} />
           </div>
@@ -770,7 +770,7 @@ function AthletePanel({
         <div className="admin-detail-stats" style={{ marginLeft: 'auto', display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
           {[{ val: allBlocks.length, label: 'BLOKOVA' }, { val: totalWorkouts, label: 'TRENINGA' }, { val: `${progress}%`, label: 'NAPREDAK' }].map((s, i) => (
             <div key={i} style={{ padding: '12px 20px', background: '#08080a', textAlign: 'center' }}>
-              <div style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', fontWeight: 800, color: '#fff' }}>{s.val}</div>
+              <div className="stat-val" style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', fontWeight: 800, color: '#fff' }}>{s.val}</div>
               <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.25em', marginTop: '3px' }}>{s.label}</div>
             </div>
           ))}
@@ -792,7 +792,7 @@ function AthletePanel({
         <div>
           {/* Block bar */}
           <div style={{ position: 'relative', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="admin-block-bar" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <button onClick={() => setShowBlockMenu(!showBlockMenu)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px', background: 'transparent', border: 'none', cursor: 'pointer', flex: 1, textAlign: 'left', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
                 <FolderOpen size={14} color="rgba(255,255,255,0.3)" />
                 <div>
@@ -874,7 +874,7 @@ function AthletePanel({
       {/* STATS TAB */}
       {activeTab === 'stats' && (
         <div style={{ animation: 'fadeUp 0.3s ease' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '24px' }}>
+          <div className="admin-stats-detail-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '24px' }}>
             {[
               { val: allBlocks.length, label: 'UKUPNO BLOKOVA', sub: `${allBlocks.filter(b => b.status === 'active').length} aktivnih` },
               { val: totalWorkouts, label: 'TRENINGA U BLOKU', sub: `${completedWorkouts} završenih` },
@@ -1148,7 +1148,7 @@ export default function AdminPage() {
               </h1>
 
               {/* Section switcher */}
-              <div style={{ display: 'flex', gap: '4px', padding: '4px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', width: 'fit-content', marginBottom: '32px' }}>
+              <div className="admin-section-switcher" style={{ display: 'flex', gap: '4px', padding: '4px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', width: 'fit-content', marginBottom: '32px' }}>
                 {([['athletes', 'Lifteri'], ['treneri', 'Treneri'], ['competitions', 'Natjecanja'], ['obavijesti', 'Obavijesti']] as [string,string][]).map(([sec, label]) => (
                   <button key={sec} onClick={() => setDashSection(sec as any)}
                     style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 18px', background: dashSection === sec ? 'rgba(255,255,255,0.1)' : 'transparent', border: dashSection === sec ? '1px solid rgba(255,255,255,0.12)' : '1px solid transparent', borderRadius: '7px', cursor: 'pointer', fontSize: '0.72rem', fontFamily: 'var(--fm)', fontWeight: dashSection === sec ? 700 : 400, color: dashSection === sec ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'all 0.2s', letterSpacing: '0.04em' }}>
@@ -1472,11 +1472,52 @@ export default function AdminPage() {
           .admin-tabs button { white-space: nowrap; padding: 10px 14px !important; font-size: 0.58rem !important; }
         }
 
-        /* ─ Exercise row grid: simplified on mobile ─ */
+        /* ─ Section switcher: scrollable on mobile ─ */
+        @media (max-width: 600px) {
+          .admin-section-switcher {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+          .admin-section-switcher button { white-space: nowrap; flex-shrink: 0; }
+        }
+
+        /* ─ Exercise row: stacked layout on mobile ─ */
+        @media (max-width: 540px) {
+          .ex-row-grid {
+            grid-template-columns: 24px 1fr 48px 48px 48px 40px 28px !important;
+            gap: 4px !important;
+            padding: 8px 8px !important;
+          }
+          .ex-row-grid .ex-label { display: none !important; }
+        }
+        @media (max-width: 420px) {
+          .ex-row-grid {
+            grid-template-columns: 1fr 44px 44px 28px !important;
+            gap: 4px !important;
+          }
+          .ex-row-drag,
+          .ex-row-sets,
+          .ex-row-rpe { display: none !important; }
+        }
+
+        /* ─ Block bar buttons: wrap on mobile ─ */
+        @media (max-width: 540px) {
+          .admin-block-bar { flex-wrap: wrap !important; }
+          .admin-block-bar > button { font-size: 0.56rem !important; padding: 10px 10px !important; }
+        }
+
+        /* ─ Detail stats: 1 row on mobile ─ */
         @media (max-width: 480px) {
-          .ex-row-grid { grid-template-columns: 1fr 48px 64px 48px !important; }
-          .ex-row-grid > :first-child,
-          .ex-row-grid > :nth-child(5) { display: none; }
+          .admin-detail-stats { grid-template-columns: repeat(3, 1fr) !important; }
+          .admin-detail-stats > div { padding: 10px 8px !important; }
+          .admin-detail-stats .stat-val { font-size: 1.1rem !important; }
+        }
+
+        /* ─ Stats tab grid: 1 col on small mobile ─ */
+        @media (max-width: 420px) {
+          .admin-stats-detail-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>

@@ -874,15 +874,45 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceCom
 // ─── EXERCISE ROW ─────────────────────────────────────────────────
 // isAdmin=true  → edits planned_ + target_rpe + coach_note + delete
 // isAdmin=false → reads planned_, edits actual_ + actual_note + completed
-export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
-  we: WorkoutExercise; isAdmin: boolean; userId: string
+export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelete }: {
+  we: WorkoutExercise; isAdmin: boolean; userId: string; weekNumber?: number
   onUpdate: (id: string, data: Partial<WorkoutExercise>) => void
   onDelete: (id: string) => void
 }) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded]     = useState(false)
+  const [setsOpen, setSetsOpen]     = useState(false)
   const [forceComplete, setForceComplete] = useState<boolean | null>(null)
+  const [showHistory, setShowHistory]   = useState(false)
+  const [historyLogs, setHistoryLogs]   = useState<any[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+
   const save = (field: keyof WorkoutExercise, val: string, isNum = false) =>
     onUpdate(we.id, { [field]: isNum ? (val ? Number(val) : null) : (val || null) })
+
+  const loadHistory = async () => {
+    if (historyLoading) return
+    setHistoryLoading(true)
+    // Dohvati set_logs za istu vježbu iz prošlog tjedna
+    const { data } = await supabase
+      .from('set_logs')
+      .select('set_number, weight_kg, reps, rpe, completed, workout_exercises!inner(exercise_id, workouts!inner(workout_date, weeks!inner(week_number, block_id)))')
+      .eq('athlete_id', userId)
+      .eq('workout_exercises.exercise_id', we.exercise_id)
+      .order('set_number')
+    // Filtriraj samo prošli tjedan
+    const prevWeekLogs = (data ?? []).filter((row: any) => {
+      const wn = row.workout_exercises?.workouts?.weeks?.week_number
+      return weekNumber && wn === weekNumber - 1
+    })
+    setHistoryLogs(prevWeekLogs.length ? prevWeekLogs : (data ?? []).slice(0, 6))
+    setHistoryLoading(false)
+  }
+
+  const toggleHistory = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!showHistory) loadHistory()
+    setShowHistory(v => !v)
+  }
 
   // "!" badge — only for admin to toggle coach notes
   const hasNote = !!we.coach_note
@@ -898,18 +928,27 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
             <GripVertical size={13} color="#555" style={{ cursor: 'grab' }} />
           </div>
           {/* Name + inline plan info */}
-          <div style={{ padding: '13px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '6px' }}>
+          <div onClick={() => setSetsOpen(v => !v)} style={{ padding: '13px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '6px', cursor: 'pointer' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f4f4ff', fontFamily: 'var(--fm)', letterSpacing: '-0.01em' }}>{we.exercise?.name ?? '—'}</span>
+              <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#a78bfa', fontFamily: 'var(--fm)', letterSpacing: '-0.01em' }}>{we.exercise?.name ?? '—'}</span>
+              {/* ⓘ history button */}
+              <button onClick={toggleHistory}
+                title="Usporedi s prošlim tjednom"
+                style={{ background: showHistory ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${showHistory ? 'rgba(129,140,248,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showHistory ? '#818cf8' : '#444', fontSize: '0.6rem', fontWeight: 800, flexShrink: 0, transition: 'all 0.15s' }}>
+                i
+              </button>
               {/* "!" badge — click to expand notes */}
-              <button onClick={() => setExpanded(!expanded)}
+              <button onClick={e => { e.stopPropagation(); setExpanded(!expanded) }}
                 style={{ background: hasNote ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${hasNote ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '4px', color: hasNote ? '#f59e0b' : '#555', fontSize: '0.58rem', fontWeight: 800, padding: '2px 7px', cursor: 'pointer', fontFamily: 'var(--fm)', letterSpacing: '0.08em', transition: 'all 0.15s' }}>
                 {expanded ? '▲' : (hasNote ? '! BILJEŠKA' : '+ BILJEŠKA')}
               </button>
+              <div style={{ marginLeft: 'auto', color: setsOpen ? '#818cf8' : '#333', transition: 'transform 0.2s, color 0.2s', transform: setsOpen ? 'rotate(90deg)' : 'none' }}>
+                <ChevronRight size={12} />
+              </div>
             </div>
             {/* Inline plan: sets × reps + kg plan + RPE cilj — all editable */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingLeft: '18px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingLeft: '18px', flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
               <span style={{ fontSize: '0.6rem', color: '#555', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>
                 <EditableField value={we.planned_sets} placeholder="3" type="number" small onSave={v => save('planned_sets', v, true)} />
               </span>
@@ -950,17 +989,26 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
             </svg>
           </div>
           {/* Name + coach instruction */}
-          <div style={{ padding: '13px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '5px' }}>
+          <div onClick={() => setSetsOpen(v => !v)} style={{ padding: '13px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '5px', cursor: 'pointer' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={we.completed ? '#4ade80' : '#6366f1'} strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              <span style={{ fontSize: '0.95rem', fontWeight: 700, color: we.completed ? '#86efac' : '#f4f4ff', fontFamily: 'var(--fm)', letterSpacing: '-0.01em' }}>{we.exercise?.name ?? '—'}</span>
+              <span style={{ fontSize: '0.95rem', fontWeight: 800, color: we.completed ? '#86efac' : '#a78bfa', fontFamily: 'var(--fm)', letterSpacing: '-0.01em' }}>{we.exercise?.name ?? '—'}</span>
+              {/* ⓘ history button */}
+              <button onClick={toggleHistory}
+                title="Usporedi s prošlim tjednom"
+                style={{ background: showHistory ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${showHistory ? 'rgba(129,140,248,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showHistory ? '#818cf8' : '#444', fontSize: '0.6rem', fontWeight: 800, flexShrink: 0, transition: 'all 0.15s' }}>
+                i
+              </button>
               {/* Plan label inline */}
               {(we.planned_sets || we.planned_reps) && (
-                <span style={{ fontSize: '0.6rem', color: '#555', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px', padding: '2px 7px', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>
+                <span style={{ fontSize: '0.6rem', color: '#666', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px', padding: '2px 7px', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>
                   {we.planned_sets}×{we.planned_reps}{we.planned_weight_kg ? ` · ${we.planned_weight_kg}kg` : ''}
                   {(we.target_rpe ?? we.planned_rpe) ? ` @ RPE ${we.target_rpe ?? we.planned_rpe}` : ''}
                 </span>
               )}
+              <div style={{ marginLeft: 'auto', color: setsOpen ? '#818cf8' : '#333', transition: 'transform 0.2s, color 0.2s', transform: setsOpen ? 'rotate(90deg)' : 'none' }}>
+                <ChevronRight size={12} />
+              </div>
             </div>
             {/* Coach note — always visible as instruction */}
             {we.coach_note && (
@@ -978,6 +1026,32 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
               <Check size={14} strokeWidth={we.completed ? 3 : 1.5} />
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ── History panel (prošli tjedan) ── */}
+      {showHistory && (
+        <div style={{ background: '#060612', borderBottom: '1px solid rgba(129,140,248,0.12)', borderTop: '1px solid rgba(129,140,248,0.1)', padding: '12px 16px', animation: 'fadeUp 0.18s ease' }}>
+          <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: '#818cf8', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '8px' }}>PROŠLI TJEDAN — {we.exercise?.name}</div>
+          {historyLoading ? (
+            <div style={{ fontSize: '0.7rem', color: '#444', display: 'flex', alignItems: 'center', gap: '6px' }}><Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> Učitavanje...</div>
+          ) : historyLogs.length === 0 ? (
+            <div style={{ fontSize: '0.7rem', color: '#333', fontFamily: 'var(--fm)' }}>Nema podataka za prošli tjedan.</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr 1fr', gap: '0', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '6px', overflow: 'hidden' }}>
+              {['SET','KG','REPS','RPE'].map(h => (
+                <div key={h} style={{ padding: '5px 10px', background: 'rgba(0,0,0,0.3)', fontSize: '0.38rem', letterSpacing: '0.2em', color: '#444', fontWeight: 700, fontFamily: 'var(--fm)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</div>
+              ))}
+              {historyLogs.map((l: any, i: number) => (
+                [
+                  <div key={`s${i}`} style={{ padding: '7px 10px', fontSize: '0.72rem', color: '#6366f1', fontWeight: 800, fontFamily: 'var(--fd)', borderBottom: i < historyLogs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>S{l.set_number}</div>,
+                  <div key={`kg${i}`} style={{ padding: '7px 10px', fontSize: '0.78rem', color: '#c7d2fe', fontWeight: 700, borderBottom: i < historyLogs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>{l.weight_kg ?? '—'}</div>,
+                  <div key={`r${i}`} style={{ padding: '7px 10px', fontSize: '0.78rem', color: '#94a3b8', borderBottom: i < historyLogs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>{l.reps ?? '—'}</div>,
+                  <div key={`rpe${i}`} style={{ padding: '7px 10px', fontSize: '0.78rem', color: '#fbbf24', borderBottom: i < historyLogs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>{l.rpe ?? '—'}</div>,
+                ]
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -1017,17 +1091,19 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
         </div>
       )}
 
-      {/* Set log section */}
-      <div>
-        <SetLogSection
-          we={we} userId={userId} isAdmin={isAdmin}
-          onAggregateUpdate={data => onUpdate(we.id, data)}
-          forceComplete={forceComplete}
-        />
-      </div>
+      {/* Set log section — collapse/expand klikom na naziv vježbe */}
+      {setsOpen && (
+        <div style={{ animation: 'fadeUp 0.18s ease' }}>
+          <SetLogSection
+            we={we} userId={userId} isAdmin={isAdmin}
+            onAggregateUpdate={data => onUpdate(we.id, data)}
+            forceComplete={forceComplete}
+          />
+        </div>
+      )}
 
-      {/* Lifter: inline comment field — always visible */}
-      {!isAdmin && (
+      {/* Lifter: inline comment field — vidljivo samo kad su setovi otvoreni */}
+      {!isAdmin && setsOpen && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <span style={{ fontSize: '0.42rem', color: '#444', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>KOMENTAR</span>
           <div style={{ flex: 1 }}>
@@ -1041,8 +1117,8 @@ export function ExerciseRow({ we, isAdmin, userId, onUpdate, onDelete }: {
 }
 
 // ─── WORKOUT CARD — editorial style ──────────────────────────────
-export function WorkoutCard({ workout, exercises, isAdmin, userId, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }: {
-  workout: Workout; exercises: Exercise[]; isAdmin: boolean; userId: string
+export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }: {
+  workout: Workout; exercises: Exercise[]; isAdmin: boolean; userId: string; weekNumber?: number
   onUpdateWorkout: (id: string, data: Partial<Workout>) => void
   onDeleteWorkout: (id: string) => void
   onAddExercise: (workoutId: string, ex: Exercise) => void
@@ -1127,7 +1203,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, onUpdateWorko
 
             {/* Exercises */}
             {workout.workout_exercises?.map(we => (
-              <ExerciseRow key={we.id} we={we} isAdmin={isAdmin} userId={userId} onUpdate={handleUpdateExercise} onDelete={onDeleteExercise} />
+              <ExerciseRow key={we.id} we={we} isAdmin={isAdmin} userId={userId} weekNumber={weekNumber} onUpdate={handleUpdateExercise} onDelete={onDeleteExercise} />
             ))}
 
             {/* Add vježbu + bilješka footer */}
@@ -1293,7 +1369,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
       {open && (
         <div style={{ padding: '14px', background: '#08080f' }}>
           {week.workouts?.map(w => (
-            <WorkoutCard key={w.id} workout={w} exercises={exercises} isAdmin={isAdmin} userId={userId}
+            <WorkoutCard key={w.id} workout={w} exercises={exercises} isAdmin={isAdmin} userId={userId} weekNumber={week.week_number}
               onUpdateWorkout={onUpdateWorkout} onDeleteWorkout={onDeleteWorkout}
               onAddExercise={onAddExercise} onUpdateExercise={onUpdateExercise} onDeleteExercise={onDeleteExercise} />
           ))}

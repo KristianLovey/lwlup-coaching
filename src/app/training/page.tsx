@@ -287,7 +287,7 @@ export default function TrainingPage() {
     await supabase.from('notifications').insert(rows)
   }
 
-  const canEdit = isAdmin || isCoach
+  const canEdit = false // Admini/treneri editiraju isključivo kroz admin panel
 
   const updateExercise = async (weId: string, data: Partial<WorkoutExercise>) => {
     const filtered = canEdit
@@ -518,6 +518,18 @@ export default function TrainingPage() {
             <>
               {/* Competition countdown banner */}
               {userId && <CompetitionBanner userId={userId} />}
+
+              {/* Admin/trener info banner */}
+              {(isAdmin || isCoach) && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 16px', marginBottom: '20px', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '0.62rem', color: '#f59e0b', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.05em' }}>
+                    Gledaš trening kao lifter. Za uređivanje programa idi na
+                  </span>
+                  <a href="/admin" style={{ fontSize: '0.62rem', color: '#fbbf24', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.08em', textDecoration: 'none', borderBottom: '1px solid rgba(251,191,36,0.4)', paddingBottom: '1px' }}>
+                    ADMIN PANEL →
+                  </a>
+                </div>
+              )}
 
               {(block.weeks?.length ?? 0) === 0 && (
                 <div style={{ textAlign: 'center', padding: '80px 0', color: '#333' }}>
