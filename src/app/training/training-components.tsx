@@ -617,14 +617,20 @@ export function CompetitionBanner({ userId }: { userId: string }) {
 
 // ─── SET LOG ROW — one box per set ─────────────────────────────────
 // Admin sees planned data. Lifter gets N input boxes (one per set).
-export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceComplete }: {
+export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   we: WorkoutExercise; userId: string; isAdmin: boolean
   onAggregateUpdate: (data: Partial<WorkoutExercise>) => void
-  forceComplete?: boolean | null
 }) {
   const plannedSets = we.planned_sets ?? 3
   const [logs, setLogs] = useState<SetLog[]>([])
   const [saving, setSaving] = useState(false)
+
+  // Propagate set counts up for progress tracking
+  const propagateCounts = (updatedLogs: SetLog[]) => {
+    if (isAdmin) return
+    const completedSets = updatedLogs.filter(l => l.completed || l.weight_kg || l.reps).length
+    onAggregateUpdate({ _completedSets: completedSets, _totalSets: updatedLogs.length })
+  }
 
   // Initialise logs array — one entry per planned set
   useEffect(() => {
@@ -635,27 +641,15 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceCom
       .order('set_number')
       .then(({ data }) => {
         const existing = (data ?? []) as SetLog[]
-        // Fill in missing sets
         const filled: SetLog[] = Array.from({ length: plannedSets }, (_, i) => {
           const found = existing.find(s => s.set_number === i + 1)
           return found ?? { set_number: i + 1, weight_kg: null, reps: null, rpe: null, completed: false }
         })
         setLogs(filled)
+        propagateCounts(filled)
       })
   }, [we.id, plannedSets, isAdmin])
 
-  // React to external forceComplete (exercise marked done/undone from row)
-  useEffect(() => {
-    if (forceComplete === null || forceComplete === undefined || isAdmin || logs.length === 0) return
-    const newLogs = logs.map(l => ({ ...l, completed: forceComplete }))
-    setLogs(newLogs)
-    Promise.all(newLogs.map(log =>
-      supabase.from('set_logs').upsert({
-        workout_exercise_id: we.id, athlete_id: userId,
-        set_number: log.set_number, completed: forceComplete,
-      }, { onConflict: 'workout_exercise_id,athlete_id,set_number' })
-    ))
-  }, [forceComplete]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveSet = async (setNum: number, field: keyof SetLog, raw: string) => {
     const val = (field === 'weight_kg' || field === 'rpe') ? (raw ? Number(raw) : null) : (raw || null)
@@ -664,23 +658,29 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceCom
     const updated = logs.map(s => s.set_number === setNum ? { ...s, [field]: val } : s)
     setLogs(updated)
 
-    const { error: setErr } = await supabase.from('set_logs').upsert({
-      workout_exercise_id: we.id,
-      athlete_id: userId,
-      set_number: setNum,
-      [field]: val,
-    }, { onConflict: 'workout_exercise_id,athlete_id,set_number' })
-
-    if (setErr) console.error('set_logs upsert error:', JSON.stringify(setErr))
-    else console.log('set_logs upsert OK — we:', we.id, 'set:', setNum, field, val)
+    // Try insert first; if row exists (duplicate), update instead
+    const { error: insertErr } = await supabase.from('set_logs').insert({
+      workout_exercise_id: we.id, athlete_id: userId,
+      set_number: setNum, [field]: val,
+    })
+    if (insertErr) {
+      // Row exists — update the specific field
+      const { error: updateErr } = await supabase.from('set_logs')
+        .update({ [field]: val })
+        .eq('workout_exercise_id', we.id)
+        .eq('athlete_id', userId)
+        .eq('set_number', setNum)
+      if (updateErr) console.error('set_logs update error:', JSON.stringify(updateErr))
+    }
 
     // Update aggregate actual_ on workout_exercises so progress tracking still works
-    const completed = updated.filter(s => s.weight_kg || s.reps)
-    if (completed.length > 0) {
-      const avgKg = completed.reduce((s, x) => s + (x.weight_kg ?? 0), 0) / completed.length
-      const lastRpe = completed[completed.length - 1].rpe
+    const filled = updated.filter(s => s.weight_kg || s.reps)
+    if (filled.length > 0) {
+      const avgKg = filled.reduce((s, x) => s + (x.weight_kg ?? 0), 0) / filled.length
+      const lastRpe = filled[filled.length - 1].rpe
       onAggregateUpdate({ actual_weight_kg: avgKg, actual_rpe: lastRpe })
     }
+    propagateCounts(updated)
     setSaving(false)
   }
 
@@ -690,13 +690,15 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceCom
     const nowDone = !s.completed
     const newLogs = logs.map(l => l.set_number === setNum ? { ...l, completed: nowDone } : l)
     setLogs(newLogs)
-    await supabase.from('set_logs').upsert({
-      workout_exercise_id: we.id, athlete_id: userId,
-      set_number: setNum, completed: nowDone,
-    }, { onConflict: 'workout_exercise_id,set_number' })
+    const { error: insErr } = await supabase.from('set_logs').insert({
+      workout_exercise_id: we.id, athlete_id: userId, set_number: setNum, completed: nowDone,
+    })
+    if (insErr) await supabase.from('set_logs').update({ completed: nowDone })
+      .eq('workout_exercise_id', we.id).eq('athlete_id', userId).eq('set_number', setNum)
     // Auto-complete exercise when all sets done (or uncheck if any undone)
     const allDone = newLogs.length > 0 && newLogs.every(l => l.completed)
     onAggregateUpdate({ completed: allDone })
+    propagateCounts(newLogs)
   }
 
   if (isAdmin) {
@@ -772,8 +774,8 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate, forceCom
 
   // Lifter: aligned table rows — KG + REPS + RPE
   const targetRpe = we.target_rpe ?? we.planned_rpe
-  // Grid: SET | KG | REPS | RPE | done  — first col matches exercise row (52px)
-  const SLR_GRID = '52px 1fr 1fr 88px 48px'
+  // Grid: SET | KG | REPS | RPE | done  — cols match exercise row (52px left, 44px right)
+  const SLR_GRID = '52px 1fr 1fr 80px 44px'
   const cellStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)' }
   const inputStyle: React.CSSProperties = { width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#e8e8ff', padding: '5px 6px', fontSize: '1rem', outline: 'none', fontFamily: 'var(--fm)', fontWeight: 700, textAlign: 'center', boxSizing: 'border-box' }
 
@@ -882,7 +884,6 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
 }) {
   const [expanded, setExpanded]     = useState(false)
   const [setsOpen, setSetsOpen]     = useState(false)
-  const [forceComplete, setForceComplete] = useState<boolean | null>(null)
   const [showHistory, setShowHistory]   = useState(false)
   const [historyLogs, setHistoryLogs]   = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
@@ -1003,8 +1004,8 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
           </div>
         </div>
       ) : (
-        /* Lifter: 3-col — status | name+coach note | done */
-        <div className="ex-row-main" style={{ display: 'grid', gridTemplateColumns: '52px 1fr 44px', alignItems: 'stretch', borderBottom: '1px solid rgba(255,255,255,0.08)', minHeight: '58px' }}>
+        /* Lifter: 2-col — status | name+coach note */
+        <div className="ex-row-main" style={{ display: 'grid', gridTemplateColumns: '52px 1fr', alignItems: 'stretch', borderBottom: '1px solid rgba(255,255,255,0.08)', minHeight: '58px' }}>
           {/* Status dot */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={we.completed ? '#4ade80' : '#555'} strokeWidth="2.5">
@@ -1041,15 +1042,6 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
                 ↳ {we.coach_note}
               </div>
             )}
-          </div>
-          {/* Done toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
-            <button
-              onClick={() => { const nd = !we.completed; onUpdate(we.id, { completed: nd }); setForceComplete(nd) }}
-              style={{ background: we.completed ? 'rgba(34,197,94,0.12)' : 'transparent', border: 'none', cursor: 'pointer', color: we.completed ? '#4ade80' : '#444', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
-              title={we.completed ? 'Označi kao neodrađeno' : 'Označi kao odrađeno'}>
-              <Check size={14} strokeWidth={we.completed ? 3 : 1.5} />
-            </button>
           </div>
         </div>
       )}
@@ -1122,7 +1114,6 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
           <SetLogSection
             we={we} userId={userId} isAdmin={isAdmin}
             onAggregateUpdate={data => onUpdate(we.id, data)}
-            forceComplete={forceComplete}
           />
         </div>
       )}
@@ -1309,11 +1300,17 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
   })
   const [showNotes, setShowNotes] = useState(false)
   const allExercises = week.workouts?.flatMap(w => w.workout_exercises ?? []) ?? []
-  const totalEx = allExercises.length
-  const doneEx = allExercises.filter(e => e.completed).length
+  const totalSets = allExercises.reduce((s, e) => s + (e._totalSets ?? e.planned_sets ?? 0), 0)
+  const doneSets = allExercises.reduce((s, e) => {
+    const fromLogs = e._completedSets ?? 0
+    const fromCompleted = e.completed ? (e._totalSets ?? e.planned_sets ?? 0) : 0
+    return s + Math.max(fromLogs, fromCompleted)
+  }, 0)
   const done = week.workouts?.filter(w => w.completed).length ?? 0
   const total = week.workouts?.length ?? 0
-  const pct = totalEx > 0 ? (doneEx / totalEx) * 100 : (total > 0 ? (done / total) * 100 : 0)
+  const pct = totalSets > 0 ? (doneSets / totalSets) * 100 : (total > 0 ? (done / total) * 100 : 0)
+  const totalEx = allExercises.length
+  const doneEx = allExercises.filter(e => e.completed).length
   const hasNotes = !!(week.notes?.trim())
 
   return (
@@ -1338,7 +1335,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
                 <div style={{ width: '52px', height: '3px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', inset: '0 auto 0 0', width: `${pct}%`, background: pct === 100 ? '#22c55e' : 'linear-gradient(90deg, #6366f1, #818cf8)', boxShadow: pct === 100 ? '0 0 8px rgba(34,197,94,0.6)' : '0 0 8px rgba(99,102,241,0.5)', transition: 'width 0.5s cubic-bezier(0.16,1,0.3,1)', borderRadius: '2px' }} />
                 </div>
-                <span style={{ fontSize: '0.54rem', color: pct === 100 ? '#4ade80' : '#8888bb', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.05em' }}>{totalEx > 0 ? `${doneEx}/${totalEx}` : `${done}/${total}`}</span>
+                <span style={{ fontSize: '0.54rem', color: pct === 100 ? '#4ade80' : '#8888bb', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.05em' }}>{totalSets > 0 ? `${doneSets}/${totalSets}` : `${doneEx}/${totalEx}`}</span>
               </div>
             )}
             <div style={{ color: '#888', transition: 'transform 0.25s, color 0.2s', transform: open ? 'rotate(90deg)' : 'none' }}>

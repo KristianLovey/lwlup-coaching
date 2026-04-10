@@ -8,6 +8,8 @@ export type WorkoutExercise = {
   actual_sets: number | null; actual_reps: string | null; actual_weight_kg: number | null
   actual_rpe: number | null; actual_note: string | null
   notes: string | null; completed: boolean; exercise?: Exercise
+  // runtime-only (not in DB) — used for progress tracking
+  _completedSets?: number; _totalSets?: number
 }
 export type Workout = {
   id: string; week_id: string; athlete_id: string; day_name: string; workout_date: string

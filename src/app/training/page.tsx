@@ -72,6 +72,7 @@ export default function TrainingPage() {
             w.workouts?.sort((a: Workout, b: Workout) => a.workout_date.localeCompare(b.workout_date))
             w.workouts?.forEach((wo: Workout) => wo.workout_exercises?.sort((a: WorkoutExercise, b: WorkoutExercise) => a.exercise_order - b.exercise_order))
           })
+          blockData = await injectSetProgress(blockData, user.id)
         }
         setBlock(blockData)
         const { data: ab } = await supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', user.id).order('created_at', { ascending: false })
@@ -82,6 +83,35 @@ export default function TrainingPage() {
   }, [])
 
   const effectiveAthleteId = userId
+
+  // Inject _completedSets/_totalSets into block weeks from set_logs
+  const injectSetProgress = async (blockData: Block, uid: string) => {
+    const allWeIds = (blockData.weeks ?? []).flatMap((w: Week) =>
+      (w.workouts ?? []).flatMap((wo: Workout) => (wo.workout_exercises ?? []).map((we: WorkoutExercise) => we.id))
+    )
+    if (allWeIds.length === 0) return blockData
+    const { data: setLogs } = await supabase
+      .from('set_logs')
+      .select('workout_exercise_id, weight_kg, reps, completed')
+      .eq('athlete_id', uid)
+      .in('workout_exercise_id', allWeIds)
+    if (!setLogs) return blockData
+    const byWeId: Record<string, typeof setLogs> = {}
+    for (const sl of setLogs) {
+      if (!byWeId[sl.workout_exercise_id]) byWeId[sl.workout_exercise_id] = []
+      byWeId[sl.workout_exercise_id].push(sl)
+    }
+    blockData.weeks?.forEach((w: Week) => {
+      w.workouts?.forEach((wo: Workout) => {
+        wo.workout_exercises?.forEach((we: WorkoutExercise) => {
+          const logs = byWeId[we.id] ?? []
+          we._totalSets = Math.max(logs.length, we.planned_sets ?? 0)
+          we._completedSets = logs.filter((l: any) => l.completed || l.weight_kg || l.reps).length
+        })
+      })
+    })
+    return blockData
+  }
 
   const addWeek = async () => {
     if (!block || !userId) return; setSaving(true)
@@ -125,7 +155,8 @@ export default function TrainingPage() {
         w.workouts?.sort((a: Workout, b: Workout) => a.workout_date.localeCompare(b.workout_date))
         w.workouts?.forEach((wo: Workout) => wo.workout_exercises?.sort((a: WorkoutExercise, b: WorkoutExercise) => a.exercise_order - b.exercise_order))
       })
-      setBlock({ ...data, status: 'active' })
+      const injected = userId ? await injectSetProgress({ ...data, status: 'active' }, userId) : { ...data, status: 'active' }
+      setBlock(injected)
     }
     setShowBlockSelector(false); setLoading(false)
   }
@@ -272,7 +303,7 @@ export default function TrainingPage() {
     if (!error && data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, workout_exercises: [...(wo.workout_exercises ?? []), data] } : wo) })) } : b)
     setSaving(false)
   }
-  const LIFTER_FIELDS: (keyof WorkoutExercise)[] = ['actual_sets','actual_reps','actual_weight_kg','actual_rpe','actual_note','completed']
+  const LIFTER_FIELDS: (keyof WorkoutExercise)[] = ['actual_sets','actual_reps','actual_weight_kg','actual_rpe','actual_note','completed','_completedSets','_totalSets']
 
   // ── Notify mentor when lifter saves actual data ─────────────────
   const notifyMentor = async (msg: string) => {
@@ -289,12 +320,15 @@ export default function TrainingPage() {
 
   const canEdit = false // Admini/treneri editiraju isključivo kroz admin panel
 
+  const RUNTIME_ONLY = ['_completedSets', '_totalSets']
   const updateExercise = async (weId: string, data: Partial<WorkoutExercise>) => {
     const filtered = canEdit
       ? data
       : Object.fromEntries(Object.entries(data).filter(([k]) => LIFTER_FIELDS.includes(k as keyof WorkoutExercise)))
     if (Object.keys(filtered).length === 0) return
-    await supabase.from('workout_exercises').update(filtered).eq('id', weId)
+    // Strip runtime-only fields before sending to DB
+    const forDb = Object.fromEntries(Object.entries(filtered).filter(([k]) => !RUNTIME_ONLY.includes(k)))
+    if (Object.keys(forDb).length > 0) await supabase.from('workout_exercises').update(forDb).eq('id', weId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.map(we => we.id === weId ? { ...we, ...filtered } : we) })) })) } : b)
     // Notify if lifter logged actual data
     if (!canEdit && (filtered.actual_weight_kg || filtered.actual_rpe || filtered.completed)) {
@@ -312,7 +346,15 @@ export default function TrainingPage() {
 
   const totalWorkouts = block?.weeks?.flatMap(w => w.workouts ?? []).length ?? 0
   const completedWorkouts = block?.weeks?.flatMap(w => w.workouts ?? []).filter(w => w.completed).length ?? 0
-  const pct = totalWorkouts > 0 ? Math.round((completedWorkouts / totalWorkouts) * 100) : 0
+
+  const allExercises = block?.weeks?.flatMap(w => w.workouts?.flatMap(wo => wo.workout_exercises ?? []) ?? []) ?? []
+  const totalSets = allExercises.reduce((s, e) => s + (e._totalSets ?? e.planned_sets ?? 0), 0)
+  const doneSets = allExercises.reduce((s, e) => {
+    const fromLogs = e._completedSets ?? 0
+    const fromCompleted = e.completed ? (e._totalSets ?? e.planned_sets ?? 0) : 0
+    return s + Math.max(fromLogs, fromCompleted)
+  }, 0)
+  const pct = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : (totalWorkouts > 0 ? Math.round((completedWorkouts / totalWorkouts) * 100) : 0)
 
   return (
     <div style={{ background: '#04040a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
@@ -406,7 +448,7 @@ export default function TrainingPage() {
                 {[
                   { val: block.weeks?.length ?? 0, label: 'TJEDANA' },
                   { val: totalWorkouts, label: 'TRENINGA' },
-                  { val: `${completedWorkouts}/${totalWorkouts}`, label: 'ZAVRŠENO', accent: completedWorkouts > 0 },
+                  { val: totalSets > 0 ? `${doneSets}/${totalSets}` : `${completedWorkouts}/${totalWorkouts}`, label: 'SERIJA', accent: doneSets > 0 },
                   { val: `${pct}%`, label: 'NAPREDAK', accent: pct > 50 },
                 ].map((s, i) => (
                   <div key={i} style={{ padding: '14px 20px', background: '#060610', textAlign: 'center', minWidth: '80px', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>

@@ -397,10 +397,6 @@ function WeekPanel({ week, exercises, onDeleteWeek, onCopyWeek, onAddWorkout, on
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.06)' : 'none' }} onClick={() => setOpen(!open)}>
         <div style={{ fontFamily: 'var(--fd)', fontSize: '0.75rem', fontWeight: 800, color: 'rgba(255,255,255,0.2)', minWidth: '32px' }}>W{week.week_number}</div>
         <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '0.88rem', color: '#fff', fontWeight: 700, fontFamily: 'var(--fm)' }}>Tjedan {week.week_number}</span>
-            <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.25)' }}>{week.start_date} — {week.end_date}</span>
-          </div>
           {totalCount > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '5px' }}>
               <div style={{ height: '2px', width: '60px', background: 'rgba(255,255,255,0.08)', position: 'relative' }}>
