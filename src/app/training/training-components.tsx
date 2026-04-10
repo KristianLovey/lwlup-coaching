@@ -1330,14 +1330,6 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
             <span className="week-w-num" style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,4.5vw,3.6rem)', fontWeight: 900, lineHeight: 1, background: 'linear-gradient(135deg, #818cf8 0%, #6366f1 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '-0.05em' }}>
               W{week.week_number}
             </span>
-            <div>
-              <div style={{ fontSize: '0.82rem', color: '#b0b0c8', fontWeight: 600, fontFamily: 'var(--fm)', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
-                Tjedan {week.week_number}
-              </div>
-              <div className="week-date-range" style={{ fontSize: '0.56rem', color: '#555', letterSpacing: '0.1em', marginTop: '2px' }}>
-                {week.start_date} — {week.end_date}
-              </div>
-            </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '4px' }}>
             {/* Progress pill */}
@@ -1382,14 +1374,11 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
           <div className="day-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(total, 7)}, 1fr)`, margin: '16px 0 0', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
             {week.workouts?.map((w, i) => (
               <div key={w.id} style={{ padding: '10px 12px', borderRight: i < total - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none', background: w.completed ? 'rgba(34,197,94,0.06)' : 'rgba(0,0,0,0.2)', transition: 'background 0.2s' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '5px' }}>
-                  <span style={{ fontSize: '0.48rem', letterSpacing: '0.22em', color: w.completed ? '#4ade80' : '#666', fontFamily: 'var(--fm)', fontWeight: 800 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <span style={{ fontSize: '0.52rem', letterSpacing: '0.22em', color: w.completed ? '#4ade80' : '#666', fontFamily: 'var(--fm)', fontWeight: 800 }}>
                     D{i + 1}
                   </span>
                   {w.completed && <Check size={9} color="#22c55e" strokeWidth={3} />}
-                </div>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: w.completed ? '#4ade80' : '#c0c0d8', fontFamily: 'var(--fm)', lineHeight: 1.2, letterSpacing: '-0.01em' }}>
-                  {w.day_name}
                 </div>
                 {/* Bottom accent */}
                 <div style={{ height: '2px', marginTop: '8px', background: w.completed ? '#22c55e' : 'rgba(99,102,241,0.25)', borderRadius: '1px', boxShadow: w.completed ? '0 0 8px rgba(34,197,94,0.4)' : 'none' }} />
