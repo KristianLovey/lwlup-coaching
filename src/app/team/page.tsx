@@ -5,6 +5,7 @@ import { Trophy, TrendingUp, Award, Instagram, Loader2 } from 'lucide-react'
 import Footer from '@/app/components/Footer'
 import Navbar from '@/app/components/Navbar'
 import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/context/LanguageContext'
 
 const supabase = createClient()
 
@@ -91,6 +92,7 @@ function ParticleCanvas() {
 }
 
 export default function TeamPage() {
+  const { t } = useLanguage()
   const [filter, setFilter] = useState('ALL')
   const [hoveredMember, setHoveredMember] = useState<string | null>(null)
   const [athletes, setAthletes] = useState<AthleteStat[]>([])
@@ -126,10 +128,10 @@ export default function TeamPage() {
   const topGlp = athletes.length > 0 ? Math.max(...athletes.map(a => a.glp)) : 0
 
   const TEAM_STATS = [
-    { label: 'AKTIVNIH ATLETA',   value: String(totalAthletes),                icon: <Trophy size={20} /> },
-    { label: 'NAJVEĆI TOTAL',     value: `${maxTotal}kg`,                      icon: <Award size={20} /> },
-    { label: 'KOMBINIRANI TOTAL', value: `${combinedTotal.toLocaleString()}kg`, icon: <TrendingUp size={20} /> },
-    { label: 'NAJVIŠI GLP',       value: String(topGlp),                       icon: <Trophy size={20} /> },
+    { label: t('team.stats.athletes'), value: String(totalAthletes),                icon: <Trophy size={20} /> },
+    { label: t('team.stats.bestTotal'), value: `${maxTotal}kg`,                     icon: <Award size={20} /> },
+    { label: t('team.stats.combined'), value: `${combinedTotal.toLocaleString()}kg`, icon: <TrendingUp size={20} /> },
+    { label: t('team.stats.glp'),      value: String(topGlp),                       icon: <Trophy size={20} /> },
   ]
 
   return (
@@ -145,15 +147,15 @@ export default function TeamPage() {
         <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '900px', height: '500px', background: 'radial-gradient(ellipse at center top, rgba(255,255,255,0.06) 0%, transparent 70%)', zIndex: 1, pointerEvents: 'none' }} />
         <div ref={heroReveal.ref} className="team-hero-inner" style={{ position: 'relative', zIndex: 2, maxWidth: '1200px', margin: '0 auto', padding: '0 60px' }}>
           <div style={{ opacity: heroReveal.visible ? 1 : 0, transform: heroReveal.visible ? 'none' : 'translateY(35px)', transition: 'all 1s cubic-bezier(0.16,1,0.3,1)' }}>
-            <div style={{ fontSize: '0.75rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.45)', marginBottom: '20px' }}>UPOZNAJ</div>
+            <div style={{ fontSize: '0.75rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.45)', marginBottom: '20px' }}>{t('team.eyebrow')}</div>
             <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4rem, 10vw, 8rem)', lineHeight: 0.9, marginBottom: '30px' }}>
               LWL UP<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>TEAM</span>
             </h1>
             <p style={{ fontSize: '1.15rem', color: 'rgba(255,255,255,0.65)', maxWidth: '700px', margin: '0 auto 60px', lineHeight: 1.85, fontWeight: 300 }}>
-              Naši natjecatelji su srce i duša LWL UP-a. Od državnih prvaka do europskih natjecatelja, svaki član donosi jedinstvenu predanost i neumornu želju za napretkom.
+              {t('team.desc')}
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginBottom: '60px' }}>
-              {[['ALL','SVI'],['MEN','MUŠKARCI'],['WOMEN','ŽENE']].map(([f, label]) => (
+              {([['ALL', t('team.filter.all')], ['MEN', t('team.filter.men')], ['WOMEN', t('team.filter.women')]] as [string,string][]).map(([f, label]) => (
                 <button key={f} onClick={() => setFilter(f)}
                   style={{ padding: '11px 30px', background: filter === f ? '#fff' : 'rgba(255,255,255,0.04)', color: filter === f ? '#000' : 'rgba(255,255,255,0.55)', border: filter === f ? 'none' : '1px solid rgba(255,255,255,0.12)', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.2em', cursor: 'pointer', transition: '0.25s', fontFamily: 'var(--fm)' }}
                   onMouseEnter={e => { if (filter !== f) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; e.currentTarget.style.color = '#fff' } }}
@@ -184,7 +186,7 @@ export default function TeamPage() {
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '80px 0', color: 'rgba(255,255,255,0.3)' }}>
             <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} />
-            <span style={{ fontSize: '0.8rem', letterSpacing: '0.2em' }}>UČITAVANJE TIMA...</span>
+            <span style={{ fontSize: '0.8rem', letterSpacing: '0.2em' }}>{t('team.loading')}</span>
           </div>
         ) : (
           <div className="team-members-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '24px' }}>
@@ -212,6 +214,8 @@ export default function TeamPage() {
                     <img
                       src={member.img}
                       alt={member.name}
+                      loading="lazy"
+                      decoding="async"
                       style={{ width: '100%', height: '100%', objectFit: 'cover', filter: hoveredMember === member.id ? 'grayscale(0.2) brightness(0.75)' : 'grayscale(0.6) brightness(0.6)', transform: hoveredMember === member.id ? 'scale(1.08)' : 'scale(1)', transition: '0.8s cubic-bezier(0.16,1,0.3,1)' }}
                       onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
                     />
@@ -276,7 +280,7 @@ export default function TeamPage() {
                     </>
                   ) : (
                     <div style={{ padding: '36px 0', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                      <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.2em' }}>PODACI USKORO DOSTUPNI</div>
+                      <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.2em' }}>{t('team.noData')}</div>
                     </div>
                   )}
 
@@ -301,14 +305,14 @@ export default function TeamPage() {
       <section style={{ padding: '120px 60px', background: '#0a0a0a', borderTop: '1px solid rgba(255,255,255,0.08)', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <div ref={ctaReveal.ref} style={{ opacity: ctaReveal.visible ? 1 : 0, transform: ctaReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
           <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem, 8vw, 6rem)', marginBottom: '30px', lineHeight: 0.9 }}>
-            POSTANI DIO<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>TIMA</span>
+            {t('team.cta.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>{t('team.cta.title2')}</span>
           </h2>
           <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.6)', maxWidth: '600px', margin: '0 auto 50px', lineHeight: 1.85, fontWeight: 300 }}>
-            Tražiš zajednicu koja te razumije i sistem koji radi? Pridruži se LWL UP-u.
+            {t('team.cta.desc')}
           </p>
           <Link href="/survey" style={{ textDecoration: 'none' }}>
             <button className="join-button" style={{ padding: '20px 60px', background: '#fff', color: '#000', border: 'none', fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.25em', cursor: 'pointer', transition: '0.4s', position: 'relative', overflow: 'hidden', fontFamily: 'var(--fm)' }}>
-              <span style={{ position: 'relative', zIndex: 2 }}>POSTANI ČLAN</span>
+              <span style={{ position: 'relative', zIndex: 2 }}>{t('team.cta.btn')}</span>
             </button>
           </Link>
         </div>

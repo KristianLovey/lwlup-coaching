@@ -1,5 +1,7 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
+import { useLanguage } from '@/context/LanguageContext'
+import type { TranslationKey } from '@/lib/i18n'
 
 const LIFT_DETAILS = {
   SQUAT: {
@@ -7,15 +9,15 @@ const LIFT_DETAILS = {
     orientation: 'portrait' as const,
     meta: {
       num: '01',
-      sub: 'Temelj snage donjih ekstremiteta',
-      muscles: 'Kvadricepsi · Gluteus · Hamstringsi',
+      sub: 'bt.squat.sub' as TranslationKey,
+      muscles: 'bt.squat.muscles' as TranslationKey,
       cue: 'Chest up. Knees out. Drive.',
     },
     points: [
-      { top: '33%', left: '50%', label: 'POLOŽAJ ŠIPKE', desc: 'High bar — šipka leži na gornjem trapezu. Uspravniji torzo, duži ROM. Low bar — stražnji deltoid, manji ROM, više aktivacije posterior chaina.' },
-      { top: '46%', left: '45%', label: 'BRACE & BELT', desc: 'Maksimalni intraabdominalni tlak kroz cijeli pokret. Belt nije zamjena za aktivan brace, on ga pojačava.' },
-      { top: '62%', left: '44%', label: 'DUBINA & KOLJENA', desc: 'Kuk mora proći ispod vrha koljena za "good lift" prema IPF pravilima. Koljena prate smjer prstiju.' },
-      { top: '76%', left: '48%', label: 'STOPALA', desc: 'Tripod foot — ravnomjerna težina kroz petu, vanjski rub i prednji dio stopala. Peta se ne smije podizati.' },
+      { top: '33%', left: '50%', label: 'bt.squat.p0.label' as TranslationKey, desc: 'bt.squat.p0.desc' as TranslationKey },
+      { top: '46%', left: '45%', label: 'bt.squat.p1.label' as TranslationKey, desc: 'bt.squat.p1.desc' as TranslationKey },
+      { top: '62%', left: '44%', label: 'bt.squat.p2.label' as TranslationKey, desc: 'bt.squat.p2.desc' as TranslationKey },
+      { top: '76%', left: '48%', label: 'bt.squat.p3.label' as TranslationKey, desc: 'bt.squat.p3.desc' as TranslationKey },
     ],
   },
   'BENCH PRESS': {
@@ -23,16 +25,16 @@ const LIFT_DETAILS = {
     orientation: 'landscape' as const,
     meta: {
       num: '02',
-      sub: 'Horizontalni potisak s klupe',
-      muscles: 'Pectoralis · Triceps · Prednji deltoid',
+      sub: 'bt.bench.sub' as TranslationKey,
+      muscles: 'bt.bench.muscles' as TranslationKey,
       cue: 'Arch. Leg drive. Stay tight.',
     },
     points: [
-      { top: '26%', left: '42%', label: 'HVAT & ŠIPKA', desc: 'Širina hvata određuje kut lakta. Šipka se spušta na donji dio prsa. Zapešća ravna, ne savinuta.' },
-      { top: '60%', left: '30%', label: 'LEĐA I GLAVA', desc: 'Lopatice povučene i spuštene (retraction & depression), glava na klupi tijekom cijelog pokreta — stabilna baza za potisak.' },
-      { top: '50%', left: '47%', label: 'ARCH', desc: 'Luk u donjem dijelu leđa omogućava leg drive. Što je veći luk, kraći je put šipke.' },
-      { top: '60%', left: '53%', label: 'GLUTEUS NA KLUPI', desc: 'Stražnjica mora ostati na klupi cijelo vrijeme — kritično za IPF pravila i prijenos sile iz nogu.' },
-      { top: '80%', left: '67%', label: 'LEG DRIVE', desc: 'Stopala ravno u pod — aktivno guranje stvara lanac napetosti kroz cijelo tijelo i stabilizira lift.' },
+      { top: '26%', left: '42%', label: 'bt.bench.p0.label' as TranslationKey, desc: 'bt.bench.p0.desc' as TranslationKey },
+      { top: '60%', left: '30%', label: 'bt.bench.p1.label' as TranslationKey, desc: 'bt.bench.p1.desc' as TranslationKey },
+      { top: '50%', left: '47%', label: 'bt.bench.p2.label' as TranslationKey, desc: 'bt.bench.p2.desc' as TranslationKey },
+      { top: '60%', left: '53%', label: 'bt.bench.p3.label' as TranslationKey, desc: 'bt.bench.p3.desc' as TranslationKey },
+      { top: '80%', left: '67%', label: 'bt.bench.p4.label' as TranslationKey, desc: 'bt.bench.p4.desc' as TranslationKey },
     ],
   },
   DEADLIFT: {
@@ -40,19 +42,19 @@ const LIFT_DETAILS = {
     orientation: 'portrait' as const,
     meta: {
       num: '03',
-      sub: 'Kralj lifta — totalni razvoj snage',
-      muscles: 'Hamstringsi · Gluteus · Erektori · Trapezius',
+      sub: 'bt.dead.sub' as TranslationKey,
+      muscles: 'bt.dead.muscles' as TranslationKey,
       cue: 'Push floor away. Bar stays close.',
     },
     points: [
-      { top: '34%', left: '30%', label: 'LOCKOUT', desc: 'Puna ekstenzija kuka i koljena. Ramena iza šipke, ne hiperekstenzija. Brada neutralno, pogled ravno.' },
-      { top: '45%', left: '44%', label: 'BRACE & BELT', desc: 'Maksimalni intraabdominalni tlak od početka do kraja lifta. Belt pojačava, ali ne zamjenjuje brace.' },
-      { top: '57%', left: '58%', label: 'HVAT', desc: 'Mixed grip ili hook grip za maksimalni hvat. Šipka se drži u dlanu, ne u prstima.' },
-      { top: '60%', left: '34%', label: 'ŠIPKA UZ TIJELO', desc: 'Šipka klizi uz potkoljenice i natkoljenice cijelim pokretom. Odmak od tijela = gubitak poluge i rizik ozljede.' },
-      { top: '75%', left: '56%', label: 'STANCE', desc: 'Conventional — uži stance, ruke izvan nogu. Sumo — širi stance, ruke između nogu. Odabir ovisi o anatomiji i dominantnim mišićnim skupinama.' },
+      { top: '34%', left: '30%', label: 'bt.dead.p0.label' as TranslationKey, desc: 'bt.dead.p0.desc' as TranslationKey },
+      { top: '45%', left: '44%', label: 'bt.dead.p1.label' as TranslationKey, desc: 'bt.dead.p1.desc' as TranslationKey },
+      { top: '57%', left: '58%', label: 'bt.dead.p2.label' as TranslationKey, desc: 'bt.dead.p2.desc' as TranslationKey },
+      { top: '60%', left: '34%', label: 'bt.dead.p3.label' as TranslationKey, desc: 'bt.dead.p3.desc' as TranslationKey },
+      { top: '75%', left: '56%', label: 'bt.dead.p4.label' as TranslationKey, desc: 'bt.dead.p4.desc' as TranslationKey },
     ],
   },
-} as const
+}
 
 type LiftKey = keyof typeof LIFT_DETAILS
 
@@ -74,18 +76,20 @@ function useReveal() {
 }
 
 function CloseBtn({ onClick }: { onClick: () => void }) {
+  const { t } = useLanguage()
   return (
     <button onClick={onClick}
       style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.6)', padding: '6px 16px', cursor: 'pointer', fontSize: '0.58rem', letterSpacing: '0.2em', transition: '0.2s', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' }}
       onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; e.currentTarget.style.borderColor = '#fff' }}
       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' }}
-    >✕ ZATVORI</button>
+    >✕ {t('bt.close')}</button>
   )
 }
 
 function PointsList({ lift, hoveredHotspot, setHoveredHotspot }: {
   lift: LiftKey; hoveredHotspot: number | null; setHoveredHotspot: (i: number | null) => void
 }) {
+  const { t } = useLanguage()
   const points = LIFT_DETAILS[lift].points
   return (
     <div style={{ overflowY: 'auto', flex: 1 }}>
@@ -95,8 +99,8 @@ function PointsList({ lift, hoveredHotspot, setHoveredHotspot }: {
           style={{ padding: '18px 28px', transition: 'all 0.2s', cursor: 'pointer', borderBottom: i < points.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none', background: hoveredHotspot === i ? 'rgba(255,255,255,0.05)' : 'transparent', opacity: hoveredHotspot === null || hoveredHotspot === i ? 1 : 0.4, display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
           <div style={{ width: '24px', height: '24px', borderRadius: '50%', flexShrink: 0, marginTop: '2px', background: hoveredHotspot === i ? '#fff' : 'transparent', border: `1px solid ${hoveredHotspot === i ? '#fff' : 'rgba(255,255,255,0.3)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: 800, color: hoveredHotspot === i ? '#000' : 'rgba(255,255,255,0.5)', transition: 'all 0.2s' }}>{i + 1}</div>
           <div>
-            <div style={{ fontSize: '0.63rem', letterSpacing: '0.22em', fontWeight: 700, color: hoveredHotspot === i ? '#fff' : 'rgba(255,255,255,0.85)', marginBottom: '6px', transition: 'color 0.2s', fontFamily: 'var(--fm)' }}>{p.label}</div>
-            <p style={{ fontSize: '0.78rem', lineHeight: 1.75, color: 'rgba(255,255,255,0.6)', margin: 0, fontWeight: 300 }}>{p.desc}</p>
+            <div style={{ fontSize: '0.63rem', letterSpacing: '0.22em', fontWeight: 700, color: hoveredHotspot === i ? '#fff' : 'rgba(255,255,255,0.85)', marginBottom: '6px', transition: 'color 0.2s', fontFamily: 'var(--fm)' }}>{t(p.label)}</div>
+            <p style={{ fontSize: '0.78rem', lineHeight: 1.75, color: 'rgba(255,255,255,0.6)', margin: 0, fontWeight: 300 }}>{t(p.desc)}</p>
           </div>
         </div>
       ))}
@@ -105,9 +109,10 @@ function PointsList({ lift, hoveredHotspot, setHoveredHotspot }: {
 }
 
 function LiftNameTag({ lift }: { lift: LiftKey }) {
+  const { t } = useLanguage()
   return (
     <div style={{ zIndex: 4 }}>
-      <div style={{ fontSize: '0.55rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.6)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>TEHNIČKA ANALIZA</div>
+      <div style={{ fontSize: '0.55rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.6)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>{t('bt.technical')}</div>
       <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.6rem,4vw,4rem)', fontWeight: 800, lineHeight: 0.88, letterSpacing: '-0.02em', textShadow: '0 4px 32px rgba(0,0,0,0.8)', color: '#fff' }}>{lift}</div>
     </div>
   )
@@ -116,6 +121,7 @@ function LiftNameTag({ lift }: { lift: LiftKey }) {
 function PortraitModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
   lift: LiftKey; hoveredHotspot: number | null; setHoveredHotspot: (i: number | null) => void; onClose: () => void
 }) {
+  const { t } = useLanguage()
   return (
     <div className="bt-modal bt-modal-portrait" style={{ width: '100%', maxWidth: '1000px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.12)', display: 'grid', gridTemplateColumns: '1fr 380px', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.8)', animation: 'slideUp 0.45s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
       onClick={e => e.stopPropagation()}>
@@ -129,7 +135,7 @@ function PortraitModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
             onClick={e => { e.stopPropagation(); setHoveredHotspot(hoveredHotspot === i ? null : i) }}>
             <div className={`hotspot${hoveredHotspot === i ? ' hotspot--active' : ''}`} style={{ transform: hoveredHotspot === i ? 'scale(1.3)' : 'scale(1)', transition: '0.3s' }}>
               <div className="hotspot-core" /><div className="hotspot-ring" />
-              <div className="hotspot-label" style={{ opacity: hoveredHotspot === i ? 1 : 0, transform: hoveredHotspot === i ? 'translate(-50%, 8px)' : 'translate(-50%, 0)' }}>{p.label}</div>
+              <div className="hotspot-label" style={{ opacity: hoveredHotspot === i ? 1 : 0, transform: hoveredHotspot === i ? 'translate(-50%, 8px)' : 'translate(-50%, 0)' }}>{t(p.label)}</div>
             </div>
           </div>
         ))}
@@ -137,7 +143,7 @@ function PortraitModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', borderLeft: '1px solid rgba(255,255,255,0.1)', height: '90vh' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <div style={{ fontSize: '0.55rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--fm)' }}>KLJUČNE TOČKE</div>
+          <div style={{ fontSize: '0.55rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--fm)' }}>{t('bt.keypoints')}</div>
           <CloseBtn onClick={onClose} />
         </div>
         <PointsList lift={lift} hoveredHotspot={hoveredHotspot} setHoveredHotspot={setHoveredHotspot} />
@@ -149,6 +155,7 @@ function PortraitModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
 function LandscapeModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
   lift: LiftKey; hoveredHotspot: number | null; setHoveredHotspot: (i: number | null) => void; onClose: () => void
 }) {
+  const { t } = useLanguage()
   return (
     <div className="bt-modal bt-modal-landscape" style={{ width: '100%', maxWidth: '900px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.8)', animation: 'slideUp 0.45s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
       onClick={e => e.stopPropagation()}>
@@ -162,7 +169,7 @@ function LandscapeModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
             onClick={e => { e.stopPropagation(); setHoveredHotspot(hoveredHotspot === i ? null : i) }}>
             <div className={`hotspot${hoveredHotspot === i ? ' hotspot--active' : ''}`} style={{ transform: hoveredHotspot === i ? 'scale(1.3)' : 'scale(1)', transition: '0.3s' }}>
               <div className="hotspot-core" /><div className="hotspot-ring" />
-              <div className="hotspot-label" style={{ opacity: hoveredHotspot === i ? 1 : 0, transform: hoveredHotspot === i ? 'translate(-50%, 8px)' : 'translate(-50%, 0)' }}>{p.label}</div>
+              <div className="hotspot-label" style={{ opacity: hoveredHotspot === i ? 1 : 0, transform: hoveredHotspot === i ? 'translate(-50%, 8px)' : 'translate(-50%, 0)' }}>{t(p.label)}</div>
             </div>
           </div>
         ))}
@@ -177,8 +184,8 @@ function LandscapeModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
             <div key={i} onMouseEnter={() => setHoveredHotspot(i)} onMouseLeave={() => setHoveredHotspot(null)}
               style={{ padding: '20px', transition: 'all 0.2s', cursor: 'default', borderRight: i < LIFT_DETAILS[lift].points.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none', background: hoveredHotspot === i ? 'rgba(255,255,255,0.05)' : 'transparent', opacity: hoveredHotspot === null || hoveredHotspot === i ? 1 : 0.4 }}>
               <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: hoveredHotspot === i ? '#fff' : 'transparent', border: `1px solid ${hoveredHotspot === i ? '#fff' : 'rgba(255,255,255,0.3)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.52rem', fontWeight: 800, color: hoveredHotspot === i ? '#000' : 'rgba(255,255,255,0.5)', transition: 'all 0.2s', marginBottom: '12px' }}>{i + 1}</div>
-              <div style={{ fontSize: '0.6rem', letterSpacing: '0.2em', fontWeight: 700, color: hoveredHotspot === i ? '#fff' : 'rgba(255,255,255,0.85)', marginBottom: '8px', transition: 'color 0.2s', fontFamily: 'var(--fm)', lineHeight: 1.3 }}>{p.label}</div>
-              <p style={{ fontSize: '0.72rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.6)', margin: 0, fontWeight: 300 }}>{p.desc}</p>
+              <div style={{ fontSize: '0.6rem', letterSpacing: '0.2em', fontWeight: 700, color: hoveredHotspot === i ? '#fff' : 'rgba(255,255,255,0.85)', marginBottom: '8px', transition: 'color 0.2s', fontFamily: 'var(--fm)', lineHeight: 1.3 }}>{t(p.label)}</div>
+              <p style={{ fontSize: '0.72rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.6)', margin: 0, fontWeight: 300 }}>{t(p.desc)}</p>
             </div>
           ))}
         </div>

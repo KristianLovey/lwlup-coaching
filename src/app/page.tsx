@@ -2,10 +2,10 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { Zap } from 'lucide-react'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
 import BigThree from '@/app/components/big_three'
+import { useLanguage } from '@/context/LanguageContext'
 
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
 
@@ -25,40 +25,7 @@ const StatIcons = {
   year: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>),
 }
 
-const STATS = [
-  { val: '10+',  label: 'LIFTERI',              icon: StatIcons.lifters },
-  { val: '12',   label: 'DRŽAVNI REKORDI',      icon: StatIcons.records },
-  { val: '6',    label: 'EUROPSKA NATJECANJA',  icon: StatIcons.europe  },
-  { val: '2023', label: 'OSNOVANO',             icon: StatIcons.year    },
-]
-
-const FEATURES = [
-  { sym: '01', title: 'ZNANOST IZA TRENINGA',   desc: 'Nema nagađanja. Uz pomoć RPE tablica i metodološkog sastavljanja treninga, određujemo optimalne treninge za tvoj napredak.' },
-  { sym: '02', title: 'ANALIZA TEHNIKE',         desc: 'Izravni povrat informacija. Tvoj video izvedbe analiziramo kako bismo eliminirali slabe točke, spriječili ozljede i unaprijedili tehniku.' },
-  { sym: '03', title: 'ADAPTIVNI BLOKOVI',       desc: 'Tvoj život nije linearan, a tako nije ni trening. Radimo prilagodbe ovisno o tvom oporavku, stresu i snazi.' },
-  { sym: '04', title: 'EKSPORT ZA NATJECANJE',   desc: 'Sve tvoje brojke spremne za peaking. Vizualiziraj napredak putem grafova i izvezi podatke za arhivu.' },
-]
-
-const FOUNDERS = [
-  {
-    name: 'WALTER SMAJLOVIĆ',
-    role: 'GLAVNI TRENER & SUOSNIVAČ',
-    nickname: 'Gica',
-    img: '/slike/walter.png',
-    bio: 'Walter Smajlović izgradio je LWL UP na temeljima beskompromisnog rada. Zahvaljujući svom višegodišnjem iskustvu u kompetitivnom powerliftingu, razvio je sustav koji uklanja pogreške i maksimizira snagu svakog pojedinca.',
-    achievements: ['Powerlifting trener & višestruki državni prvak', '10x Državni prvak, 4+ državnih rekorda', 'European Open 2025 – 10. mjesto', 'Mentor za 10+ aktivnih natjecatelja'],
-    imgLeft: true,
-  },
-  {
-    name: 'LUKA GREŽINA',
-    role: 'PODPREDSJEDNIK & SUOSNIVAČ',
-    nickname: null,
-    img: '/slike/luka-g.jpg',
-    bio: 'Luka Grežina jedan je od stupova LWL UP-a. Uz ulogu podpredsjednika, aktivni je natjecatelj i trener koji svakodnevno prenosi znanje i iskustvo na mlađe generacije liftera u klubu.',
-    achievements: ['2x Državni prvak u M-120kg kategoriji', 'Aktivni natjecatelj i trener', 'Total: 747.5kg | GLP: 87.21', 'Suosnivač LWL UP-a 2023. godine'],
-    imgLeft: false,
-  },
-]
+type FounderData = { name: string; nickname: string | null; img: string; imgLeft: boolean; role: string; bio: string; achievements: string[] }
 
 function ScrollToTop() {
   const [visible, setVisible] = useState(false)
@@ -119,7 +86,7 @@ function useReveal() {
   return { ref, visible }
 }
 
-function FounderRow({ founder, index }: { founder: typeof FOUNDERS[0]; index: number }) {
+function FounderRow({ founder, index }: { founder: FounderData; index: number }) {
   const { ref, visible } = useReveal()
   const imgLeft = founder.imgLeft
   return (
@@ -164,6 +131,36 @@ export default function Landing() {
   const statsReveal  = useReveal()
   const clubReveal   = useReveal()
   const systemReveal = useReveal()
+  const { t } = useLanguage()
+
+  const STATS = [
+    { val: '10+',  label: t('home.stats.lifters'),  icon: StatIcons.lifters },
+    { val: '12',   label: t('home.stats.records'),  icon: StatIcons.records },
+    { val: '6',    label: t('home.stats.european'), icon: StatIcons.europe  },
+    { val: '2023', label: t('home.stats.founded'),  icon: StatIcons.year    },
+  ]
+  const FEATURES = [
+    { sym: '01', title: t('home.f1.title'), desc: t('home.f1.desc') },
+    { sym: '02', title: t('home.f2.title'), desc: t('home.f2.desc') },
+    { sym: '03', title: t('home.f3.title'), desc: t('home.f3.desc') },
+    { sym: '04', title: t('home.f4.title'), desc: t('home.f4.desc') },
+  ]
+  const FOUNDERS: FounderData[] = [
+    { name: 'WALTER SMAJLOVIĆ', nickname: 'Gica', img: '/slike/walter.png',  imgLeft: true,
+      role: t('home.f.role0'), bio: t('home.f.bio0'),
+      achievements: [t('home.f.ach0.0'), t('home.f.ach0.1'), t('home.f.ach0.2'), t('home.f.ach0.3')] },
+    { name: 'LUKA GREŽINA',     nickname: null,   img: '/slike/luka-g.jpg',  imgLeft: false,
+      role: t('home.f.role1'), bio: t('home.f.bio1'),
+      achievements: [t('home.f.ach1.0'), t('home.f.ach1.1'), t('home.f.ach1.2'), t('home.f.ach1.3')] },
+  ]
+  const AGE_CATS = [
+    { key: 'home.cat.cadets'  as const, age: '14 – 18', color: '#60a5fa' },
+    { key: 'home.cat.juniors' as const, age: '19 – 23', color: '#a78bfa' },
+    { key: 'home.cat.open'    as const, age: '24 – 39', color: '#e2e8f0' },
+    { key: 'home.cat.m1'      as const, age: '40 – 49', color: '#facc15' },
+    { key: 'home.cat.m2'      as const, age: '50 – 59', color: '#fb923c' },
+    { key: 'home.cat.m3plus'  as const, age: '60+',     color: '#f87171' },
+  ]
 
   useEffect(() => {
     setReady(true)
@@ -212,12 +209,12 @@ export default function Landing() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '40px', width: '100%', maxWidth: '300px' }}>
               <Link href="/survey" style={{ textDecoration: 'none' }}>
                 <button className="btn-primary-cta" style={{ width: '100%', padding: '17px 24px', background: '#fff', color: '#000', border: '1px solid #fff', fontSize: 'clamp(0.68rem, 2.2vw, 0.85rem)', fontWeight: 800, letterSpacing: '0.2em', cursor: 'pointer', transition: 'all 0.35s', fontFamily: 'var(--fm)' }}>
-                  ZAPOČNI TRANSFORMACIJU
+                  {t('home.hero.cta1')}
                 </button>
               </Link>
               <Link href="/training" style={{ textDecoration: 'none' }}>
                 <button className="btn-secondary-cta" style={{ width: '100%', padding: '15px 24px', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', fontSize: 'clamp(0.68rem, 2.2vw, 0.85rem)', fontWeight: 700, letterSpacing: '0.2em', cursor: 'pointer', transition: 'all 0.3s', fontFamily: 'var(--fm)' }}>
-                  TRENING →
+                  {t('home.hero.cta2')}
                 </button>
               </Link>
             </div>
@@ -258,14 +255,14 @@ export default function Landing() {
           <div style={{ textAlign: 'center', marginBottom: 'clamp(48px,7vw,88px)' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
               <div style={{ height: '1px', width: '32px', background: 'rgba(255,255,255,0.15)' }} />
-              <span style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>POWERLIFTING NATJECANJA</span>
+              <span style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>{t('home.cats.eyebrow')}</span>
               <div style={{ height: '1px', width: '32px', background: 'rgba(255,255,255,0.15)' }} />
             </div>
             <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 0.9, marginBottom: '20px' }}>
-              KATEGORIJE<br /><span style={{ color: 'rgba(255,255,255,0.18)' }}>NATJECANJA</span>
+              {t('home.cats.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.18)' }}>{t('home.cats.title2')}</span>
             </h2>
             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.82rem,2vw,0.95rem)', maxWidth: '540px', margin: '0 auto', lineHeight: 1.9 }}>
-              Natjecatelji se raspoređuju prema spolu, dobi i tjelesnoj težini.
+              {t('home.cats.desc')}
             </p>
           </div>
 
@@ -273,26 +270,19 @@ export default function Landing() {
           <div style={{ marginBottom: 'clamp(40px,6vw,64px)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
               <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.06)' }} />
-              <span style={{ fontSize: '0.52rem', letterSpacing: '0.38em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>DOBNE KATEGORIJE</span>
+              <span style={{ fontSize: '0.52rem', letterSpacing: '0.38em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>{t('home.cats.age')}</span>
               <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.06)' }} />
             </div>
             <div className="age-cat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
-              {[
-                { name: 'KADETI',     age: '14 – 18',  color: '#60a5fa' },
-                { name: 'JUNIORI',    age: '19 – 23',  color: '#a78bfa' },
-                { name: 'OPEN',       age: '24 – 39',  color: '#e2e8f0' },
-                { name: 'MASTERS 1',  age: '40 – 49',  color: '#facc15' },
-                { name: 'MASTERS 2',  age: '50 – 59',  color: '#fb923c' },
-                { name: 'MASTERS 3+', age: '60+',      color: '#f87171' },
-              ].map((cat, i) => (
+              {AGE_CATS.map((cat, i) => (
                 <div key={i} style={{ borderRadius: '12px', overflow: 'hidden', border: `1px solid ${cat.color}22`, background: '#08080f', transition: 'transform 0.2s, box-shadow 0.2s' }}
                   onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 8px 24px ${cat.color}18` }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}>
                   {/* Color accent top bar */}
                   <div style={{ height: '3px', background: cat.color, opacity: 0.7 }} />
                   <div style={{ padding: '18px 16px 20px', textAlign: 'center' }}>
-                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1.15rem', color: cat.color, marginBottom: '8px', letterSpacing: '0.02em' }}>{cat.name}</div>
-                    <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', fontFamily: 'var(--fm)' }}>{cat.age} god.</div>
+                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1.15rem', color: cat.color, marginBottom: '8px', letterSpacing: '0.02em' }}>{t(cat.key)}</div>
+                    <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', fontFamily: 'var(--fm)' }}>{cat.age} {t('home.cats.years')}</div>
                   </div>
                 </div>
               ))}
@@ -302,8 +292,8 @@ export default function Landing() {
           {/* Težinske kategorije */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(12px,3vw,24px)' }} className="cat-weight-grid">
             {[
-              { label: 'MUŠKARCI', color: '#60a5fa', pillColor: '#93c5fd', pillBg: 'rgba(96,165,250,0.08)', pillBorder: 'rgba(96,165,250,0.2)', cats: ['-59','-66','-74','-83','-93','-105','-120','+120'] },
-              { label: 'ŽENE',     color: '#f472b6', pillColor: '#f9a8d4', pillBg: 'rgba(244,114,182,0.08)', pillBorder: 'rgba(244,114,182,0.2)', cats: ['-47','-52','-57','-63','-69','-76','-84','+84'] },
+              { label: t('home.cats.men'),   color: '#60a5fa', pillColor: '#93c5fd', pillBg: 'rgba(96,165,250,0.08)', pillBorder: 'rgba(96,165,250,0.2)', cats: ['-59','-66','-74','-83','-93','-105','-120','+120'] },
+              { label: t('home.cats.women'), color: '#f472b6', pillColor: '#f9a8d4', pillBg: 'rgba(244,114,182,0.08)', pillBorder: 'rgba(244,114,182,0.2)', cats: ['-47','-52','-57','-63','-69','-76','-84','+84'] },
             ].map(g => (
               <div key={g.label} style={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${g.color}22`, background: '#08080f' }}>
                 {/* Header */}
@@ -327,7 +317,7 @@ export default function Landing() {
           <div style={{ marginTop: '28px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
             <div style={{ height: '1px', width: '24px', background: 'rgba(255,255,255,0.08)' }} />
             <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.18)', letterSpacing: '0.14em', fontFamily: 'var(--fm)' }}>
-              IPF STANDARD · SVAKA KOMBINACIJA DOBI I KATEGORIJE = ZASEBNO NATJECANJE
+              {t('home.cats.note')}
             </span>
             <div style={{ height: '1px', width: '24px', background: 'rgba(255,255,255,0.08)' }} />
           </div>
@@ -341,16 +331,16 @@ export default function Landing() {
           <div className="club-grid">
             <div style={{ position: 'relative' }}>
               <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,8vw,6rem)', lineHeight: 0.9, marginBottom: 'clamp(20px,4vw,40px)' }}>
-                STVORENI<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>U ŽELJEZU</span>
+                {t('home.about.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>{t('home.about.title2')}</span>
               </h2>
               <p style={{ fontSize: 'clamp(0.9rem,2.5vw,1.2rem)', lineHeight: 1.8, color: 'rgba(255,255,255,0.7)', marginBottom: '24px' }}>
-                LWL UP nije samo klub — to je zajednica snage u kojoj natjecatelji ruše granice ljudskog potencijala. Klub su 2023. godine osnovali Walter Smajlović i Luka Grežina radi okupljanja ljudi s istim ciljem; postići što veći total. Od tada podižemo standarde powerliftinga u Hrvatskoj.
+                {t('home.about.desc')}
               </p>
               <div className="club-info-cards">
-                {[['Zajednica', 'Treniramo zajedno, natječemo se zajedno, rastemo zajedno.'], ['Stručnost', 'Svaka serija ima svrhu. Svaki postotak je izračunat.']].map(([t, d]) => (
-                  <div key={t} className="info-card" style={{ cursor: 'pointer', transition: '0.3s' }}>
-                    <h4 style={{ color: '#fff', fontSize: 'clamp(0.95rem,2vw,1.1rem)', marginBottom: '8px' }}>{t}</h4>
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.8rem,1.8vw,0.9rem)' }}>{d}</p>
+                {([['home.about.community.title', 'home.about.community.desc'], ['home.about.expertise.title', 'home.about.expertise.desc']] as const).map(([tk, dk]) => (
+                  <div key={tk} className="info-card" style={{ cursor: 'pointer', transition: '0.3s' }}>
+                    <h4 style={{ color: '#fff', fontSize: 'clamp(0.95rem,2vw,1.1rem)', marginBottom: '8px' }}>{t(tk)}</h4>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.8rem,1.8vw,0.9rem)' }}>{t(dk)}</p>
                   </div>
                 ))}
               </div>
@@ -374,13 +364,13 @@ export default function Landing() {
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: 'clamp(60px,10vw,100px) clamp(20px,5vw,60px) clamp(40px,6vw,60px)' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.25)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>OSNIVAČI KLUBA</div>
+              <div style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.25)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>{t('home.founders.eyebrow')}</div>
               <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5.5rem)', lineHeight: 0.88, margin: 0, letterSpacing: '-0.0em' }}>
-                LJUDI IZA <br /><span style={{ color: 'rgba(255,255,255,0.2)', marginTop: '6px', display: 'inline-block' }}>ŠIPKE</span>
+                {t('home.founders.title')}
               </h2>
             </div>
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 'clamp(0.8rem,2vw,0.9rem)', lineHeight: 1.8, maxWidth: '380px', marginBottom: '8px' }}>
-              LWL UP počinje s dvojicom natjecatelja koji su 2023. godine odlučili da Hrvatska zaslužuje bolji powerlifting.
+              {t('home.founders.desc')}
             </p>
           </div>
         </div>
@@ -397,8 +387,8 @@ export default function Landing() {
       <section id="system" style={{ background: '#0a0a0a', padding: 'clamp(80px,12vw,150px) clamp(20px,5vw,60px)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <div ref={systemReveal.ref} style={{ maxWidth: '1400px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 'clamp(48px,8vw,100px)', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>
-            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,7vw,5rem)', marginBottom: '16px' }}>ONLINE COACHING</h2>
-            <p style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', fontSize: 'clamp(0.6rem,2vw,0.85rem)' }}>TRENER U VAŠEM DŽEPU, 24/7.</p>
+            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,7vw,5rem)', marginBottom: '16px' }}>{t('home.system.eyebrow')}</h2>
+            <p style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', fontSize: 'clamp(0.6rem,2vw,0.85rem)' }}>{t('home.system.title')}</p>
           </div>
           <div className="features-grid">
             {FEATURES.map((f, i) => (
@@ -419,11 +409,11 @@ export default function Landing() {
         </div>
         <div style={{ position: 'relative', zIndex: 1, padding: '0 20px' }}>
           <h2 className="cta-glow-text" style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,12vw,12rem)', lineHeight: 0.85, marginBottom: 'clamp(24px,4vw,40px)' }}>
-            OSTAVI<br />SVOJ TRAG
+            {t('home.cta.title')}
           </h2>
           <Link href="/survey" style={{ textDecoration: 'none' }}>
             <button className="btn-cta-final" style={{ padding: 'clamp(16px,2.5vw,25px) clamp(32px,6vw,80px)', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.6)', fontSize: 'clamp(0.75rem,2.5vw,1rem)', fontWeight: 900, letterSpacing: '0.3em', cursor: 'pointer', transition: 'all 0.4s', fontFamily: 'var(--fm)', position: 'relative', overflow: 'hidden' }}>
-              <span style={{ position: 'relative', zIndex: 2 }}>PRIDRUŽI SE TIMU</span>
+              <span style={{ position: 'relative', zIndex: 2 }}>{t('home.cta.btn')}</span>
             </button>
           </Link>
         </div>

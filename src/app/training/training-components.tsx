@@ -1,13 +1,13 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
-  GripVertical, Loader2, LogOut, Home, FolderOpen,
-  User, Shield, X, ChevronLeft, Dumbbell, BarChart2, Send, MessageSquare, Copy
+  GripVertical, Loader2, LogOut,
+  User, Shield, X, Dumbbell, BarChart2, MessageSquare, Copy
 } from 'lucide-react'
-import type { Exercise, WorkoutExercise, Workout, Week, CoachTip, SetLog, Competition } from './types'
+import type { Exercise, WorkoutExercise, Workout, Week, SetLog, Competition } from './types'
 
 const supabase = createClient()
 
@@ -63,15 +63,6 @@ export function AvatarSvg({ iconId, size = 32, color = 'currentColor' }: { iconI
   )
 }
 
-// ─── DATE HELPER ──────────────────────────────────────────────────
-function formatWorkoutDate(dateStr: string): string {
-  try {
-    const d = new Date(dateStr + 'T12:00:00')
-    const days = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub']
-    const months = ['sij', 'velj', 'ožu', 'tra', 'svi', 'lip', 'srp', 'kol', 'ruj', 'lis', 'stu', 'pro']
-    return `${days[d.getDay()]}  ·  ${d.getDate()}. ${months[d.getMonth()]}.`
-  } catch { return dateStr }
-}
 
 // ─── NAVBAR ───────────────────────────────────────────────────────
 export function TrainingNav({ athleteName, isAdmin, onLogout, avatarIcon }: {
@@ -229,8 +220,8 @@ export function TrainingNav({ athleteName, isAdmin, onLogout, avatarIcon }: {
 }
 
 // ─── APP NAVBAR (sve app stranice: trening, profil, vježbe, admin) ─
-export function AppNav({ athleteName, isAdmin, isCoach, onLogout, avatarIcon, userId }: {
-  athleteName: string; isAdmin: boolean; isCoach?: boolean; onLogout: () => void; avatarIcon?: string; userId?: string
+export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon, userId }: {
+  athleteName: string; isAdmin: boolean; onLogout: () => void; avatarIcon?: string; userId?: string
 }) {
   const [open, setOpen]       = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -628,7 +619,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   // Propagate set counts up for progress tracking
   const propagateCounts = (updatedLogs: SetLog[]) => {
     if (isAdmin) return
-    const completedSets = updatedLogs.filter(l => l.completed || l.weight_kg || l.reps).length
+    const completedSets = updatedLogs.filter(l => l.completed).length
     onAggregateUpdate({ _completedSets: completedSets, _totalSets: updatedLogs.length })
   }
 
@@ -1252,7 +1243,7 @@ function WeekNotesModal({ notes, isAdmin, onSave, onClose }: {
 }) {
   const [val, setVal] = useState(notes ?? '')
   const [saving, setSaving] = useState(false)
-  const save = async () => { setSaving(true); await onSave(val); setSaving(false); onClose() }
+  const save = async () => { setSaving(true); onSave(val); setSaving(false); onClose() }
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', animation: 'fadeIn 0.15s' }}
       onClick={onClose}>
@@ -1299,18 +1290,23 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
     try { const v = sessionStorage.getItem(ssKey); return v === null ? true : v === 'true' } catch { return true }
   })
   const [showNotes, setShowNotes] = useState(false)
-  const allExercises = week.workouts?.flatMap(w => w.workout_exercises ?? []) ?? []
-  const totalSets = allExercises.reduce((s, e) => s + (e._totalSets ?? e.planned_sets ?? 0), 0)
-  const doneSets = allExercises.reduce((s, e) => {
-    const fromLogs = e._completedSets ?? 0
-    const fromCompleted = e.completed ? (e._totalSets ?? e.planned_sets ?? 0) : 0
-    return s + Math.max(fromLogs, fromCompleted)
-  }, 0)
-  const done = week.workouts?.filter(w => w.completed).length ?? 0
-  const total = week.workouts?.length ?? 0
-  const pct = totalSets > 0 ? (doneSets / totalSets) * 100 : (total > 0 ? (done / total) * 100 : 0)
-  const totalEx = allExercises.length
-  const doneEx = allExercises.filter(e => e.completed).length
+
+  const { totalSets, doneSets, total, pct, totalEx, doneEx } = useMemo(() => {
+    const allExercises = week.workouts?.flatMap(w => w.workout_exercises ?? []) ?? []
+    const totalSets = allExercises.reduce((s, e) => s + (e._totalSets ?? e.planned_sets ?? 0), 0)
+    const doneSets = allExercises.reduce((s, e) => {
+      const fromLogs = e._completedSets ?? 0
+      const fromCompleted = e.completed ? (e._totalSets ?? e.planned_sets ?? 0) : 0
+      return s + Math.max(fromLogs, fromCompleted)
+    }, 0)
+    const total = week.workouts?.length ?? 0
+    const done = week.workouts?.filter(w => w.completed).length ?? 0
+    const pct = totalSets > 0 ? (doneSets / totalSets) * 100 : (total > 0 ? (done / total) * 100 : 0)
+    const totalEx = allExercises.length
+    const doneEx = allExercises.filter(e => e.completed).length
+    return { totalSets, doneSets, total, pct, totalEx, doneEx }
+  }, [week.workouts])
+
   const hasNotes = !!(week.notes?.trim())
 
   return (

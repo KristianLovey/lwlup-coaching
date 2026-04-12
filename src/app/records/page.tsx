@@ -4,6 +4,7 @@ import Footer from '@/app/components/Footer'
 import Navbar from '@/app/components/Navbar'
 import { Search, Trophy } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/context/LanguageContext'
 
 const supabase = createClient()
 
@@ -167,6 +168,7 @@ function RecordCell({ entry, highlight, clubMembers }: { entry: RecordEntry | nu
 }
 
 export default function RecordsPage() {
+  const { t } = useLanguage()
   const [gender, setGender]       = useState<'men' | 'women'>('men')
   const [ageFilter, setAgeFilter] = useState<AgeCategory | 'all'>('Open')
   const [search, setSearch]       = useState('')
@@ -215,10 +217,10 @@ export default function RecordsPage() {
         <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '800px', height: '400px', background: 'radial-gradient(ellipse at center top, rgba(255,255,255,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '0 clamp(16px,4vw,60px)', position: 'relative', zIndex: 1 }}>
           <div style={{ fontSize: '0.65rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.55)', marginBottom: '14px' }}>
-            LWL UP · REKORDI
+            {t('rec.eyebrow')}
           </div>
           <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,8vw,6rem)', lineHeight: 0.88, margin: '0 0 40px', letterSpacing: '-0.02em' }}>
-            DRŽAVNI<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>REKORDI</span>
+            {t('rec.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>{t('rec.title2')}</span>
           </h1>
 
           {/* Controls */}
@@ -228,7 +230,7 @@ export default function RecordsPage() {
               {(['men','women'] as const).map(g => (
                 <button key={g} onClick={() => { setGender(g); setAgeFilter('Open') }}
                   style={{ padding: '10px 24px', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.2em', cursor: 'pointer', fontFamily: 'var(--fm)', border: 'none', transition: 'all 0.2s', background: gender === g ? '#fff' : 'transparent', color: gender === g ? '#000' : 'rgba(255,255,255,0.65)' }}>
-                  {g === 'men' ? 'MUŠKARCI' : 'ŽENE'}
+                  {g === 'men' ? t('rec.men') : t('rec.women')}
                 </button>
               ))}
             </div>
@@ -237,7 +239,7 @@ export default function RecordsPage() {
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               <button onClick={() => setAgeFilter('all')}
                 style={{ padding: '10px 14px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.12em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${ageFilter === 'all' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: ageFilter === 'all' ? 'rgba(255,255,255,0.08)' : 'transparent', color: ageFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.65)', transition: 'all 0.2s' }}>
-                SVE DOB.
+                {t('rec.allAges')}
               </button>
               {availableAgeCats.map(age => (
                 <button key={age} onClick={() => setAgeFilter(age)}
@@ -253,7 +255,7 @@ export default function RecordsPage() {
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               <button onClick={() => setLiftFilter('all')}
                 style={{ padding: '10px 16px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.15em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${liftFilter === 'all' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: liftFilter === 'all' ? 'rgba(255,255,255,0.08)' : 'transparent', color: liftFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.65)', transition: 'all 0.2s' }}>
-                SVE
+                {t('rec.all')}
               </button>
               {LIFTS.map(l => (
                 <button key={l.key} onClick={() => setLiftFilter(l.key)}
@@ -268,7 +270,7 @@ export default function RecordsPage() {
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Pretraži po imenu..."
+                placeholder={t('rec.search')}
                 style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.78rem', fontFamily: 'var(--fm)', width: '100%' }}
               />
             </div>
@@ -281,7 +283,7 @@ export default function RecordsPage() {
         {matchingClasses.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.2)' }}>
             <Trophy size={36} style={{ opacity: 0.15, display: 'block', margin: '0 auto 16px' }} />
-            <div style={{ fontSize: '0.75rem', letterSpacing: '0.3em' }}>NEMA REZULTATA ZA "{search}"</div>
+            <div style={{ fontSize: '0.75rem', letterSpacing: '0.3em' }}>{t('rec.noResults')} "{search}"</div>
           </div>
         ) : (
           matchingClasses.map(cls => {
@@ -313,7 +315,7 @@ export default function RecordsPage() {
 
                       {!hasAny ? (
                         <div style={{ padding: '14px 0', color: 'rgba(255,255,255,0.35)', fontSize: '0.7rem', letterSpacing: '0.2em' }}>
-                          NEMA UPISANIH REKORDI
+                          {t('rec.noRecords')}
                         </div>
                       ) : (
                         <div style={{ overflowX: 'auto' }}>

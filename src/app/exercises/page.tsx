@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Search, X, ChevronRight } from 'lucide-react'
 import { AppNav } from '../training/training-components'
+import { useLanguage } from '@/context/LanguageContext'
 
 const supabase = createClient()
 
@@ -101,6 +102,7 @@ function CatPill({ label, active, color, onClick }: {
 function ExCard({ ex, index, onClick }: { ex: Exercise; index: number; onClick: () => void }) {
   const color = getCatColor(ex.category)
   const { ref, visible } = useReveal()
+  const { t } = useLanguage()
 
   return (
     <div ref={ref}
@@ -142,13 +144,13 @@ function ExCard({ ex, index, onClick }: { ex: Exercise; index: number; onClick: 
             {ex.notes}
           </p>
         ) : (
-          <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.18)', margin: 0, fontStyle: 'italic' }}>Nema bilješki</p>
+          <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.18)', margin: 0, fontStyle: 'italic' }}>{t('ex.noNotes')}</p>
         )}
 
         {/* Footer arrow */}
         <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.06)' }} />
-          <span style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>DETALJI</span>
+          <span style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>{t('ex.details')}</span>
           <ChevronRight size={11} color="rgba(255,255,255,0.25)" />
         </div>
       </div>
@@ -159,6 +161,7 @@ function ExCard({ ex, index, onClick }: { ex: Exercise; index: number; onClick: 
 // ── Detail modal ───────────────────────────────────────────────────
 function ExModal({ ex, onClose }: { ex: Exercise; onClose: () => void }) {
   const color = getCatColor(ex.category)
+  const { t } = useLanguage()
 
   // Close on Escape
   useEffect(() => {
@@ -208,25 +211,21 @@ function ExModal({ ex, onClose }: { ex: Exercise; onClose: () => void }) {
           <div style={{ width: '52px', height: '52px', borderRadius: '50%', border: `1.5px solid ${color}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, background: `${color}10` }}>
             <div style={{ width: 0, height: 0, borderStyle: 'solid', borderWidth: '9px 0 9px 16px', borderColor: `transparent transparent transparent ${color}99`, marginLeft: '3px' }} />
           </div>
-          <span style={{ fontSize: '0.6rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', position: 'relative', zIndex: 1 }}>VIDEO DEMONSTRACIJA</span>
+          <span style={{ fontSize: '0.6rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', position: 'relative', zIndex: 1 }}>{t('ex.video')}</span>
         </div>
 
         {/* Notes */}
         {ex.notes && (
           <div style={{ margin: '0 32px 24px' }}>
-            <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: '#666', marginBottom: '10px', fontFamily: 'var(--fm)' }}>TEHNIČKE NAPOMENE</div>
+            <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: '#666', marginBottom: '10px', fontFamily: 'var(--fm)' }}>{t('ex.notes')}</div>
             <p style={{ fontSize: '0.88rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.72)', margin: 0 }}>{ex.notes}</p>
           </div>
         )}
 
         {/* Key points */}
         <div style={{ margin: '0 32px 32px', padding: '18px 20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '8px' }}>
-          <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: '#666', marginBottom: '12px', fontFamily: 'var(--fm)' }}>KLJUČNE TOČKE</div>
-          {[
-            'Pravilna forma kroz cijeli pokret',
-            'Kontrola ekscentrične faze',
-            'Fokus na mind-muscle konekciju',
-          ].map((pt, i) => (
+          <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: '#666', marginBottom: '12px', fontFamily: 'var(--fm)' }}>{t('ex.keyPoints')}</div>
+          {[t('ex.keyPoint1'), t('ex.keyPoint2'), t('ex.keyPoint3')].map((pt, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: i < 2 ? '8px' : 0 }}>
               <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: color, flexShrink: 0, marginTop: '7px' }} />
               <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>{pt}</span>
@@ -240,7 +239,15 @@ function ExModal({ ex, onClose }: { ex: Exercise; onClose: () => void }) {
 
 // ── Main page ──────────────────────────────────────────────────────
 export default function ExerciseLibraryPage() {
+  const { t } = useLanguage()
   const router = useRouter()
+
+  // Translated labels for the top filter bar (UPPER/LOWER/COMP are universal)
+  const filterLabel = (id: string) => {
+    if (id === 'ALL') return t('ex.all')
+    if (id === 'VAR') return t('ex.variations')
+    return id
+  }
   const [exercises, setExercises]           = useState<Exercise[]>([])
   const [searchQuery, setSearchQuery]       = useState('')
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
@@ -327,15 +334,15 @@ export default function ExerciseLibraryPage() {
           {/* Title row */}
           <div className="ex-hero-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '24px', marginBottom: 'clamp(36px,5vw,56px)' }}>
             <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3.5rem,9vw,7.5rem)', fontWeight: 800, lineHeight: 0.87, margin: 0, letterSpacing: '-0.03em', opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(24px)', transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s' }}>
-              BAZA<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>VJEŽBI</span>
+              {t('ex.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>{t('ex.title2')}</span>
             </h1>
 
             {/* Stats */}
             <div className="ex-stats-bar" style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(16px)', transition: 'all 0.6s ease 0.2s', display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', overflow: 'hidden' }}>
               {[
-                { val: heroCount, label: 'VJEŽBI' },
-                { val: CATEGORY_GROUPS.length, label: 'GRUPA' },
-                { val: Object.keys(CAT_COLORS).length, label: 'KATEGORIJA' },
+                { val: heroCount,                        label: t('ex.exercises') },
+                { val: CATEGORY_GROUPS.length,           label: t('ex.groups') },
+                { val: Object.keys(CAT_COLORS).length,   label: t('ex.categories') },
               ].map((s, i) => (
                 <div key={i} style={{ padding: '14px 22px', background: '#09090e', textAlign: 'center' }}>
                   <div style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', fontWeight: 800, color: '#e0e0e0', lineHeight: 1 }}>{s.val}</div>
@@ -350,7 +357,7 @@ export default function ExerciseLibraryPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'linear-gradient(135deg, #0e0e14 0%, #090910 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0 16px', boxShadow: '0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)', transition: 'border-color 0.2s' }}>
               <Search size={15} color="#555" style={{ flexShrink: 0 }} />
               <input
-                type="text" placeholder="Pretraži vježbe..." value={searchQuery}
+                type="text" placeholder={t('ex.search')} value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#e0e0e0', fontSize: '0.92rem', fontFamily: 'var(--fm)', padding: '14px 0' }} />
               {searchQuery && (
@@ -414,7 +421,7 @@ export default function ExerciseLibraryPage() {
                     {/* Color dot */}
                     <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isActive ? tf.color : 'rgba(255,255,255,0.2)', boxShadow: isActive ? `0 0 6px ${tf.color}` : 'none', transition: 'all 0.18s', flexShrink: 0 }} />
 
-                    {tf.label}
+                    {filterLabel(tf.id)}
 
                     {/* Sub-selection indicator */}
                     {activeSubInGroup && subCat && (
@@ -454,12 +461,12 @@ export default function ExerciseLibraryPage() {
               {(() => {
                 const tf = TOP_FILTERS.find(f => f.id === topFilter)!
                 const displayColor = subCat ? getCatColor(subCat) : tf.color
-                const displayLabel = subCat ?? tf.label
+                const displayLabel = subCat ?? filterLabel(tf.id)
                 return <>
                   <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: displayColor, boxShadow: `0 0 8px ${displayColor}` }} />
                   <span style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.2rem,3vw,1.8rem)', fontWeight: 800, color: '#f0f0f0', letterSpacing: '-0.01em' }}>{displayLabel}</span>
-                  {subCat && <span style={{ fontSize: '0.6rem', color: tf.color, letterSpacing: '0.12em', padding: '2px 8px', border: `1px solid ${tf.color}33`, borderRadius: '4px' }}>{tf.label}</span>}
-                  <span style={{ fontSize: '0.6rem', color: '#555', letterSpacing: '0.12em' }}>{filtered.length} vježbi</span>
+                  {subCat && <span style={{ fontSize: '0.6rem', color: tf.color, letterSpacing: '0.12em', padding: '2px 8px', border: `1px solid ${tf.color}33`, borderRadius: '4px' }}>{filterLabel(tf.id)}</span>}
+                  <span style={{ fontSize: '0.6rem', color: '#555', letterSpacing: '0.12em' }}>{filtered.length} {t('ex.exercisesCount')}</span>
                   <button onClick={() => { setTopFilter('ALL'); setSubCat(null) }}
                     style={{ marginLeft: '4px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '0.54rem', letterSpacing: '0.1em', fontFamily: 'var(--fm)', transition: 'all 0.15s' }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
@@ -475,12 +482,12 @@ export default function ExerciseLibraryPage() {
           {filtered.length === 0 && (
             <div style={{ textAlign: 'center', padding: '80px 0', animation: 'fadeIn 0.3s ease' }}>
               <div style={{ fontFamily: 'var(--fd)', fontSize: '3.5rem', color: 'rgba(255,255,255,0.05)', marginBottom: '16px' }}>—</div>
-              <div style={{ fontSize: '0.78rem', color: '#444', letterSpacing: '0.2em' }}>NEMA REZULTATA ZA "{searchQuery}"</div>
+              <div style={{ fontSize: '0.78rem', color: '#444', letterSpacing: '0.2em' }}>{t('ex.noResults')} "{searchQuery}"</div>
               <button onClick={() => setSearchQuery('')}
                 style={{ marginTop: '20px', padding: '8px 20px', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: '#888', borderRadius: '6px', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', transition: 'all 0.15s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'; e.currentTarget.style.color = '#fff' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = '#888' }}>
-                RESET PRETRAGE
+                {t('ex.resetSearch')}
               </button>
             </div>
           )}
@@ -511,7 +518,7 @@ export default function ExerciseLibraryPage() {
               onMouseEnter={e => e.currentTarget.style.background = `${tf.color}12`}
               onMouseLeave={e => e.currentTarget.style.background = !subCat ? `${tf.color}15` : 'transparent'}>
               <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: tf.color, opacity: 0.7 }} />
-              <span style={{ fontSize: '0.68rem', color: !subCat ? tf.color : 'rgba(255,255,255,0.6)', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.12em' }}>SVE {tf.label}</span>
+              <span style={{ fontSize: '0.68rem', color: !subCat ? tf.color : 'rgba(255,255,255,0.6)', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.12em' }}>{t('ex.all')} {tf.label}</span>
               {!subCat && <svg style={{ marginLeft: 'auto' }} width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke={tf.color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
             </button>
             {/* Subcategories */}

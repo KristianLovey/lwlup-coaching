@@ -4,22 +4,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ArrowRight, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/context/LanguageContext'
 
 type NavbarProps = {
   variant?: 'transparent' | 'solid'
   backLink?: { href: string; label: string }
   simple?: boolean
 }
-
-const NAV_LINKS: [string, string][] = [
-  ['POWERLIFTING', '#kategorije'],
-  ['O KLUBU',      '#club'],
-  ['OSNIVAČI',      '#coach'],
-  ['SUSTAV',       '#system'],
-  ['TIM',          '/team'],
-  ['NATJECANJA',   '/competitions'],
-  ['REKORDI',      '/records'],
-]
 
 export default function Navbar({ variant = 'transparent', backLink, simple }: NavbarProps) {
   const pathname = usePathname()
@@ -28,6 +19,17 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
   const [hoveredLink, setHoveredLink] = useState<string | null>(null)
   const [loggedIn, setLoggedIn]       = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
+  const { lang, setLang, t } = useLanguage()
+
+  const NAV_LINKS: [string, string][] = [
+    [t('nav.powerlifting'), '#kategorije'],
+    [t('nav.about'),        '#club'],
+    [t('nav.founders'),     '#coach'],
+    [t('nav.system'),       '#system'],
+    [t('nav.team'),         '/team'],
+    [t('nav.competitions'), '/competitions'],
+    [t('nav.records'),      '/records'],
+  ]
 
   // resolve anchor links: on non-home pages, prepend '/'
   const resolveHref = (href: string) => {
@@ -70,13 +72,35 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
 
   const solid = variant === 'solid' || scrollY > 80
 
+  // ── Language toggle ───────────────────────────────────────────────
+  const LangToggle = ({ mobile = false }: { mobile?: boolean }) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '2px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '3px', flexShrink: 0 }}>
+      {(['hr', 'en'] as const).map(l => (
+        <button key={l} onClick={() => setLang(l)}
+          style={{
+            padding: mobile ? '8px 16px' : '4px 10px',
+            background: lang === l ? 'rgba(255,255,255,0.12)' : 'transparent',
+            border: 'none', cursor: 'pointer',
+            color: lang === l ? '#fff' : 'rgba(255,255,255,0.35)',
+            fontSize: mobile ? '0.72rem' : '0.58rem',
+            fontWeight: lang === l ? 800 : 600,
+            letterSpacing: '0.12em',
+            fontFamily: 'var(--fm)',
+            borderRadius: '2px',
+            transition: 'all 0.2s',
+          }}>
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  )
+
   // ── Auth CTA button ───────────────────────────────────────────────
-  // Shows "PRIJAVA" for guests, "TRENING →" for logged-in users
   const AuthCTA = ({ mobile = false }: { mobile?: boolean }) => {
     if (!authChecked) return <div style={{ width: mobile ? '100%' : '90px', height: mobile ? '56px' : '40px' }} />
     const href  = loggedIn ? '/training' : '/auth'
-    const label = loggedIn ? 'TRENING →' : 'PRIJAVA'
-    const isPrimary = !loggedIn  // white filled = primary for guests
+    const label = loggedIn ? t('nav.training') : t('nav.login')
+    const isPrimary = !loggedIn
 
     return (
       <Link href={href} style={{ textDecoration: 'none', width: mobile ? '100%' : 'auto' }} onClick={() => setMenuOpen(false)}>
@@ -130,7 +154,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
               style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '0.7rem', letterSpacing: '0.2em', fontWeight: 600, transition: '0.3s', fontFamily: 'var(--fm)' }}
               onMouseEnter={e => e.currentTarget.style.color = '#fff'}
               onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
-            >← POČETNA</Link>
+            >← {t('nav.home')}</Link>
           ) : backLink ? (
             <Link href={backLink.href}
               style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '0.75rem', letterSpacing: '0.2em', fontWeight: 600, transition: '0.3s', fontFamily: 'var(--fm)' }}
@@ -140,28 +164,32 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '36px' }}>
               {NAV_LINKS.map(([label, href]) => (
-                <a key={label} href={resolveHref(href)}
+                <a key={href} href={resolveHref(href)}
                   style={{ fontSize: '0.7rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)', textDecoration: 'none', transition: 'all 0.3s', fontWeight: 600 }}
                   onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'translateY(-2px)' }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.transform = 'translateY(0)' }}
                 >{label}</a>
               ))}
+              <LangToggle />
               <AuthCTA />
             </div>
           )}
         </div>
 
-        {/* Hamburger */}
-        <button className="nav-hamburger" onClick={() => setMenuOpen(o => !o)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', padding: '8px', zIndex: 1, display: 'flex', alignItems: 'center' }}>
-          {menuOpen ? <X size={24} /> : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', width: '24px' }}>
-              <div style={{ height: '2px', background: '#fff', width: '100%' }} />
-              <div style={{ height: '2px', background: '#fff', width: '70%' }} />
-              <div style={{ height: '2px', background: '#fff', width: '100%' }} />
-            </div>
-          )}
-        </button>
+        {/* Hamburger — LangToggle must be outside the <button> to avoid nested buttons */}
+        <div className="nav-hamburger" style={{ display: 'flex', alignItems: 'center', gap: '10px', zIndex: 1 }}>
+          <LangToggle />
+          <button onClick={() => setMenuOpen(o => !o)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', padding: '8px', display: 'flex', alignItems: 'center' }}>
+            {menuOpen ? <X size={24} /> : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', width: '24px' }}>
+                <div style={{ height: '2px', background: '#fff', width: '100%' }} />
+                <div style={{ height: '2px', background: '#fff', width: '70%' }} />
+                <div style={{ height: '2px', background: '#fff', width: '100%' }} />
+              </div>
+            )}
+          </button>
+        </div>
       </nav>
 
       {/* Mobile menu */}
@@ -187,27 +215,27 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
                 transform: menuOpen ? 'translateX(0)' : 'translateX(-16px)',
                 transition: 'opacity 0.35s 0.05s ease, transform 0.35s 0.05s ease',
               }}>
-              POČETNA
+              {t('nav.home')}
               <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
             </Link>
           ) : (
             NAV_LINKS.map(([label, href], i) => (
-              <a key={label} href={resolveHref(href)} onClick={() => setMenuOpen(false)}
-                onMouseEnter={() => setHoveredLink(label)}
+              <a key={href} href={resolveHref(href)} onClick={() => setMenuOpen(false)}
+                onMouseEnter={() => setHoveredLink(href)}
                 onMouseLeave={() => setHoveredLink(null)}
                 style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   fontSize: 'clamp(1.8rem,7vw,2.4rem)', fontFamily: 'var(--fd)', fontWeight: 700,
                   letterSpacing: '0.04em',
-                  color: hoveredLink === label ? 'rgba(255,255,255,0.45)' : '#fff',
+                  color: hoveredLink === href ? 'rgba(255,255,255,0.45)' : '#fff',
                   textDecoration: 'none', padding: '18px 0',
                   borderBottom: '1px solid rgba(255,255,255,0.07)',
                   opacity: menuOpen ? 1 : 0,
-                  transform: menuOpen ? (hoveredLink === label ? 'translateX(8px)' : 'translateX(0)') : 'translateX(-16px)',
+                  transform: menuOpen ? (hoveredLink === href ? 'translateX(8px)' : 'translateX(0)') : 'translateX(-16px)',
                   transition: `opacity 0.35s ${i * 0.06 + 0.05}s ease, transform 0.35s ${i * 0.06 + 0.05}s ease, color 0.2s ease`,
                 }}>
                 {label}
-                <span style={{ fontSize: '1rem', color: hoveredLink === label ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)', transition: 'all 0.2s' }}>→</span>
+                <span style={{ fontSize: '1rem', color: hoveredLink === href ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)', transition: 'all 0.2s' }}>→</span>
               </a>
             ))
           )}
@@ -221,7 +249,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
           {/* Auth CTA — main mobile action */}
           <AuthCTA mobile />
 
-          {/* PRIDRUŽI SE only when not logged in */}
+          {/* JOIN only when not logged in */}
           {authChecked && !loggedIn && (
             <Link href="/survey" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
               <button style={{
@@ -230,7 +258,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
                 letterSpacing: '0.25em', cursor: 'pointer', fontFamily: 'var(--fm)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
               }}>
-                PRIDRUŽI SE <ArrowRight size={14} strokeWidth={3} />
+                {t('nav.join')} <ArrowRight size={14} strokeWidth={3} />
               </button>
             </Link>
           )}
@@ -244,7 +272,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
 
           <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>LWL UP @ 2026</span>
-            <span style={{ fontSize: '0.6rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>Sva prava pridržana</span>
+            <span style={{ fontSize: '0.6rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>{t('nav.rights')}</span>
           </div>
         </div>
       </div>

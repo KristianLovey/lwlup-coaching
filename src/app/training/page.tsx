@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Loader2, Plus, Check, FolderOpen, ChevronDown, X, Copy } from 'lucide-react'
@@ -55,7 +55,7 @@ export default function TrainingPage() {
         setIsAdmin(role === 'admin')
         setIsCoach(role === 'trener')
         setAvatarIcon(profile?.avatar_icon ?? 'barbell')
-        const { data: exData } = await supabase.from('exercises').select('*').order('category').order('name')
+        const { data: exData } = await supabase.from('exercises').select('id, name, category, notes').order('category').order('name')
         setExercises(exData ?? [])
 
         let { data: blockData } = await supabase
@@ -106,7 +106,7 @@ export default function TrainingPage() {
         wo.workout_exercises?.forEach((we: WorkoutExercise) => {
           const logs = byWeId[we.id] ?? []
           we._totalSets = Math.max(logs.length, we.planned_sets ?? 0)
-          we._completedSets = logs.filter((l: any) => l.completed || l.weight_kg || l.reps).length
+          we._completedSets = logs.filter((l: any) => l.completed).length
         })
       })
     })
@@ -274,35 +274,42 @@ export default function TrainingPage() {
     setSaving(false)
   }
 
-  const updateWeek = async (weekId: string, data: Partial<Week>) => {
+  const updateWeek = useCallback(async (weekId: string, data: Partial<Week>) => {
     await supabase.from('weeks').update(data).eq('id', weekId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? { ...w, ...data } : w) } : b)
-  }
-  const addWorkout = async (weekId: string) => {
+  }, [])
+  const addWorkout = useCallback(async (weekId: string) => {
     if (!userId) return; setSaving(true)
-    const week = block?.weeks?.find(w => w.id === weekId); if (!week) return
+    // Read current week from state synchronously via updater (no side-effects)
+    let week: Week | undefined
+    setBlock(b => { week = b?.weeks?.find(w => w.id === weekId); return b })
+    if (!week) { setSaving(false); return }
     const nd = week.workouts?.length ?? 0
     const d = new Date(week.start_date); d.setDate(d.getDate() + nd)
-    const { data, error } = await supabase.from('workouts').insert({ week_id: weekId, athlete_id: effectiveAthleteId, day_name: `Dan ${nd + 1}`, workout_date: d.toISOString().split('T')[0], completed: false }).select('*').single()
+    const { data, error } = await supabase.from('workouts').insert({ week_id: weekId, athlete_id: userId, day_name: `Dan ${nd + 1}`, workout_date: d.toISOString().split('T')[0], completed: false }).select('*').single()
     if (!error && data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? { ...w, workouts: [...(w.workouts ?? []), { ...data, workout_exercises: [] }] } : w) } : b)
     setSaving(false)
-  }
-  const updateWorkout = async (workoutId: string, data: Partial<Workout>) => {
+  }, [userId])
+  const updateWorkout = useCallback(async (workoutId: string, data: Partial<Workout>) => {
     await supabase.from('workouts').update(data).eq('id', workoutId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, ...data } : wo) })) } : b)
-  }
-  const deleteWorkout = async (workoutId: string) => {
+  }, [])
+  const deleteWorkout = useCallback(async (workoutId: string) => {
     await supabase.from('workouts').delete().eq('id', workoutId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.filter(wo => wo.id !== workoutId) })) } : b)
-  }
-  const addExercise = async (workoutId: string, ex: Exercise) => {
+  }, [])
+  const addExercise = useCallback(async (workoutId: string, ex: Exercise) => {
     setSaving(true)
-    const workout = block?.weeks?.flatMap(w => w.workouts ?? []).find(w => w.id === workoutId)
-    const order = (workout?.workout_exercises?.length ?? 0) + 1
+    let order = 1
+    setBlock(b => {
+      const workout = b?.weeks?.flatMap(w => w.workouts ?? []).find(w => w.id === workoutId)
+      order = (workout?.workout_exercises?.length ?? 0) + 1
+      return b
+    })
     const { data, error } = await supabase.from('workout_exercises').insert({ workout_id: workoutId, exercise_id: ex.id, exercise_order: order, planned_sets: 3, planned_reps: '5' }).select('*, exercise:exercises(*)').single()
     if (!error && data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, workout_exercises: [...(wo.workout_exercises ?? []), data] } : wo) })) } : b)
     setSaving(false)
-  }
+  }, [])
   const LIFTER_FIELDS: (keyof WorkoutExercise)[] = ['actual_sets','actual_reps','actual_weight_kg','actual_rpe','actual_note','completed','_completedSets','_totalSets']
 
   // ── Notify mentor when lifter saves actual data ─────────────────
@@ -321,7 +328,7 @@ export default function TrainingPage() {
   const canEdit = false // Admini/treneri editiraju isključivo kroz admin panel
 
   const RUNTIME_ONLY = ['_completedSets', '_totalSets']
-  const updateExercise = async (weId: string, data: Partial<WorkoutExercise>) => {
+  const updateExercise = useCallback(async (weId: string, data: Partial<WorkoutExercise>) => {
     const filtered = canEdit
       ? data
       : Object.fromEntries(Object.entries(data).filter(([k]) => LIFTER_FIELDS.includes(k as keyof WorkoutExercise)))
@@ -338,23 +345,29 @@ export default function TrainingPage() {
       if (filtered.completed) notifyMentor(`${athleteName} je završio/la set — ${exerciseName}`)
       else if (filtered.actual_weight_kg) notifyMentor(`${athleteName} je ulogirao/la ${filtered.actual_weight_kg}kg na ${exerciseName}`)
     }
-  }
-  const deleteExercise = async (weId: string) => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [block, athleteName, canEdit])
+  const deleteExercise = useCallback(async (weId: string) => {
     await supabase.from('workout_exercises').delete().eq('id', weId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.filter(we => we.id !== weId) })) })) } : b)
-  }
+  }, [])
 
-  const totalWorkouts = block?.weeks?.flatMap(w => w.workouts ?? []).length ?? 0
-  const completedWorkouts = block?.weeks?.flatMap(w => w.workouts ?? []).filter(w => w.completed).length ?? 0
-
-  const allExercises = block?.weeks?.flatMap(w => w.workouts?.flatMap(wo => wo.workout_exercises ?? []) ?? []) ?? []
-  const totalSets = allExercises.reduce((s, e) => s + (e._totalSets ?? e.planned_sets ?? 0), 0)
-  const doneSets = allExercises.reduce((s, e) => {
-    const fromLogs = e._completedSets ?? 0
-    const fromCompleted = e.completed ? (e._totalSets ?? e.planned_sets ?? 0) : 0
-    return s + Math.max(fromLogs, fromCompleted)
-  }, 0)
-  const pct = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : (totalWorkouts > 0 ? Math.round((completedWorkouts / totalWorkouts) * 100) : 0)
+  const { totalWorkouts, completedWorkouts, totalSets, doneSets, pct } = useMemo(() => {
+    const allWorkouts = block?.weeks?.flatMap(w => w.workouts ?? []) ?? []
+    const totalWorkouts = allWorkouts.length
+    const completedWorkouts = allWorkouts.filter(w => w.completed).length
+    const allExercises = allWorkouts.flatMap(wo => wo.workout_exercises ?? [])
+    const totalSets = allExercises.reduce((s, e) => s + (e._totalSets ?? e.planned_sets ?? 0), 0)
+    const doneSets = allExercises.reduce((s, e) => {
+      const fromLogs = e._completedSets ?? 0
+      const fromCompleted = e.completed ? (e._totalSets ?? e.planned_sets ?? 0) : 0
+      return s + Math.max(fromLogs, fromCompleted)
+    }, 0)
+    const pct = totalSets > 0
+      ? Math.round((doneSets / totalSets) * 100)
+      : totalWorkouts > 0 ? Math.round((completedWorkouts / totalWorkouts) * 100) : 0
+    return { totalWorkouts, completedWorkouts, totalSets, doneSets, pct }
+  }, [block])
 
   return (
     <div style={{ background: '#04040a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
@@ -394,22 +407,22 @@ export default function TrainingPage() {
         background: 'radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(0,0,0,0.8) 100%)' }} />
       {/* plate.png — bottom left, large, rotated */}
       <div className="bg-decorative" style={{ position: 'fixed', bottom: '-8vh', left: '-8vw', zIndex: 0, pointerEvents: 'none', opacity: 0.07, transform: 'rotate(12deg)', filter: 'blur(1px)' }}>
-        <img src="/slike/plate.png" alt="" style={{ width: '380px', height: 'auto' }} />
+        <img src="/slike/plate.png" alt="" loading="lazy" decoding="async" style={{ width: '380px', height: 'auto' }} />
       </div>
       {/* plate.png — top right, smaller */}
       <div className="bg-decorative" style={{ position: 'fixed', top: '6vh', right: '-6vw', zIndex: 0, pointerEvents: 'none', opacity: 0.05, transform: 'rotate(-18deg)', filter: 'blur(1.5px)' }}>
-        <img src="/slike/plate.png" alt="" style={{ width: '260px', height: 'auto' }} />
+        <img src="/slike/plate.png" alt="" loading="lazy" decoding="async" style={{ width: '260px', height: 'auto' }} />
       </div>
       {/* ipflogo.png — mid left, faded */}
       <div className="bg-decorative" style={{ position: 'fixed', top: '35vh', left: '-2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.04, filter: 'blur(1px) grayscale(1)' }}>
-        <img src="/slike/ipflogo.png" alt="" style={{ width: '220px', height: 'auto' }} />
+        <img src="/slike/ipflogo.png" alt="" loading="lazy" decoding="async" style={{ width: '220px', height: 'auto' }} />
       </div>
       {/* logopng.png — bottom right, very subtle */}
       <div className="bg-decorative" style={{ position: 'fixed', bottom: '6vh', right: '2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.035, filter: 'blur(0.5px) grayscale(1)' }}>
-        <img src="/slike/logopng.png" alt="" style={{ width: '180px', height: 'auto' }} />
+        <img src="/slike/logopng.png" alt="" loading="lazy" decoding="async" style={{ width: '180px', height: 'auto' }} />
       </div>
 
-      <AppNav athleteName={athleteName} isAdmin={isAdmin} isCoach={isCoach} onLogout={handleLogout} avatarIcon={avatarIcon} userId={userId ?? undefined} />
+      <AppNav athleteName={athleteName} isAdmin={isAdmin} onLogout={handleLogout} avatarIcon={avatarIcon} userId={userId ?? undefined} />
 
       {/* ─── HEADER ──────────────────────────────────────────────── */}
       <div style={{ paddingTop: '56px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>

@@ -4,6 +4,7 @@ import { MapPin, Calendar, Trophy, Users, ChevronRight, Loader2, ExternalLink } 
 import Footer from '@/app/components/Footer'
 import Navbar from '@/app/components/Navbar'
 import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/context/LanguageContext'
 
 const supabase = createClient()
 
@@ -89,15 +90,21 @@ function ParticleCanvas() {
   return <canvas ref={canvasRef} style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.7 }} />
 }
 
-const STATUS_CONFIG = {
-  announced: { label: 'NAJAVLJENO', color: '#facc15', bg: 'rgba(250,204,21,0.08)',  border: 'rgba(250,204,21,0.2)',  dot: '#facc15' },
-  ongoing:   { label: 'U TIJEKU',   color: '#4ade80', bg: 'rgba(74,222,128,0.08)',  border: 'rgba(74,222,128,0.2)',  dot: '#4ade80' },
-  completed: { label: 'ZAVRŠENO',   color: 'rgba(255,255,255,0.35)', bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.1)', dot: 'rgba(255,255,255,0.3)' },
+const STATUS_STYLE = {
+  announced: { color: '#facc15', bg: 'rgba(250,204,21,0.08)',  border: 'rgba(250,204,21,0.2)',  dot: '#facc15' },
+  ongoing:   { color: '#4ade80', bg: 'rgba(74,222,128,0.08)',  border: 'rgba(74,222,128,0.2)',  dot: '#4ade80' },
+  completed: { color: 'rgba(255,255,255,0.35)', bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.1)', dot: 'rgba(255,255,255,0.3)' },
 }
 
 function CompetitionCard({ comp, index }: { comp: Competition; index: number }) {
+  const { t } = useLanguage()
   const [expanded, setExpanded] = useState(false)
-  const status = STATUS_CONFIG[comp.status]
+  const STATUS_LABELS = {
+    announced: t('comp.status.announced'),
+    ongoing:   t('comp.status.ongoing'),
+    completed: t('comp.status.completed'),
+  }
+  const status = { ...STATUS_STYLE[comp.status], label: STATUS_LABELS[comp.status] }
   const hasAthletes = (comp.athletes?.length ?? 0) > 0
   const isUpcoming = comp.status !== 'completed'
   const daysUntil = Math.ceil((new Date(comp.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
@@ -139,7 +146,7 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
               )}
               {hasAthletes && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem' }}>
-                  <Users size={13} color="rgba(255,255,255,0.3)" />{comp.athletes!.length} liftera
+                  <Users size={13} color="rgba(255,255,255,0.3)" />{comp.athletes!.length} {t('comp.liftersCount')}
                 </div>
               )}
             </div>
@@ -154,12 +161,12 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
             {isUpcoming && daysUntil > 0 && (
               <div style={{ textAlign: 'right', padding: '16px 20px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
                 <div style={{ fontFamily: 'var(--fd)', fontSize: '2.6rem', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{daysUntil}</div>
-                <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.3)', marginTop: '3px' }}>DANA</div>
+                <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.3)', marginTop: '3px' }}>{t('comp.days')}</div>
               </div>
             )}
             {isUpcoming && daysUntil <= 0 && comp.status === 'announced' && (
               <div style={{ padding: '8px 16px', border: '1px solid rgba(74,222,128,0.2)', background: 'rgba(74,222,128,0.06)' }}>
-                <span style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: '#4ade80', fontWeight: 700 }}>DANAS / USKORO</span>
+                <span style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: '#4ade80', fontWeight: 700 }}>{t('comp.today')}</span>
               </div>
             )}
             {comp.status === 'completed' && comp.results_url && (
@@ -167,7 +174,7 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: '#fff', color: '#000', textDecoration: 'none', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}
                 onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.85)'}
                 onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.background = '#fff'}>
-                <ExternalLink size={12} /> REZULTATI
+                <ExternalLink size={12} /> {t('comp.results')}
               </a>
             )}
             {hasAthletes && (
@@ -176,7 +183,7 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}>
                 <Users size={12} />
-                {expanded ? 'SAKRIJ' : 'LIFTERI'}
+                {expanded ? t('comp.hide') : t('comp.lifters')}
                 <ChevronRight size={11} style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
             )}
@@ -187,7 +194,7 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
         {expanded && hasAthletes && (
           <div style={{ marginTop: '24px', borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '20px' }}>
             <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.2)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>
-              {comp.status === 'completed' ? 'REZULTATI LIFTERA' : 'LIFTERI NA NATJECANJU'}
+              {comp.status === 'completed' ? t('comp.athleteResults') : t('comp.athletesAt')}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
               {comp.athletes!.map(athlete => (
@@ -230,6 +237,7 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
 }
 
 export default function CompetitionsPage() {
+  const { t } = useLanguage()
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedYear, setSelectedYear] = useState<number | 'all'>('all')
@@ -246,31 +254,32 @@ export default function CompetitionsPage() {
 
       if (!comps) { setLoading(false); return }
 
-      const withAthletes = await Promise.all(comps.map(async (comp) => {
-        const { data: ca } = await supabase
-          .from('competition_athletes')
-          .select(`
-            result_squat, result_bench, result_deadlift, result_total, result_place, result_notes,
-            athlete:athlete_stats(id, name, nickname, img, category)
-          `)
-          .eq('competition_id', comp.id)
+      // Single query for all competition athletes (avoids N+1)
+      const compIds = comps.map(c => c.id)
+      const { data: allCa } = await supabase
+        .from('competition_athletes')
+        .select(`
+          competition_id,
+          result_squat, result_bench, result_deadlift, result_total, result_place, result_notes,
+          athlete:athlete_stats(id, name, nickname, img, category)
+        `)
+        .in('competition_id', compIds)
 
-        const athletes: Athlete[] = (ca ?? []).map((row: any) => ({
-          id: row.athlete.id,
-          name: row.athlete.name,
-          nickname: row.athlete.nickname,
-          img: row.athlete.img,
-          category: row.athlete.category,
-          result_squat: row.result_squat,
-          result_bench: row.result_bench,
-          result_deadlift: row.result_deadlift,
-          result_total: row.result_total,
-          result_place: row.result_place,
-          result_notes: row.result_notes,
-        }))
+      // Group athletes by competition_id
+      const athletesByComp: Record<string, Athlete[]> = {}
+      for (const row of (allCa ?? [])) {
+        const r = row as any
+        if (!athletesByComp[r.competition_id]) athletesByComp[r.competition_id] = []
+        athletesByComp[r.competition_id].push({
+          id: r.athlete.id, name: r.athlete.name, nickname: r.athlete.nickname,
+          img: r.athlete.img, category: r.athlete.category,
+          result_squat: r.result_squat, result_bench: r.result_bench,
+          result_deadlift: r.result_deadlift, result_total: r.result_total,
+          result_place: r.result_place, result_notes: r.result_notes,
+        })
+      }
 
-        return { ...comp, athletes }
-      }))
+      const withAthletes = comps.map(comp => ({ ...comp, athletes: athletesByComp[comp.id] ?? [] }))
 
       setCompetitions(withAthletes as Competition[])
 
@@ -320,9 +329,9 @@ export default function CompetitionsPage() {
 
             <div className="comp-hero-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '32px', marginBottom: '40px' }}>
               <div>
-                <div style={{ fontSize: '0.7rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.3)', marginBottom: '14px' }}>LWL UP · NATJECANJA</div>
+                <div style={{ fontSize: '0.7rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.3)', marginBottom: '14px' }}>{t('comp.eyebrow')}</div>
                 <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem, 8vw, 6.5rem)', lineHeight: 0.88, margin: 0, letterSpacing: '-0.02em' }}>
-                  KALENDAR<br /><span style={{ color: 'rgba(255,255,255,0.18)' }}>NATJECANJA</span>
+                  {t('comp.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.18)' }}>{t('comp.title2')}</span>
                 </h1>
               </div>
 
@@ -330,9 +339,9 @@ export default function CompetitionsPage() {
               {!loading && (
                 <div className="comp-stats-bar" style={{ display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
                   {[
-                    { val: upcoming,           label: 'NADOLAZEĆA' },
-                    { val: completed,          label: 'ZAVRŠENA'   },
-                    { val: totalParticipations, label: 'NASTUPA'   },
+                    { val: upcoming,            label: t('comp.filter.upcoming') },
+                    { val: completed,           label: t('comp.filter.completed') },
+                    { val: totalParticipations, label: t('comp.appearances') },
                   ].map((s, i) => (
                     <div key={i} style={{ padding: '16px 22px', background: '#050505', textAlign: 'center', minWidth: '76px' }}>
                       <div style={{ fontFamily: 'var(--fd)', fontSize: '1.9rem', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{s.val}</div>
@@ -352,7 +361,7 @@ export default function CompetitionsPage() {
                   style={{ padding: '8px 18px', background: selectedYear === 'all' ? '#fff' : 'rgba(255,255,255,0.04)', color: selectedYear === 'all' ? '#000' : 'rgba(255,255,255,0.4)', border: selectedYear === 'all' ? 'none' : '1px solid rgba(255,255,255,0.1)', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.18em', cursor: 'pointer', transition: '0.2s', fontFamily: 'var(--fm)' }}
                   onMouseEnter={e => { if (selectedYear !== 'all') { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)' } }}
                   onMouseLeave={e => { if (selectedYear !== 'all') { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' } }}>
-                  SVE GODINE
+                  {t('comp.allYears')}
                 </button>
                 {availableYears.map(year => (
                   <button key={year} onClick={() => setSelectedYear(year)}
@@ -369,7 +378,7 @@ export default function CompetitionsPage() {
 
               {/* Status filter */}
               <div style={{ display: 'flex', gap: '6px' }}>
-                {([['all','SVI'],['announced','NADOLAZEĆA'],['completed','ZAVRŠENA']] as [string,string][]).map(([f, label]) => (
+                {([['all', t('comp.filter.all')], ['announced', t('comp.filter.upcoming')], ['completed', t('comp.filter.completed')]] as [string,string][]).map(([f, label]) => (
                   <button key={f} onClick={() => setStatusFilter(f as any)}
                     style={{ padding: '8px 16px', background: statusFilter === f ? 'rgba(255,255,255,0.08)' : 'transparent', color: statusFilter === f ? '#fff' : 'rgba(255,255,255,0.35)', border: `1px solid ${statusFilter === f ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)'}`, fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.15em', cursor: 'pointer', transition: '0.2s', fontFamily: 'var(--fm)' }}
                     onMouseEnter={e => { if (statusFilter !== f) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' } }}
@@ -388,12 +397,12 @@ export default function CompetitionsPage() {
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '80px 0', color: 'rgba(255,255,255,0.3)' }}>
             <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} />
-            <span style={{ fontSize: '0.8rem', letterSpacing: '0.2em' }}>UČITAVANJE NATJECANJA...</span>
+            <span style={{ fontSize: '0.8rem', letterSpacing: '0.2em' }}>{t('comp.loading')}</span>
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.2)' }}>
             <Trophy size={36} style={{ opacity: 0.15, marginBottom: '16px', display: 'block', margin: '0 auto 16px' }} />
-            <div style={{ fontSize: '0.75rem', letterSpacing: '0.3em' }}>NEMA NATJECANJA ZA ODABRANE FILTERE</div>
+            <div style={{ fontSize: '0.75rem', letterSpacing: '0.3em' }}>{t('comp.noResults')}</div>
           </div>
         ) : (
           <>
@@ -403,7 +412,7 @@ export default function CompetitionsPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <span style={{ fontFamily: 'var(--fd)', fontSize: '0.9rem', color: 'rgba(255,255,255,0.15)', letterSpacing: '0.05em' }}>{selectedYear}</span>
                   <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
-                  <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.3em' }}>{filtered.length} {filtered.length === 1 ? 'NATJECANJE' : 'NATJECANJA'}</span>
+                  <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.3em' }}>{filtered.length} {t('comp.count')}</span>
                 </div>
               </div>
             )}
@@ -418,7 +427,7 @@ export default function CompetitionsPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 0 12px' }}>
                       <span style={{ fontFamily: 'var(--fd)', fontSize: '2rem', fontWeight: 800, color: 'rgba(255,255,255,0.08)', letterSpacing: '-0.02em', lineHeight: 1 }}>{year}</span>
                       <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
-                      <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.3em' }}>{yearComps.length} NATJECANJA</span>
+                      <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.3em' }}>{yearComps.length} {t('comp.count')}</span>
                     </div>
                     {yearComps.map((comp, i) => <CompetitionCard key={comp.id} comp={comp} index={i} />)}
                   </div>

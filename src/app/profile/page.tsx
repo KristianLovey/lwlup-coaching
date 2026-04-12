@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Loader2, Edit3, X } from 'lucide-react'
@@ -468,7 +468,8 @@ export default function ProfilePage() {
 
   const saveAvatar = async (iconId: string) => {
     if (!userId) return
-    await supabase.from('profiles').update({ avatar_icon: iconId }).eq('id', userId)
+    const { error } = await supabase.from('profiles').update({ avatar_icon: iconId }).eq('id', userId)
+    if (error) { console.error('saveAvatar:', error); return }
     setProfile(p => p ? { ...p, avatar_icon: iconId } : p)
     setLeaderboard(lb => lb.map(e => e.id === userId ? { ...e, avatar_icon: iconId } : e))
   }
@@ -482,7 +483,8 @@ export default function ProfilePage() {
       body_weight:          ormVals.body_weight  ? Number(ormVals.body_weight)  : null,
       sex:                  ormVals.sex,
     }
-    await supabase.from('profiles').update(data).eq('id', userId)
+    const { error } = await supabase.from('profiles').update(data).eq('id', userId)
+    if (error) { console.error('saveORMs:', error); return }
     setProfile(p => p ? { ...p, ...data } : p)
     // Update leaderboard entry for self so GL updates instantly
     setLeaderboard(lb => lb.map(e => e.id === userId ? { ...e, body_weight: data.body_weight, sex: data.sex } : e))
@@ -496,7 +498,8 @@ export default function ProfilePage() {
   }
 
   const deletePrLog = async (id: string) => {
-    await supabase.from('pr_logs').delete().eq('id', id)
+    const { error } = await supabase.from('pr_logs').delete().eq('id', id)
+    if (error) { console.error('deletePrLog:', error); return }
     setPrLogs(p => p.filter(x => x.id !== id))
   }
 
@@ -509,14 +512,16 @@ export default function ProfilePage() {
   }
 
   // ── Leaderboard sort by workout completion % ──────────────────
-  const lbSorted = [...leaderboard]
-    .filter(e => !isCoach || assignedLifterIds.includes(e.id))
-    .map(e => {
-      const c = completions[e.id] ?? { total: 0, done: 0, pct: 0 }
-      return { ...e, compTotal: c.total, compDone: c.done, compPct: c.pct }
-    })
-    .filter(e => e.compTotal > 0)
-    .sort((a, b) => b.compPct - a.compPct || b.compDone - a.compDone)
+  const lbSorted = useMemo(() =>
+    [...leaderboard]
+      .filter(e => !isCoach || assignedLifterIds.includes(e.id))
+      .map(e => {
+        const c = completions[e.id] ?? { total: 0, done: 0, pct: 0 }
+        return { ...e, compTotal: c.total, compDone: c.done, compPct: c.pct }
+      })
+      .filter(e => e.compTotal > 0)
+      .sort((a, b) => b.compPct - a.compPct || b.compDone - a.compDone)
+  , [leaderboard, isCoach, assignedLifterIds, completions])
 
   if (loading) return (
     <div style={{ background: '#06060a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', color: '#555', fontFamily: 'var(--fm)' }}>
