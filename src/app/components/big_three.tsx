@@ -198,6 +198,7 @@ export default function BigThree() {
   const [activeLift, setActiveLift] = useState<LiftKey | null>(null)
   const [hoveredHotspot, setHoveredHotspot] = useState<number | null>(null)
   const { ref, visible } = useReveal()
+  const { t } = useLanguage()
   const close = () => { setActiveLift(null); setHoveredHotspot(null) }
 
   return (
@@ -213,20 +214,19 @@ export default function BigThree() {
           {/* ── Powerlifting opis ── */}
           <div className="bt-intro-grid" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 'clamp(40px,6vw,72px)' }}>
             <div>
-              <div style={{ fontSize: '0.58rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.5)', marginBottom: '20px', fontFamily: 'var(--fm)' }}>ŠTO JE POWERLIFTING?</div>
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.5)', marginBottom: '20px', fontFamily: 'var(--fm)' }}>{t('bt.eyebrow')}</div>
               <h3 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,3.5vw,3.2rem)', fontWeight: 800, lineHeight: 0.9, margin: '0 0 clamp(16px,3vw,28px)', letterSpacing: '-0.02em' }}>
-                SPORT<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>APSOLUTNE SNAGE</span>
+                {t('bt.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>{t('bt.title2')}</span>
               </h3>
               <p style={{ fontSize: 'clamp(0.88rem,2.5vw,1.1rem)', lineHeight: 1.85, color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: 300 }}>
-                Powerlifting je sport u kojemu se natjecatelji bore za što veći ukupni{' '}
-                <strong style={{ color: '#fff', fontWeight: 600 }}>total</strong> — zbroj tri discipline: čučanj, bench press i mrtvo dizanje. Svaki natjecatelj ima tri pokušaja po liftu, a pobjeđuje onaj koji podigne najveću ukupnu težinu u svojoj kategoriji. Svaki pokušaj mora zadovoljiti minimalno 2 od 3 sudca da bi bio "good lift".
+                {t('bt.desc')}
               </p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
               {[
-                { num: '01', title: 'PRIJE SVEGA, TEHNIKA', desc: 'Svaki lift mora biti izveden prema strogim IPF pravilima — dubina čučnja, pauza na klupi, lockout u mrtvom, itd.' },
-                { num: '02', title: 'KATEGORIJE PO TEŽINI', desc: 'Natjecatelji se dijele prema tjelesnoj težini i spolu, s posebnim kategorijama za mlade, seniore i veterane.' },
-                { num: '03', title: 'TOTAL KAO MJERA', desc: 'Jedan loš lift može srušiti cijelo natjecanje. Strategija odabira kilaže jednako je bitna kao i sama snaga.' },
+                { num: '01', title: t('bt.item0.title'), desc: t('bt.item0.desc') },
+                { num: '02', title: t('bt.item1.title'), desc: t('bt.item1.desc') },
+                { num: '03', title: t('bt.item2.title'), desc: t('bt.item2.desc') },
               ].map((item, i) => (
                 <div key={i} style={{ display: 'flex', gap: 'clamp(12px,2vw,20px)', padding: 'clamp(16px,2.5vw,22px) 0', borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.1)' : 'none', alignItems: 'flex-start' }}>
                   <div style={{ fontSize: '0.6rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--fd)', fontWeight: 800, paddingTop: '3px', flexShrink: 0 }}>{item.num}</div>
@@ -242,13 +242,13 @@ export default function BigThree() {
           {/* ── Big Three header ── */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'clamp(40px,6vw,72px)', marginTop: 'clamp(60px,8vw,100px)', flexWrap: 'wrap', gap: '20px' }}>
             <div>
-              <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.4)', marginBottom: '16px', fontFamily: 'var(--fm)' }}>DISCIPLINA / TEHNIKA</div>
+              <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.4)', marginBottom: '16px', fontFamily: 'var(--fm)' }}>{t('bt.discipline')}</div>
               <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,7vw,6rem)', lineHeight: 0.88, margin: 0 }}>
                 SBD<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>LIFTS</span>
               </h2>
             </div>
             <p style={{ maxWidth: '320px', color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(0.78rem,2vw,0.9rem)', lineHeight: 1.8, textAlign: 'right' }}>
-              Kliknite na disciplinu za dubinsku tehničku analizu i biomehaničke ključne točke.
+              {t('bt.click_desc')}
             </p>
           </div>
 
@@ -264,13 +264,13 @@ export default function BigThree() {
                   </div>
                   <div style={{ padding: 'clamp(24px,4vw,48px) clamp(16px,4vw,52px)', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 'clamp(12px,2vw,20px)' }}>
                     <div>
-                      <div style={{ fontSize: 'clamp(0.5rem,1.5vw,0.58rem)', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.45)', marginBottom: '12px', fontFamily: 'var(--fm)', textTransform: 'uppercase' }}>{meta.sub}</div>
+                      <div style={{ fontSize: 'clamp(0.5rem,1.5vw,0.58rem)', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.45)', marginBottom: '12px', fontFamily: 'var(--fm)', textTransform: 'uppercase' }}>{t(meta.sub)}</div>
                       <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,5vw,4.5rem)', fontWeight: 800, lineHeight: 0.9, letterSpacing: '-0.02em', color: '#fff' }}>{lift}</div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ width: '20px', height: '1px', background: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
-                        <span style={{ fontSize: 'clamp(0.6rem,1.8vw,0.7rem)', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.15em', fontFamily: 'var(--fm)' }}>{meta.muscles}</span>
+                        <span style={{ fontSize: 'clamp(0.6rem,1.8vw,0.7rem)', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.15em', fontFamily: 'var(--fm)' }}>{t(meta.muscles)}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ width: '20px', height: '1px', background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
@@ -279,7 +279,7 @@ export default function BigThree() {
                     </div>
                     <div className="bt-explore" style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '8px' }}>
                       <div className="bt-explore-line" style={{ height: '1px', background: '#fff', width: '30px', transition: 'width 0.4s' }} />
-                      <span style={{ fontSize: 'clamp(0.58rem,1.5vw,0.65rem)', letterSpacing: '0.35em', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' }}>ISTRAŽI TEHNIKU</span>
+                      <span style={{ fontSize: 'clamp(0.58rem,1.5vw,0.65rem)', letterSpacing: '0.35em', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' }}>{t('bt.explore')}</span>
                       <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>→</span>
                     </div>
                   </div>

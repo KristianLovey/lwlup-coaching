@@ -943,9 +943,42 @@ export default function AdminPage() {
   const [assignments, setAssignments] = useState<Record<string, string>>({}) // lifter_id → coach_id
   const [assignSaving, setAssignSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showAddLifter, setShowAddLifter] = useState(false)
+  const [newLifterEmail, setNewLifterEmail] = useState('')
+  const [newLifterName, setNewLifterName] = useState('')
+  const [addLifterLoading, setAddLifterLoading] = useState(false)
+  const [addLifterError, setAddLifterError] = useState('')
+  const [addLifterSuccess, setAddLifterSuccess] = useState('')
   const router = useRouter()
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
+
+  const handleAddLifter = async () => {
+    setAddLifterError('')
+    setAddLifterSuccess('')
+    if (!newLifterEmail || !newLifterName) { setAddLifterError('Email i ime su obavezni.'); return }
+    setAddLifterLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/create-lifter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ email: newLifterEmail, fullName: newLifterName }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setAddLifterError(json.error ?? 'Greška.'); return }
+      setAddLifterSuccess(`${newLifterName} uspješno dodan!`)
+      setNewLifterEmail('')
+      setNewLifterName('')
+      // Refresh athletes
+      const { data } = await supabase.from('profiles').select('*, blocks:training_blocks(*), notes:athlete_notes(*)').order('full_name')
+      if (data) setAthletes(data)
+    } catch (e: any) {
+      setAddLifterError(e.message)
+    } finally {
+      setAddLifterLoading(false)
+    }
+  }
 
   useEffect(() => {
     const init = async () => {
@@ -1306,6 +1339,12 @@ export default function AdminPage() {
                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: managingUsers ? 'rgba(239,68,68,0.1)' : 'transparent', border: `1px solid ${managingUsers ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)'}`, color: managingUsers ? '#ef4444' : 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}>
                 <Settings size={13} /> {managingUsers ? 'ZATVORI UPRAVLJANJE' : 'UPRAVLJAJ KORISNICIMA'}
               </button>
+              <button onClick={() => { setShowAddLifter(true); setAddLifterError(''); setAddLifterSuccess('') }}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}>
+                <Plus size={13} /> DODAJ LIFTERA
+              </button>
             </div>
 
             {/* Athlete circles grid */}
@@ -1394,6 +1433,40 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      {/* Add Lifter Modal */}
+      {showAddLifter && (
+        <div onClick={() => setShowAddLifter(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#0e0e10', border: '1px solid rgba(255,255,255,0.1)', padding: '36px', width: '100%', maxWidth: '420px', animation: 'slideUp 0.25s ease' }}>
+            <div style={{ fontSize: '0.6rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.3)', marginBottom: '24px', fontFamily: 'var(--fm)', fontWeight: 700 }}>DODAJ NOVOG LIFTERA</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>IME I PREZIME</div>
+                <input value={newLifterName} onChange={e => setNewLifterName(e.target.value)} placeholder="Ime Prezime"
+                  style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.95rem', padding: '8px 0', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>EMAIL</div>
+                <input value={newLifterEmail} onChange={e => setNewLifterEmail(e.target.value)} placeholder="email@gmail.com" type="email"
+                  style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.95rem', padding: '8px 0', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
+              </div>
+              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>Defaultna lozinka: <span style={{ color: 'rgba(255,255,255,0.5)' }}>LwlupChange123!</span></div>
+              {addLifterError && <div style={{ fontSize: '0.75rem', color: '#ef4444', fontFamily: 'var(--fm)' }}>{addLifterError}</div>}
+              {addLifterSuccess && <div style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'var(--fm)' }}>{addLifterSuccess}</div>}
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button onClick={() => setShowAddLifter(false)}
+                  style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700 }}>
+                  ODUSTANI
+                </button>
+                <button onClick={handleAddLifter} disabled={addLifterLoading}
+                  style={{ flex: 1, padding: '12px', background: addLifterLoading ? 'rgba(255,255,255,0.05)' : '#fff', color: addLifterLoading ? 'rgba(255,255,255,0.3)' : '#000', border: 'none', cursor: addLifterLoading ? 'not-allowed' : 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  {addLifterLoading ? <><Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> DODAVANJE...</> : 'DODAJ'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes fadeIn   { from { opacity: 0 } to { opacity: 1 } }
