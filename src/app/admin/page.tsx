@@ -537,7 +537,7 @@ function AthletePanel({
               week={week}
               exercises={exercises}
               isAdmin={true}
-              userId={adminId}
+              userId={athlete.id}
               onDeleteWeek={deleteWeek}
               onCopyWeek={copyWeek}
               onUpdateWeek={updateWeek}

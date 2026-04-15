@@ -35,20 +35,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid field' }, { status: 400 })
     }
 
-    // Try upsert — insert or update based on unique (workout_exercise_id, athlete_id, set_number)
-    const { error } = await adminClient.from('set_logs').upsert(
-      { workout_exercise_id: workoutExerciseId, athlete_id: athleteId, set_number: setNumber, [field]: value },
-      { onConflict: 'workout_exercise_id,athlete_id,set_number', ignoreDuplicates: false }
-    )
+    // Check if row already exists
+    const { data: existing } = await adminClient
+      .from('set_logs')
+      .select('id')
+      .eq('workout_exercise_id', workoutExerciseId)
+      .eq('athlete_id', athleteId)
+      .eq('set_number', setNumber)
+      .maybeSingle()
 
-    if (error) {
-      // Fallback: update if upsert fails (no unique constraint)
-      const { error: updateErr } = await adminClient.from('set_logs')
+    if (existing) {
+      // Row exists — update the field
+      const { error: updateErr } = await adminClient
+        .from('set_logs')
         .update({ [field]: value })
-        .eq('workout_exercise_id', workoutExerciseId)
-        .eq('athlete_id', athleteId)
-        .eq('set_number', setNumber)
+        .eq('id', existing.id)
       if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
+    } else {
+      // No row — insert
+      const { error: insertErr } = await adminClient
+        .from('set_logs')
+        .insert({ workout_exercise_id: workoutExerciseId, athlete_id: athleteId, set_number: setNumber, [field]: value })
+      if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 })
     }
 
     return NextResponse.json({ ok: true })

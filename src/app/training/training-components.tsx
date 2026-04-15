@@ -615,6 +615,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   const plannedSets = we.planned_sets ?? 3
   const [logs, setLogs] = useState<SetLog[]>([])
   const [saving, setSaving] = useState(false)
+  // Local input values for admin fields — avoids saving on every keystroke
+  const [localVals, setLocalVals] = useState<Record<string, string>>({})
+  const focusedKey = useRef<string | null>(null)
 
   // Propagate set counts up for progress tracking
   const propagateCounts = (updatedLogs: SetLog[]) => {
@@ -641,6 +644,23 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       })
   }, [we.id, plannedSets, isAdmin])
 
+  // Keep localVals in sync with logs (for admin onBlur inputs) — skip the focused set entirely
+  useEffect(() => {
+    if (!isAdmin) return
+    setLocalVals(prev => {
+      const next = { ...prev }
+      // Extract set number from focused key (e.g. "2_weight_kg" → "2")
+      const focusedSet = focusedKey.current ? focusedKey.current.split('_')[0] : null
+      logs.forEach(s => {
+        if (String(s.set_number) === focusedSet) return // skip entire set being edited
+        next[`${s.set_number}_weight_kg`] = s.weight_kg != null ? String(s.weight_kg) : ''
+        next[`${s.set_number}_reps`] = s.reps != null ? String(s.reps) : ''
+        next[`${s.set_number}_rpe`] = s.rpe != null ? String(s.rpe) : ''
+      })
+      return next
+    })
+  }, [logs, isAdmin])
+
 
   const saveSet = async (setNum: number, field: keyof SetLog, raw: string) => {
     const val = (field === 'weight_kg' || field === 'rpe') ? (raw ? Number(raw) : null) : (raw || null)
@@ -649,29 +669,20 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     const updated = logs.map(s => s.set_number === setNum ? { ...s, [field]: val } : s)
     setLogs(updated)
 
-    if (isAdmin) {
-      // Admin: route through service-role API to bypass RLS
-      const { data: { session } } = await supabase.auth.getSession()
-      await fetch('/api/admin/upsert-set-log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ workoutExerciseId: we.id, athleteId: userId, setNumber: setNum, field, value: val }),
-      })
+    // Try update first — if no rows affected, insert
+    const { data: existing } = await supabase.from('set_logs')
+      .select('id')
+      .eq('workout_exercise_id', we.id)
+      .eq('athlete_id', userId)
+      .eq('set_number', setNum)
+      .maybeSingle()
+    if (existing) {
+      await supabase.from('set_logs').update({ [field]: val }).eq('id', existing.id)
     } else {
-      // Try insert first; if row exists (duplicate), update instead
-      const { error: insertErr } = await supabase.from('set_logs').insert({
+      await supabase.from('set_logs').insert({
         workout_exercise_id: we.id, athlete_id: userId,
         set_number: setNum, [field]: val,
       })
-      if (insertErr) {
-        // Row exists — update the specific field
-        const { error: updateErr } = await supabase.from('set_logs')
-          .update({ [field]: val })
-          .eq('workout_exercise_id', we.id)
-          .eq('athlete_id', userId)
-          .eq('set_number', setNum)
-        if (updateErr) console.error('set_logs update error:', JSON.stringify(updateErr))
-      }
     }
 
     // Update aggregate actual_ on workout_exercises so progress tracking still works
@@ -691,92 +702,28 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     const nowDone = !s.completed
     const newLogs = logs.map(l => l.set_number === setNum ? { ...l, completed: nowDone } : l)
     setLogs(newLogs)
-    const { error: insErr } = await supabase.from('set_logs').insert({
-      workout_exercise_id: we.id, athlete_id: userId, set_number: setNum, completed: nowDone,
-    })
-    if (insErr) await supabase.from('set_logs').update({ completed: nowDone })
+    const { data: existingDone } = await supabase.from('set_logs')
+      .select('id')
       .eq('workout_exercise_id', we.id).eq('athlete_id', userId).eq('set_number', setNum)
+      .maybeSingle()
+    if (existingDone) {
+      await supabase.from('set_logs').update({ completed: nowDone }).eq('id', existingDone.id)
+    } else {
+      await supabase.from('set_logs').insert({
+        workout_exercise_id: we.id, athlete_id: userId, set_number: setNum, completed: nowDone,
+      })
+    }
     // Auto-complete exercise when all sets done (or uncheck if any undone)
     const allDone = newLogs.length > 0 && newLogs.every(l => l.completed)
     onAggregateUpdate({ completed: allDone })
     propagateCounts(newLogs)
   }
 
-  if (isAdmin) {
-    // Admin/coach: per-set planning rows — KG target + RPE per set
-    // Stored in set_logs with admin's userId (doesn't conflict with lifter's actuals)
-    const adminCellStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', borderRight: '1px solid rgba(255,255,255,0.06)' }
-    const adminInputStyle: React.CSSProperties = {
-      width: '100%', background: 'transparent', border: 'none',
-      borderBottom: '1px solid rgba(255,255,255,0.14)', color: '#c7d2fe',
-      padding: '5px 6px', fontSize: '0.95rem', outline: 'none',
-      fontFamily: 'var(--fm)', fontWeight: 700, textAlign: 'center', boxSizing: 'border-box',
-    }
-    const COACH_GRID = '48px 1fr 88px'
-    return (
-      <div>
-        {saving && (
-          <div style={{ fontSize: '0.44rem', color: '#555', letterSpacing: '0.2em', padding: '3px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Loader2 size={9} style={{ animation: 'spin 1s linear infinite' }} /> SNIMANJE...
-          </div>
-        )}
-        {/* Column headers */}
-        <div style={{ display: 'grid', gridTemplateColumns: COACH_GRID, background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <div style={{ padding: '6px 14px', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-            <span style={{ fontSize: '0.38rem', color: '#444', letterSpacing: '0.25em', fontWeight: 700, fontFamily: 'var(--fm)' }}>SET</span>
-          </div>
-          <div style={{ padding: '6px 0', textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-            <span style={{ fontSize: '0.38rem', color: '#818cf8', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>KILAZA (kg)</span>
-          </div>
-          <div style={{ padding: '6px 0', textAlign: 'center' }}>
-            <span style={{ fontSize: '0.38rem', color: '#facc15', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
-              RPE CILJ{we.target_rpe ? ` · ${we.target_rpe}` : ''}
-            </span>
-          </div>
-        </div>
-        {/* Per-set rows */}
-        {Array.from({ length: plannedSets }, (_, i) => {
-          const log = logs[i] ?? { set_number: i + 1, weight_kg: null, reps: null, rpe: null, completed: false }
-          return (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: COACH_GRID, alignItems: 'stretch', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.012)', borderBottom: '1px solid rgba(255,255,255,0.05)', minHeight: '48px' }}>
-              {/* Set label */}
-              <div style={{ ...adminCellStyle, padding: '0 14px', gap: '8px' }}>
-                <div style={{ width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0, background: 'rgba(99,102,241,0.5)' }} />
-                <span style={{ fontSize: '0.7rem', fontWeight: 900, color: '#6366f1', fontFamily: 'var(--fd)', letterSpacing: '0.06em' }}>S{i + 1}</span>
-              </div>
-              {/* KG input */}
-              <div style={{ ...adminCellStyle, padding: '8px 12px' }}>
-                <input
-                  type="number" step="2.5" value={log.weight_kg ?? ''}
-                  onChange={e => saveSet(log.set_number, 'weight_kg', e.target.value)}
-                  placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : '—'}
-                  style={adminInputStyle}
-                  onFocus={e => (e.target.style.borderBottomColor = 'rgba(129,140,248,0.8)')}
-                  onBlur={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.14)')}
-                />
-              </div>
-              {/* RPE input */}
-              <div style={{ display: 'flex', alignItems: 'center', padding: '8px 12px' }}>
-                <input
-                  type="number" step="0.5" min="1" max="10" value={log.rpe ?? ''}
-                  onChange={e => saveSet(log.set_number, 'rpe', e.target.value)}
-                  placeholder={we.target_rpe ? String(we.target_rpe) : '—'}
-                  style={{ ...adminInputStyle, color: '#facc15' }}
-                  onFocus={e => (e.target.style.borderBottomColor = 'rgba(250,204,21,0.7)')}
-                  onBlur={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.14)')}
-                />
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
-  // Lifter: aligned table rows — KG + REPS + RPE
+  // Both admin and lifter use the same table layout.
+  // Admin routes saves through service-role API; lifter writes directly via anon client.
   const targetRpe = we.target_rpe ?? we.planned_rpe
-  // Grid: SET | KG | REPS | RPE | done  — cols match exercise row (52px left, 44px right)
-  const SLR_GRID = '52px 1fr 1fr 80px 44px'
+  // Admin has no done-checkbox column; lifter has it
+  const SLR_GRID = isAdmin ? '52px 1fr 1fr 80px' : '52px 1fr 1fr 80px 44px'
   const cellStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)' }
   const inputStyle: React.CSSProperties = { width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#e8e8ff', padding: '5px 6px', fontSize: '1rem', outline: 'none', fontFamily: 'var(--fm)', fontWeight: 700, textAlign: 'center', boxSizing: 'border-box' }
 
@@ -823,28 +770,44 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
           {/* KG input */}
           <div style={{ ...cellStyle, padding: '10px 12px', background: 'rgba(99,102,241,0.04)' }}>
             <input
-              type="number" step="2.5" value={log.weight_kg ?? ''}
-              onChange={e => saveSet(log.set_number, 'weight_kg', e.target.value)}
+              type="number" step="2.5"
+              value={isAdmin ? (localVals[`${log.set_number}_weight_kg`] ?? '') : (log.weight_kg ?? '')}
+              onChange={e => isAdmin
+                ? setLocalVals(v => ({ ...v, [`${log.set_number}_weight_kg`]: e.target.value }))
+                : saveSet(log.set_number, 'weight_kg', e.target.value)
+              }
+              onFocus={e => { focusedKey.current = `${log.set_number}_weight_kg`; e.target.style.borderBottomColor = 'rgba(129,140,248,0.8)' }}
+              onBlur={e => {
+                focusedKey.current = null
+                e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'
+                if (isAdmin) saveSet(log.set_number, 'weight_kg', e.target.value)
+              }}
               placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : '—'}
               style={{ ...inputStyle, color: '#c7d2fe' }}
-              onFocus={e => (e.target.style.borderBottomColor = 'rgba(129,140,248,0.8)')}
-              onBlur={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)')}
             />
           </div>
 
           {/* REPS input */}
           <div style={{ ...cellStyle, padding: '10px 12px' }}>
             <input
-              type="text" value={log.reps ?? ''}
-              onChange={e => saveSet(log.set_number, 'reps', e.target.value)}
+              type="text"
+              value={isAdmin ? (localVals[`${log.set_number}_reps`] ?? '') : (log.reps ?? '')}
+              onChange={e => isAdmin
+                ? setLocalVals(v => ({ ...v, [`${log.set_number}_reps`]: e.target.value }))
+                : saveSet(log.set_number, 'reps', e.target.value)
+              }
+              onFocus={e => { focusedKey.current = `${log.set_number}_reps`; e.target.style.borderBottomColor = 'rgba(255,255,255,0.6)' }}
+              onBlur={e => {
+                focusedKey.current = null
+                e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'
+                if (isAdmin) saveSet(log.set_number, 'reps', e.target.value)
+              }}
               placeholder={we.planned_reps ?? '—'}
               style={inputStyle}
-              onFocus={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.6)')}
-              onBlur={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)')}
             />
           </div>
 
-          {/* RPE input — plan label above, actual input below */}
+          {/* RPE input */}
           <div className="slr-rpe" style={{ ...cellStyle, padding: '6px 10px', flexDirection: 'column', gap: '2px', alignItems: 'stretch', justifyContent: 'center' }}>
             {targetRpe && (
               <div style={{ fontSize: '0.44rem', color: 'rgba(250,204,21,0.5)', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.06em', textAlign: 'center', lineHeight: 1 }}>
@@ -852,23 +815,33 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
               </div>
             )}
             <input
-              type="number" step="0.5" min="1" max="10" value={log.rpe ?? ''}
-              onChange={e => saveSet(log.set_number, 'rpe', e.target.value)}
+              type="number" step="0.5" min="1" max="10"
+              value={isAdmin ? (localVals[`${log.set_number}_rpe`] ?? '') : (log.rpe ?? '')}
+              onChange={e => isAdmin
+                ? setLocalVals(v => ({ ...v, [`${log.set_number}_rpe`]: e.target.value }))
+                : saveSet(log.set_number, 'rpe', e.target.value)
+              }
+              onFocus={e => { focusedKey.current = `${log.set_number}_rpe`; e.target.style.borderBottomColor = 'rgba(250,204,21,0.7)' }}
+              onBlur={e => {
+                focusedKey.current = null
+                e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'
+                if (isAdmin) saveSet(log.set_number, 'rpe', e.target.value)
+              }}
               placeholder="—"
               style={{ ...inputStyle, color: log.rpe && targetRpe ? (Number(log.rpe) - Number(targetRpe) > 1 ? '#f87171' : Number(log.rpe) - Number(targetRpe) > 0 ? '#facc15' : '#4ade80') : '#e0e0e0' }}
-              onFocus={e => (e.target.style.borderBottomColor = 'rgba(250,204,21,0.7)')}
-              onBlur={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)')}
             />
           </div>
 
-          {/* Done toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <button onClick={() => markSetDone(log.set_number)}
-              style={{ background: log.completed ? 'rgba(34,197,94,0.15)' : 'transparent', border: 'none', cursor: 'pointer', color: log.completed ? '#22c55e' : '#444', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
-              title={log.completed ? 'Poništi' : 'Odrađeno'}>
-              <Check size={14} strokeWidth={log.completed ? 3 : 1.5} />
-            </button>
-          </div>
+          {/* Done toggle — only for lifter */}
+          {!isAdmin && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button onClick={() => markSetDone(log.set_number)}
+                style={{ background: log.completed ? 'rgba(34,197,94,0.15)' : 'transparent', border: 'none', cursor: 'pointer', color: log.completed ? '#22c55e' : '#444', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                title={log.completed ? 'Poništi' : 'Odrađeno'}>
+                <Check size={14} strokeWidth={log.completed ? 3 : 1.5} />
+              </button>
+            </div>
+          )}
         </div>
       ))}
     </div>
@@ -1192,19 +1165,21 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
                   {exCount} VJ
                 </div>
               )}
-              {/* Completed toggle */}
-              <div onClick={e => {
-                e.stopPropagation()
-                const newDone = !workout.completed
-                onUpdateWorkout(workout.id, { completed: newDone })
-                if (newDone) {
-                  workout.workout_exercises?.forEach(we => onUpdateExercise(we.id, { completed: true }))
-                }
-              }}
-                className={`done-badge${workout.completed ? ' done-badge-active' : ''}`}>
-                {workout.completed ? <Check size={10} color="#22c55e" strokeWidth={3} /> : <div style={{ width: '8px', height: '8px', border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: '2px' }} />}
-                <span>{workout.completed ? 'GOTOVO' : 'ODRADITI'}</span>
-              </div>
+              {/* Completed toggle — only for lifter */}
+              {!isAdmin && (
+                <div onClick={e => {
+                  e.stopPropagation()
+                  const newDone = !workout.completed
+                  onUpdateWorkout(workout.id, { completed: newDone })
+                  if (newDone) {
+                    workout.workout_exercises?.forEach(we => onUpdateExercise(we.id, { completed: true }))
+                  }
+                }}
+                  className={`done-badge${workout.completed ? ' done-badge-active' : ''}`}>
+                  {workout.completed ? <Check size={10} color="#22c55e" strokeWidth={3} /> : <div style={{ width: '8px', height: '8px', border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: '2px' }} />}
+                  <span>{workout.completed ? 'GOTOVO' : 'ODRADITI'}</span>
+                </div>
+              )}
               {/* Delete */}
               <button onClick={e => { e.stopPropagation(); onDeleteWorkout(workout.id) }} className="icon-btn-danger">
                 <Trash2 size={11} />
