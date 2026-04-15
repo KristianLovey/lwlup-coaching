@@ -38,7 +38,7 @@ function ScrollToTop() {
     return () => window.removeEventListener('scroll', fn)
   }, [])
   return (
-    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+    <button className="scroll-to-top-btn" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       onMouseEnter={() => lottieRef.current?.play()} onMouseLeave={() => lottieRef.current?.stop()}
       style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 500, width: '48px', height: '48px', background: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: visible ? 1 : 0, transform: visible ? 'scale(1)' : 'scale(0.8)', transition: 'all 0.4s cubic-bezier(0.16,1,0.3,1)', pointerEvents: visible ? 'auto' : 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
       {animData ? <Lottie lottieRef={lottieRef} animationData={animData} loop autoplay={false} style={{ width: '28px', height: '28px' }} /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15" /></svg>}

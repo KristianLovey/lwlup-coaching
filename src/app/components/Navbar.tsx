@@ -67,7 +67,9 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
+    if (menuOpen) document.body.classList.add('nav-open')
+    else document.body.classList.remove('nav-open')
+    return () => { document.body.style.overflow = ''; document.body.classList.remove('nav-open') }
   }, [menuOpen])
 
   const solid = variant === 'solid' || scrollY > 80
@@ -219,25 +221,40 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
               <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
             </Link>
           ) : (
-            NAV_LINKS.map(([label, href], i) => (
-              <a key={href} href={resolveHref(href)} onClick={() => setMenuOpen(false)}
-                onMouseEnter={() => setHoveredLink(href)}
-                onMouseLeave={() => setHoveredLink(null)}
-                style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  fontSize: 'clamp(1.8rem,7vw,2.4rem)', fontFamily: 'var(--fd)', fontWeight: 700,
-                  letterSpacing: '0.04em',
-                  color: hoveredLink === href ? 'rgba(255,255,255,0.45)' : '#fff',
-                  textDecoration: 'none', padding: '18px 0',
-                  borderBottom: '1px solid rgba(255,255,255,0.07)',
-                  opacity: menuOpen ? 1 : 0,
-                  transform: menuOpen ? (hoveredLink === href ? 'translateX(8px)' : 'translateX(0)') : 'translateX(-16px)',
-                  transition: `opacity 0.35s ${i * 0.06 + 0.05}s ease, transform 0.35s ${i * 0.06 + 0.05}s ease, color 0.2s ease`,
-                }}>
-                {label}
-                <span style={{ fontSize: '1rem', color: hoveredLink === href ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)', transition: 'all 0.2s' }}>→</span>
-              </a>
-            ))
+            NAV_LINKS.map(([label, href], i) => {
+              const resolved = resolveHref(href)
+              const isAnchor = resolved.startsWith('/#') || resolved.startsWith('#')
+              const itemStyle: React.CSSProperties = {
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                fontSize: 'clamp(1.8rem,7vw,2.4rem)', fontFamily: 'var(--fd)', fontWeight: 700,
+                letterSpacing: '0.04em',
+                color: '#fff',
+                textDecoration: 'none', padding: '18px 0',
+                borderBottom: '1px solid rgba(255,255,255,0.07)',
+                opacity: menuOpen ? 1 : 0,
+                transform: menuOpen ? 'translateX(0)' : 'translateX(-16px)',
+                transition: `opacity 0.35s ${i * 0.06 + 0.05}s ease, transform 0.35s ${i * 0.06 + 0.05}s ease`,
+              }
+              const inner = (
+                <>
+                  {label}
+                  <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
+                </>
+              )
+              return isAnchor ? (
+                <a key={href} href={resolved}
+                  onClick={() => setMenuOpen(false)}
+                  style={itemStyle}>
+                  {inner}
+                </a>
+              ) : (
+                <Link key={href} href={resolved}
+                  onClick={() => setMenuOpen(false)}
+                  style={itemStyle}>
+                  {inner}
+                </Link>
+              )
+            })
           )}
         </div>
 
