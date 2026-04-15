@@ -649,19 +649,29 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     const updated = logs.map(s => s.set_number === setNum ? { ...s, [field]: val } : s)
     setLogs(updated)
 
-    // Try insert first; if row exists (duplicate), update instead
-    const { error: insertErr } = await supabase.from('set_logs').insert({
-      workout_exercise_id: we.id, athlete_id: userId,
-      set_number: setNum, [field]: val,
-    })
-    if (insertErr) {
-      // Row exists — update the specific field
-      const { error: updateErr } = await supabase.from('set_logs')
-        .update({ [field]: val })
-        .eq('workout_exercise_id', we.id)
-        .eq('athlete_id', userId)
-        .eq('set_number', setNum)
-      if (updateErr) console.error('set_logs update error:', JSON.stringify(updateErr))
+    if (isAdmin) {
+      // Admin: route through service-role API to bypass RLS
+      const { data: { session } } = await supabase.auth.getSession()
+      await fetch('/api/admin/upsert-set-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ workoutExerciseId: we.id, athleteId: userId, setNumber: setNum, field, value: val }),
+      })
+    } else {
+      // Try insert first; if row exists (duplicate), update instead
+      const { error: insertErr } = await supabase.from('set_logs').insert({
+        workout_exercise_id: we.id, athlete_id: userId,
+        set_number: setNum, [field]: val,
+      })
+      if (insertErr) {
+        // Row exists — update the specific field
+        const { error: updateErr } = await supabase.from('set_logs')
+          .update({ [field]: val })
+          .eq('workout_exercise_id', we.id)
+          .eq('athlete_id', userId)
+          .eq('set_number', setNum)
+        if (updateErr) console.error('set_logs update error:', JSON.stringify(updateErr))
+      }
     }
 
     // Update aggregate actual_ on workout_exercises so progress tracking still works

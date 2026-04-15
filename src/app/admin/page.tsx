@@ -333,8 +333,10 @@ function AthletePanel({
   }, [athlete.id])
 
   const updateWorkout = useCallback(async (workoutId: string, data: Partial<Workout>) => {
-    await supabase.from('workouts').update(data).eq('id', workoutId)
-    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, ...data } : wo) })) } : b)
+    // Never save 'completed' from admin panel — that's the lifter's domain
+    const { completed: _c, ...forDb } = data as any
+    if (Object.keys(forDb).length > 0) await supabase.from('workouts').update(forDb).eq('id', workoutId)
+    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, ...forDb } : wo) })) } : b)
   }, [])
 
   const deleteWorkout = useCallback(async (workoutId: string) => {
@@ -360,7 +362,14 @@ function AthletePanel({
   const updateExercise = useCallback(async (weId: string, data: Partial<WorkoutExercise>) => {
     const RUNTIME_ONLY = ['_completedSets', '_totalSets']
     const forDb = Object.fromEntries(Object.entries(data).filter(([k]) => !RUNTIME_ONLY.includes(k)))
-    if (Object.keys(forDb).length > 0) await supabase.from('workout_exercises').update(forDb).eq('id', weId)
+    if (Object.keys(forDb).length > 0) {
+      const { data: { session } } = await supabase.auth.getSession()
+      await fetch('/api/admin/update-exercise', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ weId, data: forDb }),
+      })
+    }
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.map(we => we.id === weId ? { ...we, ...data } : we) })) })) } : b)
   }, [])
 
