@@ -25,6 +25,7 @@ export default function AuthPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
+      router.refresh()
       router.push('/training')
     } catch (e: any) {
       const msg = e?.message ?? 'Greška. Pokušaj ponovo.'

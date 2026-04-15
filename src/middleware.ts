@@ -17,6 +17,10 @@ export async function middleware(request: NextRequest) {
             request.cookies.set(name, value)
           )
           supabaseResponse = NextResponse.next({ request })
+          // Preserve existing response headers/cookies before adding new ones
+          request.headers.forEach((value, key) => {
+            supabaseResponse.headers.set(key, value)
+          })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -25,7 +29,7 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session
+  // Refresh session — must be called before any redirect checks
   const { data: { user } } = await supabase.auth.getUser()
 
   // ── /training — samo prijavljeni ────────────────────────────────

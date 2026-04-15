@@ -1,81 +1,19 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
-  GripVertical, Loader2, Settings,
+  Plus, Trash2, ChevronDown, Check, Search,
+  Loader2, Settings,
   FolderOpen, Copy, Bell,
   AlertCircle, ChevronLeft, Eye, Trophy, Send
 } from 'lucide-react'
 import { CompetitionsManager } from './competitions-manager'
-import { AppNav } from '../training/training-components'
+import { AppNav, WeekPanel, EditableField } from '../training/training-components'
+import type { Block, Week, Workout, WorkoutExercise, Exercise, BlockSummary } from '../training/types'
 
 const supabase = createClient()
-
-// ── Types ──────────────────────────────────────────────────────────
-type Exercise = {
-  id: string
-  name: string
-  category: string
-  notes: string | null
-}
-
-type WorkoutExercise = {
-  id: string
-  workout_id: string
-  exercise_id: string
-  exercise_order: number
-  planned_sets: number
-  planned_reps: string | null
-  planned_weight_kg: number | null
-  planned_rpe: number | null
-  planned_rest_seconds: number | null
-  planned_tempo: string | null
-  actual_sets: number | null
-  actual_reps: string | null
-  actual_weight_kg: number | null
-  actual_rpe: number | null
-  notes: string | null
-  completed: boolean
-  exercise?: Exercise
-}
-
-type Workout = {
-  id: string
-  week_id: string
-  athlete_id: string
-  day_name: string
-  workout_date: string
-  completed: boolean
-  notes: string | null
-  overall_rpe: number | null
-  duration_minutes: number | null
-  workout_exercises?: WorkoutExercise[]
-}
-
-type Week = {
-  id: string
-  block_id: string
-  week_number: number
-  start_date: string
-  end_date: string
-  notes: string | null
-  workouts?: Workout[]
-}
-
-type Block = {
-  id: string
-  athlete_id: string
-  name: string
-  start_date: string
-  end_date: string
-  goal: string | null
-  status: 'active' | 'completed' | 'planned'
-  notes: string | null
-  weeks?: Week[]
-}
 
 type AthleteNote = {
   id: string
@@ -95,407 +33,8 @@ type AthleteProfile = {
   notes?: AthleteNote[]
 }
 
-// ── Inline editable field ──────────────────────────────────────────
-function EditableField({
-  value, placeholder, onSave, type = 'text', small = false
-}: {
-  value: string | number | null
-  placeholder: string
-  onSave: (v: string) => void
-  type?: string
-  small?: boolean
-}) {
-  const [editing, setEditing] = useState(false)
-  const [val, setVal] = useState(String(value ?? ''))
-  const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { if (editing) inputRef.current?.focus() }, [editing])
-  useEffect(() => { setVal(String(value ?? '')) }, [value])
-
-  const commit = () => { setEditing(false); onSave(val) }
-
-  if (editing) return (
-    <input
-      ref={inputRef}
-      type={type}
-      value={val}
-      onChange={e => setVal(e.target.value)}
-      onBlur={commit}
-      onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
-      style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', padding: small ? '3px 8px' : '5px 10px', fontSize: small ? '0.72rem' : '0.85rem', outline: 'none', width: '100%', fontFamily: 'var(--fm)', minWidth: '60px' }}
-    />
-  )
-
-  return (
-    <span
-      onClick={() => setEditing(true)}
-      style={{ cursor: 'text', color: value ? '#fff' : 'rgba(255,255,255,0.2)', fontSize: small ? '0.72rem' : '0.85rem', fontFamily: 'var(--fm)', borderBottom: '1px dashed rgba(255,255,255,0.15)', paddingBottom: '1px', transition: 'color 0.2s' }}
-      title="Klikni za uređivanje"
-    >
-      {value ?? placeholder}
-    </span>
-  )
-}
-
-// ── Exercise Picker ────────────────────────────────────────────────
-function ExercisePicker({ exercises, onSelect, onClose }: { exercises: Exercise[]; onSelect: (ex: Exercise) => void; onClose: () => void }) {
-  const [q, setQ] = useState('')
-  const [selectedCat, setSelectedCat] = useState<string | null>(null)
-  const cats = Array.from(new Set(exercises.map(e => e.category))).sort()
-  const filtered = exercises.filter(e => e.name.toLowerCase().includes(q.toLowerCase()) && (!selectedCat || e.category === selectedCat))
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.96)', backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }} onClick={onClose}>
-      <div style={{ width: '100%', maxWidth: '680px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', maxHeight: '80vh' }} onClick={e => e.stopPropagation()}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: '0.6rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>ODABERI VJEŽBU</div>
-          <button onClick={onClose} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', padding: '5px 14px', cursor: 'pointer', fontSize: '0.6rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>✕ ZATVORI</button>
-        </div>
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '10px 16px' }}>
-            <Search size={14} color="rgba(255,255,255,0.3)" />
-            <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Pretraži vježbe..." style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.9rem', width: '100%', fontFamily: 'var(--fm)' }} />
-          </div>
-        </div>
-        <div style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button onClick={() => setSelectedCat(null)} style={{ padding: '5px 14px', fontSize: '0.65rem', letterSpacing: '0.12em', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--fm)', background: !selectedCat ? '#fff' : 'transparent', color: !selectedCat ? '#000' : 'rgba(255,255,255,0.4)', border: `1px solid ${!selectedCat ? '#fff' : 'rgba(255,255,255,0.1)'}` }}>SVE</button>
-          {cats.map(c => <button key={c} onClick={() => setSelectedCat(c === selectedCat ? null : c)} style={{ padding: '5px 14px', fontSize: '0.65rem', letterSpacing: '0.12em', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--fm)', background: selectedCat === c ? '#fff' : 'transparent', color: selectedCat === c ? '#000' : 'rgba(255,255,255,0.4)', border: `1px solid ${selectedCat === c ? '#fff' : 'rgba(255,255,255,0.1)'}` }}>{c}</button>)}
-        </div>
-        <div style={{ overflowY: 'auto', flex: 1 }}>
-          {filtered.map(ex => (
-            <div key={ex.id} onClick={() => { onSelect(ex); onClose() }} style={{ padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer', transition: 'background 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              <div>
-                <div style={{ fontSize: '0.9rem', color: '#fff', fontWeight: 600, fontFamily: 'var(--fm)' }}>{ex.name}</div>
-                <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>{ex.category}</div>
-              </div>
-              <Plus size={14} color="rgba(255,255,255,0.3)" />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Exercise Row ───────────────────────────────────────────────────
-function ExerciseRow({ we, onUpdate, onDelete, dragHandleProps, isDragging }: {
-  we: WorkoutExercise
-  onUpdate: (id: string, data: Partial<WorkoutExercise>) => void
-  onDelete: (id: string) => void
-  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>
-  isDragging?: boolean
-}) {
-  const [expanded, setExpanded] = useState(false)
-  return (
-    <div style={{ border: `1px solid ${isDragging ? 'rgba(107,140,255,0.5)' : 'rgba(255,255,255,0.06)'}`, marginBottom: '4px', background: isDragging ? 'rgba(107,140,255,0.06)' : 'rgba(255,255,255,0.02)', transition: 'border-color 0.18s, background 0.18s' }}>
-      <div className="ex-row-grid" style={{ display: 'grid', gridTemplateColumns: '24px 1fr 60px 80px 80px 60px 32px', gap: '8px', alignItems: 'center', padding: '10px 12px' }}>
-        <div className="ex-row-drag" {...dragHandleProps} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none', padding: '4px', color: isDragging ? 'rgba(107,140,255,0.8)' : 'rgba(255,255,255,0.2)', transition: 'color 0.18s', ...(dragHandleProps?.style) }}>
-          <GripVertical size={14} />
-        </div>
-        <div>
-          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)' }}>{we.exercise?.name ?? '—'}</div>
-          <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>{we.exercise?.category}</div>
-        </div>
-        {[
-          { label: 'SETS', key: 'planned_sets' as keyof WorkoutExercise, type: 'number', cls: 'ex-row-sets' },
-          { label: 'REPS', key: 'planned_reps' as keyof WorkoutExercise, type: 'text', cls: '' },
-          { label: 'KG', key: 'planned_weight_kg' as keyof WorkoutExercise, type: 'number', cls: '' },
-          { label: 'RPE', key: 'planned_rpe' as keyof WorkoutExercise, type: 'number', cls: 'ex-row-rpe' },
-        ].map(f => (
-          <div key={f.key} className={f.cls} style={{ textAlign: 'center' }}>
-            <div className="ex-label" style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em', marginBottom: '3px' }}>{f.label}</div>
-            <EditableField value={we[f.key] as string | number | null} placeholder="—" type={f.type} small
-              onSave={v => onUpdate(we.id, { [f.key]: f.type === 'number' ? (v ? Number(v) : null) : (v || null) })} />
-          </div>
-        ))}
-        <button onClick={() => onDelete(we.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '4px', transition: 'color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onMouseEnter={e => e.currentTarget.style.color = '#ff4444'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}>
-          <Trash2 size={13} />
-        </button>
-      </div>
-      <button onClick={() => setExpanded(!expanded)} style={{ width: '100%', background: 'transparent', border: 'none', borderTop: '1px solid rgba(255,255,255,0.04)', padding: '5px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.2)', fontSize: '0.58rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}
-        onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}>
-        {expanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}{expanded ? 'SAKRIJ' : 'VIŠE'}
-      </button>
-      {expanded && (
-        <div style={{ padding: '12px 12px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-          {[{ label: 'TEMPO', key: 'planned_tempo' as keyof WorkoutExercise, placeholder: '3010' }, { label: 'ODMOR (sek)', key: 'planned_rest_seconds' as keyof WorkoutExercise, placeholder: '90', type: 'number' }, { label: 'NAPOMENA', key: 'notes' as keyof WorkoutExercise, placeholder: 'Bilješka...' }].map(f => (
-            <div key={f.key}>
-              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em', marginBottom: '6px' }}>{f.label}</div>
-              <EditableField value={we[f.key] as string | number | null} placeholder={f.placeholder} type={f.type} onSave={v => onUpdate(we.id, { [f.key]: v || null })} />
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Workout Card ───────────────────────────────────────────────────
-function WorkoutCard({ workout, exercises, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onReorderExercises }:
-  { workout: Workout; exercises: Exercise[]; onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void; onAddExercise: (workoutId: string, ex: Exercise) => void; onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void; onReorderExercises: (workoutId: string, orderedIds: string[]) => void }) {
-  const [open, setOpen] = useState(false)
-  const [showPicker, setShowPicker] = useState(false)
-  const [orderedExercises, setOrderedExercises] = useState<WorkoutExercise[]>([])
-  const [draggingId, setDraggingId] = useState<string | null>(null)
-  const dragOverId = useRef<string | null>(null)
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const exCount = workout.workout_exercises?.length ?? 0
-
-  useEffect(() => {
-    setOrderedExercises(workout.workout_exercises ?? [])
-  }, [workout.workout_exercises])
-
-  const handleDragStart = (id: string) => {
-    setDraggingId(id)
-  }
-
-  const handleDragEnter = (id: string) => {
-    if (!draggingId || id === draggingId) return
-    dragOverId.current = id
-    setOrderedExercises(prev => {
-      const from = prev.findIndex(e => e.id === draggingId)
-      const to = prev.findIndex(e => e.id === id)
-      if (from === -1 || to === -1) return prev
-      const next = [...prev]
-      const [item] = next.splice(from, 1)
-      next.splice(to, 0, item)
-      return next
-    })
-  }
-
-  const handleDragEnd = () => {
-    if (draggingId) {
-      onReorderExercises(workout.id, orderedExercises.map(e => e.id))
-    }
-    setDraggingId(null)
-    dragOverId.current = null
-  }
-
-  // Touch drag support
-  const touchDragId = useRef<string | null>(null)
-
-  const handleTouchStart = (id: string) => {
-    longPressTimer.current = setTimeout(() => {
-      touchDragId.current = id
-      handleDragStart(id)
-    }, 400)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent, containerId: string) => {
-    if (!touchDragId.current) {
-      if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
-      return
-    }
-    e.preventDefault()
-    const touch = e.touches[0]
-    const el = document.elementFromPoint(touch.clientX, touch.clientY)
-    const row = el?.closest('[data-we-id]')
-    if (row) {
-      const overId = row.getAttribute('data-we-id')
-      if (overId && overId !== touchDragId.current) handleDragEnter(overId)
-    }
-  }
-
-  const handleTouchEnd = () => {
-    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
-    if (touchDragId.current) { handleDragEnd(); touchDragId.current = null }
-  }
-
-  return (
-    <>
-      <div style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)', marginBottom: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => setOpen(!open)}>
-          <div style={{ width: '4px', alignSelf: 'stretch', background: workout.completed ? '#27ae60' : 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
-          <div style={{ flex: 1, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{ color: 'rgba(255,255,255,0.3)', transition: 'transform 0.3s', transform: open ? 'rotate(90deg)' : 'none' }}><ChevronRight size={14} /></div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)' }} onClick={e => e.stopPropagation()}>
-                <EditableField value={workout.day_name} placeholder="Dan treninga" onSave={v => onUpdateWorkout(workout.id, { day_name: v })} />
-              </div>
-              <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.25)', marginTop: '2px' }}>{workout.workout_date} · {exCount} vježbi</div>
-            </div>
-            <div onClick={e => { e.stopPropagation(); onUpdateWorkout(workout.id, { completed: !workout.completed }) }}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', border: `1px solid ${workout.completed ? '#27ae60' : 'rgba(255,255,255,0.1)'}`, cursor: 'pointer', background: workout.completed ? 'rgba(39,174,96,0.1)' : 'transparent' }}>
-              {workout.completed ? <Check size={11} color="#27ae60" /> : <div style={{ width: '11px', height: '11px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '2px' }} />}
-              <span style={{ fontSize: '0.58rem', letterSpacing: '0.2em', color: workout.completed ? '#27ae60' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{workout.completed ? 'GOTOVO' : 'ODRADITI'}</span>
-            </div>
-            <div onClick={e => { e.stopPropagation(); onDeleteWorkout(workout.id) }} style={{ color: 'rgba(255,255,255,0.15)', cursor: 'pointer', padding: '4px' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#ff4444'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.15)'}>
-              <Trash2 size={13} />
-            </div>
-          </div>
-        </div>
-        {open && (
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '14px' }}>
-            {orderedExercises.length > 0 && (
-              <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 60px 80px 80px 60px 32px', gap: '8px', padding: '0 12px 8px' }}>
-                {['', 'VJEŽBA', 'SERI', 'PONOV', 'KG', 'RPE', ''].map((h, i) => (
-                  <div key={i} style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.2em', textAlign: i > 1 ? 'center' : 'left', fontFamily: 'var(--fm)' }}>{h}</div>
-                ))}
-              </div>
-            )}
-            {orderedExercises.map(we => {
-              const isDragging = draggingId === we.id
-              return (
-                <div key={we.id} data-we-id={we.id}
-                  onDragOver={e => { e.preventDefault(); handleDragEnter(we.id) }}
-                  onDrop={handleDragEnd}
-                  style={{
-                    transition: 'transform 0.18s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.18s ease, box-shadow 0.18s ease',
-                    transform: isDragging ? 'scale(1.02)' : 'scale(1)',
-                    opacity: isDragging ? 0.85 : 1,
-                    boxShadow: isDragging ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(107,140,255,0.35)' : 'none',
-                    borderRadius: isDragging ? '4px' : '0',
-                    zIndex: isDragging ? 10 : 'auto',
-                    position: 'relative',
-                    willChange: 'transform',
-                  }}>
-                  <ExerciseRow
-                    we={we}
-                    onUpdate={onUpdateExercise}
-                    onDelete={onDeleteExercise}
-                    isDragging={isDragging}
-                    dragHandleProps={{
-                      draggable: true,
-                      onDragStart: () => handleDragStart(we.id),
-                      onDragEnd: handleDragEnd,
-                      onTouchStart: () => handleTouchStart(we.id),
-                      onTouchMove: (e) => handleTouchMove(e as unknown as React.TouchEvent, we.id),
-                      onTouchEnd: handleTouchEnd,
-                      style: { touchAction: 'none' },
-                    }}
-                  />
-                </div>
-              )
-            })}
-            <button onClick={() => setShowPicker(true)} style={{ width: '100%', marginTop: '8px', padding: '10px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.68rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', transition: 'all 0.2s' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)' }}>
-              <Plus size={12} /> DODAJ VJEŽBU
-            </button>
-          </div>
-        )}
-      </div>
-      {showPicker && <ExercisePicker exercises={exercises} onSelect={ex => onAddExercise(workout.id, ex)} onClose={() => setShowPicker(false)} />}
-    </>
-  )
-}
-
-// ── Week Panel ─────────────────────────────────────────────────────
-function WeekPanel({ week, exercises, onDeleteWeek, onCopyWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onReorderExercises, onUpdateWeekNotes }:
-  { week: Week; exercises: Exercise[]; onDeleteWeek: (id: string) => void; onCopyWeek: (id: string) => void; onAddWorkout: (weekId: string) => void; onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void; onAddExercise: (workoutId: string, ex: Exercise) => void; onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void; onReorderExercises: (workoutId: string, orderedIds: string[]) => void; onUpdateWeekNotes: (id: string, notes: string) => void }) {
-  const [open, setOpen] = useState(true)
-  const [weekNote, setWeekNote] = useState(week.notes ?? '')
-  const completedCount = week.workouts?.filter(w => w.completed).length ?? 0
-  const totalCount = week.workouts?.length ?? 0
-
-  return (
-    <div style={{ marginBottom: '12px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.015)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.06)' : 'none' }} onClick={() => setOpen(!open)}>
-        <div style={{ fontFamily: 'var(--fd)', fontSize: '0.75rem', fontWeight: 800, color: 'rgba(255,255,255,0.2)', minWidth: '32px' }}>W{week.week_number}</div>
-        <div style={{ flex: 1 }}>
-          {totalCount > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '5px' }}>
-              <div style={{ height: '2px', width: '60px', background: 'rgba(255,255,255,0.08)', position: 'relative' }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${(completedCount / totalCount) * 100}%`, background: '#27ae60', transition: 'width 0.6s' }} />
-              </div>
-              <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>{completedCount}/{totalCount}</span>
-            </div>
-          )}
-        </div>
-        <div style={{ color: 'rgba(255,255,255,0.25)', transition: 'transform 0.3s', transform: open ? 'rotate(90deg)' : 'none' }}><ChevronRight size={14} /></div>
-        <div onClick={e => { e.stopPropagation(); onCopyWeek(week.id) }} style={{ color: 'rgba(255,255,255,0.15)', cursor: 'pointer', padding: '4px' }} title="Kopiraj tjedan"
-          onMouseEnter={e => e.currentTarget.style.color = '#60a5fa'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.15)'}>
-          <Copy size={13} />
-        </div>
-        <div onClick={e => { e.stopPropagation(); onDeleteWeek(week.id) }} style={{ color: 'rgba(255,255,255,0.15)', cursor: 'pointer', padding: '4px' }}
-          onMouseEnter={e => e.currentTarget.style.color = '#ff4444'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.15)'}>
-          <Trash2 size={13} />
-        </div>
-      </div>
-      {open && (
-        <div style={{ padding: '14px' }}>
-          {week.workouts?.map(w => <WorkoutCard key={w.id} workout={w} exercises={exercises} onUpdateWorkout={onUpdateWorkout} onDeleteWorkout={onDeleteWorkout} onAddExercise={onAddExercise} onUpdateExercise={onUpdateExercise} onDeleteExercise={onDeleteExercise} onReorderExercises={onReorderExercises} />)}
-          <button onClick={() => onAddWorkout(week.id)} style={{ width: '100%', padding: '10px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.65rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', transition: 'all 0.2s' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.color = '#fff' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)' }}>
-            <Plus size={12} /> DODAJ DAN
-          </button>
-          {/* Inline week comment */}
-          <div style={{ marginTop: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '10px' }}>
-            <div style={{ fontSize: '0.48rem', letterSpacing: '0.28em', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', marginBottom: '6px' }}>KOMENTAR TJEDNA</div>
-            <textarea
-              value={weekNote}
-              onChange={e => setWeekNote(e.target.value)}
-              onBlur={() => onUpdateWeekNotes(week.id, weekNote)}
-              placeholder="Dodaj komentar za ovaj tjedan..."
-              rows={2}
-              style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: '#e0e0f0', padding: '9px 12px', fontSize: '0.82rem', fontFamily: 'var(--fm)', outline: 'none', resize: 'vertical', boxSizing: 'border-box' as const, lineHeight: 1.6, borderRadius: '6px', transition: 'border-color 0.15s' }}
-              onFocus={e => e.target.style.borderColor = 'rgba(251,191,36,0.35)'}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Duplicate Block Modal ──────────────────────────────────────────
-function DuplicateModal({ block, athletes, onConfirm, onClose }:
-  { block: Block; athletes: AthleteProfile[]; onConfirm: (targetAthleteId: string, newName: string) => void; onClose: () => void }) {
-  const [targetId, setTargetId] = useState('')
-  const [newName, setNewName] = useState(`${block.name} (kopija)`)
-  const others = athletes.filter(a => a.id !== block.athlete_id)
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }} onClick={onClose}>
-      <div style={{ width: '100%', maxWidth: '480px', background: '#0d0d10', border: '1px solid rgba(255,255,255,0.12)', padding: '32px', animation: 'slideUp 0.3s ease' }} onClick={e => e.stopPropagation()}>
-        <div style={{ fontSize: '0.55rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.25)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>DUPLICIRAJ BLOK</div>
-        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)', marginBottom: '28px' }}>{block.name}</div>
-
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px', fontFamily: 'var(--fm)' }}>NAZIV KOPIJE</div>
-          <input value={newName} onChange={e => setNewName(e.target.value)}
-            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '12px 16px', fontSize: '0.9rem', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
-        </div>
-
-        <div style={{ marginBottom: '28px' }}>
-          <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px', fontFamily: 'var(--fm)' }}>KOPIRAJ NA KORISNIKA</div>
-          {others.length === 0 ? (
-            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', fontFamily: 'var(--fm)', padding: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>Nema drugih korisnika.</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
-              {others.map(a => (
-                <button key={a.id} onClick={() => setTargetId(a.id)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: targetId === a.id ? 'rgba(255,255,255,0.07)' : 'transparent', border: `1px solid ${targetId === a.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, color: '#fff', flexShrink: 0, fontFamily: 'var(--fm)' }}>
-                    {a.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
-                  </div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', fontFamily: 'var(--fm)' }}>{a.full_name}</div>
-                  {targetId === a.id && <Check size={13} color="#4ade80" style={{ marginLeft: 'auto' }} />}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>ODUSTANI</button>
-          <button onClick={() => { if (targetId && newName) { onConfirm(targetId, newName); onClose() } }}
-            disabled={!targetId || !newName}
-            style={{ flex: 1, padding: '12px', background: targetId && newName ? '#fff' : 'rgba(255,255,255,0.1)', border: 'none', color: targetId && newName ? '#000' : 'rgba(255,255,255,0.2)', cursor: targetId && newName ? 'pointer' : 'not-allowed', fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}>
-            <Copy size={12} style={{ display: 'inline', marginRight: '6px' }} />DUPLICIRAJ
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Athlete Detail Panel ───────────────────────────────────────────
+// ── Athlete Detail Panel (training-page style) ─────────────────────
 function AthletePanel({
   athlete, exercises, allAthletes, adminId, onBack, onRefresh
 }: {
@@ -507,28 +46,38 @@ function AthletePanel({
   onRefresh: () => void
 }) {
   const [block, setBlock] = useState<Block | null>(null)
-  const [allBlocks, setAllBlocks] = useState<Block[]>([])
+  const [allBlocks, setAllBlocks] = useState<BlockSummary[]>([])
   const [saving, setSaving] = useState(false)
   const [loadingBlock, setLoadingBlock] = useState(false)
-  const [activeTab, setActiveTab] = useState<'program' | 'stats'>('program')
-  const [duplicateBlock, setDuplicateBlock] = useState<Block | null>(null)
-  const [showBlockMenu, setShowBlockMenu] = useState(false)
+  const [showBlockSelector, setShowBlockSelector] = useState(false)
+  const [duplicateTarget, setDuplicateTarget] = useState('')
+  const [duplicateName, setDuplicateName] = useState('')
+  const [showDupModal, setShowDupModal] = useState(false)
+  const blockSelectorRef = useRef<HTMLDivElement>(null)
 
   const initials = athlete.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
-  const totalWorkouts = block?.weeks?.flatMap(w => w.workouts ?? []).length ?? 0
-  const completedWorkouts = block?.weeks?.flatMap(w => w.workouts ?? []).filter(w => w.completed).length ?? 0
-  const totalEx = block?.weeks?.flatMap(w => w.workouts ?? []).flatMap(w => w.workout_exercises ?? []).length ?? 0
-  const progress = totalWorkouts > 0 ? Math.round((completedWorkouts / totalWorkouts) * 100) : 0
+
+  // Close block selector on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (blockSelectorRef.current && !blockSelectorRef.current.contains(e.target as Node))
+        setShowBlockSelector(false)
+    }
+    if (showBlockSelector) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showBlockSelector])
 
   useEffect(() => { loadData() }, [athlete.id])
 
   const loadData = async () => {
     setLoadingBlock(true)
-    // Load blocks
-    const { data: blocksData } = await supabase.from('blocks').select('id, name, status, start_date, end_date, goal, notes, athlete_id').eq('athlete_id', athlete.id).order('created_at', { ascending: false })
-    setAllBlocks((blocksData ?? []) as Block[])
+    const { data: blocksData } = await supabase.from('blocks')
+      .select('id, name, status, start_date, end_date')
+      .eq('athlete_id', athlete.id)
+      .order('created_at', { ascending: false })
+    const summaries = (blocksData ?? []) as BlockSummary[]
+    setAllBlocks(summaries)
 
-    // Load active block with full data
     const { data: activeBlock } = await supabase
       .from('blocks')
       .select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))')
@@ -544,26 +93,28 @@ function AthletePanel({
         w.workouts?.sort((a: Workout, b: Workout) => a.workout_date.localeCompare(b.workout_date))
         w.workouts?.forEach((wo: Workout) => wo.workout_exercises?.sort((a: WorkoutExercise, b: WorkoutExercise) => a.exercise_order - b.exercise_order))
       })
-      setBlock(activeBlock)
+      setBlock(activeBlock as Block)
     } else {
       setBlock(null)
     }
-
     setLoadingBlock(false)
   }
 
   const switchBlock = async (blockId: string) => {
     setLoadingBlock(true)
-    const { data } = await supabase.from('blocks').select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))').eq('id', blockId).single()
+    setShowBlockSelector(false)
+    const { data } = await supabase
+      .from('blocks')
+      .select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))')
+      .eq('id', blockId).single()
     if (data) {
       data.weeks?.sort((a: Week, b: Week) => a.week_number - b.week_number)
       data.weeks?.forEach((w: Week) => {
         w.workouts?.sort((a: Workout, b: Workout) => a.workout_date.localeCompare(b.workout_date))
         w.workouts?.forEach((wo: Workout) => wo.workout_exercises?.sort((a: WorkoutExercise, b: WorkoutExercise) => a.exercise_order - b.exercise_order))
       })
-      setBlock(data)
+      setBlock(data as Block)
     }
-    setShowBlockMenu(false)
     setLoadingBlock(false)
   }
 
@@ -573,42 +124,155 @@ function AthletePanel({
     setSaving(true)
     const today = new Date()
     const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
+    // Deactivate current active block
+    if (block) {
+      await supabase.from('blocks').update({ status: 'planned' }).eq('id', block.id)
+      setAllBlocks(bs => bs.map(b => b.id === block.id ? { ...b, status: 'planned' } : b))
+    }
     const { data } = await supabase.from('blocks').insert({
       athlete_id: athlete.id, name: name.trim(),
       start_date: today.toISOString().split('T')[0],
       end_date: endDate.toISOString().split('T')[0],
       status: 'active',
-    }).select('*').single()
+    }).select('id, name, status, start_date, end_date').single()
     if (data) {
-      setAllBlocks(b => [{ ...data, weeks: [] } as Block, ...b])
-      setBlock({ ...data, weeks: [] } as Block)
+      setAllBlocks(bs => [data as BlockSummary, ...bs])
+      setBlock({ ...data, weeks: [] } as unknown as Block)
     }
     setSaving(false)
   }
 
-  const addWeek = async () => {
+  const copyBlock = async () => {
     if (!block) return
+    const name = prompt(`Kopiraj blok "${block.name}" pod nazivom:`)
+    if (!name?.trim()) return
     setSaving(true)
-    const existingWeeks = block.weeks ?? []
-    const weekNum = existingWeeks.length + 1
-    const lastEnd = existingWeeks.length > 0 ? new Date(existingWeeks[existingWeeks.length - 1].end_date) : new Date(block.start_date)
-    const startDate = new Date(lastEnd); if (existingWeeks.length > 0) startDate.setDate(startDate.getDate() + 1)
+    const today = new Date()
+    const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
+    const { data: nb } = await supabase.from('blocks').insert({
+      athlete_id: athlete.id, name: name.trim(),
+      start_date: today.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
+      status: 'active',
+    }).select('id, name, status, start_date, end_date').single()
+    if (!nb) { setSaving(false); return }
+    for (let wi = 0; wi < (block.weeks?.length ?? 0); wi++) {
+      const sw = block.weeks![wi]
+      const wStart = new Date(today); wStart.setDate(today.getDate() + wi * 7)
+      const wEnd = new Date(wStart); wEnd.setDate(wStart.getDate() + 6)
+      const { data: nw } = await supabase.from('weeks').insert({
+        block_id: nb.id, week_number: sw.week_number,
+        start_date: wStart.toISOString().split('T')[0],
+        end_date: wEnd.toISOString().split('T')[0], notes: sw.notes,
+      }).select('*').single()
+      if (!nw) continue
+      for (let di = 0; di < (sw.workouts?.length ?? 0); di++) {
+        const wo = sw.workouts![di]
+        const d = new Date(wStart); d.setDate(wStart.getDate() + di)
+        const { data: nwo } = await supabase.from('workouts').insert({
+          week_id: nw.id, athlete_id: athlete.id,
+          day_name: wo.day_name, workout_date: d.toISOString().split('T')[0],
+          completed: false, notes: wo.notes,
+        }).select('*').single()
+        if (!nwo) continue
+        for (const ex of (wo.workout_exercises ?? [])) {
+          await supabase.from('workout_exercises').insert({
+            workout_id: nwo.id, exercise_id: ex.exercise_id,
+            exercise_order: ex.exercise_order,
+            planned_sets: ex.planned_sets, planned_reps: ex.planned_reps,
+            planned_weight_kg: ex.planned_weight_kg, planned_rpe: ex.planned_rpe,
+            planned_rest_seconds: ex.planned_rest_seconds, planned_tempo: ex.planned_tempo,
+            target_rpe: ex.target_rpe, coach_note: ex.coach_note,
+          })
+        }
+      }
+    }
+    setAllBlocks(bs => [nb as BlockSummary, ...bs])
+    await switchBlock(nb.id)
+    setSaving(false)
+  }
+
+  const deleteBlock = async () => {
+    if (!block) return
+    if (!confirm(`Briši blok "${block.name}"? Ova radnja je nepovratna.`)) return
+    setSaving(true)
+    await supabase.from('blocks').delete().eq('id', block.id)
+    const remaining = allBlocks.filter(b => b.id !== block.id)
+    setAllBlocks(remaining)
+    if (remaining.length > 0) {
+      await switchBlock(remaining[0].id)
+    } else {
+      setBlock(null)
+    }
+    setSaving(false)
+  }
+
+  const duplicateBlockTo = async () => {
+    if (!block || !duplicateTarget || !duplicateName) return
+    setSaving(true)
+    const { data: newBlock } = await supabase.from('blocks').insert({
+      athlete_id: duplicateTarget, name: duplicateName,
+      start_date: block.start_date, end_date: block.end_date,
+      status: 'planned', goal: block.goal
+    }).select('*').single()
+    if (!newBlock) { setSaving(false); return }
+    for (const week of (block.weeks ?? [])) {
+      const { data: newWeek } = await supabase.from('weeks').insert({
+        block_id: newBlock.id, week_number: week.week_number,
+        start_date: week.start_date, end_date: week.end_date
+      }).select('*').single()
+      if (!newWeek) continue
+      for (const workout of (week.workouts ?? [])) {
+        const { data: newWorkout } = await supabase.from('workouts').insert({
+          week_id: newWeek.id, athlete_id: duplicateTarget,
+          day_name: workout.day_name, workout_date: workout.workout_date,
+          completed: false, notes: workout.notes
+        }).select('*').single()
+        if (!newWorkout) continue
+        for (const we of (workout.workout_exercises ?? [])) {
+          await supabase.from('workout_exercises').insert({
+            workout_id: newWorkout.id, exercise_id: we.exercise_id,
+            exercise_order: we.exercise_order, planned_sets: we.planned_sets,
+            planned_reps: we.planned_reps, planned_weight_kg: we.planned_weight_kg,
+            planned_rpe: we.planned_rpe, planned_tempo: we.planned_tempo,
+            planned_rest_seconds: we.planned_rest_seconds,
+            target_rpe: we.target_rpe, coach_note: we.coach_note,
+          })
+        }
+      }
+    }
+    setSaving(false)
+    setShowDupModal(false)
+    alert('Blok uspješno dupliciran!')
+    onRefresh()
+  }
+
+  // ── CRUD ────────────────────────────────────────────────────────
+  const addWeek = async () => {
+    if (!block) return; setSaving(true)
+    const ew = block.weeks ?? []; const weekNum = ew.length + 1
+    const lastEnd = ew.length > 0 ? new Date(ew[ew.length - 1].end_date) : new Date(block.start_date)
+    const startDate = new Date(lastEnd); if (ew.length > 0) startDate.setDate(startDate.getDate() + 1)
     const endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 6)
-    const { data, error } = await supabase.from('weeks').insert({ block_id: block.id, week_number: weekNum, start_date: startDate.toISOString().split('T')[0], end_date: endDate.toISOString().split('T')[0] }).select('*').single()
+    const { data, error } = await supabase.from('weeks').insert({
+      block_id: block.id, week_number: weekNum,
+      start_date: startDate.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0]
+    }).select('*').single()
     if (!error && data) setBlock(b => b ? { ...b, weeks: [...(b.weeks ?? []), { ...data, workouts: [] }] } : b)
     setSaving(false)
   }
 
-  const deleteWeek = async (weekId: string) => {
+  const deleteWeek = useCallback(async (weekId: string) => {
     await supabase.from('weeks').delete().eq('id', weekId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.filter(w => w.id !== weekId) } : b)
-  }
+  }, [])
 
-  const copyWeek = async (weekId: string) => {
-    if (!block) return
+  const copyWeek = useCallback(async (weekId: string) => {
     setSaving(true)
-    const src = block.weeks?.find(w => w.id === weekId)
-    if (!src) { setSaving(false); return }
+    let src: Week | undefined
+    setBlock(b => { src = b?.weeks?.find(w => w.id === weekId); return b })
+    if (!src || !block) { setSaving(false); return }
     const ew = block.weeks ?? []
     const weekNum = ew.length + 1
     const lastEnd = new Date(ew[ew.length - 1].end_date)
@@ -617,8 +281,7 @@ function AthletePanel({
     const { data: newWeek } = await supabase.from('weeks').insert({
       block_id: block.id, week_number: weekNum,
       start_date: startDate.toISOString().split('T')[0],
-      end_date: endDate.toISOString().split('T')[0],
-      notes: src.notes,
+      end_date: endDate.toISOString().split('T')[0], notes: src.notes,
     }).select('*').single()
     if (!newWeek) { setSaving(false); return }
     const newWorkouts: Workout[] = []
@@ -639,6 +302,7 @@ function AthletePanel({
           planned_sets: ex.planned_sets, planned_reps: ex.planned_reps,
           planned_weight_kg: ex.planned_weight_kg, planned_rpe: ex.planned_rpe,
           planned_rest_seconds: ex.planned_rest_seconds, planned_tempo: ex.planned_tempo,
+          target_rpe: ex.target_rpe, coach_note: ex.coach_note,
         }).select('*, exercise:exercises(*)').single()
         if (nex) newExercises.push(nex as WorkoutExercise)
       }
@@ -646,281 +310,303 @@ function AthletePanel({
     }
     setBlock(b => b ? { ...b, weeks: [...(b.weeks ?? []), { ...newWeek, workouts: newWorkouts }] } : b)
     setSaving(false)
-  }
+  }, [block, athlete.id])
 
-  const updateWeekNotes = async (weekId: string, notes: string) => {
-    await supabase.from('weeks').update({ notes: notes || null }).eq('id', weekId)
-    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? { ...w, notes: notes || null } : w) } : b)
-  }
+  const updateWeek = useCallback(async (weekId: string, data: Partial<Week>) => {
+    await supabase.from('weeks').update(data).eq('id', weekId)
+    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? { ...w, ...data } : w) } : b)
+  }, [])
 
-  const addWorkout = async (weekId: string) => {
+  const addWorkout = useCallback(async (weekId: string) => {
     setSaving(true)
-    const week = block?.weeks?.find(w => w.id === weekId)
-    if (!week) return
-    const existingDays = week.workouts?.length ?? 0
-    const workoutDate = new Date(week.start_date); workoutDate.setDate(workoutDate.getDate() + existingDays)
-    const { data, error } = await supabase.from('workouts').insert({ week_id: weekId, athlete_id: athlete.id, day_name: `Dan ${existingDays + 1}`, workout_date: workoutDate.toISOString().split('T')[0], completed: false }).select('*').single()
+    let week: Week | undefined
+    setBlock(b => { week = b?.weeks?.find(w => w.id === weekId); return b })
+    if (!week) { setSaving(false); return }
+    const nd = week.workouts?.length ?? 0
+    const d = new Date(week.start_date); d.setDate(d.getDate() + nd)
+    const { data, error } = await supabase.from('workouts').insert({
+      week_id: weekId, athlete_id: athlete.id,
+      day_name: `Dan ${nd + 1}`, workout_date: d.toISOString().split('T')[0], completed: false
+    }).select('*').single()
     if (!error && data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? { ...w, workouts: [...(w.workouts ?? []), { ...data, workout_exercises: [] }] } : w) } : b)
     setSaving(false)
-  }
+  }, [athlete.id])
 
-  const updateWorkout = async (workoutId: string, data: Partial<Workout>) => {
+  const updateWorkout = useCallback(async (workoutId: string, data: Partial<Workout>) => {
     await supabase.from('workouts').update(data).eq('id', workoutId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, ...data } : wo) })) } : b)
-  }
+  }, [])
 
-  const deleteWorkout = async (workoutId: string) => {
+  const deleteWorkout = useCallback(async (workoutId: string) => {
     await supabase.from('workouts').delete().eq('id', workoutId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.filter(wo => wo.id !== workoutId) })) } : b)
-  }
+  }, [])
 
-  const addExercise = async (workoutId: string, ex: Exercise) => {
+  const addExercise = useCallback(async (workoutId: string, ex: Exercise) => {
     setSaving(true)
-    const workout = block?.weeks?.flatMap(w => w.workouts ?? []).find(w => w.id === workoutId)
-    const order = (workout?.workout_exercises?.length ?? 0) + 1
-    const { data, error } = await supabase.from('workout_exercises').insert({ workout_id: workoutId, exercise_id: ex.id, exercise_order: order, planned_sets: 3, planned_reps: '5' }).select('*, exercise:exercises(*)').single()
-    if (!error && data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, workout_exercises: [...(wo.workout_exercises ?? []), data] } : wo) })) } : b)
+    let order = 1
+    setBlock(b => {
+      const workout = b?.weeks?.flatMap(w => w.workouts ?? []).find(w => w.id === workoutId)
+      order = (workout?.workout_exercises?.length ?? 0) + 1
+      return b
+    })
+    const { data, error } = await supabase.from('workout_exercises').insert({
+      workout_id: workoutId, exercise_id: ex.id, exercise_order: order, planned_sets: 3, planned_reps: '5'
+    }).select('*, exercise:exercises(*)').single()
+    if (!error && data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, workout_exercises: [...(wo.workout_exercises ?? []), data as WorkoutExercise] } : wo) })) } : b)
     setSaving(false)
-  }
+  }, [])
 
-  const updateExercise = async (weId: string, data: Partial<WorkoutExercise>) => {
-    await supabase.from('workout_exercises').update(data).eq('id', weId)
+  const updateExercise = useCallback(async (weId: string, data: Partial<WorkoutExercise>) => {
+    const RUNTIME_ONLY = ['_completedSets', '_totalSets']
+    const forDb = Object.fromEntries(Object.entries(data).filter(([k]) => !RUNTIME_ONLY.includes(k)))
+    if (Object.keys(forDb).length > 0) await supabase.from('workout_exercises').update(forDb).eq('id', weId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.map(we => we.id === weId ? { ...we, ...data } : we) })) })) } : b)
-  }
+  }, [])
 
-  const deleteExercise = async (weId: string) => {
+  const deleteExercise = useCallback(async (weId: string) => {
     await supabase.from('workout_exercises').delete().eq('id', weId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.filter(we => we.id !== weId) })) })) } : b)
-  }
+  }, [])
 
-  const reorderExercises = async (workoutId: string, orderedIds: string[]) => {
-    await Promise.all(orderedIds.map((id, index) =>
-      supabase.from('workout_exercises').update({ exercise_order: index + 1 }).eq('id', id)
-    ))
-    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId
-      ? { ...wo, workout_exercises: orderedIds.map((id, index) => { const ex = wo.workout_exercises?.find(e => e.id === id)!; return { ...ex, exercise_order: index + 1 } }) }
-      : wo) })) } : b)
-  }
-
-  const deleteBlock = async (blockId: string) => {
-    if (!confirm('Briši ovaj blok? Ova radnja je nepovratna i briše sve tjedne i treninge.')) return
-    setSaving(true)
-    await supabase.from('blocks').delete().eq('id', blockId)
-    const remaining = allBlocks.filter(b => b.id !== blockId)
-    setAllBlocks(remaining)
-    if (block?.id === blockId) {
-      if (remaining.length > 0) {
-        await switchBlock(remaining[0].id)
-      } else {
-        setBlock(null)
-      }
-    }
-    setSaving(false)
-  }
-
-  const duplicateBlockTo = async (targetAthleteId: string, newName: string) => {
-    if (!duplicateBlock) return
-    setSaving(true)
-    // Create new block
-    const { data: newBlock } = await supabase.from('blocks').insert({
-      athlete_id: targetAthleteId, name: newName,
-      start_date: duplicateBlock.start_date, end_date: duplicateBlock.end_date,
-      status: 'planned', goal: duplicateBlock.goal
-    }).select('*').single()
-    if (!newBlock) { setSaving(false); return }
-    // Duplicate weeks and workouts
-    for (const week of (duplicateBlock.weeks ?? [])) {
-      const { data: newWeek } = await supabase.from('weeks').insert({ block_id: newBlock.id, week_number: week.week_number, start_date: week.start_date, end_date: week.end_date }).select('*').single()
-      if (!newWeek) continue
-      for (const workout of (week.workouts ?? [])) {
-        const { data: newWorkout } = await supabase.from('workouts').insert({ week_id: newWeek.id, athlete_id: targetAthleteId, day_name: workout.day_name, workout_date: workout.workout_date, completed: false, notes: workout.notes }).select('*').single()
-        if (!newWorkout) continue
-        for (const we of (workout.workout_exercises ?? [])) {
-          await supabase.from('workout_exercises').insert({ workout_id: newWorkout.id, exercise_id: we.exercise_id, exercise_order: we.exercise_order, planned_sets: we.planned_sets, planned_reps: we.planned_reps, planned_weight_kg: we.planned_weight_kg, planned_rpe: we.planned_rpe, planned_tempo: we.planned_tempo, planned_rest_seconds: we.planned_rest_seconds })
-        }
-      }
-    }
-    setSaving(false)
-    alert('Blok uspješno dupliciran!')
-    onRefresh()
-  }
+  const { totalWorkouts, completedWorkouts, totalSets, doneSets, pct } = useMemo(() => {
+    const allWorkouts = block?.weeks?.flatMap(w => w.workouts ?? []) ?? []
+    const totalWorkouts = allWorkouts.length
+    const completedWorkouts = allWorkouts.filter(w => w.completed).length
+    const allExercises = allWorkouts.flatMap(wo => wo.workout_exercises ?? [])
+    const totalSets = allExercises.reduce((s, e) => s + (e.planned_sets ?? 0), 0)
+    const doneSets = 0
+    const pct = totalWorkouts > 0 ? Math.round((completedWorkouts / totalWorkouts) * 100) : 0
+    return { totalWorkouts, completedWorkouts, totalSets, doneSets, pct }
+  }, [block])
 
   return (
-    <div style={{ animation: 'fadeUp 0.4s ease' }}>
-      {/* Back + Header */}
-      <div className="admin-athlete-header" style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '32px', flexWrap: 'wrap' }}>
-        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', padding: '8px 16px', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', transition: 'all 0.2s' }}
+    <div style={{ animation: 'fadeUp 0.3s ease' }}>
+
+      {/* ── Header ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '28px', flexWrap: 'wrap' }}>
+        <button onClick={onBack}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', padding: '8px 16px', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', borderRadius: '8px', transition: 'all 0.2s' }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = '#fff'; e.currentTarget.style.color = '#fff' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}>
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}>
           <ChevronLeft size={13} /> NAZAD
         </button>
-        <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(255,255,255,0.15) 0%,rgba(255,255,255,0.05) 100%)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fm)', flexShrink: 0 }}>{initials}</div>
+        <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(139,92,246,0.1))', border: '1.5px solid rgba(99,102,241,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: '#c7d2fe', fontFamily: 'var(--fm)', flexShrink: 0 }}>{initials}</div>
         <div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)', lineHeight: 1 }}>{athlete.full_name}</div>
-          <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.2em', marginTop: '4px' }}>
+          <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#f0f0ff', fontFamily: 'var(--fd)', lineHeight: 1, letterSpacing: '-0.02em' }}>{athlete.full_name}</div>
+          <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', marginTop: '4px' }}>
             {athlete.email} · <span style={{ color: athlete.role === 'admin' ? '#ef4444' : athlete.role === 'trener' ? '#fbbf24' : '#4ade80' }}>{(athlete.role ?? 'lifter').toUpperCase()}</span>
           </div>
         </div>
-
-        {/* Quick stats */}
-        <div className="admin-detail-stats" style={{ marginLeft: 'auto', display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          {[{ val: allBlocks.length, label: 'BLOKOVA' }, { val: totalWorkouts, label: 'TRENINGA' }, { val: `${progress}%`, label: 'NAPREDAK' }].map((s, i) => (
-            <div key={i} style={{ padding: '12px 20px', background: '#08080a', textAlign: 'center' }}>
-              <div className="stat-val" style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', fontWeight: 800, color: '#fff' }}>{s.val}</div>
-              <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.25em', marginTop: '3px' }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
+        {/* Stats */}
+        {block && (
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', overflow: 'hidden' }}>
+            {[
+              { val: allBlocks.length, label: 'BLOKOVA' },
+              { val: totalWorkouts, label: 'TRENINGA' },
+              { val: `${pct}%`, label: 'NAPREDAK' },
+            ].map((s, i) => (
+              <div key={i} style={{ padding: '10px 18px', background: '#08080e', textAlign: 'center' }}>
+                <div style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', fontWeight: 800, color: '#f0f0ff', lineHeight: 1 }}>{s.val}</div>
+                <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.2em', marginTop: '3px' }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Tabs */}
-      <div className="admin-tabs" style={{ display: 'flex', gap: '0', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '28px' }}>
-        {([['program', 'PROGRAM'], ['stats', 'STATISTIKE']] as [string, string][]).map(([tab, label]) => (
-          <button key={tab} onClick={() => setActiveTab(tab as any)}
-            style={{ padding: '12px 24px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700, color: activeTab === tab ? '#fff' : 'rgba(255,255,255,0.3)', borderBottom: `2px solid ${activeTab === tab ? '#fff' : 'transparent'}`, transition: 'all 0.2s', marginBottom: '-1px' }}>
-            {label}
+      {/* ── Block bar (identical to training page) ── */}
+      <div style={{ position: 'relative', marginBottom: '24px' }} ref={blockSelectorRef}>
+        <div style={{ display: 'flex', alignItems: 'stretch', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.3)' }}>
+
+          {/* Block switcher */}
+          <button onClick={() => setShowBlockSelector(!showBlockSelector)}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', background: showBlockSelector ? '#111113' : 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', flex: 1, textAlign: 'left', transition: 'background 0.15s' }}
+            onMouseEnter={e => { if (!showBlockSelector) e.currentTarget.style.background = '#111113' }}
+            onMouseLeave={e => { if (!showBlockSelector) e.currentTarget.style.background = 'transparent' }}>
+            <FolderOpen size={14} color="#555" />
+            <div>
+              <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: '#888', marginBottom: '2px', fontFamily: 'var(--fm)' }}>AKTIVNI BLOK</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e0e0e0', fontFamily: 'var(--fm)' }}>{block?.name ?? 'Nema bloka'}</div>
+            </div>
+            <ChevronDown size={12} color="#444" style={{ marginLeft: 'auto', transform: showBlockSelector ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
           </button>
-        ))}
+
+          {/* Block name edit */}
+          {block && (
+            <div style={{ padding: '12px 16px', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '8px', minWidth: '160px' }}>
+              <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: '#888', flexShrink: 0, fontFamily: 'var(--fm)' }}>NAZIV</div>
+              <EditableField value={block.name} placeholder="Naziv programa"
+                onSave={async v => {
+                  await supabase.from('blocks').update({ name: v }).eq('id', block.id)
+                  setBlock(b => b ? { ...b, name: v } : b)
+                  setAllBlocks(bs => bs.map(b2 => b2.id === block.id ? { ...b2, name: v } : b2))
+                }} />
+            </div>
+          )}
+
+          {/* Actions */}
+          <button onClick={createBlock}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = '#111113' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}>
+            <Plus size={11} /> NOVI BLOK
+          </button>
+          {block && <>
+            <button onClick={copyBlock}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = '#111113' }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}>
+              <Copy size={11} /> KOPIRAJ BLOK
+            </button>
+            <button onClick={() => { setDuplicateName(`${block.name} (kopija)`); setDuplicateTarget(''); setShowDupModal(true) }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#60a5fa'; e.currentTarget.style.background = '#111113' }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}>
+              <Copy size={11} /> DUPLICIRAJ NA...
+            </button>
+            <button onClick={deleteBlock}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(239,68,68,0.5)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.06)' }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(239,68,68,0.5)'; e.currentTarget.style.background = 'transparent' }}>
+              <Trash2 size={11} /> BRIŠI BLOK
+            </button>
+          </>}
+
+          {saving && (
+            <div style={{ padding: '0 14px', display: 'flex', alignItems: 'center', borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
+              <Loader2 size={13} color="#555" style={{ animation: 'spin 1s linear infinite' }} />
+            </div>
+          )}
+        </div>
+
+        {/* Block dropdown */}
+        {showBlockSelector && allBlocks.length > 0 && (
+          <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, background: '#09090e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', maxHeight: '280px', overflowY: 'auto', animation: 'dropDown 0.18s ease' }}>
+            {allBlocks.map(b => (
+              <button key={b.id} onClick={() => switchBlock(b.id)}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: b.id === block?.id ? '#111113' : 'transparent', border: 'none', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.07)', textAlign: 'left', transition: 'background 0.12s' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#111113'}
+                onMouseLeave={e => e.currentTarget.style.background = b.id === block?.id ? '#111113' : 'transparent'}>
+                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.status === 'active' ? '#22c55e' : b.status === 'completed' ? '#60a5fa' : '#333', flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.84rem', fontWeight: 500, color: '#e0e0e0', fontFamily: 'var(--fm)' }}>{b.name}</div>
+                  <div style={{ fontSize: '0.56rem', color: '#444', marginTop: '1px', fontFamily: 'var(--fm)' }}>{b.start_date} — {b.end_date}</div>
+                </div>
+                {b.id === block?.id && <Check size={12} color="#22c55e" />}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* PROGRAM TAB */}
-      {activeTab === 'program' && (
-        <div>
-          {/* Block bar */}
-          <div style={{ position: 'relative', marginBottom: '20px' }}>
-            <div className="admin-block-bar" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <button onClick={() => setShowBlockMenu(!showBlockMenu)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px', background: 'transparent', border: 'none', cursor: 'pointer', flex: 1, textAlign: 'left', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-                <FolderOpen size={14} color="rgba(255,255,255,0.3)" />
-                <div>
-                  <div style={{ fontSize: '0.5rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginBottom: '2px' }}>AKTIVNI BLOK</div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)' }}>{block?.name ?? 'Nema bloka'}</div>
-                </div>
-                <ChevronDown size={13} color="rgba(255,255,255,0.3)" style={{ marginLeft: 'auto', transform: showBlockMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-              </button>
-              {block && (
-                <>
-                  <button onClick={() => setDuplicateBlock(block)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: '0.62rem', letterSpacing: '0.18em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', flexShrink: 0 }}
-                    onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-                    onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'transparent' }}>
-                    <Copy size={12} /> DUPLICIRAJ
-                  </button>
-                  <button onClick={() => deleteBlock(block.id)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', color: 'rgba(239,68,68,0.5)', fontSize: '0.62rem', letterSpacing: '0.18em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', flexShrink: 0 }}
-                    onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.06)' }}
-                    onMouseLeave={e => { e.currentTarget.style.color = 'rgba(239,68,68,0.5)'; e.currentTarget.style.background = 'transparent' }}>
-                    <Trash2 size={12} /> BRIŠI BLOK
-                  </button>
-                </>
-              )}
-              <button onClick={createBlock} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: '0.62rem', letterSpacing: '0.18em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', flexShrink: 0 }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'transparent' }}>
-                <Plus size={12} /> NOVI BLOK
-              </button>
-              {saving && <div style={{ padding: '0 14px', display: 'flex', alignItems: 'center', borderLeft: '1px solid rgba(255,255,255,0.06)' }}><Loader2 size={12} color="rgba(255,255,255,0.3)" style={{ animation: 'spin 1s linear infinite' }} /></div>}
+      {/* ── Content ── */}
+      {loadingBlock ? (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '60px 0', color: '#444' }}>
+          <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+          <span style={{ fontSize: '0.75rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>UČITAVANJE...</span>
+        </div>
+      ) : !block ? (
+        <div style={{ textAlign: 'center', padding: '60px 0' }}>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '3rem', opacity: 0.1, marginBottom: '12px', color: '#fff' }}>—</div>
+          <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '24px', fontFamily: 'var(--fm)' }}>NEMA AKTIVNOG BLOKA</div>
+          <button onClick={createBlock}
+            style={{ padding: '12px 28px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.4)', color: '#a5b4fc', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '8px' }}>
+            + KREIRAJ PRVI BLOK
+          </button>
+        </div>
+      ) : (
+        <>
+          {(block.weeks?.length ?? 0) === 0 && (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '16px', fontFamily: 'var(--fm)' }}>
+              BLOK JE PRAZAN — DODAJ TJEDAN
             </div>
+          )}
+          {block.weeks?.map(week => (
+            <WeekPanel
+              key={week.id}
+              week={week}
+              exercises={exercises}
+              isAdmin={true}
+              userId={adminId}
+              onDeleteWeek={deleteWeek}
+              onCopyWeek={copyWeek}
+              onUpdateWeek={updateWeek}
+              onAddWorkout={addWorkout}
+              onUpdateWorkout={updateWorkout}
+              onDeleteWorkout={deleteWorkout}
+              onAddExercise={addExercise}
+              onUpdateExercise={updateExercise}
+              onDeleteExercise={deleteExercise}
+            />
+          ))}
+          <button onClick={addWeek}
+            style={{ width: '100%', padding: '14px', background: 'transparent', border: '1px dashed rgba(99,102,241,0.25)', color: 'rgba(165,180,252,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '0.68rem', letterSpacing: '0.3em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', borderRadius: '8px' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0.6)'; e.currentTarget.style.color = '#a5b4fc' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0.25)'; e.currentTarget.style.color = 'rgba(165,180,252,0.5)' }}>
+            <Plus size={13} /> DODAJ TJEDAN {(block.weeks?.length ?? 0) + 1}
+          </button>
+        </>
+      )}
 
-            {showBlockMenu && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, background: '#0f0f12', border: '1px solid rgba(255,255,255,0.1)', borderTop: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.5)', maxHeight: '280px', overflowY: 'auto' }}>
-                {allBlocks.map(b => (
-                  <button key={b.id} onClick={() => switchBlock(b.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px', background: b.id === block?.id ? 'rgba(255,255,255,0.04)' : 'transparent', border: 'none', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.04)', textAlign: 'left', transition: 'background 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-                    onMouseLeave={e => e.currentTarget.style.background = b.id === block?.id ? 'rgba(255,255,255,0.04)' : 'transparent'}>
-                    <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.status === 'active' ? '#4ade80' : b.status === 'completed' ? '#60a5fa' : 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', fontFamily: 'var(--fm)' }}>{b.name}</div>
-                      <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', marginTop: '1px' }}>{b.start_date} — {b.end_date}</div>
+      {/* Duplicate to another athlete modal */}
+      {showDupModal && block && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+          onClick={() => setShowDupModal(false)}>
+          <div style={{ width: '100%', maxWidth: '460px', background: '#0d0d16', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', padding: '28px', animation: 'slideUp 0.25s ease' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '0.55rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.25)', marginBottom: '6px', fontFamily: 'var(--fm)' }}>DUPLICIRAJ BLOK</div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)', marginBottom: '24px' }}>{block.name}</div>
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>NAZIV KOPIJE</div>
+              <input value={duplicateName} onChange={e => setDuplicateName(e.target.value)}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 14px', fontSize: '0.88rem', outline: 'none', fontFamily: 'var(--fm)', borderRadius: '8px', boxSizing: 'border-box' as const }} />
+            </div>
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>KOPIRAJ NA KORISNIKA</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
+                {allAthletes.filter(a => a.id !== athlete.id).map(a => (
+                  <button key={a.id} onClick={() => setDuplicateTarget(a.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: duplicateTarget === a.id ? 'rgba(99,102,241,0.1)' : 'transparent', border: `1px solid ${duplicateTarget === a.id ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '8px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
+                    <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 800, color: '#fff', flexShrink: 0 }}>
+                      {a.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase()}
                     </div>
-                    {b.id === block?.id && <Check size={12} color="#4ade80" />}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.82rem', color: '#fff', fontWeight: 600, fontFamily: 'var(--fm)' }}>{a.full_name}</div>
+                      <div style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>{a.role}</div>
+                    </div>
+                    {duplicateTarget === a.id && <Check size={12} color="#818cf8" />}
                   </button>
                 ))}
               </div>
-            )}
-            {showBlockMenu && <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowBlockMenu(false)} />}
-          </div>
-
-          {loadingBlock ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '60px 0', color: 'rgba(255,255,255,0.3)' }}>
-              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
-              <span style={{ fontSize: '0.75rem', letterSpacing: '0.2em' }}>UČITAVANJE...</span>
             </div>
-          ) : !block ? (
-            <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <div style={{ fontFamily: 'var(--fd)', fontSize: '3rem', opacity: 0.1, marginBottom: '12px' }}>00</div>
-              <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '24px' }}>NEMA AKTIVNOG BLOKA</div>
-              <button onClick={createBlock} style={{ padding: '12px 28px', background: '#fff', border: 'none', color: '#000', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700 }}>+ KREIRAJ PRVI BLOK</button>
-            </div>
-          ) : (
-            <>
-              {(block.weeks?.length ?? 0) === 0 && (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '16px' }}>BLOK JE PRAZAN — DODAJ TJEDAN</div>
-              )}
-              {block.weeks?.map(week => (
-                <WeekPanel key={week.id} week={week} exercises={exercises} onDeleteWeek={deleteWeek} onCopyWeek={copyWeek} onAddWorkout={addWorkout} onUpdateWorkout={updateWorkout} onDeleteWorkout={deleteWorkout} onAddExercise={addExercise} onUpdateExercise={updateExercise} onDeleteExercise={deleteExercise} onReorderExercises={reorderExercises} onUpdateWeekNotes={updateWeekNotes} />
-              ))}
-              <button onClick={addWeek} style={{ width: '100%', padding: '16px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '0.68rem', letterSpacing: '0.3em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)' }}>
-                <Plus size={13} /> DODAJ TJEDAN {block.weeks ? `${block.weeks.length + 1}` : '1'}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => setShowDupModal(false)}
+                style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.68rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', borderRadius: '8px' }}>
+                ODUSTANI
               </button>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* STATS TAB */}
-      {activeTab === 'stats' && (
-        <div style={{ animation: 'fadeUp 0.3s ease' }}>
-          <div className="admin-stats-detail-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '24px' }}>
-            {[
-              { val: allBlocks.length, label: 'UKUPNO BLOKOVA', sub: `${allBlocks.filter(b => b.status === 'active').length} aktivnih` },
-              { val: totalWorkouts, label: 'TRENINGA U BLOKU', sub: `${completedWorkouts} završenih` },
-              { val: totalEx, label: 'VJEŽBI U BLOKU', sub: 'planirano' },
-            ].map((s, i) => (
-              <div key={i} style={{ padding: '28px 24px', background: '#08080a', textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--fd)', fontSize: '2.5rem', fontWeight: 800, color: '#fff', lineHeight: 1, marginBottom: '6px' }}>{s.val}</div>
-                <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.28em', marginBottom: '4px' }}>{s.label}</div>
-                <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)' }}>{s.sub}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Progress bar */}
-          <div style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)' }}>NAPREDAK AKTIVNOG BLOKA</div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)' }}>{progress}%</div>
+              <button onClick={duplicateBlockTo} disabled={!duplicateTarget || !duplicateName || saving}
+                style={{ flex: 1, padding: '10px', background: duplicateTarget && duplicateName ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', border: `1px solid ${duplicateTarget && duplicateName ? 'rgba(99,102,241,0.5)' : 'transparent'}`, color: duplicateTarget && duplicateName ? '#a5b4fc' : 'rgba(255,255,255,0.2)', cursor: duplicateTarget && duplicateName ? 'pointer' : 'not-allowed', fontSize: '0.68rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '8px', transition: 'all 0.2s' }}>
+                {saving ? 'DUPLICIRA...' : 'DUPLICIRAJ'}
+              </button>
             </div>
-            <div style={{ height: '6px', background: 'rgba(255,255,255,0.07)' }}>
-              <div style={{ height: '100%', width: `${progress}%`, background: progress > 66 ? '#4ade80' : progress > 33 ? '#facc15' : '#f87171', transition: 'width 1s cubic-bezier(0.16,1,0.3,1)' }} />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
-              <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.25)' }}>{completedWorkouts} završeno</span>
-              <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.25)' }}>{totalWorkouts - completedWorkouts} preostalo</span>
-            </div>
-          </div>
-
-          {/* All blocks list */}
-          <div style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>SVI BLOKOVI</div>
-            {allBlocks.length === 0 ? (
-              <div style={{ padding: '24px', color: 'rgba(255,255,255,0.2)', fontSize: '0.8rem', textAlign: 'center' }}>Nema blokova.</div>
-            ) : allBlocks.map(b => (
-              <div key={b.id} style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: b.status === 'active' ? '#4ade80' : b.status === 'completed' ? '#60a5fa' : 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', fontFamily: 'var(--fm)' }}>{b.name}</div>
-                  <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>{b.start_date} — {b.end_date}</div>
-                </div>
-                <div style={{ fontSize: '0.6rem', color: b.status === 'active' ? '#4ade80' : b.status === 'completed' ? '#60a5fa' : 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700 }}>{b.status.toUpperCase()}</div>
-              </div>
-            ))}
           </div>
         </div>
       )}
 
-      {duplicateBlock && (
-        <DuplicateModal block={duplicateBlock} athletes={allAthletes} onConfirm={duplicateBlockTo} onClose={() => setDuplicateBlock(null)} />
-      )}
+      <style>{`
+        @keyframes dropDown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:none } }
+        @keyframes slideUp  { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:none } }
+        .add-btn { display:flex; align-items:center; gap:6px; width:100%; padding:10px 14px; background:transparent; border:1px dashed rgba(99,102,241,0.2); color:rgba(165,180,252,0.5); cursor:pointer; font-size:0.65rem; letter-spacing:0.2em; font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:7px; justify-content:center; margin-top:6px; }
+        .add-btn:hover { border-color:rgba(99,102,241,0.5); color:#a5b4fc; background:rgba(99,102,241,0.05); }
+        .icon-btn-danger { background:transparent; border:none; cursor:pointer; color:rgba(255,255,255,0.2); padding:6px; display:flex; align-items:center; justify-content:center; border-radius:6px; transition:all 0.15s; }
+        .icon-btn-danger:hover { color:#ef4444; background:rgba(239,68,68,0.08); }
+        .cat-btn { padding:4px 12px; font-size:0.62rem; letter-spacing:0.1em; font-weight:700; cursor:pointer; font-family:var(--fm); background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.08); border-radius:6px; transition:all 0.15s; }
+        .cat-btn-active, .cat-btn:hover { background:rgba(99,102,241,0.15); color:#a5b4fc; border-color:rgba(99,102,241,0.4); }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
+        @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+        @keyframes spin { to { transform:rotate(360deg) } }
+      `}</style>
     </div>
   )
 }
@@ -1092,7 +778,7 @@ export default function AdminPage() {
 
   const totalAthletes = athletes.length
   const activeBlocks = athletes.reduce((s, a) => s + ((a.blocks as Block[])?.filter(b => b.status === 'active').length ?? 0), 0)
-  const lifters = athletes.filter(a => a.role === 'lifter')
+  const lifters = athletes // svi korisnici mogu primati obavijesti
 
   if (loading) return (
     <div style={{ background: '#08080a', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', fontFamily: 'var(--fm)' }}>
@@ -1229,7 +915,7 @@ export default function AdminPage() {
                         <button
                           onClick={() => setNotifSelected(notifSelected.length === lifters.length ? [] : lifters.map(a => a.id))}
                           style={{ background: notifSelected.length === lifters.length ? 'rgba(251,191,36,0.12)' : 'transparent', border: `1px solid ${notifSelected.length === lifters.length ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.12)'}`, color: notifSelected.length === lifters.length ? '#fbbf24' : 'rgba(255,255,255,0.4)', padding: '4px 14px', cursor: 'pointer', fontSize: '0.58rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '5px', transition: 'all 0.15s' }}>
-                          SVI LIFTERI
+                          SVI KORISNICI
                         </button>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '4px', maxHeight: '220px', overflowY: 'auto' as const }}>
@@ -1241,11 +927,12 @@ export default function AdminPage() {
                               style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: sel ? 'rgba(251,191,36,0.06)' : 'transparent', border: `1px solid ${sel ? 'rgba(251,191,36,0.25)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '7px', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left' as const }}>
                               <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.62rem', fontWeight: 800, color: '#fff', flexShrink: 0, fontFamily: 'var(--fm)' }}>{initials}</div>
                               <span style={{ fontSize: '0.85rem', fontWeight: 600, color: sel ? '#fff' : 'rgba(255,255,255,0.6)', fontFamily: 'var(--fm)', flex: 1 }}>{a.full_name}</span>
+                              <span style={{ fontSize: '0.45rem', letterSpacing: '0.1em', color: a.role === 'admin' ? '#ef4444' : a.role === 'trener' ? '#fbbf24' : 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{(a.role ?? 'lifter').toUpperCase()}</span>
                               {sel && <Check size={13} color="#fbbf24" />}
                             </button>
                           )
                         })}
-                        {lifters.length === 0 && <div style={{ padding: '16px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', fontFamily: 'var(--fm)' }}>Nema lifera.</div>}
+                        {lifters.length === 0 && <div style={{ padding: '16px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', fontFamily: 'var(--fm)' }}>Nema korisnika.</div>}
                       </div>
                     </div>
 
