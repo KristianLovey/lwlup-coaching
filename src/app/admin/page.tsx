@@ -448,7 +448,7 @@ function DuplicateModal({ block, athletes, onConfirm, onClose }:
   { block: Block; athletes: AthleteProfile[]; onConfirm: (targetAthleteId: string, newName: string) => void; onClose: () => void }) {
   const [targetId, setTargetId] = useState('')
   const [newName, setNewName] = useState(`${block.name} (kopija)`)
-  const others = athletes.filter(a => a.id !== block.athlete_id && a.role === 'lifter')
+  const others = athletes.filter(a => a.id !== block.athlete_id)
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }} onClick={onClose}>
@@ -463,9 +463,9 @@ function DuplicateModal({ block, athletes, onConfirm, onClose }:
         </div>
 
         <div style={{ marginBottom: '28px' }}>
-          <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px', fontFamily: 'var(--fm)' }}>KOPIRAJ NA LIFERA</div>
+          <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px', fontFamily: 'var(--fm)' }}>KOPIRAJ NA KORISNIKA</div>
           {others.length === 0 ? (
-            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', fontFamily: 'var(--fm)', padding: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>Nema drugih lifera.</div>
+            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', fontFamily: 'var(--fm)', padding: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>Nema drugih korisnika.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
               {others.map(a => (
@@ -758,7 +758,7 @@ function AthletePanel({
         <div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)', lineHeight: 1 }}>{athlete.full_name}</div>
           <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.2em', marginTop: '4px' }}>
-            {athlete.email} · <span style={{ color: '#4ade80' }}>LIFTER</span>
+            {athlete.email} · <span style={{ color: athlete.role === 'admin' ? '#ef4444' : athlete.role === 'trener' ? '#fbbf24' : '#4ade80' }}>{(athlete.role ?? 'lifter').toUpperCase()}</span>
           </div>
         </div>
 
@@ -1071,7 +1071,11 @@ export default function AdminPage() {
 
   const updateRole = async (athleteId: string, newRole: string) => {
     await supabase.from('profiles').update({ role: newRole }).eq('id', athleteId)
-    setAthletes(a => a.map(x => x.id === athleteId ? { ...x, role: newRole } : x))
+    setAthletes(a => {
+      const updated = a.map(x => x.id === athleteId ? { ...x, role: newRole } : x)
+      setCoaches(updated.filter(p => p.role === 'trener' || p.role === 'admin'))
+      return updated
+    })
   }
 
   const deleteUser = async (athleteId: string) => {
@@ -1281,9 +1285,9 @@ export default function AdminPage() {
                     <span style={{ fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>DODJELA LIFTERA TRENERU</span>
                     {assignSaving && <span style={{ fontSize: '0.55rem', color: '#fbbf24', fontFamily: 'var(--fm)' }}>Sprema...</span>}
                   </div>
-                  {athletes.filter(a => a.role === 'lifter' || a.role === 'trener').length === 0 ? (
+                  {athletes.length === 0 ? (
                     <div style={{ padding: '32px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>Nema korisnika.</div>
-                  ) : athletes.filter(a => a.role === 'lifter' || a.role === 'trener').map(lifter => (
+                  ) : athletes.map(lifter => (
                     <div key={lifter.id} style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: '16px' }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', fontFamily: 'var(--fm)' }}>{lifter.full_name}</div>
@@ -1406,6 +1410,7 @@ export default function AdminPage() {
                               onClick={e => e.stopPropagation()}
                             >
                               <option value="lifter">lifter</option>
+                              <option value="trener">trener</option>
                               <option value="admin">admin</option>
                             </select>
                             <button onClick={e => { e.stopPropagation(); deleteUser(athlete.id) }}
