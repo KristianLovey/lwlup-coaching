@@ -655,7 +655,7 @@ export default function TrainingPage() {
           cursor:pointer; transition:all 0.2s; border-radius:6px;
           background:rgba(255,255,255,0.04);
         }
-        .done-badge span { font-size:0.54rem; letter-spacing:0.2em; color:#555; font-family:var(--fm); font-weight:800; }
+        .done-badge span { font-size:0.54rem; letter-spacing:0.2em; color:rgba(255,255,255,0.45); font-family:var(--fm); font-weight:800; }
         .done-badge:hover { border-color:rgba(255,255,255,0.28); background:rgba(255,255,255,0.07); }
         .done-badge-active { border-color:rgba(34,197,94,0.45) !important; background:rgba(34,197,94,0.1) !important; box-shadow:0 0 18px rgba(34,197,94,0.15) !important; }
         .done-badge-active span { color:#4ade80 !important; }

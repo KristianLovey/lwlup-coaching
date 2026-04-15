@@ -1187,98 +1187,147 @@ export default function AdminPage() {
         .nav-menu-logout:hover { background: rgba(255,60,60,0.08) !important; color: #ff6060 !important; }
         .profile-dropdown { width: min(220px, calc(100vw - 32px)) !important; right: 0 !important; }
 
-        @media (max-width: 640px) { .tnav-status { display: none !important; } }
-        @media (max-width: 520px) { .tnav-name { display: none !important; } }
+        /* ── Navbar ── */
+        @media (max-width: 640px) { .appnav-status { display: none !important; } }
+        @media (max-width: 520px) { .appnav-name { display: none !important; } }
+
+        /* ── Main outer padding ── */
+        .admin-outer { padding: 32px 24px 100px !important; }
+        @media (max-width: 600px) { .admin-outer { padding: 20px 14px 90px !important; } }
+
+        /* ── Dashboard hero title ── */
         @media (max-width: 480px) {
-          .tnav-links { display: none !important; }
-          .tnav-right { margin-left: auto; }
+          .admin-outer h1 { font-size: 2.6rem !important; }
         }
 
-        /* ─ Main content padding ─ */
-        @media (max-width: 600px) {
-          .admin-outer { padding: 20px 16px 80px !important; }
+        /* ── Section switcher: full width + scrollable ── */
+        .admin-section-switcher {
+          overflow-x: auto !important;
+          -webkit-overflow-scrolling: touch;
+          width: 100% !important;
+          max-width: 100% !important;
+          scrollbar-width: none;
         }
+        .admin-section-switcher::-webkit-scrollbar { display: none; }
+        .admin-section-switcher button { white-space: nowrap; flex-shrink: 0; }
 
-        /* ─ Dashboard stats: 4→2 cols ─ */
-        @media (max-width: 600px) {
-          .admin-stats-grid { grid-template-columns: repeat(2, 1fr) !important; max-width: 100% !important; }
-        }
-
-        /* ─ Search row: stack on mobile ─ */
+        /* ── Summary stats: 3→1 row on mobile ── */
+        .admin-stats-grid { max-width: 100% !important; }
         @media (max-width: 480px) {
-          .admin-search-row { flex-direction: column; align-items: stretch !important; }
+          .admin-stats-grid { grid-template-columns: repeat(3, 1fr) !important; }
+          .admin-stats-grid > div { padding: 12px 10px !important; }
+        }
+
+        /* ── Search row: stack on mobile ── */
+        @media (max-width: 520px) {
+          .admin-search-row { flex-direction: column !important; align-items: stretch !important; }
           .admin-search-row > div { max-width: 100% !important; }
-          .admin-search-row > button { justify-content: center; }
+          .admin-search-row > button { justify-content: center; width: 100%; }
         }
 
-        /* ─ Athlete cards: responsive grid ─ */
-        .admin-athlete-grid { display: flex; flex-wrap: wrap; gap: 16px; }
-        .admin-athlete-grid > div { flex: 0 0 160px; }
-        @media (max-width: 480px) {
+        /* ── Athlete cards grid ── */
+        .admin-athlete-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+        .admin-athlete-grid > div { flex: 0 0 150px; }
+        @media (max-width: 520px) {
           .admin-athlete-grid { gap: 10px; }
           .admin-athlete-grid > div { flex: 1 1 calc(50% - 5px); max-width: calc(50% - 5px); }
           .admin-athlete-grid > div > div { width: 100% !important; }
         }
 
-        /* ─ Athlete detail header: wrap on mobile ─ */
+        /* ── Treneri section ── */
+        @media (max-width: 520px) {
+          .admin-outer select { min-width: 0 !important; width: 100% !important; }
+        }
+
+        /* ══ ATHLETE DETAIL (training-style) ══ */
+
+        /* ── Detail header: stack vertically on mobile ── */
+        .admin-detail-header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
         @media (max-width: 600px) {
-          .admin-athlete-header { gap: 12px !important; }
-          .admin-detail-stats { margin-left: 0 !important; width: 100%; }
-          .admin-detail-stats > div { flex: 1; }
+          .admin-detail-header { gap: 12px; }
         }
 
-        /* ─ Tabs: scrollable on mobile ─ */
+        /* ── Detail stats pill: full width on mobile ── */
+        .admin-detail-stats-pill { margin-left: auto; }
         @media (max-width: 600px) {
-          .admin-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-          .admin-tabs button { white-space: nowrap; padding: 10px 14px !important; font-size: 0.58rem !important; }
+          .admin-detail-stats-pill { margin-left: 0; width: 100%; }
+          .admin-detail-stats-pill > div { flex: 1; }
+        }
+        @media (max-width: 380px) {
+          .admin-detail-stats-pill > div { padding: 8px 10px !important; }
+          .admin-detail-stats-pill > div > div:first-child { font-size: 1.1rem !important; }
         }
 
-        /* ─ Section switcher: scrollable on mobile ─ */
+        /* ── Block bar: wrap + compact on mobile ── */
         @media (max-width: 600px) {
-          .admin-section-switcher {
-            overflow-x: auto !important;
-            -webkit-overflow-scrolling: touch;
-            width: 100% !important;
-            max-width: 100% !important;
-          }
-          .admin-section-switcher button { white-space: nowrap; flex-shrink: 0; }
+          .admin-outer [style*="borderRadius: '12px'"] { border-radius: 10px; }
         }
-
-        /* ─ Exercise row: stacked layout on mobile ─ */
-        @media (max-width: 540px) {
-          .ex-row-grid {
-            grid-template-columns: 24px 1fr 48px 48px 48px 40px 28px !important;
-            gap: 4px !important;
-            padding: 8px 8px !important;
-          }
-          .ex-row-grid .ex-label { display: none !important; }
+        @media (max-width: 520px) {
+          /* Block name edit field: hide on very small */
+          .block-bar-name { display: none !important; }
         }
-        @media (max-width: 420px) {
-          .ex-row-grid {
-            grid-template-columns: 1fr 44px 44px 28px !important;
-            gap: 4px !important;
-          }
-          .ex-row-drag,
-          .ex-row-sets,
-          .ex-row-rpe { display: none !important; }
-        }
-
-        /* ─ Block bar buttons: wrap on mobile ─ */
-        @media (max-width: 540px) {
-          .admin-block-bar { flex-wrap: wrap !important; }
-          .admin-block-bar > button { font-size: 0.56rem !important; padding: 10px 10px !important; }
-        }
-
-        /* ─ Detail stats: 1 row on mobile ─ */
         @media (max-width: 480px) {
-          .admin-detail-stats { grid-template-columns: repeat(3, 1fr) !important; }
-          .admin-detail-stats > div { padding: 10px 8px !important; }
-          .admin-detail-stats .stat-val { font-size: 1.1rem !important; }
+          /* Block bar action buttons: smaller text */
+          .admin-outer button[style*="0 14px"] { padding: 0 10px !important; font-size: 0.55rem !important; }
         }
 
-        /* ─ Stats tab grid: 1 col on small mobile ─ */
-        @media (max-width: 420px) {
-          .admin-stats-detail-grid { grid-template-columns: 1fr !important; }
+        /* ── WeekPanel ── */
+        .week-header-top { padding: clamp(12px,3vw,20px) clamp(14px,4vw,24px) 0 !important; }
+        .week-w-num { font-size: clamp(1.6rem,5vw,3.6rem) !important; }
+        @media (max-width: 480px) {
+          .day-grid > div { padding: 8px 6px !important; }
+        }
+
+        /* ── WorkoutCard ── */
+        .workout-card { border-radius: 8px !important; }
+        .workout-header-inner { padding: 12px 14px !important; gap: 10px !important; }
+        @media (max-width: 480px) {
+          .workout-header-inner { padding: 10px 12px !important; }
+          .workout-controls { gap: 6px !important; }
+          .done-badge { padding: 5px 8px !important; }
+          .done-badge span { font-size: 0.46rem !important; letter-spacing: 0.12em !important; }
+        }
+        @media (max-width: 360px) {
+          .done-badge span { display: none !important; }
+        }
+
+        /* ── ExerciseRow (admin isAdmin=true layout) ── */
+        /* Main row: grip 48px | content 1fr | delete 44px */
+        .ex-row-main { min-height: 52px !important; }
+        @media (max-width: 480px) {
+          .ex-row-main { grid-template-columns: 36px 1fr 36px !important; }
+          .ex-row-main > div:first-child { width: 36px !important; }
+        }
+
+        /* Inline plan fields below exercise name */
+        @media (max-width: 400px) {
+          .ex-row-main [style*="paddingLeft: '18px'"] { padding-left: 8px !important; gap: 6px !important; }
+        }
+
+        /* ── SetLogSection (admin per-set KG/RPE grid) ── */
+        /* COACH_GRID: 48px 1fr 88px */
+        @media (max-width: 480px) {
+          /* Shrink set label col */
+          .ex-row-wrap > div > div[style*="gridTemplateColumns: '48px 1fr 88px'"] {
+            grid-template-columns: 36px 1fr 72px !important;
+          }
+        }
+
+        /* ── Footer add button ── */
+        .ex-table-footer { flex-wrap: wrap !important; }
+        @media (max-width: 480px) {
+          .ex-table-footer { padding: 10px 12px !important; gap: 8px !important; }
+          .ex-table-footer .add-btn { width: 100% !important; }
+        }
+
+        /* ── Notif section ── */
+        @media (max-width: 520px) {
+          .admin-outer textarea { font-size: 0.85rem !important; }
+        }
+
+        /* ── Add week button ── */
+        @media (max-width: 480px) {
+          .admin-outer button[style*="DODAJ TJEDAN"] { font-size: 0.6rem !important; padding: 12px !important; }
         }
       `}</style>
     </div>
