@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -661,6 +661,19 @@ function calcMacros(kcal: number, weightKg: number) {
 }
 
 // ─── WEIGHT CHART ─────────────────────────────────────────────────
+const CHART_W = 320
+const CHART_H = 140
+
+function smoothPath(svgPts: [number, number][]) {
+  if (svgPts.length === 1) return `M ${svgPts[0][0]},${svgPts[0][1]}`
+  let d = `M ${svgPts[0][0]},${svgPts[0][1]}`
+  for (let i = 1; i < svgPts.length; i++) {
+    const cpx = (svgPts[i - 1][0] + svgPts[i][0]) / 2
+    d += ` C ${cpx},${svgPts[i - 1][1]} ${cpx},${svgPts[i][1]} ${svgPts[i][0]},${svgPts[i][1]}`
+  }
+  return d
+}
+
 function WeightChart({ pts, toSvgX, toSvgY, minW, maxW }: {
   pts: { id: string; date: string; weight_kg: number }[]
   toSvgX: (i: number) => number
@@ -669,90 +682,100 @@ function WeightChart({ pts, toSvgX, toSvgY, minW, maxW }: {
 }) {
   const [mounted, setMounted] = useState(false)
   const [hovered, setHovered] = useState<number | null>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
   useEffect(() => { const t = setTimeout(() => setMounted(true), 60); return () => clearTimeout(t) }, [])
 
   if (pts.length < 1) return null
 
-  const W = 300; const H = 80
+  const W = CHART_W; const H = CHART_H
   const last  = pts[pts.length - 1].weight_kg
   const first = pts[0].weight_kg
   const diff  = last - first
-  const isUp  = pts.length >= 2 ? last >= pts[pts.length - 2].weight_kg : false
+  const isDown = diff <= 0
 
-  // Sharp linear path (no bezier — cleaner, more professional)
-  const pathD  = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${toSvgX(i)},${toSvgY(p.weight_kg)}`).join(' ')
-  const areaD  = `${pathD} L ${toSvgX(pts.length - 1)},${H} L ${toSvgX(0)},${H} Z`
+  const svgPts: [number, number][] = pts.map((p, i) => [toSvgX(i), toSvgY(p.weight_kg)])
+  const pathD = smoothPath(svgPts)
+  const areaD = `${pathD} L ${svgPts[svgPts.length - 1][0]},${H} L ${svgPts[0][0]},${H} Z`
 
-  // Y-axis labels (3 levels)
-  const range  = maxW - minW
-  const yTicks = [0.2, 0.5, 0.8].map(f => ({
+  const range  = maxW - minW || 1
+  const yTicks = [0.15, 0.5, 0.85].map(f => ({
     y: Math.round(H - f * H),
     val: (minW + f * range).toFixed(1),
   }))
 
-  // Tooltip position
-  const hov = hovered !== null ? pts[hovered] : null
+  const handleTouch = (e: React.TouchEvent<SVGSVGElement>) => {
+    if (!svgRef.current) return
+    const touch = e.touches[0]
+    const rect = svgRef.current.getBoundingClientRect()
+    const relX = ((touch.clientX - rect.left) / rect.width) * W
+    let closest = 0; let minDist = Infinity
+    svgPts.forEach(([x], i) => { const d = Math.abs(x - relX); if (d < minDist) { minDist = d; closest = i } })
+    setHovered(closest)
+  }
+
+  const hov  = hovered !== null ? pts[hovered] : null
   const hovX = hovered !== null ? toSvgX(hovered) : 0
   const hovY = hovered !== null ? toSvgY(pts[hovered].weight_kg) : 0
 
   return (
-    <div style={{ animation: mounted ? 'wChartIn 0.5s cubic-bezier(0.16,1,0.3,1) both' : 'none', borderRadius: '14px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(8,8,12,0.8)' }}>
+    <div style={{ animation: mounted ? 'wChartIn 0.5s cubic-bezier(0.16,1,0.3,1) both' : 'none', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.09)', background: 'linear-gradient(160deg, rgba(20,10,28,0.98) 0%, rgba(8,8,14,0.98) 100%)', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}>
 
-      {/* Top stats bar */}
-      <div style={{ display: 'flex', alignItems: 'stretch', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ flex: 1, padding: '16px 20px' }}>
-          <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '6px' }}>TRENUTNA</div>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.9rem', fontWeight: 800, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em' }}>
-            {last}<span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400 }}>kg</span>
+      {/* Stats bar */}
+      <div className="wstats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr 1px 1fr', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="wstats-cell" style={{ padding: '18px 16px' }}>
+          <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' as const }}>Trenutna kilaza</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.85rem', fontWeight: 800, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em' }}>
+            {last}<span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.22)', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400 }}>kg</span>
           </div>
         </div>
-
-        <div style={{ width: '1px', background: 'rgba(255,255,255,0.06)' }} />
-
-        <div style={{ flex: 1, padding: '16px 20px' }}>
-          <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '6px' }}>PROMJENA</div>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.9rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em', color: diff === 0 ? 'rgba(255,255,255,0.3)' : diff > 0 ? '#f87171' : '#4ade80' }}>
-            {diff > 0 ? '+' : ''}{diff.toFixed(1)}<span style={{ fontSize: '0.8rem', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400, opacity: 0.6 }}>kg</span>
+        <div className="wstats-div" style={{ background: 'rgba(255,255,255,0.05)' }} />
+        <div className="wstats-cell" style={{ padding: '18px 16px' }}>
+          <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' as const }}>Promjena</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.85rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em', color: diff === 0 ? 'rgba(255,255,255,0.25)' : isDown ? '#4ade80' : '#f87171' }}>
+            {diff > 0 ? '+' : ''}{diff.toFixed(1)}<span style={{ fontSize: '0.72rem', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400, opacity: 0.5 }}>kg</span>
           </div>
         </div>
-
-        <div style={{ width: '1px', background: 'rgba(255,255,255,0.06)' }} />
-
-        <div style={{ flex: 1, padding: '16px 20px' }}>
-          <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '6px' }}>TREND</div>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.9rem', fontWeight: 800, lineHeight: 1, color: isUp ? '#f87171' : '#4ade80' }}>
-            {isUp ? '↑' : '↓'}<span style={{ fontSize: '0.7rem', marginLeft: '4px', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.05em' }}>{pts.length} unosa</span>
+        <div className="wstats-div" style={{ background: 'rgba(255,255,255,0.05)' }} />
+        <div className="wstats-cell" style={{ padding: '18px 16px' }}>
+          <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' as const }}>Broj unosa</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.85rem', fontWeight: 800, lineHeight: 1, color: '#f472b6' }}>
+            {pts.length}
           </div>
         </div>
       </div>
 
-      {/* Chart area */}
-      <div style={{ padding: '16px 0 0', position: 'relative' as const }}>
-        <svg width="100%" viewBox={`0 0 ${W} ${H + 4}`} style={{ display: 'block', overflow: 'visible' }}
-          onMouseLeave={() => setHovered(null)}>
+      {/* Chart */}
+      <div style={{ padding: '20px 0 0', position: 'relative' as const }}>
+        <svg ref={svgRef} width="100%" viewBox={`0 0 ${W} ${H + 4}`} style={{ display: 'block', overflow: 'visible' }}
+          onMouseLeave={() => setHovered(null)}
+          onTouchStart={handleTouch} onTouchMove={handleTouch}
+          onTouchEnd={() => setTimeout(() => setHovered(null), 1500)}>
           <defs>
             <linearGradient id="wAreaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#f472b6" stopOpacity="0.1" />
+              <stop offset="0%"  stopColor="#f472b6" stopOpacity="0.22" />
+              <stop offset="65%" stopColor="#f472b6" stopOpacity="0.05" />
               <stop offset="100%" stopColor="#f472b6" stopOpacity="0" />
             </linearGradient>
+            <filter id="wGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
             <clipPath id="wClip">
               <rect x="0" y="0" width={W} height={H + 4}
-                style={{ animation: mounted ? 'wClipIn 1.1s cubic-bezier(0.16,1,0.3,1) both' : 'none' }} />
+                style={{ animation: mounted ? 'wClipIn 1.3s cubic-bezier(0.16,1,0.3,1) both' : 'none' }} />
             </clipPath>
           </defs>
 
-          {/* Y grid */}
           {yTicks.map(t => (
-            <line key={t.y} x1="0" y1={t.y} x2={W} y2={t.y} stroke="rgba(255,255,255,0.04)" strokeWidth="1" strokeDasharray="3,4" />
+            <line key={t.y} x1="0" y1={t.y} x2={W} y2={t.y} stroke="rgba(255,255,255,0.04)" strokeWidth="1" strokeDasharray="4,6" />
           ))}
 
-          {/* Area + line — clipped for draw-in animation */}
           <g clipPath="url(#wClip)">
             <path d={areaD} fill="url(#wAreaGrad)" />
-            <path d={pathD} fill="none" stroke="#f472b6" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" opacity="0.9" />
+            <path d={pathD} fill="none" stroke="#f472b6" strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round" opacity="0.12" filter="url(#wGlow)" />
+            <path d={pathD} fill="none" stroke="#f472b6" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" opacity="0.95" />
           </g>
 
-          {/* Hover targets — invisible wide rects per segment */}
           {pts.map((_, i) => {
             const x0 = i === 0 ? 0 : (toSvgX(i - 1) + toSvgX(i)) / 2
             const x1 = i === pts.length - 1 ? W : (toSvgX(i) + toSvgX(i + 1)) / 2
@@ -762,70 +785,74 @@ function WeightChart({ pts, toSvgX, toSvgY, minW, maxW }: {
             )
           })}
 
-          {/* Hover dot + line */}
           {hovered !== null && (
-            <g style={{ animation: 'wDotIn 0.15s ease both' }}>
-              <line x1={hovX} y1={0} x2={hovX} y2={H} stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="3,3" />
-              <circle cx={hovX} cy={hovY} r="5" fill="#08080c" stroke="#f472b6" strokeWidth="1.5" />
+            <g style={{ animation: 'wDotIn 0.12s ease both' }}>
+              <line x1={hovX} y1={0} x2={hovX} y2={H} stroke="rgba(244,114,182,0.18)" strokeWidth="1" strokeDasharray="3,3" />
+              <circle cx={hovX} cy={hovY} r="8" fill="rgba(244,114,182,0.1)" />
+              <circle cx={hovX} cy={hovY} r="4.5" fill="#140a1c" stroke="#f472b6" strokeWidth="2" />
               <circle cx={hovX} cy={hovY} r="2" fill="#f472b6" />
             </g>
           )}
 
-          {/* Last point permanent dot */}
-          {pts.length >= 1 && (
-            <g style={{ animation: mounted ? 'wDotIn 0.3s 1s ease both' : 'none', opacity: mounted ? 1 : 0 }}>
-              <circle cx={toSvgX(pts.length - 1)} cy={toSvgY(last)} r="4" fill="#08080c" stroke="#f472b6" strokeWidth="1.5" />
+          {pts.length >= 1 && hovered === null && (
+            <g style={{ animation: mounted ? 'wDotIn 0.4s 1.2s ease both' : 'none', opacity: mounted ? 1 : 0 }}>
+              <circle cx={toSvgX(pts.length - 1)} cy={toSvgY(last)} r="6" fill="rgba(244,114,182,0.15)" />
+              <circle cx={toSvgX(pts.length - 1)} cy={toSvgY(last)} r="4" fill="#140a1c" stroke="#f472b6" strokeWidth="2" />
               <circle cx={toSvgX(pts.length - 1)} cy={toSvgY(last)} r="1.5" fill="#f472b6" />
             </g>
           )}
         </svg>
 
-        {/* Tooltip */}
         {hov && (
           <div style={{
             position: 'absolute' as const,
-            top: '8px',
-            left: `clamp(8px, ${(hovX / W) * 100}%, calc(100% - 90px))`,
+            top: '6px',
+            left: `clamp(55px, calc(${(hovX / W) * 100}%), calc(100% - 65px))`,
             transform: 'translateX(-50%)',
-            background: 'rgba(12,12,18,0.96)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '8px',
-            padding: '7px 11px',
+            background: 'rgba(20,10,28,0.97)',
+            border: '1px solid rgba(244,114,182,0.3)',
+            borderRadius: '10px',
+            padding: '8px 13px',
             pointerEvents: 'none' as const,
-            animation: 'wDotIn 0.12s ease both',
+            animation: 'wDotIn 0.1s ease both',
             zIndex: 10,
+            boxShadow: '0 4px 24px rgba(0,0,0,0.6)',
           }}>
-            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)', whiteSpace: 'nowrap' as const }}>
-              {hov.weight_kg} <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.35)', fontWeight: 400 }}>kg</span>
+            <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#f472b6', fontFamily: 'var(--fd)', whiteSpace: 'nowrap' as const }}>
+              {hov.weight_kg} <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', fontWeight: 400 }}>kg</span>
             </div>
-            <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', marginTop: '2px', whiteSpace: 'nowrap' as const }}>
+            <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--fm)', marginTop: '3px', whiteSpace: 'nowrap' as const }}>
               {new Date(hov.date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: '2-digit' })}
             </div>
           </div>
         )}
 
-        {/* Y labels */}
-        <div style={{ position: 'absolute' as const, right: '8px', top: '16px', display: 'flex', flexDirection: 'column' as const, height: `${H}px`, justifyContent: 'space-between', pointerEvents: 'none' as const }}>
+        <div style={{ position: 'absolute' as const, right: '10px', top: '20px', display: 'flex', flexDirection: 'column' as const, height: `${H}px`, justifyContent: 'space-between', pointerEvents: 'none' as const }}>
           {[...yTicks].reverse().map(t => (
-            <div key={t.y} style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.15)', fontFamily: 'var(--fm)', fontWeight: 600, lineHeight: 1 }}>{t.val}</div>
+            <div key={t.y} style={{ fontSize: '0.44rem', color: 'rgba(255,255,255,0.12)', fontFamily: 'var(--fm)', fontWeight: 600, lineHeight: 1 }}>{t.val}</div>
           ))}
         </div>
       </div>
 
-      {/* Date range footer */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 16px 14px', borderTop: '1px solid rgba(255,255,255,0.04)', marginTop: '4px' }}>
-        <span style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', letterSpacing: '0.05em' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 16px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', marginTop: '6px' }}>
+        <span style={{ fontSize: '0.44rem', color: 'rgba(255,255,255,0.15)', fontFamily: 'var(--fm)', letterSpacing: '0.08em' }}>
           {new Date(pts[0].date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: 'numeric' })}
         </span>
-        <span style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: '0.44rem', color: 'rgba(255,255,255,0.15)', fontFamily: 'var(--fm)', letterSpacing: '0.08em' }}>
           {new Date(pts[pts.length - 1].date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: 'numeric' })}
         </span>
       </div>
 
       <style>{`
-        @keyframes wChartIn { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+        @keyframes wChartIn { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
         @keyframes wClipIn  { from { width:0 } to { width:${W}px } }
-        @keyframes wDotIn   { from { opacity:0; transform:scale(0.6) } to { opacity:1; transform:scale(1) } }
+        @keyframes wDotIn   { from { opacity:0; transform:scale(0.5) } to { opacity:1; transform:scale(1) } }
+        @media (max-width: 420px) {
+          .wstats-grid { grid-template-columns: 1fr 1px 1fr !important; grid-template-rows: auto auto; }
+          .wstats-grid > .wstats-cell:nth-child(5) { grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,0.06); }
+          .wstats-grid > .wstats-div:nth-child(4) { display: none; }
+          .wstats-label { font-size: 0.42rem !important; letter-spacing: 0.1em !important; }
+        }
       `}</style>
     </div>
   )
@@ -874,12 +901,14 @@ function WeightTracker({ userId }: { userId: string }) {
     setEntries(prev => prev.filter(e => e.id !== id))
   }
 
-  // Simple mini sparkline from entries
   const pts = [...entries].reverse()
-  const minW = pts.length ? Math.min(...pts.map(p => p.weight_kg)) - 1 : 0
-  const maxW = pts.length ? Math.max(...pts.map(p => p.weight_kg)) + 1 : 100
-  const toSvgX = (i: number) => pts.length < 2 ? 50 : Math.round((i / (pts.length - 1)) * 280)
-  const toSvgY = (w: number) => Math.round(60 - ((w - minW) / (maxW - minW)) * 56)
+  const minW = pts.length ? Math.min(...pts.map(p => p.weight_kg)) - 0.5 : 0
+  const maxW = pts.length ? Math.max(...pts.map(p => p.weight_kg)) + 0.5 : 100
+  const toSvgX = (i: number) => pts.length < 2 ? CHART_W / 2 : Math.round((i / (pts.length - 1)) * CHART_W)
+  const toSvgY = (w: number) => {
+    const range = maxW - minW || 1
+    return Math.round(CHART_H - 10 - ((w - minW) / range) * (CHART_H - 20))
+  }
 
 
   if (loading) return <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', padding: '24px 0', textAlign: 'center' as const }}>Učitavanje...</div>
