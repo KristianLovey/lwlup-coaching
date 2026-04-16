@@ -436,67 +436,77 @@ function AthletePanel({
 
       {/* ── Block bar (identical to training page) ── */}
       <div style={{ position: 'relative', marginBottom: '24px' }} ref={blockSelectorRef}>
-        <div style={{ display: 'flex', alignItems: 'stretch', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.3)' }}>
+        <div className="block-bar-inner" style={{ display: 'flex', alignItems: 'stretch', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.3)' }}>
 
-          {/* Block switcher */}
-          <button onClick={() => setShowBlockSelector(!showBlockSelector)}
-            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', background: showBlockSelector ? '#111113' : 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', flex: 1, textAlign: 'left', transition: 'background 0.15s' }}
-            onMouseEnter={e => { if (!showBlockSelector) e.currentTarget.style.background = '#111113' }}
-            onMouseLeave={e => { if (!showBlockSelector) e.currentTarget.style.background = 'transparent' }}>
-            <FolderOpen size={14} color="#555" />
-            <div>
-              <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: '#888', marginBottom: '2px', fontFamily: 'var(--fm)' }}>AKTIVNI BLOK</div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e0e0e0', fontFamily: 'var(--fm)' }}>{block?.name ?? 'Nema bloka'}</div>
-            </div>
-            <ChevronDown size={12} color="#444" style={{ marginLeft: 'auto', transform: showBlockSelector ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-          </button>
+          {/* Row 1: Block switcher + name edit */}
+          <div className="block-bar-top" style={{ display: 'flex', alignItems: 'stretch', flex: 1 }}>
+            {/* Block switcher */}
+            <button onClick={() => setShowBlockSelector(!showBlockSelector)}
+              className="block-bar-switcher"
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', background: showBlockSelector ? '#111113' : 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', flex: 1, textAlign: 'left', transition: 'background 0.15s' }}
+              onMouseEnter={e => { if (!showBlockSelector) e.currentTarget.style.background = '#111113' }}
+              onMouseLeave={e => { if (!showBlockSelector) e.currentTarget.style.background = 'transparent' }}>
+              <FolderOpen size={14} color="#555" />
+              <div>
+                <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: '#888', marginBottom: '2px', fontFamily: 'var(--fm)' }}>AKTIVNI BLOK</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e0e0e0', fontFamily: 'var(--fm)' }}>{block?.name ?? 'Nema bloka'}</div>
+              </div>
+              <ChevronDown size={12} color="#444" style={{ marginLeft: 'auto', transform: showBlockSelector ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
 
-          {/* Block name edit */}
-          {block && (
-            <div style={{ padding: '12px 16px', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '8px', minWidth: '160px' }}>
-              <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: '#888', flexShrink: 0, fontFamily: 'var(--fm)' }}>NAZIV</div>
-              <EditableField value={block.name} placeholder="Naziv programa"
-                onSave={async v => {
-                  await supabase.from('blocks').update({ name: v }).eq('id', block.id)
-                  setBlock(b => b ? { ...b, name: v } : b)
-                  setAllBlocks(bs => bs.map(b2 => b2.id === block.id ? { ...b2, name: v } : b2))
-                }} />
-            </div>
-          )}
+            {/* Block name edit */}
+            {block && (
+              <div className="block-bar-name" style={{ padding: '12px 16px', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '8px', minWidth: '160px' }}>
+                <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: '#888', flexShrink: 0, fontFamily: 'var(--fm)' }}>NAZIV</div>
+                <EditableField value={block.name} placeholder="Naziv programa"
+                  onSave={async v => {
+                    await supabase.from('blocks').update({ name: v }).eq('id', block.id)
+                    setBlock(b => b ? { ...b, name: v } : b)
+                    setAllBlocks(bs => bs.map(b2 => b2.id === block.id ? { ...b2, name: v } : b2))
+                  }} />
+              </div>
+            )}
 
-          {/* Actions */}
-          <button onClick={createBlock}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = '#111113' }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}>
-            <Plus size={11} /> NOVI BLOK
-          </button>
-          {block && <>
-            <button onClick={copyBlock}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+            {saving && (
+              <div style={{ padding: '0 14px', display: 'flex', alignItems: 'center', borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
+                <Loader2 size={13} color="#555" style={{ animation: 'spin 1s linear infinite' }} />
+              </div>
+            )}
+          </div>
+
+          {/* Row 2 on mobile / inline on desktop: Actions */}
+          <div className="block-bar-actions" style={{ display: 'flex', alignItems: 'stretch' }}>
+            <button onClick={createBlock} className="block-action-btn"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
               onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = '#111113' }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}>
-              <Copy size={11} /> KOPIRAJ BLOK
+              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}
+              title="Novi blok">
+              <Plus size={13} /><span className="block-btn-label"> NOVI BLOK</span>
             </button>
-            <button onClick={() => { setDuplicateName(`${block.name} (kopija)`); setDuplicateTarget(''); setShowDupModal(true) }}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#60a5fa'; e.currentTarget.style.background = '#111113' }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}>
-              <Copy size={11} /> DUPLICIRAJ NA...
-            </button>
-            <button onClick={deleteBlock}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(239,68,68,0.5)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.06)' }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(239,68,68,0.5)'; e.currentTarget.style.background = 'transparent' }}>
-              <Trash2 size={11} /> BRIŠI BLOK
-            </button>
-          </>}
-
-          {saving && (
-            <div style={{ padding: '0 14px', display: 'flex', alignItems: 'center', borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
-              <Loader2 size={13} color="#555" style={{ animation: 'spin 1s linear infinite' }} />
-            </div>
-          )}
+            {block && <>
+              <button onClick={copyBlock} className="block-action-btn"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = '#111113' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}
+                title="Kopiraj blok">
+                <Copy size={13} /><span className="block-btn-label"> KOPIRAJ</span>
+              </button>
+              <button onClick={() => { setDuplicateName(`${block.name} (kopija)`); setDuplicateTarget(''); setShowDupModal(true) }} className="block-action-btn"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#60a5fa'; e.currentTarget.style.background = '#111113' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}
+                title="Dupliciraj na...">
+                <Copy size={13} /><span className="block-btn-label"> DUPLIKAT</span>
+              </button>
+              <button onClick={deleteBlock} className="block-action-btn"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(239,68,68,0.5)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.06)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(239,68,68,0.5)'; e.currentTarget.style.background = 'transparent' }}
+                title="Briši blok">
+                <Trash2 size={13} /><span className="block-btn-label"> BRIŠI</span>
+              </button>
+            </>}
+          </div>
         </div>
 
         {/* Block dropdown */}
@@ -625,6 +635,14 @@ function AthletePanel({
         @keyframes fadeUp { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
         @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
         @keyframes spin { to { transform:rotate(360deg) } }
+        @media (max-width: 640px) {
+          .block-bar-inner { flex-direction: column !important; }
+          .block-bar-top { border-bottom: 1px solid rgba(255,255,255,0.05); }
+          .block-bar-name { min-width: unset !important; }
+          .block-bar-actions { border-top: none; }
+          .block-action-btn { flex: 1; padding: 10px 8px !important; min-height: 38px; }
+          .block-btn-label { display: none; }
+        }
       `}</style>
     </div>
   )
