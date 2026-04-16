@@ -319,18 +319,24 @@ function AthletePanel({
 
   const addWorkout = useCallback(async (weekId: string) => {
     setSaving(true)
-    let week: Week | undefined
-    setBlock(b => { week = b?.weeks?.find(w => w.id === weekId); return b })
+    const week = block?.weeks?.find(w => w.id === weekId)
     if (!week) { setSaving(false); return }
     const nd = week.workouts?.length ?? 0
     const d = new Date(week.start_date); d.setDate(d.getDate() + nd)
-    const { data, error } = await supabase.from('workouts').insert({
-      week_id: weekId, athlete_id: athlete.id,
-      day_name: `Dan ${nd + 1}`, workout_date: d.toISOString().split('T')[0], completed: false
-    }).select('*').single()
-    if (!error && data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? { ...w, workouts: [...(w.workouts ?? []), { ...data, workout_exercises: [] }] } : w) } : b)
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/admin/add-workout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({
+        weekId, athleteId: athlete.id,
+        dayName: `Dan ${nd + 1}`,
+        workoutDate: d.toISOString().split('T')[0],
+      }),
+    })
+    const json = await res.json()
+    if (json.data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? { ...w, workouts: [...(w.workouts ?? []), { ...json.data, workout_exercises: [] }] } : w) } : b)
     setSaving(false)
-  }, [athlete.id])
+  }, [block, athlete.id])
 
   const updateWorkout = useCallback(async (workoutId: string, data: Partial<Workout>) => {
     // Never save 'completed' from admin panel — that's the lifter's domain
