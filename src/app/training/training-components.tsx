@@ -1278,6 +1278,14 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
     try { const v = sessionStorage.getItem(ssKey); return v === null ? true : v === 'true' } catch { return true }
   })
   const [showNotes, setShowNotes] = useState(false)
+  const addWorkoutLocked = useRef(false)
+
+  const handleAddWorkout = () => {
+    if (addWorkoutLocked.current) return
+    addWorkoutLocked.current = true
+    onAddWorkout(week.id)
+    setTimeout(() => { addWorkoutLocked.current = false }, 500)
+  }
 
   const { totalSets, doneSets, total, pct, totalEx, doneEx } = useMemo(() => {
     const allExercises = week.workouts?.flatMap(w => w.workout_exercises ?? []) ?? []
@@ -1378,7 +1386,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
               onAddExercise={onAddExercise} onUpdateExercise={onUpdateExercise} onDeleteExercise={onDeleteExercise} />
           ))}
           {isAdmin && (
-            <button onClick={() => onAddWorkout(week.id)} className="add-btn">
+            <button onClick={handleAddWorkout} className="add-btn">
               <Plus size={11} /> DODAJ DAN TRENINGA
             </button>
           )}
