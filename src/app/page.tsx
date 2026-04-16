@@ -515,8 +515,9 @@ export default function Landing() {
           .founder-row-reverse .founder-text-wrap { order: 2; }
           .founder-img-wrap { min-height: 280px; }
           .founder-text-wrap { border-left: none !important; border-right: none !important; border-top: 1px solid rgba(255,255,255,0.07); }
-          .club-grid       { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .club-grid       { grid-template-columns: 1fr !important; gap: 24px !important; }
           .club-images     { grid-template-columns: 1fr 1fr !important; }
+          .club-images > div { height: 140px !important; margin-top: 0 !important; }
           .club-info-cards { grid-template-columns: 1fr !important; }
           .features-grid   { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
           .stats-grid      { grid-template-columns: 1fr 1fr !important; }
