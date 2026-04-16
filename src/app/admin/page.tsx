@@ -54,6 +54,7 @@ function AthletePanel({
   const [duplicateName, setDuplicateName] = useState('')
   const [showDupModal, setShowDupModal] = useState(false)
   const blockSelectorRef = useRef<HTMLDivElement>(null)
+  const addingWorkout = useRef(false)
 
   const initials = athlete.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
 
@@ -318,6 +319,8 @@ function AthletePanel({
   }, [])
 
   const addWorkout = useCallback(async (weekId: string) => {
+    if (addingWorkout.current) return
+    addingWorkout.current = true
     setSaving(true)
     const week = block?.weeks?.find(w => w.id === weekId)
     if (!week) { setSaving(false); return }
@@ -335,6 +338,7 @@ function AthletePanel({
     })
     const json = await res.json()
     if (json.data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? { ...w, workouts: [...(w.workouts ?? []), { ...json.data, workout_exercises: [] }] } : w) } : b)
+    addingWorkout.current = false
     setSaving(false)
   }, [block, athlete.id])
 
