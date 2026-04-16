@@ -197,7 +197,12 @@ function AthletePanel({
     if (!block) return
     if (!confirm(`Briši blok "${block.name}"? Ova radnja je nepovratna.`)) return
     setSaving(true)
-    await supabase.from('blocks').delete().eq('id', block.id)
+    const { data: { session } } = await supabase.auth.getSession()
+    await fetch('/api/admin/delete-block', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ blockId: block.id }),
+    })
     const remaining = allBlocks.filter(b => b.id !== block.id)
     setAllBlocks(remaining)
     if (remaining.length > 0) {
