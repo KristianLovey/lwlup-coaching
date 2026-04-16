@@ -644,9 +644,8 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       })
   }, [we.id, plannedSets, isAdmin])
 
-  // Keep localVals in sync with logs (for admin onBlur inputs) — skip the focused set entirely
+  // Keep localVals in sync with logs — skip the focused set entirely
   useEffect(() => {
-    if (!isAdmin) return
     setLocalVals(prev => {
       const next = { ...prev }
       // Extract set number from focused key (e.g. "2_weight_kg" → "2")
@@ -662,14 +661,16 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   }, [logs, isAdmin])
 
 
-  const saveSet = async (setNum: number, field: keyof SetLog, raw: string) => {
-    const val = (field === 'weight_kg' || field === 'rpe') ? (raw ? Number(raw) : null) : (raw || null)
-    setSaving(true)
+  const upsertViaApi = async (setNum: number, field: string, value: unknown) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    await fetch('/api/admin/upsert-set-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ workoutExerciseId: we.id, athleteId: userId, setNumber: setNum, field, value }),
+    })
+  }
 
-    const updated = logs.map(s => s.set_number === setNum ? { ...s, [field]: val } : s)
-    setLogs(updated)
-
-    // Try update first — if no rows affected, insert
+  const upsertDirect = async (setNum: number, field: string, value: unknown) => {
     const { data: existing } = await supabase.from('set_logs')
       .select('id')
       .eq('workout_exercise_id', we.id)
@@ -677,15 +678,27 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       .eq('set_number', setNum)
       .maybeSingle()
     if (existing) {
-      await supabase.from('set_logs').update({ [field]: val }).eq('id', existing.id)
+      await supabase.from('set_logs').update({ [field]: value }).eq('id', existing.id)
     } else {
       await supabase.from('set_logs').insert({
-        workout_exercise_id: we.id, athlete_id: userId,
-        set_number: setNum, [field]: val,
+        workout_exercise_id: we.id, athlete_id: userId, set_number: setNum, [field]: value,
       })
     }
+  }
 
-    // Update aggregate actual_ on workout_exercises so progress tracking still works
+  const saveSet = async (setNum: number, field: keyof SetLog, raw: string) => {
+    const val = (field === 'weight_kg' || field === 'rpe') ? (raw ? Number(raw) : null) : (raw || null)
+    setSaving(true)
+
+    const updated = logs.map(s => s.set_number === setNum ? { ...s, [field]: val } : s)
+    setLogs(updated)
+
+    if (isAdmin) {
+      await upsertViaApi(setNum, field, val)
+    } else {
+      await upsertDirect(setNum, field, val)
+    }
+
     const filled = updated.filter(s => s.weight_kg || s.reps)
     if (filled.length > 0) {
       const avgKg = filled.reduce((s, x) => s + (x.weight_kg ?? 0), 0) / filled.length
@@ -702,18 +715,13 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     const nowDone = !s.completed
     const newLogs = logs.map(l => l.set_number === setNum ? { ...l, completed: nowDone } : l)
     setLogs(newLogs)
-    const { data: existingDone } = await supabase.from('set_logs')
-      .select('id')
-      .eq('workout_exercise_id', we.id).eq('athlete_id', userId).eq('set_number', setNum)
-      .maybeSingle()
-    if (existingDone) {
-      await supabase.from('set_logs').update({ completed: nowDone }).eq('id', existingDone.id)
+
+    if (isAdmin) {
+      await upsertViaApi(setNum, 'completed', nowDone)
     } else {
-      await supabase.from('set_logs').insert({
-        workout_exercise_id: we.id, athlete_id: userId, set_number: setNum, completed: nowDone,
-      })
+      await upsertDirect(setNum, 'completed', nowDone)
     }
-    // Auto-complete exercise when all sets done (or uncheck if any undone)
+
     const allDone = newLogs.length > 0 && newLogs.every(l => l.completed)
     onAggregateUpdate({ completed: allDone })
     propagateCounts(newLogs)
@@ -771,16 +779,13 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
           <div style={{ ...cellStyle, padding: '10px 12px', background: 'rgba(99,102,241,0.04)' }}>
             <input
               type="number" step="2.5"
-              value={isAdmin ? (localVals[`${log.set_number}_weight_kg`] ?? '') : (log.weight_kg ?? '')}
-              onChange={e => isAdmin
-                ? setLocalVals(v => ({ ...v, [`${log.set_number}_weight_kg`]: e.target.value }))
-                : saveSet(log.set_number, 'weight_kg', e.target.value)
-              }
+              value={localVals[`${log.set_number}_weight_kg`] ?? ''}
+              onChange={e => setLocalVals(v => ({ ...v, [`${log.set_number}_weight_kg`]: e.target.value }))}
               onFocus={e => { focusedKey.current = `${log.set_number}_weight_kg`; e.target.style.borderBottomColor = 'rgba(129,140,248,0.8)' }}
               onBlur={e => {
                 focusedKey.current = null
                 e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'
-                if (isAdmin) saveSet(log.set_number, 'weight_kg', e.target.value)
+                saveSet(log.set_number, 'weight_kg', e.target.value)
               }}
               placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : '—'}
               style={{ ...inputStyle, color: '#c7d2fe' }}
@@ -791,16 +796,13 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
           <div style={{ ...cellStyle, padding: '10px 12px' }}>
             <input
               type="text"
-              value={isAdmin ? (localVals[`${log.set_number}_reps`] ?? '') : (log.reps ?? '')}
-              onChange={e => isAdmin
-                ? setLocalVals(v => ({ ...v, [`${log.set_number}_reps`]: e.target.value }))
-                : saveSet(log.set_number, 'reps', e.target.value)
-              }
+              value={localVals[`${log.set_number}_reps`] ?? ''}
+              onChange={e => setLocalVals(v => ({ ...v, [`${log.set_number}_reps`]: e.target.value }))}
               onFocus={e => { focusedKey.current = `${log.set_number}_reps`; e.target.style.borderBottomColor = 'rgba(255,255,255,0.6)' }}
               onBlur={e => {
                 focusedKey.current = null
                 e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'
-                if (isAdmin) saveSet(log.set_number, 'reps', e.target.value)
+                saveSet(log.set_number, 'reps', e.target.value)
               }}
               placeholder={we.planned_reps ?? '—'}
               style={inputStyle}
@@ -816,16 +818,13 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
             )}
             <input
               type="number" step="0.5" min="1" max="10"
-              value={isAdmin ? (localVals[`${log.set_number}_rpe`] ?? '') : (log.rpe ?? '')}
-              onChange={e => isAdmin
-                ? setLocalVals(v => ({ ...v, [`${log.set_number}_rpe`]: e.target.value }))
-                : saveSet(log.set_number, 'rpe', e.target.value)
-              }
+              value={localVals[`${log.set_number}_rpe`] ?? ''}
+              onChange={e => setLocalVals(v => ({ ...v, [`${log.set_number}_rpe`]: e.target.value }))}
               onFocus={e => { focusedKey.current = `${log.set_number}_rpe`; e.target.style.borderBottomColor = 'rgba(250,204,21,0.7)' }}
               onBlur={e => {
                 focusedKey.current = null
                 e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'
-                if (isAdmin) saveSet(log.set_number, 'rpe', e.target.value)
+                saveSet(log.set_number, 'rpe', e.target.value)
               }}
               placeholder="—"
               style={{ ...inputStyle, color: log.rpe && targetRpe ? (Number(log.rpe) - Number(targetRpe) > 1 ? '#f87171' : Number(log.rpe) - Number(targetRpe) > 0 ? '#facc15' : '#4ade80') : '#e0e0e0' }}

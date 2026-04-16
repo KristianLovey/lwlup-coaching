@@ -312,19 +312,6 @@ export default function TrainingPage() {
   }, [])
   const LIFTER_FIELDS: (keyof WorkoutExercise)[] = ['actual_sets','actual_reps','actual_weight_kg','actual_rpe','actual_note','completed','_completedSets','_totalSets']
 
-  // ── Notify mentor when lifter saves actual data ─────────────────
-  const notifyMentor = async (msg: string) => {
-    if (isAdmin || isCoach || !userId) return
-    const recipients: string[] = []
-    const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin')
-    admins?.forEach(a => recipients.push(a.id))
-    const { data: asgn } = await supabase.from('coach_assignments').select('coach_id').eq('lifter_id', userId).single()
-    if (asgn?.coach_id) recipients.push(asgn.coach_id)
-    if (!recipients.length) return
-    const rows = recipients.map(r => ({ recipient_id: r, sender_id: userId, message: msg, read: false }))
-    await supabase.from('notifications').insert(rows)
-  }
-
   const canEdit = false // Admini/treneri editiraju isključivo kroz admin panel
 
   const RUNTIME_ONLY = ['_completedSets', '_totalSets']
@@ -337,16 +324,7 @@ export default function TrainingPage() {
     const forDb = Object.fromEntries(Object.entries(filtered).filter(([k]) => !RUNTIME_ONLY.includes(k)))
     if (Object.keys(forDb).length > 0) await supabase.from('workout_exercises').update(forDb).eq('id', weId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.map(we => we.id === weId ? { ...we, ...filtered } : we) })) })) } : b)
-    // Notify if lifter logged actual data
-    if (!canEdit && (filtered.actual_weight_kg || filtered.actual_rpe || filtered.completed)) {
-      const exerciseName = block?.weeks?.flatMap(w => w.workouts ?? [])
-        .flatMap(wo => wo.workout_exercises ?? [])
-        .find(we => we.id === weId)?.exercise?.name ?? 'vježba'
-      if (filtered.completed) notifyMentor(`${athleteName} je završio/la set — ${exerciseName}`)
-      else if (filtered.actual_weight_kg) notifyMentor(`${athleteName} je ulogirao/la ${filtered.actual_weight_kg}kg na ${exerciseName}`)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [block, athleteName, canEdit])
+  }, [canEdit])
   const deleteExercise = useCallback(async (weId: string) => {
     await supabase.from('workout_exercises').delete().eq('id', weId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.filter(we => we.id !== weId) })) })) } : b)
