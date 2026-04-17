@@ -91,33 +91,256 @@ const MEN_RECORDS: Records = {
 }
 
 // ── WOMEN ─────────────────────────────────────────────────────────────────────
+const W = (w: number, l: string, d: string): RecordEntry => ({ weight: w, lifter: l, date: d, fed: 'HPLS' })
 const WOMEN_RECORDS: Records = {
   '43': {
-    Open: { squat: null, bench: null, deadlift: null, total: null },
+    Kadeti: { squat: null, bench: null, deadlift: null, total: null },
+    Juniori: { squat: null, bench: null, deadlift: null, total: null },
+    Open:    { squat: null, bench: null, deadlift: null, total: null },
   },
   '47': {
-    Open: { squat: { lifter: 'Ira Tasić', weight: 98, date: '2024-12-20', fed: 'HPLS' }, bench: { lifter: 'Ira Tasić', weight: 45.5, date: '2024-12-20', fed: 'HPLS' }, deadlift: { lifter: 'Ira Tasić', weight: 140, date: '2024-09-28', fed: 'HPLS' }, total: { lifter: 'Ira Tasić', weight: 276, date: '2024-12-20', fed: 'HPLS' } },
+    Juniori: {
+      squat:    W(82.5,  'Sara Hegedis',  '2018-03-10'),
+      bench:    W(40.0,  'Sara Hegedis',  '2017-06-24'),
+      deadlift: W(120.0, 'Sara Hegedis',  '2018-03-10'),
+      total:    W(240.0, 'Sara Hegedis',  '2018-03-10'),
+    },
+    Open: {
+      squat:    W(98.0,  'Ira Tasić', '2024-12-20'),
+      bench:    W(45.5,  'Ira Tasić', '2024-12-20'),
+      deadlift: W(140.0, 'Ira Tasić', '2024-09-29'),
+      total:    W(276.0, 'Ira Tasić', '2024-12-20'),
+    },
   },
   '52': {
-    Open: { squat: { lifter: 'Tatjana Vugrinec', weight: 122.5, date: '2023-10-10', fed: 'EPF' }, bench: { lifter: 'Anamaria Mamić', weight: 65, date: '2024-02-10', fed: 'HPLS' }, deadlift: { lifter: 'Tatjana Vugrinec', weight: 147.5, date: '2023-10-10', fed: 'EPF' }, total: { lifter: 'Tatjana Vugrinec', weight: 330, date: '2023-10-10', fed: 'EPF' } },
+    Kadeti: {
+      squat:    W(102.5, 'Anamarija Mamić',  '2024-09-29'),
+      bench:    W(65.0,  'Anamarija Mamić',  '2024-12-20'),
+      deadlift: W(128.0, 'Tara Petrović',    '2024-05-31'),
+      total:    W(290.0, 'Anamarija Mamić',  '2024-12-20'),
+    },
+    Juniori: {
+      squat:    W(122.5, 'Tatjana Vugrinec', '2023-10-14'),
+      bench:    W(65.0,  'Anamarija Mamić',  '2024-12-20'),
+      deadlift: W(147.5, 'Tatjana Vugrinec', '2023-10-14'),
+      total:    W(330.0, 'Tatjana Vugrinec', '2023-10-14'),
+    },
+    Open: {
+      squat:    W(122.5, 'Tatjana Vugrinec', '2023-10-14'),
+      bench:    W(65.0,  'Anamarija Mamić',  '2024-12-20'),
+      deadlift: W(147.5, 'Tatjana Vugrinec', '2023-10-14'),
+      total:    W(330.0, 'Tatjana Vugrinec', '2023-10-14'),
+    },
+    'Master I': {
+      squat:    W(120.0, 'Ivana Žonja', '2024-02-15'),
+      bench:    W(57.5,  'Ivana Žonja', '2024-02-15'),
+      deadlift: W(130.0, 'Ivana Žonja', '2023-03-04'),
+      total:    W(307.5, 'Ivana Žonja', '2024-02-15'),
+    },
   },
   '57': {
-    Open: { squat: { lifter: 'Teuta Jakupović', weight: 157.5, date: '2025-03-18', fed: 'EPF' }, bench: { lifter: 'Melisa Matulin', weight: 90, date: '2025-05-18', fed: 'IPF' }, deadlift: { lifter: 'Teuta Jakupović', weight: 175, date: '2025-12-18', fed: 'HPLS' }, total: { lifter: 'Teuta Jakupović', weight: 420, date: '2025-12-18', fed: 'HPLS' } },
+    Kadeti: {
+      squat:    W(132.5, 'Lara Žic',          '2024-12-20'),
+      bench:    W(80.0,  'Anamarija Mamić',   '2025-05-30'),
+      deadlift: W(147.5, 'Hana Županović',    '2024-10-05'),
+      total:    W(352.5, 'Anamarija Mamić',   '2025-05-30'),
+    },
+    Juniori: {
+      squat:    W(140.0, 'Antonela Mahnet', '2025-05-30'),
+      bench:    W(88.0,  'Melisa Matulin',  '2025-05-30'),
+      deadlift: W(153.5, 'Lea Žunić',       '2022-12-17'),
+      total:    W(367.5, 'Antonela Mahnet', '2025-05-30'),
+    },
+    Open: {
+      squat:    W(157.5, 'Teuta Jakupović', '2025-03-18'),
+      bench:    W(90.0,  'Teuta Jakupović', '2025-12-18'),
+      deadlift: W(175.0, 'Teuta Jakupović', '2025-12-18'),
+      total:    W(420.0, 'Teuta Jakupović', '2025-12-18'),
+    },
+    'Master I': {
+      squat:    W(120.0, 'Ivana Žonja', '2024-12-20'),
+      bench:    W(54.0,  'Ivana Žonja', '2024-12-20'),
+      deadlift: W(137.0, 'Ivana Žonja', '2024-12-20'),
+      total:    W(311.0, 'Ivana Žonja', '2024-12-20'),
+    },
+    'Master II': {
+      squat:    W(65.0,  'Višnja Škevin', '2019-03-09'),
+      bench:    W(50.0,  'Višnja Škevin', '2019-03-09'),
+      deadlift: W(110.0, 'Višnja Škevin', '2019-03-09'),
+      total:    W(225.0, 'Višnja Škevin', '2019-03-09'),
+    },
   },
   '63': {
-    Open: { squat: { lifter: 'Teuta Jakupović', weight: 151.5, date: '2025-09-06', fed: 'HPLS' }, bench: { lifter: 'Melisa Matulin', weight: 95.5, date: '2025-12-18', fed: 'HPLS' }, deadlift: { lifter: 'Lea Žunić', weight: 182.5, date: '2025-06-08', fed: 'IPF' }, total: { lifter: 'Melisa Matulin', weight: 412.5, date: '2025-12-18', fed: 'HPLS' } },
+    Kadeti: {
+      squat:    W(119.5, 'Anamarija Mamić', '2025-12-18'),
+      bench:    W(76.0,  'Anamarija Mamić', '2025-12-18'),
+      deadlift: W(144.0, 'Anamarija Mamić', '2025-12-18'),
+      total:    W(339.5, 'Anamarija Mamić', '2025-12-18'),
+    },
+    Juniori: {
+      squat:    W(147.5, 'Marčelina Filipović', '2024-12-20'),
+      bench:    W(95.5,  'Melisa Matulin',      '2025-12-18'),
+      deadlift: W(162.5, 'Iva Jurić',           '2024-03-14'),
+      total:    W(380.5, 'Melisa Matulin',      '2025-12-18'),
+    },
+    Open: {
+      squat:    W(151.5, 'Teuta Jakupović', '2025-09-06'),
+      bench:    W(95.5,  'Melisa Matulin',  '2025-12-18'),
+      deadlift: W(182.5, 'Lea Žunić',       '2025-06-08'),
+      total:    W(412.5, 'Teuta Jakupović', '2025-09-06'),
+    },
+    'Master I': {
+      squat:    W(120.0, 'Ivana Žonja',          '2021-09-19'),
+      bench:    W(61.0,  'Ivana Valković Antić', '2019-12-15'),
+      deadlift: W(150.0, 'Mirna Raspor Doričić', '2025-05-30'),
+      total:    W(325.0, 'Mirna Raspor Doričić', '2025-05-30'),
+    },
+    'Master II': {
+      squat:    W(114.0, 'Renata Gecan Milek', '2025-05-30'),
+      bench:    W(53.5,  'Renata Gecan Milek', '2025-05-30'),
+      deadlift: W(145.5, 'Renata Gecan Milek', '2024-05-31'),
+      total:    W(302.5, 'Renata Gecan Milek', '2025-05-30'),
+    },
   },
   '69': {
-    Open: { squat: { lifter: 'Melanija Filipović', weight: 165, date: '2026-02-07', fed: 'HPLS' }, bench: { lifter: 'Matea Bumba', weight: 95, date: '2025-12-18', fed: 'HPLS' }, deadlift: { lifter: 'Matea Bumba', weight: 200, date: '2025-02-08', fed: 'HPLS' }, total: { lifter: 'Matea Bumba', weight: 455, date: '2025-12-18', fed: 'HPLS' } },
+    Kadeti: {
+      squat:    W(132.5, 'Marčelina Filipović', '2023-12-09'),
+      bench:    W(77.5,  'Ana Jozinović',       '2023-12-09'),
+      deadlift: W(155.0, 'Nikolina Kalaica',    '2024-05-31'),
+      total:    W(330.0, 'Nikolina Kalaica',    '2024-05-31'),
+    },
+    Juniori: {
+      squat:    W(157.0, 'Laura Vulić',      '2024-12-20'),
+      bench:    W(90.0,  'Ana Jozinović',    '2024-10-12'),
+      deadlift: W(180.0, 'Karla Baličevac', '2025-12-06'),
+      total:    W(410.0, 'Karla Baličevac', '2025-12-06'),
+    },
+    Open: {
+      squat:    W(165.0, 'Matea Bumba', '2025-06-08'),
+      bench:    W(95.0,  'Matea Bumba', '2025-12-18'),
+      deadlift: W(200.0, 'Matea Bumba', '2025-03-18'),
+      total:    W(455.0, 'Matea Bumba', '2025-12-18'),
+    },
+    'Master I': {
+      squat:    W(135.0, 'Branimira Novšak', '2025-12-18'),
+      bench:    W(70.0,  'Branimira Novšak', '2025-12-18'),
+      deadlift: W(150.0, 'Branimira Novšak', '2025-12-18'),
+      total:    W(355.0, 'Branimira Novšak', '2025-12-18'),
+    },
+    'Master II': {
+      squat:    W(97.5,  'Ivančica Koren', '2025-12-18'),
+      bench:    W(60.0,  'Ivančica Koren', '2025-12-18'),
+      deadlift: W(130.0, 'Ivančica Koren', '2025-12-18'),
+      total:    W(287.5, 'Ivančica Koren', '2025-12-18'),
+    },
+    'Master III': {
+      squat:    W(67.5,  'Zdenka Štimac', '2023-02-25'),
+      bench:    W(35.0,  'Zdenka Štimac', '2020-09-06'),
+      deadlift: W(106.0, 'Zdenka Štimac', '2023-02-25'),
+      total:    W(206.0, 'Zdenka Štimac', '2023-02-25'),
+    },
   },
   '76': {
-    Open: { squat: { lifter: 'Kristina Horvat', weight: 170, date: '2021-09-23', fed: 'IPF' }, bench: { lifter: 'Kristina Horvat', weight: 115, date: '2021-09-23', fed: 'IPF' }, deadlift: { lifter: 'Kristina Horvat', weight: 196, date: '2025-12-18', fed: 'HPLS' }, total: { lifter: 'Kristina Horvat', weight: 480, date: '2021-09-23', fed: 'IPF' } },
+    Kadeti: {
+      squat:    W(160.0, 'Tea Tereza Jelinić', '2025-12-18'),
+      bench:    W(70.0,  'Tea Tereza Jelinić', '2025-12-18'),
+      deadlift: W(172.5, 'Tea Tereza Jelinić', '2025-12-18'),
+      total:    W(402.5, 'Tea Tereza Jelinić', '2025-12-18'),
+    },
+    Juniori: {
+      squat:    W(162.5, 'Maria Magdalena Goričanec', '2025-05-30'),
+      bench:    W(100.0, 'Ana Jozinović',             '2025-12-18'),
+      deadlift: W(183.5, 'Hana Vresk',                '2024-12-20'),
+      total:    W(420.0, 'Maria Magdalena Goričanec', '2025-05-30'),
+    },
+    Open: {
+      squat:    W(170.0, 'Kristina Horvat', '2021-10-01'),
+      bench:    W(115.0, 'Kristina Horvat', '2021-10-01'),
+      deadlift: W(196.0, 'Kristina Horvat', '2021-12-19'),
+      total:    W(480.0, 'Kristina Horvat', '2021-10-01'),
+    },
+    'Master I': {
+      squat:    W(135.0, 'Branimira Novšak', '2024-12-20'),
+      bench:    W(72.5,  'Nataša Despinić',  '2025-12-18'),
+      deadlift: W(150.0, 'Nataša Despinić',  '2025-12-18'),
+      total:    W(343.0, 'Branimira Novšak', '2024-12-20'),
+    },
+    'Master II': {
+      squat:    W(85.0,  'Isabell Meničanin', '2023-02-25'),
+      bench:    W(50.0,  'Snježana Vencler',  '2014-03-01'),
+      deadlift: W(117.5, 'Isabell Meničanin', '2023-02-25'),
+      total:    W(250.0, 'Isabell Meničanin', '2023-02-25'),
+    },
+    'Master III': {
+      squat:    W(50.0,  'Duška Šišul Crnčević', '2024-12-20'),
+      bench:    W(40.0,  'Duška Šišul Crnčević', '2024-12-20'),
+      deadlift: W(80.0,  'Duška Šišul Crnčević', '2024-12-20'),
+      total:    W(170.0, 'Duška Šišul Crnčević', '2024-12-20'),
+    },
   },
   '84': {
-    Open: { squat: { lifter: 'Tara Bače', weight: 192.5, date: '2025-11-28', fed: 'EPF' }, bench: { lifter: 'Marinela Fras', weight: 112.5, date: '2022-12-17', fed: 'HPLS' }, deadlift: { lifter: 'Tara Bače', weight: 201, date: '2025-12-18', fed: 'HPLS' }, total: { lifter: 'Tara Bače', weight: 497.5, date: '2025-11-28', fed: 'EPF' } },
+    Kadeti: {
+      squat:    W(135.0, 'Iva Grahovac', '2023-12-09'),
+      bench:    W(65.0,  'Sara Lukić',   '2024-12-20'),
+      deadlift: W(157.5, 'Iva Grahovac', '2023-12-09'),
+      total:    W(352.5, 'Iva Grahovac', '2023-12-09'),
+    },
+    Juniori: {
+      squat:    W(192.5, 'Tara Bače', '2025-12-06'),
+      bench:    W(105.0, 'Tara Bače', '2025-12-06'),
+      deadlift: W(201.0, 'Tara Bače', '2025-12-18'),
+      total:    W(497.5, 'Tara Bače', '2025-12-06'),
+    },
+    Open: {
+      squat:    W(192.5, 'Tara Bače',      '2025-12-06'),
+      bench:    W(112.5, 'Marinela Fras',  '2022-12-17'),
+      deadlift: W(201.0, 'Tara Bače',      '2025-12-18'),
+      total:    W(497.5, 'Tara Bače',      '2025-12-06'),
+    },
+    'Master I': {
+      squat:    W(140.0, 'Branimira Novšak', '2025-05-30'),
+      bench:    W(65.0,  'Branimira Novšak', '2025-05-30'),
+      deadlift: W(150.0, 'Branimira Novšak', '2025-05-30'),
+      total:    W(355.0, 'Branimira Novšak', '2025-05-30'),
+    },
+    'Master II': {
+      squat:    W(107.0, 'Maja Ileš', '2021-09-19'),
+      bench:    W(63.0,  'Maja Ileš', '2021-09-19'),
+      deadlift: W(135.0, 'Maja Ileš', '2021-12-19'),
+      total:    W(302.5, 'Maja Ileš', '2021-09-19'),
+    },
   },
   '84+': {
-    Open: { squat: { lifter: 'Josipa Radić', weight: 168, date: '2023-02-24', fed: 'HPLS' }, bench: { lifter: 'Tara Bače', weight: 105, date: '2025-11-28', fed: 'EPF' }, deadlift: { lifter: 'Ivana Ferhatbegović', weight: 170, date: '2018-06-16', fed: 'HPLS' }, total: { lifter: 'Josipa Radić', weight: 417.5, date: '2023-02-24', fed: 'HPLS' } },
+    Kadeti: {
+      squat:    W(150.0, 'Magdalena Farina',  '2024-09-29'),
+      bench:    W(65.0,  'Valentina Velić',   '2023-12-09'),
+      deadlift: W(165.0, 'Magdalena Farina',  '2023-10-12'),
+      total:    W(375.0, 'Magdalena Farina',  '2024-09-29'),
+    },
+    Juniori: {
+      squat:    W(150.0, 'Magdalena Farina', '2024-09-29'),
+      bench:    W(67.5,  'Lucija Valinčić',  '2023-12-09'),
+      deadlift: W(165.0, 'Magdalena Farina', '2023-10-12'),
+      total:    W(375.0, 'Magdalena Farina', '2024-09-29'),
+    },
+    Open: {
+      squat:    W(170.5, 'Jelena Ivančić', '2025-05-30'),
+      bench:    W(86.5,  'Jelena Ivančić', '2025-05-30'),
+      deadlift: W(170.5, 'Jelena Ivančić', '2025-05-30'),
+      total:    W(427.5, 'Jelena Ivančić', '2025-05-30'),
+    },
+    'Master I': {
+      squat:    W(125.0, 'Andrea Milanko', '2025-12-18'),
+      bench:    W(80.0,  'Maja Ileš',      '2025-05-30'),
+      deadlift: W(161.5, 'Andrea Milanko', '2025-12-18'),
+      total:    W(351.5, 'Andrea Milanko', '2025-12-18'),
+    },
+    'Master II': {
+      squat:    W(105.0, 'Maja Ileš', '2023-12-09'),
+      bench:    W(80.0,  'Maja Ileš', '2025-05-30'),
+      deadlift: W(130.0, 'Maja Ileš', '2025-05-30'),
+      total:    W(310.0, 'Maja Ileš', '2025-05-30'),
+    },
   },
 }
 
