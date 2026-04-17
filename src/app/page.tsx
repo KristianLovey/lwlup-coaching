@@ -210,14 +210,14 @@ export default function Landing() {
             </div>
 
             {/* CTA gumbi */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '44px', width: '100%', maxWidth: '280px', alignItems: 'center' }}>
-              <Link href="/survey" style={{ textDecoration: 'none', width: '100%' }}>
-                <button className="btn-primary-cta" style={{ width: '100%', padding: '18px 28px', background: '#fff', color: '#000', border: 'none', fontSize: 'clamp(0.62rem, 1.9vw, 0.76rem)', fontWeight: 800, letterSpacing: '0.28em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block' }}>
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '14px', marginTop: '44px', width: '100%', maxWidth: '520px', justifyContent: 'center' }}>
+              <Link href="/survey" style={{ textDecoration: 'none', flex: 1 }}>
+                <button className="btn-primary-cta" style={{ width: '100%', padding: '18px 24px', background: '#fff', color: '#000', border: 'none', fontSize: 'clamp(0.58rem, 1.6vw, 0.74rem)', fontWeight: 800, letterSpacing: '0.22em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const }}>
                   {t('home.hero.cta1')}
                 </button>
               </Link>
-              <Link href="/training" style={{ textDecoration: 'none', width: '100%' }}>
-                <button className="btn-secondary-cta" style={{ width: '100%', padding: '16px 28px', background: 'rgba(255,255,255,0.03)', color: '#fff', border: '1px solid rgba(255,255,255,0.22)', fontSize: 'clamp(0.62rem, 1.9vw, 0.76rem)', fontWeight: 600, letterSpacing: '0.28em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block' }}>
+              <Link href="/training" style={{ textDecoration: 'none', flex: 1 }}>
+                <button className="btn-secondary-cta" style={{ width: '100%', padding: '16px 24px', background: 'rgba(255,255,255,0.03)', color: '#fff', border: '1px solid rgba(255,255,255,0.22)', fontSize: 'clamp(0.58rem, 1.6vw, 0.74rem)', fontWeight: 600, letterSpacing: '0.22em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const }}>
                   {t('home.hero.cta2')}
                 </button>
               </Link>
