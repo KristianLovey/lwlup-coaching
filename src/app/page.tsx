@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
@@ -93,8 +94,8 @@ function FounderRow({ founder, index }: { founder: FounderData; index: number })
     <div ref={ref} className={`founder-row${imgLeft ? '' : ' founder-row-reverse'}`}
       style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(30px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)', transitionDelay: `${index * 0.1}s` }}>
       <div className="founder-img-wrap">
-        <img src={founder.img} alt={founder.name} className="founder-img"
-          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', filter: 'brightness(0.85) grayscale(0.15)', transition: 'transform 0.8s' }} />
+        <Image src={founder.img} alt={founder.name} fill className="founder-img"
+          style={{ objectFit: 'cover', objectPosition: 'top center', filter: 'brightness(0.85) grayscale(0.15)', transition: 'transform 0.8s' }} sizes="50vw" />
         <div style={{ position: 'absolute', inset: 0, background: imgLeft ? 'linear-gradient(to bottom right, transparent 65%, #0a0a0a 100%)' : 'linear-gradient(to bottom left, transparent 65%, #0a0a0a 100%)' }} />
         <div style={{ position: 'absolute', bottom: '20px', left: imgLeft ? '24px' : 'auto', right: !imgLeft ? '24px' : 'auto', fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,6vw,6rem)', fontWeight: 800, color: 'rgba(255,255,255,0.06)', lineHeight: 1, userSelect: 'none' }}>
           0{index + 1}
@@ -185,7 +186,9 @@ export default function Landing() {
       <section style={{ position: 'relative', height: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
         {SLIDES.map((s, i) => (
           <div key={i} style={{ position: 'absolute', inset: 0, opacity: i === slide ? 1 : 0, transition: 'opacity 1.5s ease-in-out', zIndex: 0 }}>
-            <img src={s.src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.25) saturate(0.7)', transform: i === slide ? 'scale(1.05)' : 'scale(1)', transition: 'transform 8s ease-out' }} />
+            <Image src={s.src} alt="" fill priority={i === 0}
+              style={{ objectFit: 'cover', filter: 'brightness(0.25) saturate(0.7)', transform: i === slide ? 'scale(1.05)' : 'scale(1)', transition: 'transform 8s ease-out' }}
+              sizes="100vw" />
           </div>
         ))}
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, transparent 0%, rgba(5,5,5,0.5) 100%)', zIndex: 1 }} />
@@ -193,7 +196,8 @@ export default function Landing() {
 
         <div style={{ position: 'relative', zIndex: 2, width: '100%', padding: '0 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', width: '100%', maxWidth: '600px' }}>
-            <img src="/slike/logopng.png" alt="LWL UP Logo" style={{ width: 'clamp(180px, 50vw, 480px)', height: 'auto', marginBottom: '28px', filter: 'drop-shadow(0 0 40px rgba(255,255,255,0.15))' }} />
+            <Image src="/slike/logopng.png" alt="LWL UP Logo" width={480} height={480} priority
+              style={{ width: 'clamp(180px, 50vw, 480px)', height: 'auto', marginBottom: '28px', filter: 'drop-shadow(0 0 40px rgba(255,255,255,0.15))' }} />
 
             {/* Quote — ograničena širina da ne prelama prerano */}
             <div style={{ width: '100%', maxWidth: '520px' }}>
@@ -346,11 +350,11 @@ export default function Landing() {
               </div>
             </div>
             <div className="club-images">
-              <div style={{ height: 'clamp(200px,35vw,400px)', overflow: 'hidden', borderRadius: '4px', marginTop: 'clamp(0px,4vw,40px)' }}>
-                <img src="/slike/IMG_1844.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: '0.8s' }} alt="Club" className="club-img" />
+              <div style={{ height: 'clamp(200px,35vw,400px)', overflow: 'hidden', borderRadius: '4px', marginTop: 'clamp(0px,4vw,40px)', position: 'relative' }}>
+                <Image src="/slike/IMG_1844.jpg" fill style={{ objectFit: 'cover', transition: '0.8s' }} alt="Club" className="club-img" sizes="40vw" />
               </div>
-              <div style={{ height: 'clamp(200px,35vw,400px)', overflow: 'hidden', borderRadius: '4px' }}>
-                <img src="/slike/IMG_1890.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: '0.8s' }} alt="Club" className="club-img" />
+              <div style={{ height: 'clamp(200px,35vw,400px)', overflow: 'hidden', borderRadius: '4px', position: 'relative' }}>
+                <Image src="/slike/IMG_1890.jpg" fill style={{ objectFit: 'cover', transition: '0.8s' }} alt="Club" className="club-img" sizes="40vw" />
               </div>
             </div>
           </div>
@@ -405,7 +409,7 @@ export default function Landing() {
       {/* ══ CTA ═══════════════════════════════════════════════════ */}
       <section style={{ height: 'clamp(60vh,80vh,80vh)', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', position: 'relative' }}>
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 0 }}>
-          <img src="/slike/IMG_1886-2.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.15) grayscale(1)', animation: 'slowZoom 20s ease-in-out infinite alternate' }} alt="Legacy" />
+          <Image src="/slike/IMG_1886-2.jpg" fill style={{ objectFit: 'cover', filter: 'brightness(0.15) grayscale(1)', animation: 'slowZoom 20s ease-in-out infinite alternate' }} alt="Legacy" sizes="100vw" />
         </div>
         <div style={{ position: 'relative', zIndex: 1, padding: '0 20px' }}>
           <h2 className="cta-glow-text" style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,12vw,12rem)', lineHeight: 0.85, marginBottom: 'clamp(24px,4vw,40px)' }}>
