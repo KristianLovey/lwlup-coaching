@@ -3,7 +3,7 @@ import './globals.css'
 import { LanguageProvider } from '@/context/LanguageContext'
 
 export const metadata: Metadata = {
-  title: 'LWL UP Coaching System',
+  title: 'LWL UP Coaching',
   description: 'Powerlifting club and coaching system.',
   icons: {
     icon: '/slike/logopng.png',
