@@ -697,11 +697,15 @@ function WeightChart({ pts, toSvgX, toSvgY, minW, maxW }: {
   const pathD = smoothPath(svgPts)
   const areaD = `${pathD} L ${svgPts[svgPts.length - 1][0]},${H} L ${svgPts[0][0]},${H} Z`
 
-  const range  = maxW - minW || 1
-  const yTicks = [0.15, 0.5, 0.85].map(f => ({
-    y: Math.round(H - f * H),
-    val: (minW + f * range).toFixed(1),
-  }))
+  // Round 10kg ticks, clamped to visible chart range
+  const yTicks: { y: number; val: number }[] = []
+  const tickStep = 10
+  const tickMin = Math.ceil(minW / tickStep) * tickStep
+  const tickMax = Math.floor(maxW / tickStep) * tickStep
+  for (let v = tickMin; v <= tickMax; v += tickStep) {
+    const sy = toSvgY(v)
+    if (sy >= 2 && sy <= H - 2) yTicks.push({ y: sy, val: v })
+  }
 
   const handleTouch = (e: React.TouchEvent<SVGSVGElement>) => {
     if (!svgRef.current) return
@@ -721,24 +725,24 @@ function WeightChart({ pts, toSvgX, toSvgY, minW, maxW }: {
     <div style={{ animation: mounted ? 'wChartIn 0.5s cubic-bezier(0.16,1,0.3,1) both' : 'none', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.09)', background: 'linear-gradient(160deg, rgba(20,10,28,0.98) 0%, rgba(8,8,14,0.98) 100%)', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}>
 
       {/* Stats bar */}
-      <div className="wstats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr 1px 1fr', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="wstats-cell" style={{ padding: '18px 16px' }}>
-          <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' as const }}>Trenutna kilaza</div>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.85rem', fontWeight: 800, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em' }}>
-            {last}<span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.22)', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400 }}>kg</span>
+      <div className="wstats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1.4fr 1px 1fr', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="wstats-cell" style={{ padding: '16px 14px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}>
+          <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '7px', textTransform: 'uppercase' as const, textAlign: 'center' as const }}>Trenutna kilaza</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.7rem', fontWeight: 800, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'center' as const }}>
+            {last}<span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.22)', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400 }}>kg</span>
           </div>
         </div>
         <div className="wstats-div" style={{ background: 'rgba(255,255,255,0.05)' }} />
-        <div className="wstats-cell" style={{ padding: '18px 16px' }}>
-          <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' as const }}>Promjena</div>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.85rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em', color: diff === 0 ? 'rgba(255,255,255,0.25)' : isDown ? '#4ade80' : '#f87171' }}>
-            {diff > 0 ? '+' : ''}{diff.toFixed(1)}<span style={{ fontSize: '0.72rem', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400, opacity: 0.5 }}>kg</span>
+        <div className="wstats-cell" style={{ padding: '18px 14px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', background: diff === 0 ? 'transparent' : isDown ? 'rgba(74,222,128,0.04)' : 'rgba(248,113,113,0.04)' }}>
+          <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '7px', textTransform: 'uppercase' as const, textAlign: 'center' as const }}>Promjena</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '2.1rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em', color: diff === 0 ? 'rgba(255,255,255,0.25)' : isDown ? '#4ade80' : '#f87171', textAlign: 'center' as const }}>
+            {diff > 0 ? '+' : ''}{diff.toFixed(1)}<span style={{ fontSize: '0.7rem', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400, opacity: 0.5 }}>kg</span>
           </div>
         </div>
         <div className="wstats-div" style={{ background: 'rgba(255,255,255,0.05)' }} />
-        <div className="wstats-cell" style={{ padding: '18px 16px' }}>
-          <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' as const }}>Broj unosa</div>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.85rem', fontWeight: 800, lineHeight: 1, color: '#f472b6' }}>
+        <div className="wstats-cell" style={{ padding: '16px 14px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}>
+          <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '7px', textTransform: 'uppercase' as const, textAlign: 'center' as const }}>Broj unosa</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.7rem', fontWeight: 800, lineHeight: 1, color: '#f472b6', textAlign: 'center' as const }}>
             {pts.length}
           </div>
         </div>
@@ -767,7 +771,14 @@ function WeightChart({ pts, toSvgX, toSvgY, minW, maxW }: {
           </defs>
 
           {yTicks.map(t => (
-            <line key={t.y} x1="0" y1={t.y} x2={W} y2={t.y} stroke="rgba(255,255,255,0.04)" strokeWidth="1" strokeDasharray="4,6" />
+            <g key={t.val}>
+              <line x1="0" y1={t.y} x2={W} y2={t.y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4,6" />
+              <text x={W - 4} y={t.y - 3} textAnchor="end"
+                fill="rgba(255,255,255,0.2)" fontSize="8" fontWeight="600"
+                style={{ fontFamily: 'var(--fm)', pointerEvents: 'none' }}>
+                {t.val}
+              </text>
+            </g>
           ))}
 
           <g clipPath="url(#wClip)">
@@ -827,11 +838,6 @@ function WeightChart({ pts, toSvgX, toSvgY, minW, maxW }: {
           </div>
         )}
 
-        <div style={{ position: 'absolute' as const, right: '10px', top: '20px', display: 'flex', flexDirection: 'column' as const, height: `${H}px`, justifyContent: 'space-between', pointerEvents: 'none' as const }}>
-          {[...yTicks].reverse().map(t => (
-            <div key={t.y} style={{ fontSize: '0.44rem', color: 'rgba(255,255,255,0.12)', fontFamily: 'var(--fm)', fontWeight: 600, lineHeight: 1 }}>{t.val}</div>
-          ))}
-        </div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 16px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', marginTop: '6px' }}>
