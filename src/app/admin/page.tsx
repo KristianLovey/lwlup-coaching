@@ -1040,90 +1040,94 @@ export default function AdminPage() {
 
             {dashSection === 'tim' && (
               <div style={{ animation: 'fadeUp 0.3s ease' }}>
-                <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginBottom: '24px' }}>
+                <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginBottom: '28px' }}>
                   STATISTIKE TIMA — uredi 1RM i tjelesnu kilažu svakog liftera
                 </div>
 
-                {/* Header row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '180px 90px 110px 90px 90px 90px 80px', gap: '1px', marginBottom: '2px', padding: '0 16px' }}>
-                  {['LIFTER', 'SPOL', 'KATEGORIJA', 'ČUČANJ', 'POTISAK', 'MRTVO', 'BW'].map(h => (
-                    <div key={h} style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{h}</div>
-                  ))}
-                </div>
+                {athletes.filter(a => a.role !== 'admin').length === 0 && (
+                  <div style={{ padding: '40px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>Nema lifera.</div>
+                )}
 
-                <div style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', overflow: 'hidden' }}>
-                  {athletes.filter(a => a.role !== 'admin').length === 0 && (
-                    <div style={{ padding: '32px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>Nema lifera.</div>
-                  )}
-                  {athletes.filter(a => a.role !== 'admin').map((a, idx) => {
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+                  {athletes.filter(a => a.role !== 'admin').map(a => {
                     const stats = teamStats[a.id] ?? { squat: '', bench: '', deadlift: '', bw: '', wclass: '', sex: 'male' }
                     const saving = teamSaving[a.id]
                     const initials = a.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() ?? '??'
-                    const fieldStyle: React.CSSProperties = {
-                      width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: '6px', color: '#f0f0f5', padding: '7px 10px', fontFamily: 'var(--fm)',
-                      fontSize: '0.82rem', outline: 'none', boxSizing: 'border-box',
-                    }
-                    const update = (field: 'squat'|'bench'|'deadlift'|'bw'|'wclass'|'sex', val: string) =>
-                      setTeamStats(p => ({ ...p, [a.id]: { ...stats, [field]: val } }))
+                    const inp = (field: 'squat'|'bench'|'deadlift'|'bw'|'wclass', accent: string, placeholder: string, label: string) => (
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.44rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginBottom: '5px', fontWeight: 700 }}>{label}</div>
+                        <input
+                          type={field === 'wclass' ? 'text' : 'number'}
+                          value={(stats as any)[field]}
+                          onChange={e => setTeamStats(p => ({ ...p, [a.id]: { ...stats, [field]: e.target.value } }))}
+                          onBlur={e => saveTeamField(a.id, field, e.target.value)}
+                          placeholder={placeholder}
+                          style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.08)`, borderRadius: '7px', color: '#f0f0f5', padding: '8px 10px', fontFamily: 'var(--fm)', fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box' as const, transition: 'border-color 0.15s' }}
+                          onFocus={e => { e.currentTarget.style.borderColor = accent }}
+                          onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+                        />
+                      </div>
+                    )
 
                     return (
-                      <div key={a.id} style={{ display: 'grid', gridTemplateColumns: '180px 90px 110px 90px 90px 90px 80px', gap: '1px', padding: '10px 16px', borderBottom: idx < athletes.filter(x => x.role !== 'admin').length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', alignItems: 'center', background: idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
+                      <div key={a.id} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '18px 16px', display: 'flex', flexDirection: 'column' as const, gap: '14px', transition: 'border-color 0.2s' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)' }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}>
 
-                        {/* Name */}
+                        {/* Header */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 800, color: '#fff', flexShrink: 0, fontFamily: 'var(--fm)' }}>{initials}</div>
-                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f0f0f5', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{a.full_name}</span>
-                          {saving && <Loader2 size={11} style={{ animation: 'spin 1s linear infinite', color: '#fbbf24', flexShrink: 0 }} />}
+                          <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(255,255,255,0.12) 0%,rgba(255,255,255,0.04) 100%)', border: '1.5px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 800, color: '#fff', flexShrink: 0, fontFamily: 'var(--fm)' }}>{initials}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f0f0f5', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{a.full_name}</div>
+                            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', letterSpacing: '0.08em', marginTop: '1px' }}>{a.role?.toUpperCase()}</div>
+                          </div>
+                          {saving && <Loader2 size={12} style={{ animation: 'spin 1s linear infinite', color: '#fbbf24', flexShrink: 0 }} />}
                         </div>
 
-                        {/* Sex */}
-                        <select value={stats.sex} onChange={e => { update('sex', e.target.value); saveTeamField(a.id, 'sex', e.target.value) }}
-                          style={{ ...fieldStyle, cursor: 'pointer' }}>
-                          <option value="male">M</option>
-                          <option value="female">Ž</option>
-                        </select>
+                        {/* Sex + Weight class */}
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <div style={{ flex: '0 0 60px' }}>
+                            <div style={{ fontSize: '0.44rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginBottom: '5px', fontWeight: 700 }}>SPOL</div>
+                            <select value={stats.sex} onChange={e => { setTeamStats(p => ({ ...p, [a.id]: { ...stats, sex: e.target.value } })); saveTeamField(a.id, 'sex', e.target.value) }}
+                              style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '7px', color: '#f0f0f5', padding: '8px 6px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', cursor: 'pointer' }}>
+                              <option value="male">M</option>
+                              <option value="female">Ž</option>
+                            </select>
+                          </div>
+                          {inp('wclass', 'rgba(255,255,255,0.3)', '-83', 'KATEGORIJA')}
+                        </div>
 
-                        {/* Weight class */}
-                        <input value={stats.wclass} onChange={e => update('wclass', e.target.value)}
-                          onBlur={e => saveTeamField(a.id, 'wclass', e.target.value)}
-                          placeholder="npr. -83" style={fieldStyle}
-                          onFocus={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)' }}
-                          onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }} />
+                        {/* Divider */}
+                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />
 
-                        {/* Squat */}
-                        <input type="number" value={stats.squat} onChange={e => update('squat', e.target.value)}
-                          onBlur={e => saveTeamField(a.id, 'squat', e.target.value)}
-                          placeholder="kg" style={fieldStyle}
-                          onFocus={e => { e.currentTarget.style.borderColor = '#22c55e44' }}
-                          onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }} />
-
-                        {/* Bench */}
-                        <input type="number" value={stats.bench} onChange={e => update('bench', e.target.value)}
-                          onBlur={e => saveTeamField(a.id, 'bench', e.target.value)}
-                          placeholder="kg" style={fieldStyle}
-                          onFocus={e => { e.currentTarget.style.borderColor = '#f59e0b44' }}
-                          onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }} />
-
-                        {/* Deadlift */}
-                        <input type="number" value={stats.deadlift} onChange={e => update('deadlift', e.target.value)}
-                          onBlur={e => saveTeamField(a.id, 'deadlift', e.target.value)}
-                          placeholder="kg" style={fieldStyle}
-                          onFocus={e => { e.currentTarget.style.borderColor = '#ef444444' }}
-                          onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }} />
+                        {/* 1RMs */}
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          {inp('squat',    '#22c55e66', '—', 'S')}
+                          {inp('bench',    '#f59e0b66', '—', 'B')}
+                          {inp('deadlift', '#ef444466', '—', 'D')}
+                        </div>
 
                         {/* Body weight */}
-                        <input type="number" value={stats.bw} onChange={e => update('bw', e.target.value)}
-                          onBlur={e => saveTeamField(a.id, 'bw', e.target.value)}
-                          placeholder="kg" style={fieldStyle}
-                          onFocus={e => { e.currentTarget.style.borderColor = '#a78bfa44' }}
-                          onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }} />
+                        <div>
+                          <div style={{ fontSize: '0.44rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginBottom: '5px', fontWeight: 700 }}>TJELESNA KILAŽA</div>
+                          <input
+                            type="number"
+                            value={stats.bw}
+                            onChange={e => setTeamStats(p => ({ ...p, [a.id]: { ...stats, bw: e.target.value } }))}
+                            onBlur={e => saveTeamField(a.id, 'bw', e.target.value)}
+                            placeholder="kg"
+                            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '7px', color: '#f0f0f5', padding: '8px 10px', fontFamily: 'var(--fm)', fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box' as const, transition: 'border-color 0.15s' }}
+                            onFocus={e => { e.currentTarget.style.borderColor = '#a78bfa66' }}
+                            onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+                          />
+                        </div>
                       </div>
                     )
                   })}
                 </div>
-                <div style={{ marginTop: '12px', fontSize: '0.55rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', letterSpacing: '0.1em' }}>
-                  Sprema se automatski nakon izmjene polja.
+
+                <div style={{ marginTop: '16px', fontSize: '0.55rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', letterSpacing: '0.1em' }}>
+                  Sprema se automatski pri izlasku iz polja.
                 </div>
               </div>
             )}

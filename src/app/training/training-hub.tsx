@@ -1254,6 +1254,14 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
   const [search, setSearch] = useState('')
   const activeTool = HUB_TOOLS.find(t => t.id === active)
 
+  useEffect(() => {
+    if (!active) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setActive(null) }
+    document.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = '' }
+  }, [active])
+
   const q = search.trim().toLowerCase()
   const filtered = q ? HUB_TOOLS.filter(t => t.label.toLowerCase().includes(q) || t.sub.toLowerCase().includes(q)) : null
 
@@ -1325,51 +1333,60 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
         })
       )}
 
-      {/* Active tool panel */}
+      {/* Modal overlay */}
       {active && activeTool && (
-        <div style={{ border: `1.5px solid ${activeTool.color}55`, borderRadius: '16px', overflow: 'hidden', boxShadow: `0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px ${activeTool.color}18`, animation: 'panelIn 0.3s cubic-bezier(0.16,1,0.3,1)', background: '#0f0f18' }}>
-          {/* Panel header */}
-          <div style={{ padding: '16px 24px', background: `${activeTool.color}18`, borderBottom: `1px solid ${activeTool.color}35`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: activeTool.color, boxShadow: `0 0 8px ${activeTool.color}` }} />
-              <div>
-                <div style={{ fontSize: '0.58rem', color: `${activeTool.color}99`, letterSpacing: '0.1em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '1px' }}>{activeTool.badge}</div>
-                <div style={{ fontSize: '1rem', fontWeight: 600, color: '#f0f0f5', fontFamily: 'var(--fm)' }}>{activeTool.label}</div>
-              </div>
-            </div>
-            <button onClick={() => setActive(null)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}>
-              <X size={13} />
-            </button>
-          </div>
-          {/* Content */}
-          <div style={{ padding: 'clamp(20px,4vw,32px)', background: '#0f0f18' }}>
-            {active === 'rpe'      && <RpeCalc />}
-            {active === 'gl'       && <GlCalc />}
-            {active === 'watercut' && <WaterCutCalc />}
-            {active === 'progress'  && userId && <ProgressGraph userId={userId} />}
-            {active === 'progress'  && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za prikaz grafa.</div>}
-            {active === 'weight'    && userId && <WeightTracker userId={userId} />}
-            {active === 'weight'    && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje kilaze.</div>}
-            {active === 'nutrition' && userId && <NutritionTracker userId={userId} />}
-            {active === 'nutrition' && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje prehrane.</div>}
-            {['guide-wc','guide-rpe','guide-peak'].includes(active) && (() => {
-              const g = GUIDE_CONTENT[active]
-              if (!g) return null
-              return (
-                <div>
-                  <SectionTitle>{g.title}</SectionTitle>
-                  <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0' }}>
-                    {g.body.map((para, i) => (
-                      <div key={i} style={{ padding: '14px 0', borderBottom: i < g.body.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                        <p style={{ fontSize: '0.85rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.65)', margin: 0, fontFamily: 'var(--fm)' }}>{para}</p>
-                      </div>
-                    ))}
-                  </div>
+        <div
+          onClick={e => { if (e.target === e.currentTarget) setActive(null) }}
+          style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', animation: 'fadeIn 0.18s ease' }}>
+          <div style={{ width: '100%', maxWidth: '680px', maxHeight: '88vh', display: 'flex', flexDirection: 'column' as const, border: `1.5px solid ${activeTool.color}44`, borderRadius: '18px', overflow: 'hidden', boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px ${activeTool.color}18, 0 0 60px ${activeTool.color}10`, animation: 'panelIn 0.25s cubic-bezier(0.16,1,0.3,1)', background: '#0d0d16' }}>
+
+            {/* Modal header */}
+            <div style={{ padding: '16px 20px', background: `${activeTool.color}14`, borderBottom: `1px solid ${activeTool.color}2a`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${activeTool.color}22`, border: `1px solid ${activeTool.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: activeTool.color, boxShadow: `0 0 10px ${activeTool.color}` }} />
                 </div>
-              )
-            })()}
+                <div>
+                  <div style={{ fontSize: '0.5rem', color: `${activeTool.color}99`, letterSpacing: '0.18em', fontFamily: 'var(--fm)', fontWeight: 700 }}>{activeTool.badge}</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#f0f0f5', fontFamily: 'var(--fm)', lineHeight: 1.1 }}>{activeTool.label}</div>
+                </div>
+              </div>
+              <button onClick={() => setActive(null)}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}>
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Modal content — scrollable */}
+            <div style={{ padding: 'clamp(20px,4vw,28px)', overflowY: 'auto' as const, flex: 1 }}>
+              {active === 'rpe'       && <RpeCalc />}
+              {active === 'gl'        && <GlCalc />}
+              {active === 'watercut'  && <WaterCutCalc />}
+              {active === 'progress'  && userId  && <ProgressGraph userId={userId} />}
+              {active === 'progress'  && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za prikaz grafa.</div>}
+              {active === 'weight'    && userId  && <WeightTracker userId={userId} />}
+              {active === 'weight'    && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje kilaze.</div>}
+              {active === 'nutrition' && userId  && <NutritionTracker userId={userId} />}
+              {active === 'nutrition' && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje prehrane.</div>}
+              {['guide-wc','guide-rpe','guide-peak'].includes(active) && (() => {
+                const g = GUIDE_CONTENT[active]
+                if (!g) return null
+                return (
+                  <div>
+                    <SectionTitle>{g.title}</SectionTitle>
+                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0' }}>
+                      {g.body.map((para, i) => (
+                        <div key={i} style={{ padding: '14px 0', borderBottom: i < g.body.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                          <p style={{ fontSize: '0.85rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.65)', margin: 0, fontFamily: 'var(--fm)' }}>{para}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
           </div>
         </div>
       )}
