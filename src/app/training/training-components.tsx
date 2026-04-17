@@ -251,6 +251,18 @@ export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon, userId }: {
     setNotifs(prev => prev.map(n => ({ ...n, read: true })))
   }
 
+  const deleteNotif = async (id: string) => {
+    await supabase.from('notifications').delete().eq('id', id)
+    setNotifs(prev => prev.filter(n => n.id !== id))
+  }
+
+  const deleteAllNotifs = async () => {
+    const ids = notifs.map(n => n.id)
+    if (!ids.length) return
+    await supabase.from('notifications').delete().in('id', ids)
+    setNotifs([])
+  }
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) setShowNotifs(false)
@@ -322,15 +334,28 @@ export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon, userId }: {
               <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '300px', background: 'rgba(10,10,16,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.85)', zIndex: 300, overflow: 'hidden', backdropFilter: 'blur(40px)', animation: 'appnavDrop 0.2s cubic-bezier(0.16,1,0.3,1)' }}>
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: '#fbbf24', fontFamily: 'var(--fm)', fontWeight: 700 }}>{isAdmin ? 'OBAVIJESTI' : 'OD TRENERA'}</span>
-                  {notifs.length > 0 && <button onClick={markAllRead} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '0.55rem', fontFamily: 'var(--fm)', cursor: 'pointer', letterSpacing: '0.1em' }}>označi sve pročitano</button>}
+                  {notifs.length > 0 && (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {notifs.some(n => !n.read) && <button onClick={markAllRead} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '0.52rem', fontFamily: 'var(--fm)', cursor: 'pointer', letterSpacing: '0.08em', padding: 0 }}>označi sve</button>}
+                      <button onClick={deleteAllNotifs} style={{ background: 'none', border: 'none', color: 'rgba(239,68,68,0.5)', fontSize: '0.52rem', fontFamily: 'var(--fm)', cursor: 'pointer', letterSpacing: '0.08em', padding: 0 }}>briši sve</button>
+                    </div>
+                  )}
                 </div>
                 <div style={{ maxHeight: '320px', overflowY: 'auto' as const }}>
                   {notifs.length === 0 ? (
                     <div style={{ padding: '24px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', fontFamily: 'var(--fm)' }}>Nema novih obavijesti</div>
                   ) : notifs.map(n => (
-                    <div key={n.id} style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: n.read ? 'transparent' : 'rgba(251,191,36,0.04)', transition: 'background 0.2s' }}>
-                      <div style={{ fontSize: '0.78rem', color: n.read ? 'rgba(255,255,255,0.5)' : '#f0f0f5', fontFamily: 'var(--fm)', lineHeight: 1.5 }}>{n.message}</div>
-                      <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', marginTop: '4px' }}>{new Date(n.created_at).toLocaleString('hr-HR')}</div>
+                    <div key={n.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: n.read ? 'transparent' : 'rgba(251,191,36,0.04)', transition: 'background 0.2s' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.78rem', color: n.read ? 'rgba(255,255,255,0.5)' : '#f0f0f5', fontFamily: 'var(--fm)', lineHeight: 1.5 }}>{n.message}</div>
+                        <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', marginTop: '4px' }}>{new Date(n.created_at).toLocaleString('hr-HR')}</div>
+                      </div>
+                      <button onClick={() => deleteNotif(n.id)}
+                        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.18)', cursor: 'pointer', padding: '2px', flexShrink: 0, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
+                        onMouseEnter={e => { e.currentTarget.style.color = 'rgba(239,68,68,0.7)' }}
+                        onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.18)' }}>
+                        <X size={12} />
+                      </button>
                     </div>
                   ))}
                 </div>

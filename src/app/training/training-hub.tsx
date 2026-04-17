@@ -360,15 +360,21 @@ export function WaterCutCalc() {
 
 // ─── HUB TAB COMPONENT ──────────────────────────────────────────
 const HUB_TOOLS = [
-  { id:'rpe',       label:'RPE Kalkulator',  sub:'Izračun 1RM i preporučene težine', color:'#f59e0b', badge:'CALC' },
-  { id:'gl',        label:'GL Points',        sub:'IPF Goodlift formula',             color:'#6b8cff', badge:'CALC' },
-  { id:'watercut',  label:'Water Cut',        sub:'Plan hidratacije i rezanja',       color:'#22c55e', badge:'CALC' },
-  { id:'guide-wc',  label:'Water Cut Guide',  sub:'Protokol dehidracije',             color:'#34d399', badge:'GUIDE'},
-  { id:'guide-rpe', label:'RPE Guide',        sub:'Kako koristiti RPE',               color:'#fbbf24', badge:'GUIDE'},
-  { id:'guide-peak',label:'Peaking Guide',    sub:'Priprema za natjecanje',           color:'#a78bfa', badge:'GUIDE'},
-  { id:'progress',  label:'Graf napretka',   sub:'Kilaze kroz blokove po liftu/RPE', color:'#22d3ee', badge:'GRAF' },
-  { id:'weight',    label:'Tjelesna kilaza', sub:'Unos i praćenje kilaze kroz dane',  color:'#f472b6', badge:'LOG'  },
-  { id:'nutrition', label:'Prehrana & Kalorije', sub:'TDEE, makrosi i dnevni log',    color:'#f97316', badge:'LOG'  },
+  { id:'rpe',        label:'RPE Kalkulator',     sub:'Izračun 1RM i preporučene težine', color:'#f59e0b', badge:'CALC',  group:'calc'  },
+  { id:'gl',         label:'GL Points',           sub:'IPF Goodlift formula',             color:'#6b8cff', badge:'CALC',  group:'calc'  },
+  { id:'watercut',   label:'Water Cut',           sub:'Plan hidratacije i rezanja',       color:'#22c55e', badge:'CALC',  group:'calc'  },
+  { id:'guide-wc',   label:'Water Cut Guide',     sub:'Protokol dehidracije',             color:'#34d399', badge:'GUIDE', group:'guide' },
+  { id:'guide-rpe',  label:'RPE Guide',           sub:'Kako koristiti RPE',               color:'#fbbf24', badge:'GUIDE', group:'guide' },
+  { id:'guide-peak', label:'Peaking Guide',       sub:'Priprema za natjecanje',           color:'#a78bfa', badge:'GUIDE', group:'guide' },
+  { id:'progress',   label:'Graf napretka',       sub:'Kilaze kroz blokove po liftu',     color:'#22d3ee', badge:'GRAF',  group:'log'   },
+  { id:'weight',     label:'Tjelesna kilaza',     sub:'Unos i praćenje kilaze kroz dane', color:'#f472b6', badge:'LOG',   group:'log'   },
+  { id:'nutrition',  label:'Prehrana & Kalorije', sub:'TDEE, makrosi i dnevni log',       color:'#f97316', badge:'LOG',   group:'log'   },
+]
+
+const HUB_GROUPS = [
+  { key: 'calc',  title: 'Kalkulatori' },
+  { key: 'guide', title: 'Vodiči' },
+  { key: 'log',   title: 'Logiranje' },
 ]
 
 const GUIDE_CONTENT: Record<string,{title:string;body:string[]}> = {
@@ -1245,42 +1251,79 @@ function NutritionTracker({ userId }: { userId: string }) {
 
 export function HubTab({ athleteName, userId }: { athleteName: string; userId?: string }) {
   const [active, setActive] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
   const activeTool = HUB_TOOLS.find(t => t.id === active)
+
+  const q = search.trim().toLowerCase()
+  const filtered = q ? HUB_TOOLS.filter(t => t.label.toLowerCase().includes(q) || t.sub.toLowerCase().includes(q)) : null
+
+  const renderToolCard = (tool: typeof HUB_TOOLS[0]) => {
+    const isActive = active === tool.id
+    return (
+      <button key={tool.id} onClick={() => setActive(isActive ? null : tool.id)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', textAlign: 'left' as const,
+          background: isActive ? `${tool.color}1a` : 'rgba(255,255,255,0.07)',
+          border: `1.5px solid ${isActive ? tool.color + '60' : 'rgba(255,255,255,0.13)'}`,
+          borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
+          boxShadow: isActive ? `0 4px 20px ${tool.color}22` : '0 2px 8px rgba(0,0,0,0.3)',
+        }}
+        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.11)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' } }}
+        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.13)' } }}>
+        <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: `${tool.color}22`, border: `1px solid ${tool.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: tool.color, boxShadow: isActive ? `0 0 8px ${tool.color}` : `0 0 4px ${tool.color}88`, transition: 'box-shadow 0.2s' }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: isActive ? tool.color : '#f0f0f8', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}>{tool.label}</div>
+          <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.45)', marginTop: '1px', fontFamily: 'var(--fm)' }}>{tool.sub}</div>
+        </div>
+        <span style={{ fontSize: '0.5rem', fontWeight: 700, color: tool.color, background: `${tool.color}1a`, padding: '3px 8px', borderRadius: '5px', border: `1px solid ${tool.color}35`, letterSpacing: '0.06em', fontFamily: 'var(--fm)', flexShrink: 0 }}>
+          {tool.badge}
+        </span>
+      </button>
+    )
+  }
 
   return (
     <div style={{ animation: 'fadeUp 0.3s ease' }}>
 
-      {/* Tools grid */}
-      <SectionTitle>Kalkulatori & Vodiči</SectionTitle>
-      <div className="hub-tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(clamp(160px,26vw,260px),1fr))', gap: '8px', marginBottom: '20px' }}>
-        {HUB_TOOLS.map((tool, i) => {
-          const isActive = active === tool.id
-          return (
-            <button key={tool.id} onClick={() => setActive(isActive ? null : tool.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', textAlign: 'left' as const,
-                background: isActive ? `${tool.color}1a` : 'rgba(255,255,255,0.07)',
-                border: `1.5px solid ${isActive ? tool.color + '60' : 'rgba(255,255,255,0.13)'}`,
-                borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
-                boxShadow: isActive ? `0 4px 20px ${tool.color}22` : '0 2px 8px rgba(0,0,0,0.3)',
-              }}
-              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.11)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' } }}
-              onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.13)' } }}>
-              {/* Icon dot */}
-              <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: `${tool.color}22`, border: `1px solid ${tool.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: tool.color, boxShadow: isActive ? `0 0 8px ${tool.color}` : `0 0 4px ${tool.color}88`, transition: 'box-shadow 0.2s' }} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: isActive ? tool.color : '#f0f0f8', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}>{tool.label}</div>
-                <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.45)', marginTop: '1px', fontFamily: 'var(--fm)' }}>{tool.sub}</div>
-              </div>
-              <span style={{ fontSize: '0.5rem', fontWeight: 700, color: tool.color, background: `${tool.color}1a`, padding: '3px 8px', borderRadius: '5px', border: `1px solid ${tool.color}35`, letterSpacing: '0.06em', fontFamily: 'var(--fm)', flexShrink: 0 }}>
-                {tool.badge}
-              </span>
-            </button>
-          )
-        })}
+      {/* Search bar */}
+      <div style={{ position: 'relative', marginBottom: '20px' }}>
+        <svg style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input
+          value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Pretraži alate..."
+          style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#f0f0f5', padding: '10px 14px 10px 36px', fontFamily: 'var(--fm)', fontSize: '0.82rem', outline: 'none', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
+          onFocus={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)' }}
+          onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
+        />
+        {search && (
+          <button onClick={() => setSearch('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: '2px', display: 'flex' }}>
+            <X size={14} />
+          </button>
+        )}
       </div>
+
+      {/* Tools — filtered or grouped */}
+      {filtered ? (
+        filtered.length === 0
+          ? <div style={{ padding: '32px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', fontFamily: 'var(--fm)' }}>Nema rezultata za "{search}"</div>
+          : <div className="hub-tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(clamp(160px,26vw,260px),1fr))', gap: '8px', marginBottom: '20px' }}>
+              {filtered.map(renderToolCard)}
+            </div>
+      ) : (
+        HUB_GROUPS.map(g => {
+          const tools = HUB_TOOLS.filter(t => t.group === g.key)
+          return (
+            <div key={g.key} style={{ marginBottom: '4px' }}>
+              <SectionTitle>{g.title}</SectionTitle>
+              <div className="hub-tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(clamp(160px,26vw,260px),1fr))', gap: '8px', marginBottom: '20px' }}>
+                {tools.map(renderToolCard)}
+              </div>
+            </div>
+          )
+        })
+      )}
 
       {/* Active tool panel */}
       {active && activeTool && (

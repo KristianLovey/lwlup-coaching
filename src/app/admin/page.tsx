@@ -663,7 +663,7 @@ export default function AdminPage() {
   const [selectedAthlete, setSelectedAthlete] = useState<AthleteProfile | null>(null)
   const [searchQ, setSearchQ] = useState('')
   const [managingUsers, setManagingUsers] = useState(false)
-  const [dashSection, setDashSection] = useState<'athletes' | 'competitions' | 'obavijesti' | 'treneri'>('athletes')
+  const [dashSection, setDashSection] = useState<'athletes' | 'competitions' | 'obavijesti' | 'treneri' | 'tim'>('athletes')
   const [notifMsg, setNotifMsg] = useState('')
   const [notifSelected, setNotifSelected] = useState<string[]>([])
   const [notifSending, setNotifSending] = useState(false)
@@ -677,6 +677,42 @@ export default function AdminPage() {
   const [addLifterLoading, setAddLifterLoading] = useState(false)
   const [addLifterError, setAddLifterError] = useState('')
   const [addLifterSuccess, setAddLifterSuccess] = useState('')
+  type TeamStats = { squat: string; bench: string; deadlift: string; bw: string; wclass: string; sex: string }
+  const [teamStats, setTeamStats] = useState<Record<string, TeamStats>>({})
+  const [teamSaving, setTeamSaving] = useState<Record<string, boolean>>({})
+
+  const loadTeamStats = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, current_squat_1rm, current_bench_1rm, current_deadlift_1rm, body_weight, weight_class, sex')
+      .order('full_name')
+    if (!data) return
+    const map: Record<string, TeamStats> = {}
+    for (const p of data) {
+      map[p.id] = {
+        squat:    String(p.current_squat_1rm   ?? ''),
+        bench:    String(p.current_bench_1rm    ?? ''),
+        deadlift: String(p.current_deadlift_1rm ?? ''),
+        bw:       String(p.body_weight          ?? ''),
+        wclass:   p.weight_class ?? '',
+        sex:      p.sex ?? 'male',
+      }
+    }
+    setTeamStats(map)
+  }
+
+  const saveTeamField = async (id: string, field: keyof TeamStats, val: string) => {
+    const dbField: Record<keyof TeamStats, string> = {
+      squat: 'current_squat_1rm', bench: 'current_bench_1rm', deadlift: 'current_deadlift_1rm',
+      bw: 'body_weight', wclass: 'weight_class', sex: 'sex',
+    }
+    setTeamSaving(p => ({ ...p, [id]: true }))
+    const numFields = ['squat', 'bench', 'deadlift', 'bw']
+    const value = numFields.includes(field) ? (val === '' ? null : parseFloat(val)) : (val || null)
+    await supabase.from('profiles').update({ [dbField[field]]: value }).eq('id', id)
+    setTeamSaving(p => ({ ...p, [id]: false }))
+  }
+
   const router = useRouter()
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
@@ -910,8 +946,8 @@ export default function AdminPage() {
 
               {/* Section switcher */}
               <div className="admin-section-switcher" style={{ display: 'flex', gap: '4px', padding: '4px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', width: 'fit-content', marginBottom: '32px' }}>
-                {([['athletes', 'Lifteri'], ['treneri', 'Treneri'], ['competitions', 'Natjecanja'], ['obavijesti', 'Obavijesti']] as [string,string][]).map(([sec, label]) => (
-                  <button key={sec} onClick={() => setDashSection(sec as any)}
+                {([['athletes', 'Lifteri'], ['tim', 'Tim'], ['treneri', 'Treneri'], ['competitions', 'Natjecanja'], ['obavijesti', 'Obavijesti']] as [string,string][]).map(([sec, label]) => (
+                  <button key={sec} onClick={() => { setDashSection(sec as any); if (sec === 'tim') loadTeamStats() }}
                     style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 18px', background: dashSection === sec ? 'rgba(255,255,255,0.1)' : 'transparent', border: dashSection === sec ? '1px solid rgba(255,255,255,0.12)' : '1px solid transparent', borderRadius: '7px', cursor: 'pointer', fontSize: '0.72rem', fontFamily: 'var(--fm)', fontWeight: dashSection === sec ? 700 : 400, color: dashSection === sec ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'all 0.2s', letterSpacing: '0.04em' }}>
                     {sec === 'competitions' && <Trophy size={13} />}
                     {sec === 'obavijesti' && <Bell size={13} />}
@@ -998,6 +1034,96 @@ export default function AdminPage() {
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {dashSection === 'tim' && (
+              <div style={{ animation: 'fadeUp 0.3s ease' }}>
+                <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginBottom: '24px' }}>
+                  STATISTIKE TIMA — uredi 1RM i tjelesnu kilažu svakog liftera
+                </div>
+
+                {/* Header row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '180px 90px 110px 90px 90px 90px 80px', gap: '1px', marginBottom: '2px', padding: '0 16px' }}>
+                  {['LIFTER', 'SPOL', 'KATEGORIJA', 'ČUČANJ', 'POTISAK', 'MRTVO', 'BW'].map(h => (
+                    <div key={h} style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{h}</div>
+                  ))}
+                </div>
+
+                <div style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', overflow: 'hidden' }}>
+                  {athletes.filter(a => a.role !== 'admin').length === 0 && (
+                    <div style={{ padding: '32px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>Nema lifera.</div>
+                  )}
+                  {athletes.filter(a => a.role !== 'admin').map((a, idx) => {
+                    const stats = teamStats[a.id] ?? { squat: '', bench: '', deadlift: '', bw: '', wclass: '', sex: 'male' }
+                    const saving = teamSaving[a.id]
+                    const initials = a.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() ?? '??'
+                    const fieldStyle: React.CSSProperties = {
+                      width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: '6px', color: '#f0f0f5', padding: '7px 10px', fontFamily: 'var(--fm)',
+                      fontSize: '0.82rem', outline: 'none', boxSizing: 'border-box',
+                    }
+                    const update = (field: 'squat'|'bench'|'deadlift'|'bw'|'wclass'|'sex', val: string) =>
+                      setTeamStats(p => ({ ...p, [a.id]: { ...stats, [field]: val } }))
+
+                    return (
+                      <div key={a.id} style={{ display: 'grid', gridTemplateColumns: '180px 90px 110px 90px 90px 90px 80px', gap: '1px', padding: '10px 16px', borderBottom: idx < athletes.filter(x => x.role !== 'admin').length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', alignItems: 'center', background: idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
+
+                        {/* Name */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 800, color: '#fff', flexShrink: 0, fontFamily: 'var(--fm)' }}>{initials}</div>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f0f0f5', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{a.full_name}</span>
+                          {saving && <Loader2 size={11} style={{ animation: 'spin 1s linear infinite', color: '#fbbf24', flexShrink: 0 }} />}
+                        </div>
+
+                        {/* Sex */}
+                        <select value={stats.sex} onChange={e => { update('sex', e.target.value); saveTeamField(a.id, 'sex', e.target.value) }}
+                          style={{ ...fieldStyle, cursor: 'pointer' }}>
+                          <option value="male">M</option>
+                          <option value="female">Ž</option>
+                        </select>
+
+                        {/* Weight class */}
+                        <input value={stats.wclass} onChange={e => update('wclass', e.target.value)}
+                          onBlur={e => saveTeamField(a.id, 'wclass', e.target.value)}
+                          placeholder="npr. -83" style={fieldStyle}
+                          onFocus={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)' }}
+                          onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }} />
+
+                        {/* Squat */}
+                        <input type="number" value={stats.squat} onChange={e => update('squat', e.target.value)}
+                          onBlur={e => saveTeamField(a.id, 'squat', e.target.value)}
+                          placeholder="kg" style={fieldStyle}
+                          onFocus={e => { e.currentTarget.style.borderColor = '#22c55e44' }}
+                          onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }} />
+
+                        {/* Bench */}
+                        <input type="number" value={stats.bench} onChange={e => update('bench', e.target.value)}
+                          onBlur={e => saveTeamField(a.id, 'bench', e.target.value)}
+                          placeholder="kg" style={fieldStyle}
+                          onFocus={e => { e.currentTarget.style.borderColor = '#f59e0b44' }}
+                          onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }} />
+
+                        {/* Deadlift */}
+                        <input type="number" value={stats.deadlift} onChange={e => update('deadlift', e.target.value)}
+                          onBlur={e => saveTeamField(a.id, 'deadlift', e.target.value)}
+                          placeholder="kg" style={fieldStyle}
+                          onFocus={e => { e.currentTarget.style.borderColor = '#ef444444' }}
+                          onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }} />
+
+                        {/* Body weight */}
+                        <input type="number" value={stats.bw} onChange={e => update('bw', e.target.value)}
+                          onBlur={e => saveTeamField(a.id, 'bw', e.target.value)}
+                          placeholder="kg" style={fieldStyle}
+                          onFocus={e => { e.currentTarget.style.borderColor = '#a78bfa44' }}
+                          onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }} />
+                      </div>
+                    )
+                  })}
+                </div>
+                <div style={{ marginTop: '12px', fontSize: '0.55rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', letterSpacing: '0.1em' }}>
+                  Sprema se automatski nakon izmjene polja.
                 </div>
               </div>
             )}
