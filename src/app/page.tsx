@@ -195,9 +195,11 @@ export default function Landing() {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 60%, #050505 100%)', zIndex: 1 }} />
 
         <div style={{ position: 'relative', zIndex: 2, width: '100%', padding: '0 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', width: '100%', maxWidth: '600px' }}>
-            <Image src="/slike/logopng.png" alt="LWL UP Logo" width={480} height={480} priority
-              style={{ display: 'block', margin: '0 auto 32px', width: 'clamp(140px, 40vw, 380px)', height: 'auto', filter: 'drop-shadow(0 0 60px rgba(255,255,255,0.18)) drop-shadow(0 0 120px rgba(255,255,255,0.06))' }} />
+          <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', width: '100%', maxWidth: '600px', margin: '0 auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '32px' }}>
+              <Image src="/slike/logopng.png" alt="LWL UP Logo" width={480} height={480} priority
+                style={{ width: 'clamp(140px, 38vw, 340px)', height: 'auto', filter: 'drop-shadow(0 0 60px rgba(255,255,255,0.18)) drop-shadow(0 0 120px rgba(255,255,255,0.06))' }} />
+            </div>
 
             {/* Quote */}
             <div style={{ width: '100%', maxWidth: '520px' }}>
