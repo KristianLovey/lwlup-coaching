@@ -197,27 +197,27 @@ export default function Landing() {
         <div style={{ position: 'relative', zIndex: 2, width: '100%', padding: '0 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', width: '100%', maxWidth: '600px' }}>
             <Image src="/slike/logopng.png" alt="LWL UP Logo" width={480} height={480} priority
-              style={{ width: 'clamp(180px, 50vw, 480px)', height: 'auto', marginBottom: '28px', filter: 'drop-shadow(0 0 40px rgba(255,255,255,0.15))' }} />
+              style={{ display: 'block', margin: '0 auto 32px', width: 'clamp(140px, 40vw, 380px)', height: 'auto', filter: 'drop-shadow(0 0 60px rgba(255,255,255,0.18)) drop-shadow(0 0 120px rgba(255,255,255,0.06))' }} />
 
-            {/* Quote — ograničena širina da ne prelama prerano */}
+            {/* Quote */}
             <div style={{ width: '100%', maxWidth: '520px' }}>
-              <p style={{ fontSize: 'clamp(0.85rem, 2.8vw, 1.4rem)', color: '#fff', fontStyle: 'italic', letterSpacing: '0.02em', fontWeight: 300, marginBottom: '8px', transition: 'all 0.8s', lineHeight: 1.55 }}>
+              <p style={{ fontSize: 'clamp(0.82rem, 2.5vw, 1.3rem)', color: '#fff', fontStyle: 'italic', letterSpacing: '0.02em', fontWeight: 300, marginBottom: '8px', transition: 'all 0.8s', lineHeight: 1.6 }}>
                 "{SLIDES[slide].quote}"
               </p>
-              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 'clamp(0.58rem, 1.8vw, 0.72rem)', letterSpacing: '0.38em', textTransform: 'uppercase', marginBottom: '0' }}>
+              <p style={{ color: 'rgba(255,255,255,0.32)', fontSize: 'clamp(0.56rem, 1.6vw, 0.68rem)', letterSpacing: '0.38em', textTransform: 'uppercase' as const, marginBottom: '0' }}>
                 — {SLIDES[slide].sub}
               </p>
             </div>
 
             {/* CTA gumbi */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '40px', width: '100%', maxWidth: '300px' }}>
-              <Link href="/survey" style={{ textDecoration: 'none' }}>
-                <button className="btn-primary-cta" style={{ width: '100%', padding: '17px 24px', background: '#fff', color: '#000', border: '1px solid #fff', fontSize: 'clamp(0.68rem, 2.2vw, 0.85rem)', fontWeight: 800, letterSpacing: '0.2em', cursor: 'pointer', transition: 'all 0.35s', fontFamily: 'var(--fm)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '44px', width: '100%', maxWidth: '280px', alignItems: 'center' }}>
+              <Link href="/survey" style={{ textDecoration: 'none', width: '100%' }}>
+                <button className="btn-primary-cta" style={{ width: '100%', padding: '18px 28px', background: '#fff', color: '#000', border: 'none', fontSize: 'clamp(0.62rem, 1.9vw, 0.76rem)', fontWeight: 800, letterSpacing: '0.28em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block' }}>
                   {t('home.hero.cta1')}
                 </button>
               </Link>
-              <Link href="/training" style={{ textDecoration: 'none' }}>
-                <button className="btn-secondary-cta" style={{ width: '100%', padding: '15px 24px', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', fontSize: 'clamp(0.68rem, 2.2vw, 0.85rem)', fontWeight: 700, letterSpacing: '0.2em', cursor: 'pointer', transition: 'all 0.3s', fontFamily: 'var(--fm)' }}>
+              <Link href="/training" style={{ textDecoration: 'none', width: '100%' }}>
+                <button className="btn-secondary-cta" style={{ width: '100%', padding: '16px 28px', background: 'rgba(255,255,255,0.03)', color: '#fff', border: '1px solid rgba(255,255,255,0.22)', fontSize: 'clamp(0.62rem, 1.9vw, 0.76rem)', fontWeight: 600, letterSpacing: '0.28em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block' }}>
                   {t('home.hero.cta2')}
                 </button>
               </Link>
