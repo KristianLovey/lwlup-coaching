@@ -399,19 +399,27 @@ type ProgressRow = {
   date: string
   weight_kg: number | null
   actual_rpe: number | null
+  actual_reps: string | null
   exercise_name: string
   block_name: string
   week_number: number
   priority: 'primary' | 'secondary' | 'other'
 }
 
-const RPE_RANGES = [
-  { label: 'Sve', min: 0, max: 10 },
-  { label: '@6-7', min: 6, max: 7 },
-  { label: '@7-8', min: 7, max: 8 },
-  { label: '@8-9', min: 8, max: 9 },
-  { label: '@9+',  min: 9, max: 10 },
+const REP_RANGES = [
+  { label: 'Sve', min: 0, max: 999 },
+  { label: '1', min: 1, max: 1 },
+  { label: '2-3', min: 2, max: 3 },
+  { label: '4-6', min: 4, max: 6 },
+  { label: '7-10', min: 7, max: 10 },
+  { label: '10+', min: 11, max: 999 },
 ]
+
+function parseReps(s: string | null): number {
+  if (!s) return 0
+  const m = s.match(/\d+/)
+  return m ? parseInt(m[0]) : 0
+}
 
 const GRAPH_COLORS = ['#22d3ee', '#f59e0b', '#f472b6', '#a78bfa', '#22c55e', '#f87171']
 
@@ -420,7 +428,7 @@ function ProgressGraph({ userId }: { userId: string }) {
   const [exercises, setExercises] = useState<string[]>([])
   const [primaryLift, setPrimary] = useState('')
   const [secondaryLift, setSecondary] = useState('')
-  const [rpeRange, setRpeRange]   = useState(0) // index into RPE_RANGES
+  const [repRange, setRepRange]   = useState(0) // index into REP_RANGES
   const [loading, setLoading]     = useState(true)
   const [hovered, setHovered]     = useState<{lift:string;idx:number}|null>(null)
 
@@ -429,25 +437,29 @@ function ProgressGraph({ userId }: { userId: string }) {
   useEffect(() => {
     const load = async () => {
       // Get all blocks → weeks → workouts → workout_exercises with exercise name and dates
-      const { data: blocks } = await supabase
-        .from('blocks')
-        .select('id, name, weeks(week_number, workouts(workout_date, workout_exercises(actual_weight_kg, actual_rpe, exercise:exercises(name))))')
-        .eq('athlete_id', userId)
-        .order('created_at', { ascending: true })
+      const [blocksRes, allExRes] = await Promise.all([
+        supabase
+          .from('blocks')
+          .select('id, name, weeks(week_number, workouts(workout_date, workout_exercises(actual_weight_kg, actual_rpe, actual_reps, exercise:exercises(name))))')
+          .eq('athlete_id', userId)
+          .order('created_at', { ascending: true }),
+        supabase.from('exercises').select('name').order('name'),
+      ])
 
       const allRows: ProgressRow[] = []
-      const exSet = new Set<string>()
+      const loggedExSet = new Set<string>()
 
-      for (const block of (blocks ?? []) as any[]) {
+      for (const block of ((blocksRes.data ?? []) as any[])) {
         for (const week of (block.weeks ?? []) as any[]) {
           for (const workout of (week.workouts ?? []) as any[]) {
             for (const we of (workout.workout_exercises ?? []) as any[]) {
               if (!we.actual_weight_kg || !we.exercise?.name) continue
-              exSet.add(we.exercise.name)
+              loggedExSet.add(we.exercise.name)
               allRows.push({
                 date: workout.workout_date,
                 weight_kg: we.actual_weight_kg,
                 actual_rpe: we.actual_rpe,
+                actual_reps: we.actual_reps,
                 exercise_name: we.exercise.name,
                 block_name: block.name,
                 week_number: week.week_number,
@@ -460,20 +472,23 @@ function ProgressGraph({ userId }: { userId: string }) {
 
       allRows.sort((a, b) => a.date.localeCompare(b.date))
       setRows(allRows)
-      const exList = Array.from(exSet).sort()
-      setExercises(exList)
-      if (exList.length > 0) setPrimary(exList[0])
-      if (exList.length > 1) setSecondary(exList[1])
+      // All exercises from DB, with logged ones listed first
+      const allEx = (allExRes.data ?? []).map((e: any) => e.name as string)
+      const loggedFirst = [...Array.from(loggedExSet).sort(), ...allEx.filter(e => !loggedExSet.has(e))]
+      setExercises(loggedFirst)
+      const logged = Array.from(loggedExSet).sort()
+      if (logged.length > 0) setPrimary(logged[0])
+      if (logged.length > 1) setSecondary(logged[1])
       setLoading(false)
     }
     load()
   }, [userId])
 
   function filterRows(lift: string) {
-    const range = RPE_RANGES[rpeRange]
+    const range = REP_RANGES[repRange]
     return rows.filter(r =>
       r.exercise_name === lift &&
-      (range.min === 0 || (r.actual_rpe !== null && r.actual_rpe >= range.min && r.actual_rpe <= range.max))
+      (range.min === 0 || (r.actual_reps !== null && parseReps(r.actual_reps) >= range.min && parseReps(r.actual_reps) <= range.max))
     )
   }
 
@@ -546,7 +561,7 @@ function ProgressGraph({ userId }: { userId: string }) {
                 <foreignObject x={p.x - 60} y={p.y - 56} width="120" height="50" style={{ overflow: 'visible', pointerEvents: 'none' }}>
                   <div style={{ background: '#0d0d16', border: `1px solid ${color}44`, borderRadius: '8px', padding: '7px 10px', textAlign: 'center', whiteSpace: 'nowrap' as const, fontFamily: 'var(--fm)' }}>
                     <div style={{ fontSize: '1rem', fontWeight: 800, color, fontFamily: 'var(--fd)', lineHeight: 1 }}>{p.weight_kg}kg</div>
-                    {p.actual_rpe && <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>@RPE {p.actual_rpe}</div>}
+                    {p.actual_reps && <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>×{p.actual_reps} rep</div>}
                     <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.25)', marginTop: '1px' }}>{p.block_name} · W{p.week_number} · {p.date}</div>
                   </div>
                 </foreignObject>
@@ -588,13 +603,13 @@ function ProgressGraph({ userId }: { userId: string }) {
         </div>
       </div>
 
-      {/* RPE filter */}
+      {/* Reps filter */}
       <div>
-        <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', marginBottom: '6px' }}>RPE FILTER</div>
+        <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', marginBottom: '6px' }}>FILTER PO PONAVLJANJIMA</div>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const }}>
-          {RPE_RANGES.map((r, i) => (
-            <button key={r.label} onClick={() => setRpeRange(i)}
-              style={{ padding: '5px 12px', background: rpeRange === i ? `${COLOR}18` : 'transparent', border: `1px solid ${rpeRange === i ? COLOR : 'rgba(255,255,255,0.1)'}`, borderRadius: '6px', color: rpeRange === i ? COLOR : '#555', cursor: 'pointer', fontSize: '0.62rem', fontFamily: 'var(--fm)', transition: 'all 0.15s' }}>
+          {REP_RANGES.map((r, i) => (
+            <button key={r.label} onClick={() => setRepRange(i)}
+              style={{ padding: '5px 12px', background: repRange === i ? `${COLOR}18` : 'transparent', border: `1px solid ${repRange === i ? COLOR : 'rgba(255,255,255,0.1)'}`, borderRadius: '6px', color: repRange === i ? COLOR : '#555', cursor: 'pointer', fontSize: '0.62rem', fontFamily: 'var(--fm)', transition: 'all 0.15s' }}>
               {r.label}
             </button>
           ))}

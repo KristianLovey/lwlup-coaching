@@ -421,13 +421,13 @@ export default function ProfilePage() {
       setLeaderboard((lb ?? []) as LeaderboardEntry[])
       if (prof) setOrmVals({ squat: String(prof.current_squat_1rm ?? ''), bench: String(prof.current_bench_1rm ?? ''), deadlift: String(prof.current_deadlift_1rm ?? ''), body_weight: String(prof.body_weight ?? ''), sex: (prof.sex ?? 'male') as 'male'|'female' })
 
-      // ── Muscle group data from active block ──────────────────────
+      // ── Muscle group data from all logged workout exercises ───────
       try {
-        const { data: blockRow } = await supabase
-          .from('blocks').select('id').eq('athlete_id', user.id).eq('status', 'active')
-          .order('created_at', { ascending: false }).limit(1).maybeSingle()
-        if (blockRow) {
-          const { data: wks } = await supabase.from('weeks').select('id').eq('block_id', blockRow.id)
+        const { data: allBlocks } = await supabase
+          .from('blocks').select('id').eq('athlete_id', user.id)
+        const blockIds = (allBlocks ?? []).map((b: any) => b.id)
+        if (blockIds.length > 0) {
+          const { data: wks } = await supabase.from('weeks').select('id').in('block_id', blockIds)
           const wkIds = (wks ?? []).map((w: any) => w.id)
           if (wkIds.length > 0) {
             const { data: wos } = await supabase.from('workouts').select('id').in('week_id', wkIds)
@@ -435,7 +435,7 @@ export default function ProfilePage() {
             if (woIds.length > 0) {
               const { data: weRows } = await supabase
                 .from('workout_exercises')
-                .select('planned_sets, planned_reps, planned_weight_kg, exercise:exercises(category)')
+                .select('actual_reps, actual_weight_kg, planned_sets, planned_reps, planned_weight_kg, exercise:exercises(category)')
                 .in('workout_id', woIds)
               const groupMap: Record<string, { sets: number; tonnage: number }> = {}
               for (const we of (weRows ?? [])) {
@@ -448,8 +448,9 @@ export default function ProfilePage() {
                 if (!grp) continue
                 if (!groupMap[grp]) groupMap[grp] = { sets: 0, tonnage: 0 }
                 const sets = we.planned_sets ?? 1
-                const reps = parseInt(String(we.planned_reps ?? '5')) || 5
-                const kg = we.planned_weight_kg ?? 0
+                const repsRaw = we.actual_reps ?? String(we.planned_reps ?? '5')
+                const reps = parseInt(repsRaw.match(/\d+/)?.[0] ?? '5') || 5
+                const kg = we.actual_weight_kg ?? we.planned_weight_kg ?? 0
                 groupMap[grp].sets += sets
                 groupMap[grp].tonnage += sets * reps * kg
               }
