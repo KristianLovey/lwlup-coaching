@@ -37,7 +37,8 @@ function calcGL(total: number, bw: number, sex: 'male' | 'female' = 'male'): num
   return Math.round((total * 100 / denom) * 100) / 100
 }
 
-function normName(s: string) {
+function normName(s: string | null | undefined) {
+  if (!s) return ''
   return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
 }
 
@@ -145,8 +146,12 @@ export default function TeamPage() {
         return null
       }
 
-      const merged: AthleteStat[] = (profilesRes.data ?? []).map((p: any) => {
+      // Track which athlete_stats rows are matched to a profile
+      const matchedStatIds = new Set<string>()
+
+      const fromProfiles: AthleteStat[] = (profilesRes.data ?? []).map((p: any) => {
         const s = findStats(p.full_name)
+        if (s) matchedStatIds.add(s.id)
         const squat    = (p.current_squat_1rm    ?? s?.squat    ?? 0) as number
         const bench    = (p.current_bench_1rm     ?? s?.bench    ?? 0) as number
         const deadlift = (p.current_deadlift_1rm  ?? s?.deadlift ?? 0) as number
@@ -158,7 +163,7 @@ export default function TeamPage() {
 
         return {
           id:            p.id,
-          name:          p.full_name,
+          name:          p.full_name ?? s?.name ?? '',
           nickname:      s?.nickname   ?? null,
           img:           s?.img        ?? null,
           category:      cat,
@@ -173,6 +178,32 @@ export default function TeamPage() {
         }
       })
 
+      // Add athlete_stats entries that have no matching profile
+      const fromStatsOnly: AthleteStat[] = (statsRes.data ?? [])
+        .filter((s: any) => !matchedStatIds.has(s.id))
+        .map((s: any) => {
+          const squat    = (s.squat    ?? 0) as number
+          const bench    = (s.bench    ?? 0) as number
+          const deadlift = (s.deadlift ?? 0) as number
+          const total    = squat + bench + deadlift
+          return {
+            id:            s.id,
+            name:          s.name ?? '',
+            nickname:      s.nickname   ?? null,
+            img:           s.img        ?? null,
+            category:      s.category   ?? '',
+            squat,
+            bench,
+            deadlift,
+            total,
+            glp:           s.glp ?? 0,
+            highlights:    s.highlights ?? null,
+            instagram:     s.instagram  ?? null,
+            display_order: s.display_order ?? 99,
+          }
+        })
+
+      const merged = [...fromProfiles, ...fromStatsOnly]
       merged.sort((a, b) => a.display_order - b.display_order || a.name.localeCompare(b.name))
       setAthletes(merged)
       setLoading(false)

@@ -709,10 +709,7 @@ function WeightChart({ pts, toSvgX, toSvgY, minW, maxW }: {
   if (pts.length < 1) return null
 
   const W = CHART_W; const H = CHART_H
-  const last  = pts[pts.length - 1].weight_kg
-  const first = pts[0].weight_kg
-  const diff  = last - first
-  const isDown = diff <= 0
+  const last = pts[pts.length - 1].weight_kg
 
   const svgPts: [number, number][] = pts.map((p, i) => [toSvgX(i), toSvgY(p.weight_kg)])
   const pathD = smoothPath(svgPts)
@@ -746,24 +743,17 @@ function WeightChart({ pts, toSvgX, toSvgY, minW, maxW }: {
     <div style={{ animation: mounted ? 'wChartIn 0.5s cubic-bezier(0.16,1,0.3,1) both' : 'none', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.09)', background: 'linear-gradient(160deg, rgba(20,10,28,0.98) 0%, rgba(8,8,14,0.98) 100%)', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}>
 
       {/* Stats bar */}
-      <div className="wstats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1.4fr 1px 1fr', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="wstats-cell" style={{ padding: '16px 14px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}>
+      <div className="wstats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="wstats-cell" style={{ padding: '18px 14px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}>
           <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '7px', textTransform: 'uppercase' as const, textAlign: 'center' as const }}>Trenutna kilaza</div>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.7rem', fontWeight: 800, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'center' as const }}>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.9rem', fontWeight: 800, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'center' as const }}>
             {last}<span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.22)', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400 }}>kg</span>
           </div>
         </div>
         <div className="wstats-div" style={{ background: 'rgba(255,255,255,0.05)' }} />
-        <div className="wstats-cell" style={{ padding: '18px 14px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', background: diff === 0 ? 'transparent' : isDown ? 'rgba(74,222,128,0.04)' : 'rgba(248,113,113,0.04)' }}>
-          <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '7px', textTransform: 'uppercase' as const, textAlign: 'center' as const }}>Promjena</div>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: '2.1rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em', color: diff === 0 ? 'rgba(255,255,255,0.25)' : isDown ? '#4ade80' : '#f87171', textAlign: 'center' as const }}>
-            {diff > 0 ? '+' : ''}{diff.toFixed(1)}<span style={{ fontSize: '0.7rem', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400, opacity: 0.5 }}>kg</span>
-          </div>
-        </div>
-        <div className="wstats-div" style={{ background: 'rgba(255,255,255,0.05)' }} />
-        <div className="wstats-cell" style={{ padding: '16px 14px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}>
+        <div className="wstats-cell" style={{ padding: '18px 14px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}>
           <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '7px', textTransform: 'uppercase' as const, textAlign: 'center' as const }}>Broj unosa</div>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.7rem', fontWeight: 800, lineHeight: 1, color: '#f472b6', textAlign: 'center' as const }}>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.9rem', fontWeight: 800, lineHeight: 1, color: '#f472b6', textAlign: 'center' as const }}>
             {pts.length}
           </div>
         </div>
@@ -928,7 +918,10 @@ function WeightTracker({ userId }: { userId: string }) {
     setEntries(prev => prev.filter(e => e.id !== id))
   }
 
-  const pts = [...entries].reverse()
+  const pts   = [...entries].reverse()
+  const last  = pts.length ? pts[pts.length - 1].weight_kg : null
+  const first = pts.length ? pts[0].weight_kg : null
+  const diff  = last !== null && first !== null ? +(last - first).toFixed(1) : null
   const minW = pts.length ? Math.min(...pts.map(p => p.weight_kg)) - 0.5 : 0
   const maxW = pts.length ? Math.max(...pts.map(p => p.weight_kg)) + 0.5 : 100
   const toSvgX = (i: number) => pts.length < 2 ? CHART_W / 2 : Math.round((i / (pts.length - 1)) * CHART_W)
@@ -948,10 +941,15 @@ function WeightTracker({ userId }: { userId: string }) {
 
       {/* Input form */}
       <SectionTitle>Novi unos</SectionTitle>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', alignItems: 'end' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
         <CalcInput label="Datum" color={COLOR} type="date" value={date} onChange={setDate} max="2100-01-01" />
         <CalcInput label="Kilaza (kg)" color={COLOR} step="0.1" value={kg} onChange={setKg} placeholder="npr. 82.5" />
       </div>
+      {diff !== null && (
+        <div style={{ marginTop: '-8px', fontSize: '0.7rem', fontFamily: 'var(--fm)', color: diff === 0 ? 'rgba(255,255,255,0.25)' : diff < 0 ? '#4ade80' : '#f87171', letterSpacing: '0.05em' }}>
+          Promjena od prvog unosa: {diff > 0 ? '+' : ''}{diff} kg
+        </div>
+      )}
       <button onClick={save} disabled={saving || !kg}
         style={{ padding: '11px 28px', background: `${COLOR}18`, border: `1.5px solid ${COLOR}44`, borderRadius: '10px', cursor: kg ? 'pointer' : 'not-allowed', color: kg ? COLOR : 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.05em', width: 'fit-content', transition: 'all 0.2s', opacity: kg ? 1 : 0.5 }}>
         {saving ? 'Sprema...' : '+ Dodaj unos'}
@@ -1338,7 +1336,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
         <div
           onClick={e => { if (e.target === e.currentTarget) setActive(null) }}
           style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', animation: 'fadeIn 0.18s ease' }}>
-          <div style={{ width: '100%', maxWidth: '680px', maxHeight: '88vh', display: 'flex', flexDirection: 'column' as const, border: `1.5px solid ${activeTool.color}44`, borderRadius: '18px', overflow: 'hidden', boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px ${activeTool.color}18, 0 0 60px ${activeTool.color}10`, animation: 'panelIn 0.25s cubic-bezier(0.16,1,0.3,1)', background: '#0d0d16' }}>
+          <div style={{ width: '100%', maxWidth: '680px', maxHeight: '82vh', display: 'flex', flexDirection: 'column' as const, border: `1.5px solid ${activeTool.color}44`, borderRadius: '18px', overflow: 'hidden', boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px ${activeTool.color}18, 0 0 60px ${activeTool.color}10`, animation: 'panelIn 0.25s cubic-bezier(0.16,1,0.3,1)', background: '#0d0d16' }}>
 
             {/* Modal header */}
             <div style={{ padding: '16px 20px', background: `${activeTool.color}14`, borderBottom: `1px solid ${activeTool.color}2a`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>

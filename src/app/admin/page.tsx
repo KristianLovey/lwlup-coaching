@@ -678,38 +678,89 @@ export default function AdminPage() {
   const [addLifterError, setAddLifterError] = useState('')
   const [addLifterSuccess, setAddLifterSuccess] = useState('')
   type TeamStats = { squat: string; bench: string; deadlift: string; bw: string; wclass: string; sex: string }
+  type TeamEntry = { id: string; name: string; role?: string; source: 'profile' | 'stats' }
   const [teamStats, setTeamStats] = useState<Record<string, TeamStats>>({})
   const [teamSaving, setTeamSaving] = useState<Record<string, boolean>>({})
+  const [teamEntries, setTeamEntries] = useState<TeamEntry[]>([])
 
   const loadTeamStats = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, current_squat_1rm, current_bench_1rm, current_deadlift_1rm, body_weight, weight_class, sex')
-      .order('full_name')
-    if (!data) return
+    const norm = (s: string | null | undefined) => {
+      if (!s) return ''
+      return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+    }
+    const [profilesRes, statsRes] = await Promise.all([
+      supabase.from('profiles').select('id, full_name, role, current_squat_1rm, current_bench_1rm, current_deadlift_1rm, body_weight, weight_class, sex').neq('role', 'admin').order('full_name'),
+      supabase.from('athlete_stats').select('*').eq('is_active', true),
+    ])
+    const profileData = profilesRes.data ?? []
+    const statsData   = statsRes.data   ?? []
     const map: Record<string, TeamStats> = {}
-    for (const p of data) {
+    const entries: TeamEntry[] = []
+    const matchedStatIds = new Set<string>()
+
+    for (const p of profileData) {
+      const pNorm = norm(p.full_name)
+      const s = statsData.find((st: any) => {
+        const sNorm = norm(st.name)
+        return sNorm === pNorm || (pNorm.split(' ').pop() === sNorm.split(' ').pop() && !!pNorm)
+      })
+      if (s) matchedStatIds.add(s.id)
       map[p.id] = {
         squat:    String(p.current_squat_1rm   ?? ''),
         bench:    String(p.current_bench_1rm    ?? ''),
         deadlift: String(p.current_deadlift_1rm ?? ''),
         bw:       String(p.body_weight          ?? ''),
-        wclass:   p.weight_class ?? '',
+        wclass:   p.weight_class ?? (s?.category ?? '').replace(/^[MF]-/, '') ?? '',
         sex:      p.sex ?? 'male',
       }
+      entries.push({ id: p.id, name: p.full_name ?? '', role: p.role, source: 'profile' })
     }
+
+    for (const s of statsData) {
+      if (matchedStatIds.has(s.id)) continue
+      const sid = `stats_${s.id}`
+      const catParts = (s.category ?? '').split('-')
+      const sexFromCat = catParts[0] === 'F' ? 'female' : 'male'
+      const wclassFromCat = catParts.slice(1).join('-') || ''
+      map[sid] = {
+        squat:    String(s.squat    ?? ''),
+        bench:    String(s.bench    ?? ''),
+        deadlift: String(s.deadlift ?? ''),
+        bw:       '',
+        wclass:   wclassFromCat,
+        sex:      sexFromCat,
+      }
+      entries.push({ id: sid, name: s.name ?? '', source: 'stats' })
+    }
+
     setTeamStats(map)
+    setTeamEntries(entries)
   }
 
   const saveTeamField = async (id: string, field: keyof TeamStats, val: string) => {
-    const dbField: Record<keyof TeamStats, string> = {
-      squat: 'current_squat_1rm', bench: 'current_bench_1rm', deadlift: 'current_deadlift_1rm',
-      bw: 'body_weight', wclass: 'weight_class', sex: 'sex',
-    }
     setTeamSaving(p => ({ ...p, [id]: true }))
-    const numFields = ['squat', 'bench', 'deadlift', 'bw']
-    const value = numFields.includes(field) ? (val === '' ? null : parseFloat(val)) : (val || null)
-    await supabase.from('profiles').update({ [dbField[field]]: value }).eq('id', id)
+    if (id.startsWith('stats_')) {
+      const realId = id.replace('stats_', '')
+      const current = teamStats[id] ?? { squat: '', bench: '', deadlift: '', bw: '', wclass: '', sex: 'male' }
+      if (field === 'sex' || field === 'wclass') {
+        const sex    = field === 'sex'    ? val : current.sex
+        const wclass = field === 'wclass' ? val : current.wclass
+        const category = wclass ? `${sex === 'female' ? 'F' : 'M'}-${wclass}` : ''
+        await supabase.from('athlete_stats').update({ category }).eq('id', realId)
+      } else if (field === 'bw') {
+        // athlete_stats has no body_weight column
+      } else {
+        await supabase.from('athlete_stats').update({ [field]: val === '' ? null : parseFloat(val) }).eq('id', realId)
+      }
+    } else {
+      const dbField: Record<keyof TeamStats, string> = {
+        squat: 'current_squat_1rm', bench: 'current_bench_1rm', deadlift: 'current_deadlift_1rm',
+        bw: 'body_weight', wclass: 'weight_class', sex: 'sex',
+      }
+      const numFields = ['squat', 'bench', 'deadlift', 'bw']
+      const value = numFields.includes(field) ? (val === '' ? null : parseFloat(val)) : (val || null)
+      await supabase.from('profiles').update({ [dbField[field]]: value }).eq('id', id)
+    }
     setTeamSaving(p => ({ ...p, [id]: false }))
   }
 
@@ -1041,18 +1092,18 @@ export default function AdminPage() {
             {dashSection === 'tim' && (
               <div style={{ animation: 'fadeUp 0.3s ease' }}>
                 <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginBottom: '28px' }}>
-                  STATISTIKE TIMA — uredi 1RM i tjelesnu kilažu svakog liftera
+                  STATISTIKE TIMA — uredi 1RM svakog liftera
                 </div>
 
-                {athletes.filter(a => a.role !== 'admin').length === 0 && (
-                  <div style={{ padding: '40px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>Nema lifera.</div>
+                {teamEntries.length === 0 && (
+                  <div style={{ padding: '40px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>Nema liftera.</div>
                 )}
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-                  {athletes.filter(a => a.role !== 'admin').map(a => {
+                  {teamEntries.map(a => {
                     const stats = teamStats[a.id] ?? { squat: '', bench: '', deadlift: '', bw: '', wclass: '', sex: 'male' }
                     const saving = teamSaving[a.id]
-                    const initials = a.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() ?? '??'
+                    const initials = a.name?.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() || '??'
                     const inp = (field: 'squat'|'bench'|'deadlift'|'bw'|'wclass', accent: string, placeholder: string, label: string) => (
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '0.44rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginBottom: '5px', fontWeight: 700 }}>{label}</div>
@@ -1062,7 +1113,7 @@ export default function AdminPage() {
                           onChange={e => setTeamStats(p => ({ ...p, [a.id]: { ...stats, [field]: e.target.value } }))}
                           onBlur={e => saveTeamField(a.id, field, e.target.value)}
                           placeholder={placeholder}
-                          style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.08)`, borderRadius: '7px', color: '#f0f0f5', padding: '8px 10px', fontFamily: 'var(--fm)', fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box' as const, transition: 'border-color 0.15s' }}
+                          style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.08)`, borderRadius: '7px', color: '#f0f0f5', padding: '11px 10px', fontFamily: 'var(--fm)', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' as const, transition: 'border-color 0.15s' }}
                           onFocus={e => { e.currentTarget.style.borderColor = accent }}
                           onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
                         />
@@ -1078,8 +1129,8 @@ export default function AdminPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(255,255,255,0.12) 0%,rgba(255,255,255,0.04) 100%)', border: '1.5px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 800, color: '#fff', flexShrink: 0, fontFamily: 'var(--fm)' }}>{initials}</div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f0f0f5', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{a.full_name}</div>
-                            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', letterSpacing: '0.08em', marginTop: '1px' }}>{a.role?.toUpperCase()}</div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f0f0f5', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{a.name}</div>
+                            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', letterSpacing: '0.08em', marginTop: '1px' }}>{a.role?.toUpperCase() ?? 'LIFTER'}</div>
                           </div>
                           {saving && <Loader2 size={12} style={{ animation: 'spin 1s linear infinite', color: '#fbbf24', flexShrink: 0 }} />}
                         </div>
@@ -1107,20 +1158,6 @@ export default function AdminPage() {
                           {inp('deadlift', '#ef444466', '—', 'D')}
                         </div>
 
-                        {/* Body weight */}
-                        <div>
-                          <div style={{ fontSize: '0.44rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginBottom: '5px', fontWeight: 700 }}>TJELESNA KILAŽA</div>
-                          <input
-                            type="number"
-                            value={stats.bw}
-                            onChange={e => setTeamStats(p => ({ ...p, [a.id]: { ...stats, bw: e.target.value } }))}
-                            onBlur={e => saveTeamField(a.id, 'bw', e.target.value)}
-                            placeholder="kg"
-                            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '7px', color: '#f0f0f5', padding: '8px 10px', fontFamily: 'var(--fm)', fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box' as const, transition: 'border-color 0.15s' }}
-                            onFocus={e => { e.currentTarget.style.borderColor = '#a78bfa66' }}
-                            onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
-                          />
-                        </div>
                       </div>
                     )
                   })}
