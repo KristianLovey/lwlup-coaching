@@ -590,6 +590,342 @@ function BarLoader() {
 }
 
 // ─── HUB TAB COMPONENT ──────────────────────────────────────────
+// ─── WATER LOG ──────────────────────────────────────────────────
+type WaterSettings = { user_id: string; bw_kg: number | null; training_days: number | null; avg_training_min: number | null; goal_ml: number }
+type WaterEntry    = { id: string; log_date: string; amount_ml: number; created_at: string }
+
+function calcWaterGoal(bw: number, days: number, mins: number) {
+  const base    = bw * 33
+  const bonus   = (days * (mins / 60) * 500) / 7
+  return Math.round((base + bonus) / 100) * 100
+}
+
+const WL_QUICK = [
+  { ml: 200,  label: '0.2L', sub: 'Shot' },
+  { ml: 300,  label: '0.3L', sub: 'Čaša' },
+  { ml: 500,  label: '0.5L', sub: 'Boca' },
+  { ml: 1000, label: '1L',   sub: 'Galon' },
+]
+
+function WaterIcon({ ml }: { ml: number }) {
+  const C = '#38bdf8'
+  if (ml <= 200) return (
+    <svg width="28" height="32" viewBox="0 0 28 32" fill="none">
+      <path d="M8 4 L4 28 L24 28 L20 4 Z" fill={`${C}22`} stroke={C} strokeWidth="1.5" strokeLinejoin="round"/>
+      <line x1="5" y1="20" x2="23" y2="20" stroke={C} strokeWidth="1" strokeOpacity="0.4"/>
+    </svg>
+  )
+  if (ml <= 300) return (
+    <svg width="28" height="32" viewBox="0 0 28 32" fill="none">
+      <path d="M5 4 L6 28 L22 28 L23 4 Z" fill={`${C}22`} stroke={C} strokeWidth="1.5" strokeLinejoin="round"/>
+      <line x1="6" y1="20" x2="22" y2="20" stroke={C} strokeWidth="1" strokeOpacity="0.4"/>
+    </svg>
+  )
+  if (ml <= 500) return (
+    <svg width="28" height="34" viewBox="0 0 28 34" fill="none">
+      <rect x="9" y="2" width="10" height="6" rx="2" fill={`${C}22`} stroke={C} strokeWidth="1.5"/>
+      <path d="M6 8 L5 32 L23 32 L22 8 Z" fill={`${C}22`} stroke={C} strokeWidth="1.5" strokeLinejoin="round"/>
+      <line x1="6" y1="22" x2="22" y2="22" stroke={C} strokeWidth="1" strokeOpacity="0.4"/>
+    </svg>
+  )
+  return (
+    <svg width="32" height="34" viewBox="0 0 32 34" fill="none">
+      <rect x="6" y="2" width="18" height="6" rx="2" fill={`${C}22`} stroke={C} strokeWidth="1.5"/>
+      <path d="M4 8 L3 32 L23 32 L22 8 Z" fill={`${C}22`} stroke={C} strokeWidth="1.5" strokeLinejoin="round"/>
+      <path d="M22 14 Q30 14 30 20 Q30 26 22 26" fill="none" stroke={C} strokeWidth="1.5"/>
+      <line x1="4" y1="22" x2="22" y2="22" stroke={C} strokeWidth="1" strokeOpacity="0.4"/>
+    </svg>
+  )
+}
+
+function WaterLog({ userId }: { userId: string }) {
+  const COLOR = '#38bdf8'
+  const [tab, setTab]               = useState<'log' | 'graph'>('log')
+  const [settings, setSettings]     = useState<WaterSettings | null>(null)
+  const [entries, setEntries]       = useState<WaterEntry[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [customMl, setCustomMl]     = useState('')
+  const [showSettings, setShowSettings] = useState(false)
+  const [bwInput, setBwInput]       = useState('')
+  const [daysInput, setDaysInput]   = useState('')
+  const [minInput, setMinInput]     = useState('')
+  const [goalInput, setGoalInput]   = useState('')
+  const [saving, setSaving]         = useState(false)
+
+  const today = new Date().toISOString().split('T')[0]
+
+  useEffect(() => {
+    const load = async () => {
+      const [{ data: sett }, { data: ents }] = await Promise.all([
+        supabase.from('water_settings').select('*').eq('user_id', userId).single(),
+        supabase.from('water_logs').select('*').eq('user_id', userId)
+          .gte('log_date', new Date(Date.now() - 13 * 86400000).toISOString().split('T')[0])
+          .order('created_at', { ascending: false }),
+      ])
+      if (sett) {
+        const s = sett as WaterSettings
+        setSettings(s)
+        setBwInput(s.bw_kg?.toString() ?? '')
+        setDaysInput(s.training_days?.toString() ?? '')
+        setMinInput(s.avg_training_min?.toString() ?? '')
+        setGoalInput(s.goal_ml?.toString() ?? '')
+      } else {
+        setShowSettings(true)
+      }
+      setEntries((ents ?? []) as WaterEntry[])
+      setLoading(false)
+    }
+    load()
+  }, [userId])
+
+  const todayEntries = entries.filter(e => e.log_date === today)
+  const todayMl      = todayEntries.reduce((s, e) => s + e.amount_ml, 0)
+  const goalMl       = settings?.goal_ml ?? 2500
+  const progress     = Math.min(todayMl / goalMl, 1)
+  const remainL      = Math.max(0, (goalMl - todayMl) / 1000)
+
+  const addWater = async (ml: number) => {
+    const { data } = await supabase.from('water_logs')
+      .insert({ user_id: userId, log_date: today, amount_ml: ml })
+      .select('*').single()
+    if (data) setEntries(prev => [data as WaterEntry, ...prev])
+  }
+
+  const removeEntry = async (id: string) => {
+    await supabase.from('water_logs').delete().eq('id', id)
+    setEntries(prev => prev.filter(e => e.id !== id))
+  }
+
+  const saveSettings = async () => {
+    setSaving(true)
+    const bw   = parseFloat(bwInput) || null
+    const days = parseInt(daysInput) || null
+    const mins = parseInt(minInput) || null
+    const autoGoal = bw && days && mins ? calcWaterGoal(bw, days, mins) : null
+    const goal = parseInt(goalInput) || autoGoal || 2500
+    const payload = { user_id: userId, bw_kg: bw, training_days: days, avg_training_min: mins, goal_ml: goal }
+    const { data } = await supabase.from('water_settings')
+      .upsert(payload, { onConflict: 'user_id' }).select('*').single()
+    if (data) { setSettings(data as WaterSettings); setGoalInput(goal.toString()) }
+    setSaving(false)
+    setShowSettings(false)
+  }
+
+  // last 7 days for graph
+  const last7 = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(Date.now() - (6 - i) * 86400000)
+    const ds = d.toISOString().split('T')[0]
+    const ml = entries.filter(e => e.log_date === ds).reduce((s, e) => s + e.amount_ml, 0)
+    return { ds, label: d.toLocaleDateString('hr', { weekday: 'short' }), ml }
+  })
+  const maxBar = Math.max(goalMl, ...last7.map(d => d.ml), 1)
+
+  // SVG ring
+  const R = 52, CIRC = 2 * Math.PI * R
+  const dashLen = CIRC * progress
+
+  if (loading) return <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center' as const, padding: '24px 0', fontSize: '0.8rem' }}>Učitavanje...</div>
+
+  return (
+    <div style={{ fontFamily: 'var(--fm)', display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '2px', background: 'rgba(255,255,255,0.04)', borderRadius: '9px', padding: '3px' }}>
+        {([['log', 'DNEVNI LOG'], ['graph', 'GRAF NAPRETKA']] as const).map(([t, lbl]) => (
+          <button key={t} onClick={() => setTab(t)}
+            style={{ flex: 1, padding: '7px', background: tab === t ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', borderRadius: '6px', color: tab === t ? '#f0f0f5' : 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '0.62rem', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.08em', transition: 'all 0.15s' }}>
+            {lbl}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'log' && (
+        <>
+          {/* Circular gauge */}
+          <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '10px' }}>
+            <div style={{ position: 'relative', width: '148px', height: '148px' }}>
+              <svg viewBox="0 0 130 130" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                <circle cx="65" cy="65" r={R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="10" />
+                <circle cx="65" cy="65" r={R} fill="none" stroke={COLOR} strokeWidth="10"
+                  strokeLinecap="round"
+                  strokeDasharray={`${dashLen} ${CIRC - dashLen}`}
+                  style={{ transition: 'stroke-dasharray 0.5s cubic-bezier(0.16,1,0.3,1)', filter: `drop-shadow(0 0 8px ${COLOR}88)` }} />
+              </svg>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', fontWeight: 800, color: progress >= 1 ? '#4ade80' : COLOR, lineHeight: 1 }}>
+                  {progress >= 1 ? '✓' : `${remainL.toFixed(1)}L`}
+                </div>
+                <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', marginTop: '3px' }}>
+                  {progress >= 1 ? 'cilj postignut' : 'preostalo'}
+                </div>
+              </div>
+            </div>
+
+            {/* Cilj row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)' }}>CILJ</span>
+              <span style={{ fontFamily: 'var(--fd)', fontSize: '1rem', fontWeight: 700, color: '#f0f0f5' }}>{(goalMl / 1000).toFixed(1)}L</span>
+              <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.25)' }}>· popijeno {(todayMl / 1000).toFixed(2)}L</span>
+            </div>
+          </div>
+
+          {/* Quick-add */}
+          <div>
+            <div style={{ fontSize: '0.52rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px', fontWeight: 600 }}>UNOS</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px', marginBottom: '8px' }}>
+              {WL_QUICK.map(({ ml, label, sub }) => (
+                <button key={ml} onClick={() => addWater(ml)}
+                  style={{ padding: '12px 6px 10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '11px', cursor: 'pointer', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '7px', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = `${COLOR}12`; e.currentTarget.style.borderColor = `${COLOR}44` }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}>
+                  <WaterIcon ml={ml} />
+                  <div>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: COLOR, fontFamily: 'var(--fd)' }}>{label}</div>
+                    <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', marginTop: '1px' }}>{sub}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            {/* Custom input */}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input type="number" value={customMl} onChange={e => setCustomMl(e.target.value)}
+                placeholder="Specifični unos (ml)" min={1} step={50}
+                style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f0f0f5', padding: '9px 12px', fontFamily: 'var(--fm)', fontSize: '0.88rem', outline: 'none', transition: 'border-color 0.15s' }}
+                onFocus={e => e.currentTarget.style.borderColor = COLOR}
+                onBlur={e  => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
+                onKeyDown={e => { if (e.key === 'Enter') { const ml = parseInt(customMl); if (ml > 0) { addWater(ml); setCustomMl('') } } }}
+              />
+              <button onClick={() => { const ml = parseInt(customMl); if (ml > 0) { addWater(ml); setCustomMl('') } }}
+                style={{ padding: '9px 18px', background: COLOR, border: 'none', borderRadius: '8px', color: '#000', fontFamily: 'var(--fm)', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}>
+                +
+              </button>
+            </div>
+          </div>
+
+          {/* Today's log entries */}
+          {todayEntries.length > 0 && (
+            <div>
+              <div style={{ fontSize: '0.52rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontWeight: 600 }}>DANAS</div>
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '4px' }}>
+                {todayEntries.map(e => (
+                  <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px' }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: COLOR, flexShrink: 0, boxShadow: `0 0 5px ${COLOR}88` }} />
+                    <span style={{ flex: 1, fontSize: '0.82rem', color: '#e0e0e0', fontFamily: 'var(--fd)', fontWeight: 600 }}>
+                      {e.amount_ml >= 1000 ? `${(e.amount_ml / 1000).toFixed(1)}L` : `${e.amount_ml}ml`}
+                    </span>
+                    <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.25)' }}>
+                      {new Date(e.created_at).toLocaleTimeString('hr', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <button onClick={() => removeEntry(e.id)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', fontSize: '0.85rem', padding: '2px 4px', lineHeight: 1, transition: 'color 0.15s' }}
+                      onMouseEnter={ev => ev.currentTarget.style.color = '#f87171'}
+                      onMouseLeave={ev => ev.currentTarget.style.color = 'rgba(255,255,255,0.2)'}>×</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Settings section */}
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '14px' }}>
+            <button onClick={() => setShowSettings(s => !s)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: '0.58rem', fontFamily: 'var(--fm)', letterSpacing: '0.15em', fontWeight: 600, padding: 0 }}>
+              <ChevronDown size={12} style={{ transform: showSettings ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+              POSTAVKE & CILJ
+            </button>
+            {showSettings && (
+              <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column' as const, gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
+                  {([
+                    { lbl: 'KILAZA (kg)', val: bwInput, set: setBwInput, ph: 'npr. 85' },
+                    { lbl: 'TRENINZI/TJ', val: daysInput, set: setDaysInput, ph: 'npr. 4' },
+                    { lbl: 'MIN/TRENING', val: minInput, set: setMinInput, ph: 'npr. 90' },
+                  ] as const).map(({ lbl, val, set, ph }) => (
+                    <div key={lbl}>
+                      <div style={{ fontSize: '0.48rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', marginBottom: '5px', fontWeight: 600 }}>{lbl}</div>
+                      <input type="number" value={val} onChange={e => (set as any)(e.target.value)} placeholder={ph}
+                        style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '7px', color: '#f0f0f5', padding: '8px 10px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' as const }}
+                        onFocus={e => e.currentTarget.style.borderColor = COLOR}
+                        onBlur={e  => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                    </div>
+                  ))}
+                </div>
+                {/* Auto goal preview */}
+                {bwInput && daysInput && minInput && (() => {
+                  const auto = calcWaterGoal(parseFloat(bwInput), parseInt(daysInput), parseInt(minInput))
+                  return (
+                    <div style={{ padding: '8px 12px', background: `${COLOR}08`, border: `1px solid ${COLOR}20`, borderRadius: '7px', fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)' }}>
+                      Preporučeni cilj: <span style={{ color: COLOR, fontWeight: 700 }}>{(auto / 1000).toFixed(1)}L</span>
+                      <button onClick={() => setGoalInput(String(auto))}
+                        style={{ marginLeft: '8px', background: `${COLOR}18`, border: `1px solid ${COLOR}33`, borderRadius: '4px', color: COLOR, cursor: 'pointer', fontSize: '0.6rem', padding: '2px 7px', fontFamily: 'var(--fm)', fontWeight: 600 }}>
+                        Koristi
+                      </button>
+                    </div>
+                  )
+                })()}
+                {/* Manual goal */}
+                <div>
+                  <div style={{ fontSize: '0.48rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', marginBottom: '5px', fontWeight: 600 }}>VLASTITI CILJ (ml)</div>
+                  <input type="number" value={goalInput} onChange={e => setGoalInput(e.target.value)} placeholder="npr. 3000" step={100}
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '7px', color: '#f0f0f5', padding: '8px 10px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' as const }}
+                    onFocus={e => e.currentTarget.style.borderColor = COLOR}
+                    onBlur={e  => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                </div>
+                <button onClick={saveSettings} disabled={saving}
+                  style={{ padding: '10px', background: saving ? 'rgba(255,255,255,0.06)' : '#fff', border: 'none', borderRadius: '8px', color: saving ? '#555' : '#000', fontFamily: 'var(--fm)', fontSize: '0.72rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', letterSpacing: '0.05em', transition: 'all 0.2s' }}>
+                  {saving ? 'Snimanje...' : 'Spremi postavke'}
+                </button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {tab === 'graph' && (
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '16px' }}>
+          <div style={{ fontSize: '0.52rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>ZADNJIH 7 DANA</div>
+          {/* Bar chart */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '6px', alignItems: 'flex-end', height: '140px' }}>
+            {last7.map(({ ds, label, ml }) => {
+              const pct = ml / maxBar
+              const isToday = ds === today
+              const reached = ml >= goalMl
+              return (
+                <div key={ds} style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
+                  {/* Bar */}
+                  <div style={{ width: '100%', position: 'relative', flex: 1, display: 'flex', alignItems: 'flex-end' }}>
+                    {/* Goal line */}
+                    <div style={{ position: 'absolute', bottom: `${(goalMl / maxBar) * 100}%`, left: 0, right: 0, borderTop: `1px dashed ${COLOR}33`, zIndex: 1 }} />
+                    <div style={{ width: '100%', height: `${Math.max(pct * 100, 3)}%`, background: reached ? '#4ade8044' : `${COLOR}30`, border: `1px solid ${reached ? '#4ade80' : COLOR}${isToday ? 'cc' : '55'}`, borderRadius: '5px 5px 3px 3px', transition: 'height 0.4s ease', boxShadow: isToday ? `0 0 10px ${COLOR}44` : 'none' }} />
+                  </div>
+                  {/* ml label */}
+                  <div style={{ fontSize: '0.52rem', color: ml > 0 ? (reached ? '#4ade80' : COLOR) : 'rgba(255,255,255,0.2)', fontFamily: 'var(--fd)', fontWeight: 700 }}>
+                    {ml > 0 ? (ml >= 1000 ? `${(ml/1000).toFixed(1)}L` : `${ml}`) : '—'}
+                  </div>
+                  {/* Day label */}
+                  <div style={{ fontSize: '0.55rem', color: isToday ? '#f0f0f5' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: isToday ? 700 : 400 }}>
+                    {label}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          {/* Legend */}
+          <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' as const }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)' }}>
+              <div style={{ width: 20, borderTop: `1px dashed ${COLOR}66` }} /> Cilj ({(goalMl/1000).toFixed(1)}L)
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)' }}>
+              <div style={{ width: 10, height: 10, background: '#4ade8044', border: '1px solid #4ade80', borderRadius: 2 }} /> Cilj postignut
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── HUB TOOLS ──────────────────────────────────────────────────
 const HUB_TOOLS = [
   { id:'rpe',        label:'RPE Kalkulator',     sub:'Izračun 1RM i preporučene težine', color:'#f59e0b', badge:'CALC',  group:'calc'  },
   { id:'gl',         label:'GL Points',           sub:'IPF Goodlift formula',             color:'#6b8cff', badge:'CALC',  group:'calc'  },
@@ -600,6 +936,7 @@ const HUB_TOOLS = [
   { id:'guide-peak', label:'Peaking Guide',       sub:'Priprema za natjecanje',           color:'#a78bfa', badge:'GUIDE', group:'guide', upcoming: true },
   { id:'progress',   label:'Graf napretka',       sub:'Kilaze kroz blokove po liftu',     color:'#22d3ee', badge:'GRAF',  group:'log'   },
   { id:'weight',     label:'Tjelesna kilaza',     sub:'Unos i praćenje kilaze kroz dane', color:'#f472b6', badge:'LOG',   group:'log'   },
+  { id:'hydration',  label:'Log Vode',            sub:'Dnevni unos i cilj hidratacije',   color:'#38bdf8', badge:'LOG',   group:'log'   },
   { id:'nutrition',  label:'Prehrana & Kalorije', sub:'TDEE, makrosi i dnevni log',       color:'#f97316', badge:'LOG',   group:'log'   },
 ]
 
@@ -1706,6 +2043,8 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
               {active === 'progress'  && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za prikaz grafa.</div>}
               {active === 'weight'    && userId  && <WeightTracker userId={userId} />}
               {active === 'weight'    && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje kilaze.</div>}
+              {active === 'hydration' && userId  && <WaterLog userId={userId} />}
+              {active === 'hydration' && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za log vode.</div>}
               {active === 'nutrition' && userId  && <NutritionTracker userId={userId} />}
               {active === 'nutrition' && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje prehrane.</div>}
               {['guide-wc','guide-rpe','guide-peak'].includes(active) && (() => {
