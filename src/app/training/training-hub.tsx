@@ -609,31 +609,34 @@ const WL_QUICK = [
 
 function WaterIcon({ ml }: { ml: number }) {
   const C = '#38bdf8'
-  if (ml <= 200) return (
-    <svg width="28" height="32" viewBox="0 0 28 32" fill="none">
-      <path d="M8 4 L4 28 L24 28 L20 4 Z" fill={`${C}22`} stroke={C} strokeWidth="1.5" strokeLinejoin="round"/>
-      <line x1="5" y1="20" x2="23" y2="20" stroke={C} strokeWidth="1" strokeOpacity="0.4"/>
+  const fill = `${C}20`
+  if (ml <= 200) return ( // Shot glass — V shape
+    <svg width="26" height="30" viewBox="0 0 26 30" fill="none">
+      <path d="M3 3 H23 L17 27 H9 Z" fill={fill} stroke={C} strokeWidth="1.6" strokeLinejoin="round"/>
+      <path d="M9.5 27 H16.5" stroke={C} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M5 11 H21" stroke={C} strokeWidth="0.8" strokeOpacity="0.35"/>
     </svg>
   )
-  if (ml <= 300) return (
-    <svg width="28" height="32" viewBox="0 0 28 32" fill="none">
-      <path d="M5 4 L6 28 L22 28 L23 4 Z" fill={`${C}22`} stroke={C} strokeWidth="1.5" strokeLinejoin="round"/>
-      <line x1="6" y1="20" x2="22" y2="20" stroke={C} strokeWidth="1" strokeOpacity="0.4"/>
+  if (ml <= 300) return ( // Cup — straight with handle
+    <svg width="26" height="30" viewBox="0 0 26 30" fill="none">
+      <path d="M4 4 H22 L20 26 H6 Z" fill={fill} stroke={C} strokeWidth="1.6" strokeLinejoin="round"/>
+      <path d="M20 10 Q26 10 26 16 Q26 22 20 22" fill="none" stroke={C} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M5.5 15 H20" stroke={C} strokeWidth="0.8" strokeOpacity="0.35"/>
     </svg>
   )
-  if (ml <= 500) return (
-    <svg width="28" height="34" viewBox="0 0 28 34" fill="none">
-      <rect x="9" y="2" width="10" height="6" rx="2" fill={`${C}22`} stroke={C} strokeWidth="1.5"/>
-      <path d="M6 8 L5 32 L23 32 L22 8 Z" fill={`${C}22`} stroke={C} strokeWidth="1.5" strokeLinejoin="round"/>
-      <line x1="6" y1="22" x2="22" y2="22" stroke={C} strokeWidth="1" strokeOpacity="0.4"/>
+  if (ml <= 500) return ( // Bottle
+    <svg width="22" height="34" viewBox="0 0 22 34" fill="none">
+      <rect x="7" y="1" width="8" height="5" rx="2" fill={fill} stroke={C} strokeWidth="1.5"/>
+      <path d="M4 6 Q4 10 4 12 L3 31 Q3 33 11 33 Q19 33 19 31 L18 12 Q18 10 18 6 Z" fill={fill} stroke={C} strokeWidth="1.5" strokeLinejoin="round"/>
+      <path d="M4.5 20 H17.5" stroke={C} strokeWidth="0.8" strokeOpacity="0.35"/>
     </svg>
   )
-  return (
-    <svg width="32" height="34" viewBox="0 0 32 34" fill="none">
-      <rect x="6" y="2" width="18" height="6" rx="2" fill={`${C}22`} stroke={C} strokeWidth="1.5"/>
-      <path d="M4 8 L3 32 L23 32 L22 8 Z" fill={`${C}22`} stroke={C} strokeWidth="1.5" strokeLinejoin="round"/>
-      <path d="M22 14 Q30 14 30 20 Q30 26 22 26" fill="none" stroke={C} strokeWidth="1.5"/>
-      <line x1="4" y1="22" x2="22" y2="22" stroke={C} strokeWidth="1" strokeOpacity="0.4"/>
+  return ( // Jug/gallon — wide bottle with handle
+    <svg width="30" height="34" viewBox="0 0 30 34" fill="none">
+      <rect x="8" y="1" width="9" height="5" rx="2" fill={fill} stroke={C} strokeWidth="1.5"/>
+      <path d="M3 6 L3 31 Q3 33 13 33 Q23 33 23 31 L23 6 Z" fill={fill} stroke={C} strokeWidth="1.5" strokeLinejoin="round"/>
+      <path d="M23 12 Q29 12 29 18 Q29 24 23 24" fill="none" stroke={C} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M4 20 H22" stroke={C} strokeWidth="0.8" strokeOpacity="0.35"/>
     </svg>
   )
 }
@@ -659,7 +662,7 @@ function WaterLog({ userId }: { userId: string }) {
       const [{ data: sett }, { data: ents }] = await Promise.all([
         supabase.from('water_settings').select('*').eq('user_id', userId).single(),
         supabase.from('water_logs').select('*').eq('user_id', userId)
-          .gte('log_date', new Date(Date.now() - 13 * 86400000).toISOString().split('T')[0])
+          .gte('log_date', (() => { const d = new Date(); d.setHours(0,0,0,0); const day = d.getDay(); d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); return d.toISOString().split('T')[0] })())
           .order('created_at', { ascending: false }),
       ])
       if (sett) {
@@ -711,9 +714,15 @@ function WaterLog({ userId }: { userId: string }) {
     setShowSettings(false)
   }
 
-  // last 7 days for graph
+  // Mon–Sun of current week
+  const weekMon = (() => {
+    const d = new Date(); d.setHours(0,0,0,0)
+    const day = d.getDay()
+    d.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
+    return d
+  })()
   const last7 = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(Date.now() - (6 - i) * 86400000)
+    const d = new Date(weekMon.getTime() + i * 86400000)
     const ds = d.toISOString().split('T')[0]
     const ml = entries.filter(e => e.log_date === ds).reduce((s, e) => s + e.amount_ml, 0)
     return { ds, label: d.toLocaleDateString('hr', { weekday: 'short' }), ml }
@@ -744,12 +753,19 @@ function WaterLog({ userId }: { userId: string }) {
           {/* Circular gauge */}
           <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '10px' }}>
             <div style={{ position: 'relative', width: '148px', height: '148px' }}>
-              <svg viewBox="0 0 130 130" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+              <svg viewBox="0 0 130 130" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)', overflow: 'visible' }}>
+                <defs>
+                  <filter id="wl-glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                </defs>
                 <circle cx="65" cy="65" r={R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="10" />
                 <circle cx="65" cy="65" r={R} fill="none" stroke={COLOR} strokeWidth="10"
                   strokeLinecap="round"
                   strokeDasharray={`${dashLen} ${CIRC - dashLen}`}
-                  style={{ transition: 'stroke-dasharray 0.5s cubic-bezier(0.16,1,0.3,1)', filter: `drop-shadow(0 0 8px ${COLOR}88)` }} />
+                  filter="url(#wl-glow)"
+                  style={{ transition: 'stroke-dasharray 0.5s cubic-bezier(0.16,1,0.3,1)' }} />
               </svg>
               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}>
                 <div style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', fontWeight: 800, color: progress >= 1 ? '#4ade80' : COLOR, lineHeight: 1 }}>
