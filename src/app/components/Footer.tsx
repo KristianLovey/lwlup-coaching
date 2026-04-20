@@ -110,7 +110,7 @@ export default function Footer() {
             © 2026 LWL UP POWERLIFTING. ALL RIGHTS RESERVED.
           </span>
           <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.15)', letterSpacing: '0.1em' }}>
-            DESIGNED BY <span style={{ color: 'rgba(255,255,255,0.3)' }}>[NexusCortex]</span>
+            DESIGNED BY <span style={{ color: 'rgba(255,255,255,0.3)' }}>Kristian Lovey</span>
           </span>
         </div>
       </div>
