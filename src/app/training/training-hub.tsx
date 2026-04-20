@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
+import { X, Calculator, BookOpen, BarChart2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 const supabase = createClient()
@@ -53,11 +53,16 @@ export function ResultCard({ label, value, unit, color, sub }: { label: string; 
 }
 
 // ─── SHARED: Section title ────────────────────────────────────────
-export function SectionTitle({ children }: { children: React.ReactNode }) {
+export function SectionTitle({ children, icon, color }: { children: React.ReactNode; icon?: React.ReactNode; color?: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-      <div style={{ height: '1px', width: '24px', background: 'rgba(255,255,255,0.15)' }} />
-      <span style={{ fontSize: '0.62rem', fontWeight: 600, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>{children}</span>
+      {icon && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '6px', background: color ? `${color}18` : 'rgba(255,255,255,0.06)', color: color ?? 'rgba(255,255,255,0.4)', flexShrink: 0 }}>
+          {icon}
+        </div>
+      )}
+      <span style={{ fontSize: '0.62rem', fontWeight: 600, color: color ?? 'rgba(255,255,255,0.35)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>{children}</span>
+      <div style={{ height: '1px', flex: 1, background: color ? `${color}20` : 'rgba(255,255,255,0.07)' }} />
     </div>
   )
 }
@@ -372,9 +377,9 @@ const HUB_TOOLS = [
 ]
 
 const HUB_GROUPS = [
-  { key: 'calc',  title: 'Kalkulatori' },
-  { key: 'guide', title: 'Vodiči' },
-  { key: 'log',   title: 'Logiranje' },
+  { key: 'calc',  title: 'Kalkulatori', color: '#60a5fa', icon: <Calculator size={13} strokeWidth={2.2} /> },
+  { key: 'guide', title: 'Vodiči',      color: '#34d399', icon: <BookOpen   size={13} strokeWidth={2.2} /> },
+  { key: 'log',   title: 'Logiranje',   color: '#a78bfa', icon: <BarChart2  size={13} strokeWidth={2.2} /> },
 ]
 
 const GUIDE_CONTENT: Record<string,{title:string;body:string[]}> = {
@@ -695,11 +700,12 @@ function smoothPath(svgPts: [number, number][]) {
   return d
 }
 
-function WeightChart({ pts, toSvgX, toSvgY, minW, maxW }: {
+function WeightChart({ pts, toSvgX, toSvgY, minW, maxW, baselineKg }: {
   pts: { id: string; date: string; weight_kg: number }[]
   toSvgX: (i: number) => number
   toSvgY: (w: number) => number
   minW: number; maxW: number
+  baselineKg?: number | null
 }) {
   const [mounted, setMounted] = useState(false)
   const [hovered, setHovered] = useState<number | null>(null)
@@ -709,7 +715,10 @@ function WeightChart({ pts, toSvgX, toSvgY, minW, maxW }: {
   if (pts.length < 1) return null
 
   const W = CHART_W; const H = CHART_H
-  const last = pts[pts.length - 1].weight_kg
+  const last   = pts[pts.length - 1].weight_kg
+  const base   = baselineKg ?? pts[0].weight_kg
+  const diff   = +(last - base).toFixed(1)
+  const isDown = diff <= 0
 
   const svgPts: [number, number][] = pts.map((p, i) => [toSvgX(i), toSvgY(p.weight_kg)])
   const pathD = smoothPath(svgPts)
@@ -742,20 +751,28 @@ function WeightChart({ pts, toSvgX, toSvgY, minW, maxW }: {
   return (
     <div style={{ animation: mounted ? 'wChartIn 0.5s cubic-bezier(0.16,1,0.3,1) both' : 'none', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.09)', background: 'linear-gradient(160deg, rgba(20,10,28,0.98) 0%, rgba(8,8,14,0.98) 100%)', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}>
 
-      {/* Stats bar */}
+      {/* Stats bar — row 1 */}
       <div className="wstats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="wstats-cell" style={{ padding: '18px 14px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}>
-          <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '7px', textTransform: 'uppercase' as const, textAlign: 'center' as const }}>Trenutna kilaza</div>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.9rem', fontWeight: 800, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'center' as const }}>
+        <div className="wstats-cell" style={{ padding: '16px 14px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}>
+          <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase' as const, textAlign: 'center' as const }}>Trenutna kilaza</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', fontWeight: 800, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'center' as const }}>
             {last}<span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.22)', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400 }}>kg</span>
           </div>
         </div>
         <div className="wstats-div" style={{ background: 'rgba(255,255,255,0.05)' }} />
-        <div className="wstats-cell" style={{ padding: '18px 14px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}>
-          <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '7px', textTransform: 'uppercase' as const, textAlign: 'center' as const }}>Broj unosa</div>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.9rem', fontWeight: 800, lineHeight: 1, color: '#f472b6', textAlign: 'center' as const }}>
+        <div className="wstats-cell" style={{ padding: '16px 14px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}>
+          <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase' as const, textAlign: 'center' as const }}>Broj unosa</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', fontWeight: 800, lineHeight: 1, color: '#f472b6', textAlign: 'center' as const }}>
             {pts.length}
           </div>
+        </div>
+      </div>
+
+      {/* Stats bar — row 2: Promjena */}
+      <div style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', background: diff === 0 ? 'transparent' : isDown ? 'rgba(74,222,128,0.04)' : 'rgba(248,113,113,0.04)' }}>
+        <div style={{ fontSize: '0.38rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '5px', textTransform: 'uppercase' as const }}>Promjena</div>
+        <div style={{ fontFamily: 'var(--fd)', fontSize: '1.5rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em', color: diff === 0 ? 'rgba(255,255,255,0.25)' : isDown ? '#4ade80' : '#f87171' }}>
+          {diff > 0 ? '+' : ''}{diff}<span style={{ fontSize: '0.65rem', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400, opacity: 0.6 }}>kg</span>
         </div>
       </div>
 
@@ -876,19 +893,20 @@ function WeightChart({ pts, toSvgX, toSvgY, minW, maxW }: {
 }
 
 // ─── WEIGHT TRACKER ──────────────────────────────────────────────
-type WeightEntry = { id: string; date: string; weight_kg: number }
+type WeightEntry = { id: string; date: string; weight_kg: number; is_weight_baseline?: boolean }
 
 function WeightTracker({ userId }: { userId: string }) {
   const COLOR = '#f472b6'
-  const [entries, setEntries] = useState<WeightEntry[]>([])
-  const [date, setDate]       = useState(new Date().toISOString().split('T')[0])
-  const [kg, setKg]           = useState('')
-  const [saving, setSaving]   = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [entries, setEntries]         = useState<WeightEntry[]>([])
+  const [date, setDate]               = useState(new Date().toISOString().split('T')[0])
+  const [kg, setKg]                   = useState('')
+  const [saving, setSaving]           = useState(false)
+  const [loading, setLoading]         = useState(true)
+  const [confirmId, setConfirmId]     = useState<string | null>(null)  // entry pending baseline confirm
 
   useEffect(() => {
     supabase.from('pr_logs')
-      .select('id, date, weight_kg')
+      .select('id, date, weight_kg, is_weight_baseline')
       .eq('athlete_id', userId)
       .eq('lift', 'other').eq('notes', 'Tjelesna težina')
       .order('date', { ascending: false })
@@ -896,19 +914,33 @@ function WeightTracker({ userId }: { userId: string }) {
       .then(({ data }) => { setEntries((data ?? []) as WeightEntry[]); setLoading(false) })
   }, [userId])
 
+  const baselineEntry = entries.find(e => e.is_weight_baseline)
+  const baselineKg    = baselineEntry?.weight_kg ?? null
+
+  const confirmSetBaseline = async () => {
+    if (!confirmId) return
+    // Clear old baseline, set new one
+    await supabase.from('pr_logs')
+      .update({ is_weight_baseline: false })
+      .eq('athlete_id', userId).eq('is_weight_baseline', true)
+    await supabase.from('pr_logs')
+      .update({ is_weight_baseline: true })
+      .eq('id', confirmId)
+    setEntries(prev => prev.map(e => ({ ...e, is_weight_baseline: e.id === confirmId })))
+    setConfirmId(null)
+  }
+
   const save = async () => {
     if (!kg || !date) return
     setSaving(true)
-    // Dohvati trenutnog auth usera direktno — ne oslanjaj se na prop
     const { data: { user } } = await supabase.auth.getUser()
     const authId = user?.id
-    console.log('userId prop:', userId, 'auth.uid:', authId)
     if (!authId) { setSaving(false); return }
     const { data, error } = await supabase.from('pr_logs').insert({
       athlete_id: authId, lift: 'other', reps: 0,
       weight_kg: parseFloat(kg), date, source: 'manual', notes: 'Tjelesna težina',
-    }).select('id, date, weight_kg').single()
-    if (error) console.error('pr_logs insert error:', JSON.stringify(error), 'code:', error.code, 'message:', error.message, 'details:', error.details, 'hint:', error.hint)
+    }).select('id, date, weight_kg, is_weight_baseline').single()
+    if (error) console.error('pr_logs insert error:', error.message)
     if (data) setEntries(prev => [data as WeightEntry, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
     setKg(''); setSaving(false)
   }
@@ -918,10 +950,7 @@ function WeightTracker({ userId }: { userId: string }) {
     setEntries(prev => prev.filter(e => e.id !== id))
   }
 
-  const pts   = [...entries].reverse()
-  const last  = pts.length ? pts[pts.length - 1].weight_kg : null
-  const first = pts.length ? pts[0].weight_kg : null
-  const diff  = last !== null && first !== null ? +(last - first).toFixed(1) : null
+  const pts  = [...entries].reverse()
   const minW = pts.length ? Math.min(...pts.map(p => p.weight_kg)) - 0.5 : 0
   const maxW = pts.length ? Math.max(...pts.map(p => p.weight_kg)) + 0.5 : 100
   const toSvgX = (i: number) => pts.length < 2 ? CHART_W / 2 : Math.round((i / (pts.length - 1)) * CHART_W)
@@ -930,14 +959,35 @@ function WeightTracker({ userId }: { userId: string }) {
     return Math.round(CHART_H - 10 - ((w - minW) / range) * (CHART_H - 20))
   }
 
-
   if (loading) return <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', padding: '24px 0', textAlign: 'center' as const }}>Učitavanje...</div>
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '24px' }}>
 
+      {/* Confirm dialog */}
+      {confirmId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: '#13131e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', padding: '28px 28px 24px', maxWidth: '340px', width: '90%', boxShadow: '0 24px 60px rgba(0,0,0,0.7)' }}>
+            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f0f0f5', fontFamily: 'var(--fm)', marginBottom: '10px' }}>Promijeni baznu kilažu?</div>
+            <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', lineHeight: 1.6, marginBottom: '22px' }}>
+              Promjena se računata od ovog unosa. Stari referentni unos briše se.
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={() => setConfirmId(null)}
+                style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '9px', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.74rem', fontFamily: 'var(--fm)', fontWeight: 600 }}>
+                Odustani
+              </button>
+              <button onClick={confirmSetBaseline}
+                style={{ flex: 1, padding: '10px', background: COLOR, border: 'none', borderRadius: '9px', color: '#000', cursor: 'pointer', fontSize: '0.74rem', fontFamily: 'var(--fm)', fontWeight: 700 }}>
+                Da, postavi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Chart */}
-      {pts.length >= 1 && <WeightChart pts={pts} toSvgX={toSvgX} toSvgY={toSvgY} minW={minW} maxW={maxW} />}
+      {pts.length >= 1 && <WeightChart pts={pts} toSvgX={toSvgX} toSvgY={toSvgY} minW={minW} maxW={maxW} baselineKg={baselineKg} />}
 
       {/* Input form */}
       <SectionTitle>Novi unos</SectionTitle>
@@ -945,11 +995,6 @@ function WeightTracker({ userId }: { userId: string }) {
         <CalcInput label="Datum" color={COLOR} type="date" value={date} onChange={setDate} max="2100-01-01" />
         <CalcInput label="Kilaza (kg)" color={COLOR} step="0.1" value={kg} onChange={setKg} placeholder="npr. 82.5" />
       </div>
-      {diff !== null && (
-        <div style={{ marginTop: '-8px', fontSize: '0.7rem', fontFamily: 'var(--fm)', color: diff === 0 ? 'rgba(255,255,255,0.25)' : diff < 0 ? '#4ade80' : '#f87171', letterSpacing: '0.05em' }}>
-          Promjena od prvog unosa: {diff > 0 ? '+' : ''}{diff} kg
-        </div>
-      )}
       <button onClick={save} disabled={saving || !kg}
         style={{ padding: '11px 28px', background: `${COLOR}18`, border: `1.5px solid ${COLOR}44`, borderRadius: '10px', cursor: kg ? 'pointer' : 'not-allowed', color: kg ? COLOR : 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.05em', width: 'fit-content', transition: 'all 0.2s', opacity: kg ? 1 : 0.5 }}>
         {saving ? 'Sprema...' : '+ Dodaj unos'}
@@ -960,18 +1005,33 @@ function WeightTracker({ userId }: { userId: string }) {
         <>
           <SectionTitle>Povijest ({entries.length} unosa)</SectionTitle>
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '5px' }}>
-            {entries.map(e => (
-              <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '9px' }}>
-                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--fm)', minWidth: '84px' }}>{e.date}</span>
-                <span style={{ fontSize: '1rem', fontWeight: 800, color: COLOR, fontFamily: 'var(--fd)', flex: 1 }}>{e.weight_kg} <span style={{ fontSize: '0.65rem', fontWeight: 400, color: `${COLOR}88` }}>kg</span></span>
-                <button onClick={() => remove(e.id)}
-                  style={{ background: 'transparent', border: 'none', color: 'rgba(255,80,80,0.35)', cursor: 'pointer', fontSize: '0.7rem', padding: '4px 6px', borderRadius: '5px', transition: 'all 0.15s', fontFamily: 'var(--fm)' }}
-                  onMouseEnter={e2 => (e2.currentTarget.style.color = '#f87171')}
-                  onMouseLeave={e2 => (e2.currentTarget.style.color = 'rgba(255,80,80,0.35)')}>
-                  ✕
-                </button>
-              </div>
-            ))}
+            {entries.map(e => {
+              const isBase = !!e.is_weight_baseline
+              return (
+                <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: isBase ? `${COLOR}0a` : 'rgba(255,255,255,0.02)', border: `1px solid ${isBase ? COLOR + '33' : 'rgba(255,255,255,0.06)'}`, borderRadius: '9px', transition: 'all 0.2s' }}>
+                  {/* Baseline toggle */}
+                  <button
+                    title={isBase ? 'Ovo je referentna kilaza' : 'Postavi kao referentnu kilazu'}
+                    onClick={() => !isBase && setConfirmId(e.id)}
+                    style={{ width: '22px', height: '22px', borderRadius: '50%', border: `1.5px solid ${isBase ? COLOR : 'rgba(255,255,255,0.18)'}`, background: isBase ? COLOR : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isBase ? 'default' : 'pointer', flexShrink: 0, transition: 'all 0.2s' }}
+                    onMouseEnter={e2 => { if (!isBase) e2.currentTarget.style.borderColor = COLOR }}
+                    onMouseLeave={e2 => { if (!isBase) e2.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)' }}>
+                    {isBase && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#000" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </button>
+                  <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--fm)', minWidth: '84px' }}>{e.date}</span>
+                  <span style={{ fontSize: '1rem', fontWeight: 800, color: COLOR, fontFamily: 'var(--fd)', flex: 1 }}>
+                    {e.weight_kg} <span style={{ fontSize: '0.65rem', fontWeight: 400, color: `${COLOR}88` }}>kg</span>
+                  </span>
+                  {isBase && <span style={{ fontSize: '0.52rem', letterSpacing: '0.1em', color: COLOR, fontFamily: 'var(--fm)', fontWeight: 700 }}>REFERENCA</span>}
+                  <button onClick={() => remove(e.id)}
+                    style={{ background: 'transparent', border: 'none', color: 'rgba(255,80,80,0.35)', cursor: 'pointer', fontSize: '0.7rem', padding: '4px 6px', borderRadius: '5px', transition: 'all 0.15s', fontFamily: 'var(--fm)' }}
+                    onMouseEnter={e2 => (e2.currentTarget.style.color = '#f87171')}
+                    onMouseLeave={e2 => (e2.currentTarget.style.color = 'rgba(255,80,80,0.35)')}>
+                    ✕
+                  </button>
+                </div>
+              )
+            })}
           </div>
         </>
       )}
@@ -1322,7 +1382,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
           const tools = HUB_TOOLS.filter(t => t.group === g.key)
           return (
             <div key={g.key} style={{ marginBottom: '4px' }}>
-              <SectionTitle>{g.title}</SectionTitle>
+              <SectionTitle icon={g.icon} color={g.color}>{g.title}</SectionTitle>
               <div className="hub-tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(clamp(160px,26vw,260px),1fr))', gap: '8px', marginBottom: '20px' }}>
                 {tools.map(renderToolCard)}
               </div>

@@ -255,17 +255,25 @@ function AthletePanel({
 
   // ── CRUD ────────────────────────────────────────────────────────
   const addWeek = async () => {
-    if (!block) return; setSaving(true)
+    if (!block || saving) return
+    setSaving(true)
     const ew = block.weeks ?? []; const weekNum = ew.length + 1
     const lastEnd = ew.length > 0 ? new Date(ew[ew.length - 1].end_date) : new Date(block.start_date)
     const startDate = new Date(lastEnd); if (ew.length > 0) startDate.setDate(startDate.getDate() + 1)
     const endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 6)
+    const sd = startDate.toISOString().split('T')[0]
+    const ed = endDate.toISOString().split('T')[0]
+    // Optimistic: show week immediately
+    const tmpId = `tmp_${Date.now()}`
+    setBlock(b => b ? { ...b, weeks: [...(b.weeks ?? []), { id: tmpId, block_id: block.id, week_number: weekNum, start_date: sd, end_date: ed, notes: null, workouts: [] } as Week] } : b)
     const { data, error } = await supabase.from('weeks').insert({
-      block_id: block.id, week_number: weekNum,
-      start_date: startDate.toISOString().split('T')[0],
-      end_date: endDate.toISOString().split('T')[0]
+      block_id: block.id, week_number: weekNum, start_date: sd, end_date: ed
     }).select('*').single()
-    if (!error && data) setBlock(b => b ? { ...b, weeks: [...(b.weeks ?? []), { ...data, workouts: [] }] } : b)
+    if (!error && data) {
+      setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === tmpId ? { ...data, workouts: [] } : w) } : b)
+    } else {
+      setBlock(b => b ? { ...b, weeks: b.weeks?.filter(w => w.id !== tmpId) } : b)
+    }
     setSaving(false)
   }
 
@@ -289,30 +297,33 @@ function AthletePanel({
       end_date: endDate.toISOString().split('T')[0], notes: src.notes,
     }).select('*').single()
     if (!newWeek) { setSaving(false); return }
-    const newWorkouts: Workout[] = []
-    for (let i = 0; i < (src.workouts?.length ?? 0); i++) {
-      const wo = src.workouts![i]
-      const d = new Date(startDate); d.setDate(startDate.getDate() + i)
-      const { data: nwo } = await supabase.from('workouts').insert({
-        week_id: newWeek.id, athlete_id: athlete.id,
-        day_name: wo.day_name, workout_date: d.toISOString().split('T')[0],
-        completed: false, notes: wo.notes,
-      }).select('*').single()
-      if (!nwo) continue
-      const newExercises: WorkoutExercise[] = []
-      for (const ex of (wo.workout_exercises ?? [])) {
-        const { data: nex } = await supabase.from('workout_exercises').insert({
-          workout_id: nwo.id, exercise_id: ex.exercise_id,
-          exercise_order: ex.exercise_order,
-          planned_sets: ex.planned_sets, planned_reps: ex.planned_reps,
-          planned_weight_kg: ex.planned_weight_kg, planned_rpe: ex.planned_rpe,
-          planned_rest_seconds: ex.planned_rest_seconds, planned_tempo: ex.planned_tempo,
-          target_rpe: ex.target_rpe, coach_note: ex.coach_note,
-        }).select('*, exercise:exercises(*)').single()
-        if (nex) newExercises.push(nex as WorkoutExercise)
-      }
-      newWorkouts.push({ ...nwo, workout_exercises: newExercises })
-    }
+
+    // Insert all workouts + their exercises in parallel
+    const newWorkouts = (await Promise.all(
+      (src.workouts ?? []).map(async (wo, i) => {
+        const d = new Date(startDate); d.setDate(startDate.getDate() + i)
+        const { data: nwo } = await supabase.from('workouts').insert({
+          week_id: newWeek.id, athlete_id: athlete.id,
+          day_name: wo.day_name, workout_date: d.toISOString().split('T')[0],
+          completed: false, notes: wo.notes,
+        }).select('*').single()
+        if (!nwo) return null
+        const exercises = (await Promise.all(
+          (wo.workout_exercises ?? []).map(ex =>
+            supabase.from('workout_exercises').insert({
+              workout_id: nwo.id, exercise_id: ex.exercise_id,
+              exercise_order: ex.exercise_order,
+              planned_sets: ex.planned_sets, planned_reps: ex.planned_reps,
+              planned_weight_kg: ex.planned_weight_kg, planned_rpe: ex.planned_rpe,
+              planned_rest_seconds: ex.planned_rest_seconds, planned_tempo: ex.planned_tempo,
+              target_rpe: ex.target_rpe, coach_note: ex.coach_note,
+            }).select('*, exercise:exercises(*)').single().then(r => r.data)
+          )
+        )).filter(Boolean) as WorkoutExercise[]
+        return { ...nwo, workout_exercises: exercises } as Workout
+      })
+    )).filter(Boolean) as Workout[]
+
     setBlock(b => b ? { ...b, weeks: [...(b.weeks ?? []), { ...newWeek, workouts: newWorkouts }] } : b)
     setSaving(false)
   }, [block, athlete.id])
@@ -360,18 +371,14 @@ function AthletePanel({
 
   const addExercise = useCallback(async (workoutId: string, ex: Exercise) => {
     setSaving(true)
-    let order = 1
-    setBlock(b => {
-      const workout = b?.weeks?.flatMap(w => w.workouts ?? []).find(w => w.id === workoutId)
-      order = (workout?.workout_exercises?.length ?? 0) + 1
-      return b
-    })
+    const workout = block?.weeks?.flatMap(w => w.workouts ?? []).find(w => w.id === workoutId)
+    const order = (workout?.workout_exercises?.length ?? 0) + 1
     const { data, error } = await supabase.from('workout_exercises').insert({
       workout_id: workoutId, exercise_id: ex.id, exercise_order: order, planned_sets: 3, planned_reps: '5'
     }).select('*, exercise:exercises(*)').single()
     if (!error && data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, workout_exercises: [...(wo.workout_exercises ?? []), data as WorkoutExercise] } : wo) })) } : b)
     setSaving(false)
-  }, [])
+  }, [block])
 
   const updateExercise = useCallback(async (weId: string, data: Partial<WorkoutExercise>) => {
     const RUNTIME_ONLY = ['_completedSets', '_totalSets']
@@ -1098,7 +1105,7 @@ export default function AdminPage() {
                   <div style={{ padding: '40px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>Nema liftera.</div>
                 )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+                <div className="admin-tim-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
                   {teamEntries.map(a => {
                     const stats = teamStats[a.id] ?? { squat: '', bench: '', deadlift: '', bw: '', wclass: '', sex: 'male' }
                     const saving = teamSaving[a.id]
@@ -1431,6 +1438,11 @@ export default function AdminPage() {
           .admin-search-row { flex-direction: column !important; align-items: stretch !important; }
           .admin-search-row > div { max-width: 100% !important; }
           .admin-search-row > button { justify-content: center; width: 100%; }
+        }
+
+        /* ── Tim athlete cards grid ── */
+        @media (max-width: 600px) {
+          .admin-tim-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
         }
 
         /* ── Athlete cards grid ── */

@@ -15,6 +15,8 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [focused, setFocused] = useState<string | null>(null)
+  const [mode, setMode] = useState<'login' | 'forgot'>('login')
+  const [resetSent, setResetSent] = useState(false)
 
   const handleSubmit = async () => {
     setError('')
@@ -31,6 +33,22 @@ export default function AuthPage() {
       const msg = e?.message ?? 'Greška. Pokušaj ponovo.'
       if (msg.includes('Invalid login')) setError('Pogrešan email ili lozinka.')
       else setError(msg)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleForgot = async () => {
+    setError('')
+    if (!email) { setError('Unesi svoju email adresu.'); return }
+    setLoading(true)
+    try {
+      const redirectTo = `${window.location.origin}/auth/reset`
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+      if (error) throw error
+      setResetSent(true)
+    } catch (e: any) {
+      setError(e?.message ?? 'Greška. Pokušaj ponovo.')
     } finally {
       setLoading(false)
     }
@@ -97,72 +115,141 @@ export default function AuthPage() {
           {/* Title */}
           <div style={{ marginBottom: '48px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '24px' }}>
             <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.25em', fontFamily: 'var(--fm)', color: '#fff' }}>
-              PRIJAVA
+              {mode === 'login' ? 'PRIJAVA' : 'PROMJENA LOZINKE'}
             </div>
           </div>
 
-          {/* Fields */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            <div>
-              <label style={lbl('email')}>Email adresa</label>
-              <input
-                name="email" type="email" value={email} onChange={e => setEmail(e.target.value)}
-                onFocus={() => setFocused('email')} onBlur={() => setFocused(null)}
-                placeholder="tvoj@email.com" style={inp('email')}
-                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-              />
-            </div>
+          {mode === 'login' ? (
+            <>
+              {/* Login fields */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                <div>
+                  <label style={lbl('email')}>Email adresa</label>
+                  <input
+                    name="email" type="email" value={email} onChange={e => setEmail(e.target.value)}
+                    onFocus={() => setFocused('email')} onBlur={() => setFocused(null)}
+                    placeholder="tvoj@email.com" style={inp('email')}
+                    onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                  />
+                </div>
 
-            <div>
-              <label style={lbl('password')}>Lozinka</label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  name="password" type={showPass ? 'text' : 'password'} value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  onFocus={() => setFocused('password')} onBlur={() => setFocused(null)}
-                  placeholder="••••••••" style={{ ...inp('password'), paddingRight: '40px' }}
-                  onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                />
-                <button onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: '4px', transition: 'color 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.3)'}
+                <div>
+                  <label style={lbl('password')}>Lozinka</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      name="password" type={showPass ? 'text' : 'password'} value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      onFocus={() => setFocused('password')} onBlur={() => setFocused(null)}
+                      placeholder="••••••••" style={{ ...inp('password'), paddingRight: '40px' }}
+                      onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                    />
+                    <button onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: '4px', transition: 'color 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.3)'}
+                    >
+                      {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <div style={{ marginTop: '20px', padding: '12px 16px', background: 'rgba(255,60,60,0.07)', border: '1px solid rgba(255,60,60,0.2)', color: 'rgba(255,100,100,0.9)', fontSize: '0.8rem', animation: 'fadeUp 0.2s ease' }}>
+                  {error}
+                </div>
+              )}
+
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                style={{ width: '100%', marginTop: '36px', padding: '18px', background: loading ? 'rgba(255,255,255,0.08)' : '#fff', color: loading ? 'rgba(255,255,255,0.3)' : '#000', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.25em', fontFamily: 'var(--fm)', transition: 'all 0.25s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(255,255,255,0.15)' } }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
+              >
+                {loading
+                  ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> PRIJAVA...</>
+                  : 'PRIJAVI SE →'
+                }
+              </button>
+
+              <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                <button
+                  onClick={() => { setMode('forgot'); setError(''); setResetSent(false) }}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', fontSize: '0.68rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}
                 >
-                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  ZABORAVILI STE LOZINKU?
                 </button>
               </div>
-            </div>
-          </div>
+            </>
+          ) : (
+            <>
+              {/* Forgot / reset fields */}
+              {resetSent ? (
+                <div style={{ padding: '24px', background: 'rgba(74,222,128,0.05)', border: '1px solid rgba(74,222,128,0.2)', color: 'rgba(74,222,128,0.9)', fontSize: '0.85rem', lineHeight: 1.7 }}>
+                  Email s uputama za promjenu lozinke poslan je na <strong>{email}</strong>. Provjeri inbox i klikni link.
+                </div>
+              ) : (
+                <>
+                  <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.7, marginBottom: '32px' }}>
+                    Unesi svoju email adresu i poslat ćemo ti link za postavljanje nove lozinke.
+                  </p>
+                  <div>
+                    <label style={lbl('email')}>Email adresa</label>
+                    <input
+                      name="email" type="email" value={email} onChange={e => setEmail(e.target.value)}
+                      onFocus={() => setFocused('email')} onBlur={() => setFocused(null)}
+                      placeholder="tvoj@email.com" style={inp('email')}
+                      onKeyDown={e => e.key === 'Enter' && handleForgot()}
+                    />
+                  </div>
 
-          {/* Error */}
-          {error && (
-            <div style={{ marginTop: '20px', padding: '12px 16px', background: 'rgba(255,60,60,0.07)', border: '1px solid rgba(255,60,60,0.2)', color: 'rgba(255,100,100,0.9)', fontSize: '0.8rem', animation: 'fadeUp 0.2s ease' }}>
-              {error}
-            </div>
+                  {error && (
+                    <div style={{ marginTop: '20px', padding: '12px 16px', background: 'rgba(255,60,60,0.07)', border: '1px solid rgba(255,60,60,0.2)', color: 'rgba(255,100,100,0.9)', fontSize: '0.8rem' }}>
+                      {error}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleForgot}
+                    disabled={loading}
+                    style={{ width: '100%', marginTop: '36px', padding: '18px', background: loading ? 'rgba(255,255,255,0.08)' : '#fff', color: loading ? 'rgba(255,255,255,0.3)' : '#000', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.25em', fontFamily: 'var(--fm)', transition: 'all 0.25s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                    onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(255,255,255,0.15)' } }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
+                  >
+                    {loading
+                      ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> SLANJE...</>
+                      : 'POŠALJI LINK →'
+                    }
+                  </button>
+                </>
+              )}
+
+              <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                <button
+                  onClick={() => { setMode('login'); setError(''); setResetSent(false) }}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', fontSize: '0.68rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', transition: 'color 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}
+                >
+                  <ArrowLeft size={12} /> NATRAG NA PRIJAVU
+                </button>
+              </div>
+            </>
           )}
 
-          {/* Submit */}
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            style={{ width: '100%', marginTop: '36px', padding: '18px', background: loading ? 'rgba(255,255,255,0.08)' : '#fff', color: loading ? 'rgba(255,255,255,0.3)' : '#000', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.25em', fontFamily: 'var(--fm)', transition: 'all 0.25s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
-            onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(255,255,255,0.15)' } }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
-          >
-            {loading
-              ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> PRIJAVA...</>
-              : 'PRIJAVI SE →'
-            }
-          </button>
-
-          {/* Back link */}
-          <div style={{ marginTop: '32px', textAlign: 'center' }}>
-            <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.25)', textDecoration: 'none', fontSize: '0.68rem', letterSpacing: '0.2em', transition: 'color 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}
-            >
-              <ArrowLeft size={12} /> NATRAG NA POČETAK
-            </Link>
-          </div>
+          {/* Back link (only on login mode) */}
+          {mode === 'login' && (
+            <div style={{ marginTop: '32px', textAlign: 'center' }}>
+              <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.25)', textDecoration: 'none', fontSize: '0.68rem', letterSpacing: '0.2em', transition: 'color 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}
+              >
+                <ArrowLeft size={12} /> NATRAG NA POČETAK
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 
