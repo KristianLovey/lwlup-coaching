@@ -1323,27 +1323,28 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
   const q = search.trim().toLowerCase()
   const filtered = q ? HUB_TOOLS.filter(t => t.label.toLowerCase().includes(q) || t.sub.toLowerCase().includes(q)) : null
 
-  const renderToolCard = (tool: typeof HUB_TOOLS[0]) => {
+  const renderToolCard = (tool: typeof HUB_TOOLS[0], groupColor?: string) => {
     const isActive = active === tool.id
+    const c = groupColor ?? tool.color
     return (
       <button key={tool.id} onClick={() => setActive(isActive ? null : tool.id)}
         style={{
           display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', textAlign: 'left' as const,
-          background: isActive ? `${tool.color}1a` : 'rgba(255,255,255,0.07)',
-          border: `1.5px solid ${isActive ? tool.color + '60' : 'rgba(255,255,255,0.13)'}`,
+          background: isActive ? `${c}18` : 'rgba(255,255,255,0.05)',
+          border: `1.5px solid ${isActive ? c + '55' : c + '22'}`,
           borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
-          boxShadow: isActive ? `0 4px 20px ${tool.color}22` : '0 2px 8px rgba(0,0,0,0.3)',
+          boxShadow: isActive ? `0 4px 20px ${c}20` : '0 2px 8px rgba(0,0,0,0.3)',
         }}
-        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.11)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' } }}
-        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.13)' } }}>
-        <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: `${tool.color}22`, border: `1px solid ${tool.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: tool.color, boxShadow: isActive ? `0 0 8px ${tool.color}` : `0 0 4px ${tool.color}88`, transition: 'box-shadow 0.2s' }} />
+        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = `${c}10`; e.currentTarget.style.borderColor = `${c}44` } }}
+        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = `${c}22` } }}>
+        <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: `${c}18`, border: `1px solid ${c}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: c, boxShadow: isActive ? `0 0 8px ${c}` : `0 0 4px ${c}88`, transition: 'box-shadow 0.2s' }} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: isActive ? tool.color : '#f0f0f8', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}>{tool.label}</div>
+          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: isActive ? c : '#f0f0f8', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}>{tool.label}</div>
           <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.45)', marginTop: '1px', fontFamily: 'var(--fm)' }}>{tool.sub}</div>
         </div>
-        <span style={{ fontSize: '0.5rem', fontWeight: 700, color: tool.color, background: `${tool.color}1a`, padding: '3px 8px', borderRadius: '5px', border: `1px solid ${tool.color}35`, letterSpacing: '0.06em', fontFamily: 'var(--fm)', flexShrink: 0 }}>
+        <span style={{ fontSize: '0.5rem', fontWeight: 700, color: c, background: `${c}18`, padding: '3px 8px', borderRadius: '5px', border: `1px solid ${c}35`, letterSpacing: '0.06em', fontFamily: 'var(--fm)', flexShrink: 0 }}>
           {tool.badge}
         </span>
       </button>
@@ -1375,7 +1376,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
         filtered.length === 0
           ? <div style={{ padding: '32px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', fontFamily: 'var(--fm)' }}>Nema rezultata za "{search}"</div>
           : <div className="hub-tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(clamp(160px,26vw,260px),1fr))', gap: '8px', marginBottom: '20px' }}>
-              {filtered.map(renderToolCard)}
+              {filtered.map(t => renderToolCard(t))}
             </div>
       ) : (
         HUB_GROUPS.map(g => {
@@ -1384,7 +1385,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
             <div key={g.key} style={{ marginBottom: '4px' }}>
               <SectionTitle icon={g.icon} color={g.color}>{g.title}</SectionTitle>
               <div className="hub-tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(clamp(160px,26vw,260px),1fr))', gap: '8px', marginBottom: '20px' }}>
-                {tools.map(renderToolCard)}
+                {tools.map(t => renderToolCard(t, g.color))}
               </div>
             </div>
           )

@@ -669,7 +669,10 @@ export default function AdminPage() {
   const [selectedAthlete, setSelectedAthlete] = useState<AthleteProfile | null>(null)
   const [searchQ, setSearchQ] = useState('')
   const [managingUsers, setManagingUsers] = useState(false)
-  const [dashSection, setDashSection] = useState<'athletes' | 'competitions' | 'obavijesti' | 'treneri' | 'tim'>('athletes')
+  const [dashSection, setDashSection] = useState<'athletes' | 'competitions' | 'obavijesti' | 'treneri' | 'tim'>(() => {
+    if (typeof window === 'undefined') return 'athletes'
+    return (localStorage.getItem('admin:dashSection') as any) ?? 'athletes'
+  })
   const [notifMsg, setNotifMsg] = useState('')
   const [notifSelected, setNotifSelected] = useState<string[]>([])
   const [notifSending, setNotifSending] = useState(false)
@@ -688,6 +691,13 @@ export default function AdminPage() {
   const [teamStats, setTeamStats] = useState<Record<string, TeamStats>>({})
   const [teamSaving, setTeamSaving] = useState<Record<string, boolean>>({})
   const [teamEntries, setTeamEntries] = useState<TeamEntry[]>([])
+
+  // Persist navigation state
+  useEffect(() => { localStorage.setItem('admin:dashSection', dashSection) }, [dashSection])
+  useEffect(() => {
+    if (selectedAthlete) localStorage.setItem('admin:selectedAthleteId', selectedAthlete.id)
+    else localStorage.removeItem('admin:selectedAthleteId')
+  }, [selectedAthlete])
 
   const loadTeamStats = async () => {
     const norm = (s: string | null | undefined) => {
@@ -869,6 +879,13 @@ export default function AdminPage() {
       }))
       setAthletes(withBlocks)
       setCoaches(withBlocks.filter(p => p.role === 'trener' || p.role === 'admin'))
+
+      // Restore previously selected athlete after refresh
+      const savedId = localStorage.getItem('admin:selectedAthleteId')
+      if (savedId) {
+        const match = withBlocks.find(a => a.id === savedId)
+        if (match) setSelectedAthlete(match)
+      }
 
       // Load existing assignments
       const { data: asgn } = await supabase.from('coach_assignments').select('coach_id, lifter_id')
