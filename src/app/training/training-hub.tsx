@@ -379,8 +379,6 @@ const BL_PLATES = [
   { kg: 0.25, color: '#6b7280', border: '#4b5563', text: '#fff', h: 19, w: 4,  label: '0.25' },
 ]
 const BL_BAR_KG   = 20
-const BL_COLLAR_KG = 2.5
-const BL_BASE_KG  = BL_BAR_KG + BL_COLLAR_KG * 2  // 25 kg
 
 function blCalcSide(perSide: number) {
   const plates: typeof BL_PLATES = []
@@ -395,68 +393,60 @@ function blCalcSide(perSide: number) {
 }
 
 function BarLoader() {
-  const [target, setTarget] = useState('')
+  const [target, setTarget]           = useState('')
+  const [collarType, setCollarType]   = useState<'competition' | 'classic'>('competition')
   const COLOR = '#60a5fa'
 
-  const raw = parseFloat(target.replace(',', '.'))
-  const isNum   = !isNaN(raw)
-  const tooLight = isNum && raw < BL_BASE_KG
-  const oddSplit = isNum && !tooLight && Math.round((raw - BL_BASE_KG) * 1000) % 500 !== 0
-  const perSide  = isNum && !tooLight && !oddSplit ? (raw - BL_BASE_KG) / 2 : 0
+  const collarKg  = collarType === 'competition' ? 2.5 : 0
+  const baseKg    = BL_BAR_KG + collarKg * 2
+
+  const raw      = parseFloat(target.replace(',', '.'))
+  const isNum    = !isNaN(raw)
+  const tooLight = isNum && raw < baseKg
+  const oddSplit = isNum && !tooLight && Math.round((raw - baseKg) * 1000) % 500 !== 0
+  const perSide  = isNum && !tooLight && !oddSplit ? (raw - baseKg) / 2 : 0
   const { plates, ok } = isNum && !tooLight && !oddSplit ? blCalcSide(perSide) : { plates: [], ok: true }
-  const leftPlates = [...plates].reverse()
 
-  // Plate height is the visual "radius" — bar is centered
-  const maxH    = 84
-  const barH    = 12
-  const collarH = 44
-  const collarW = 14
+  const maxH = 90
+  const barH = 10
 
-  // Unique plate summary
   const summary = BL_PLATES.map(p => ({ ...p, count: plates.filter(x => x.kg === p.kg).length })).filter(x => x.count > 0)
-
-  const Plate = ({ p, side }: { p: typeof BL_PLATES[0]; side: 'L' | 'R' }) => (
-    <div style={{
-      width: p.w, height: p.h, background: p.color,
-      border: `1px solid ${p.border}`,
-      borderRadius: side === 'L' ? '3px 0 0 3px' : '0 3px 3px 0',
-      flexShrink: 0, boxShadow: `inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.2)`,
-    }} />
-  )
-
-  const Collar = ({ side }: { side: 'L' | 'R' }) => (
-    <div style={{
-      width: collarW, height: collarH, flexShrink: 0,
-      background: 'linear-gradient(180deg, #9ca3af, #6b7280 40%, #4b5563 60%, #6b7280)',
-      border: '1px solid #374151',
-      borderRadius: side === 'L' ? '4px 0 0 4px' : '0 4px 4px 0',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
-    }} />
-  )
 
   return (
     <div style={{ fontFamily: 'var(--fm)' }}>
 
-      {/* Input row */}
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', marginBottom: '24px' }}>
-        <div style={{ flex: 1 }}>
-          <label style={{ display: 'block', fontSize: '0.58rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase' }}>
+      {/* Input + collar toggle */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px', alignItems: 'flex-end', marginBottom: '20px' }}>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.58rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase' as const }}>
             Ciljna kilaza (kg)
           </label>
           <input
             type="number" value={target} onChange={e => setTarget(e.target.value)}
-            placeholder="npr. 100" min={BL_BASE_KG} step={0.5}
-            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: `1px solid ${COLOR}33`, borderRadius: '8px', color: '#f0f0f5', padding: '12px 14px', fontFamily: 'var(--fm)', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' }}
+            placeholder="npr. 100" min={baseKg} step={0.5}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: `1px solid ${COLOR}33`, borderRadius: '8px', color: '#f0f0f5', padding: '12px 14px', fontFamily: 'var(--fm)', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' as const }}
             onFocus={e => e.currentTarget.style.borderColor = `${COLOR}88`}
             onBlur={e  => e.currentTarget.style.borderColor = `${COLOR}33`}
           />
+        </div>
+        {/* Collar toggle */}
+        <div>
+          <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontWeight: 600 }}>COLLAR</div>
+          <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+            {([['competition', '2.5 kg'], ['classic', '0 kg']] as const).map(([val, lbl]) => (
+              <button key={val} onClick={() => setCollarType(val)}
+                style={{ padding: '11px 12px', background: collarType === val ? COLOR : 'rgba(255,255,255,0.03)', border: 'none', color: collarType === val ? '#000' : 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}>
+                {lbl}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Errors */}
       {isNum && tooLight && (
         <div style={{ padding: '10px 14px', background: 'rgba(248,113,113,0.07)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: '8px', color: '#f87171', fontSize: '0.8rem', marginBottom: '16px' }}>
-          Minimalna kilaza je {BL_BASE_KG} kg (šipka + 2 collara).
+          Minimalna kilaza je {baseKg} kg (šipka{collarKg > 0 ? ` + ${collarKg * 2} kg collari` : ''}).
         </div>
       )}
       {isNum && !tooLight && oddSplit && (
@@ -470,69 +460,84 @@ function BarLoader() {
         </div>
       )}
 
-      {/* Bar visual */}
+      {/* Single-side bar visual */}
       {isNum && !tooLight && !oddSplit && ok && (
         <>
-          <div style={{ overflowX: 'auto', paddingBottom: '8px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: `${(plates.length * 22 + 200)}px`, height: `${maxH + 24}px`, position: 'relative' }}>
+          {/* Total weight label */}
+          <div style={{ textAlign: 'center' as const, marginBottom: '12px' }}>
+            <span style={{ fontFamily: 'var(--fd)', fontSize: '2rem', fontWeight: 800, color: COLOR }}>{raw}</span>
+            <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', marginLeft: '4px' }}>kg</span>
+          </div>
 
-              {/* Full-width bar behind everything */}
-              <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: barH, transform: 'translateY(-50%)', background: 'linear-gradient(180deg,#9ca3af,#374151 45%,#1f2937 55%,#6b7280)', borderRadius: 4, zIndex: 0 }} />
+          <div style={{ overflowX: 'auto', paddingBottom: '4px', marginBottom: '20px' }}>
+            {/* height = maxH + some padding */}
+            <div style={{ position: 'relative', height: `${maxH + 8}px`, display: 'flex', alignItems: 'center', minWidth: `${plates.length * 24 + 160}px` }}>
 
-              {/* Content on top of bar */}
-              <div style={{ display: 'flex', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+              {/* Bar shaft — full width background */}
+              <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: barH, transform: 'translateY(-50%)', background: 'linear-gradient(180deg,#b0b8c1,#5a6473 40%,#374151 60%,#7a8494)', borderRadius: 3, zIndex: 0 }} />
 
-                {/* Left collar */}
-                <Collar side="L" />
+              {/* Bar end cap (left) */}
+              <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: 16, height: 22, background: 'linear-gradient(180deg,#9ca3af,#4b5563)', borderRadius: '3px 0 0 3px', zIndex: 2, flexShrink: 0 }} />
 
-                {/* Left plates (innermost=largest on right, outermost=smallest on left) */}
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  {leftPlates.map((p, i) => <Plate key={i} p={p} side="L" />)}
-                </div>
+              {/* Bar sleeve label */}
+              <div style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none' }}>
+                <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', letterSpacing: '0.1em' }}>{BL_BAR_KG} kg</span>
+              </div>
 
-                {/* Center bar label */}
-                <div style={{ padding: '0 10px', flexShrink: 0 }}>
-                  <div style={{ background: '#0d0d16', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, padding: '3px 10px', fontSize: '0.6rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em', whiteSpace: 'nowrap' as const }}>
-                    {raw} kg
+              {/* Plates + collar, right-aligned */}
+              <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', zIndex: 2 }}>
+                {/* Plates: innermost (largest) first, outward to smallest */}
+                {plates.map((p, i) => (
+                  <div key={i} style={{
+                    width: p.w + 4,
+                    height: p.h,
+                    background: `linear-gradient(180deg, ${p.color}ee, ${p.color} 40%, ${p.border} 60%, ${p.color}cc)`,
+                    border: `1px solid ${p.border}`,
+                    borderRadius: i === 0 ? '3px 0 0 3px' : '0',
+                    flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: `inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.25), -1px 0 0 rgba(0,0,0,0.3)`,
+                    cursor: 'default',
+                  }}>
+                    <span style={{ fontSize: `${Math.max(7, Math.min(10, p.h / 7))}px`, fontWeight: 800, color: p.text, fontFamily: 'var(--fd)', writingMode: 'vertical-rl' as const, textOrientation: 'mixed' as const, userSelect: 'none' as const, transform: 'rotate(180deg)', letterSpacing: '-0.02em' }}>
+                      {p.label}
+                    </span>
                   </div>
-                </div>
-
-                {/* Right plates (innermost=largest on left, outermost=smallest on right) */}
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  {plates.map((p, i) => <Plate key={i} p={p} side="R" />)}
-                </div>
-
-                {/* Right collar */}
-                <Collar side="R" />
+                ))}
+                {/* Collar */}
+                {collarKg > 0 && (
+                  <div style={{ width: 14, height: 46, flexShrink: 0, background: 'linear-gradient(180deg,#d1d5db,#6b7280 35%,#374151 65%,#9ca3af)', border: '1.5px solid #374151', borderRadius: '0 4px 4px 0', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 2px 0 6px rgba(0,0,0,0.4)' }} />
+                )}
+                {/* Bar end cap (right) */}
+                <div style={{ width: 10, height: 14, background: 'linear-gradient(180deg,#9ca3af,#4b5563)', borderRadius: '0 3px 3px 0', flexShrink: 0 }} />
               </div>
             </div>
           </div>
 
-          {/* Weight breakdown */}
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '16px' }}>
-            <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.3em', marginBottom: '12px', fontWeight: 600, textTransform: 'uppercase' as const }}>
-              Utezi po strani
+          {/* Plate list — per side */}
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '14px' }}>
+            <div style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.25em', marginBottom: '10px', fontWeight: 600, textTransform: 'uppercase' as const }}>
+              Po strani
             </div>
             {summary.length === 0 ? (
-              <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.35)' }}>Samo šipka i collari — nema utega.</div>
+              <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.35)', marginBottom: '12px' }}>Samo šipka{collarKg > 0 ? ' i collari' : ''} — nema utega.</div>
             ) : (
-              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '8px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '7px', marginBottom: '14px' }}>
                 {summary.map((p, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 12px', background: `${p.color}14`, border: `1px solid ${p.border}44`, borderRadius: '8px' }}>
-                    <div style={{ width: 12, height: 12, borderRadius: 2, background: p.color, border: `1px solid ${p.border}`, flexShrink: 0 }} />
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f0f0f5' }}>{p.count} × {p.label} kg</span>
-                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)' }}>= {+(p.count * p.kg).toFixed(2)} kg</span>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '6px 11px', background: `${p.color}12`, border: `1px solid ${p.border}44`, borderRadius: '8px' }}>
+                    <div style={{ width: 10, height: 10, borderRadius: 2, background: p.color, border: `1px solid ${p.border}`, flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f0f0f5' }}>{p.count} × {p.label} kg</span>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Totals */}
-            <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '8px', overflow: 'hidden' }}>
+            {/* Totals row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '8px', overflow: 'hidden' }}>
               {[
-                { label: 'Šipka', val: `${BL_BAR_KG} kg` },
-                { label: 'Collari', val: `${BL_COLLAR_KG * 2} kg` },
-                { label: 'Utezi', val: `${+(perSide * 2).toFixed(2)} kg` },
+                { label: 'Šipka',   val: `${BL_BAR_KG} kg` },
+                { label: 'Collari', val: collarKg > 0 ? `${+(collarKg * 2).toFixed(2)} kg` : '—' },
+                { label: 'Utezi',   val: `${+(perSide * 2).toFixed(2)} kg` },
               ].map(({ label, val }) => (
                 <div key={label} style={{ padding: '10px', background: '#09090f', textAlign: 'center' as const }}>
                   <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.2em', marginBottom: '4px' }}>{label}</div>
@@ -545,13 +550,13 @@ function BarLoader() {
       )}
 
       {/* Plate legend */}
-      <div style={{ marginTop: '24px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
-        <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.3em', marginBottom: '10px', fontWeight: 600, textTransform: 'uppercase' as const }}>Dostupni utezi</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '6px' }}>
+      <div style={{ marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px' }}>
+        <div style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.25em', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase' as const }}>Dostupni utezi</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '5px' }}>
           {BL_PLATES.map((p, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 8px', background: `${p.color}14`, border: `1px solid ${p.border}33`, borderRadius: '6px' }}>
-              <div style={{ width: 8, height: 8, borderRadius: 2, background: p.color, border: `1px solid ${p.border}` }} />
-              <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)' }}>{p.label} kg</span>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '3px 8px', background: `${p.color}12`, border: `1px solid ${p.border}33`, borderRadius: '5px' }}>
+              <div style={{ width: 7, height: 7, borderRadius: 1, background: p.color, border: `1px solid ${p.border}` }} />
+              <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.55)' }}>{p.label} kg</span>
             </div>
           ))}
         </div>
