@@ -469,48 +469,43 @@ function BarLoader() {
             <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', marginLeft: '4px' }}>kg</span>
           </div>
 
-          <div style={{ overflowX: 'auto', paddingBottom: '4px', marginBottom: '20px' }}>
-            {/* height = maxH + some padding */}
-            <div style={{ position: 'relative', height: `${maxH + 8}px`, display: 'flex', alignItems: 'center', minWidth: `${plates.length * 24 + 160}px` }}>
+          <div style={{ overflowX: 'auto', paddingBottom: '4px', marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
+            {/* Centered inline-flex assembly */}
+            <div style={{ display: 'inline-flex', alignItems: 'center', position: 'relative', height: `${maxH + 8}px` }}>
 
-              {/* Bar shaft — full width background */}
+              {/* Bar shaft spans the full assembly width */}
               <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: barH, transform: 'translateY(-50%)', background: 'linear-gradient(180deg,#b0b8c1,#5a6473 40%,#374151 60%,#7a8494)', borderRadius: 3, zIndex: 0 }} />
 
-              {/* Bar end cap (left) */}
-              <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: 16, height: 22, background: 'linear-gradient(180deg,#9ca3af,#4b5563)', borderRadius: '3px 0 0 3px', zIndex: 2, flexShrink: 0 }} />
+              {/* Left end cap */}
+              <div style={{ width: 14, height: 22, background: 'linear-gradient(180deg,#9ca3af,#4b5563)', borderRadius: '3px 0 0 3px', flexShrink: 0, zIndex: 2 }} />
 
-              {/* Bar sleeve label */}
-              <div style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none' }}>
-                <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', letterSpacing: '0.1em' }}>{BL_BAR_KG} kg</span>
+              {/* Sleeve — fixed width, shows bar weight label */}
+              <div style={{ width: 80, height: barH, background: 'transparent', flexShrink: 0, zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', letterSpacing: '0.1em', userSelect: 'none' as const }}>{BL_BAR_KG} kg</span>
               </div>
 
-              {/* Plates + collar, right-aligned */}
-              <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', zIndex: 2 }}>
-                {/* Plates: innermost (largest) first, outward to smallest */}
+              {/* Plates: innermost (largest) first → outermost (smallest) last */}
+              <div style={{ display: 'flex', alignItems: 'center', zIndex: 2 }}>
                 {plates.map((p, i) => (
                   <div key={i} style={{
-                    width: p.w + 4,
-                    height: p.h,
+                    width: p.w + 4, height: p.h,
                     background: `linear-gradient(180deg, ${p.color}ee, ${p.color} 40%, ${p.border} 60%, ${p.color}cc)`,
                     border: `1px solid ${p.border}`,
                     borderRadius: i === 0 ? '3px 0 0 3px' : '0',
-                    flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     boxShadow: `inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.25), -1px 0 0 rgba(0,0,0,0.3)`,
-                    cursor: 'default',
                   }}>
-                    <span style={{ fontSize: `${Math.max(7, Math.min(10, p.h / 7))}px`, fontWeight: 800, color: p.text, fontFamily: 'var(--fd)', writingMode: 'vertical-rl' as const, textOrientation: 'mixed' as const, userSelect: 'none' as const, transform: 'rotate(180deg)', letterSpacing: '-0.02em' }}>
+                    <span style={{ fontSize: `${Math.max(7, Math.min(10, p.h / 7))}px`, fontWeight: 800, color: p.text, fontFamily: 'var(--fd)', writingMode: 'vertical-rl' as const, transform: 'rotate(180deg)', userSelect: 'none' as const, letterSpacing: '-0.02em' }}>
                       {p.label}
                     </span>
                   </div>
                 ))}
-                {/* Collar */}
-                {collarKg > 0 && (
-                  <div style={{ width: 14, height: 46, flexShrink: 0, background: 'linear-gradient(180deg,#d1d5db,#6b7280 35%,#374151 65%,#9ca3af)', border: '1.5px solid #374151', borderRadius: '0 4px 4px 0', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 2px 0 6px rgba(0,0,0,0.4)' }} />
-                )}
-                {/* Bar end cap (right) */}
-                <div style={{ width: 10, height: 14, background: 'linear-gradient(180deg,#9ca3af,#4b5563)', borderRadius: '0 3px 3px 0', flexShrink: 0 }} />
               </div>
+
+              {/* Collar */}
+              {collarKg > 0 && (
+                <div style={{ width: 14, height: 46, flexShrink: 0, zIndex: 2, background: 'linear-gradient(180deg,#d1d5db,#6b7280 35%,#374151 65%,#9ca3af)', border: '1.5px solid #374151', borderRadius: '0 4px 4px 0', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)' }} />
+              )}
             </div>
           </div>
 
