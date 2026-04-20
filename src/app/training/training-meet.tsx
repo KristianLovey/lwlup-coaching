@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Check, ChevronDown, Loader2, Trash2 } from 'lucide-react'
 import type { MeetAttempt, Competition } from './types'
@@ -270,41 +270,65 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
 
 // ─── MEET DAY TAB ─────────────────────────────────────────────────
 export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
-  const [attempts, setAttempts]     = useState<MeetAttempt[]>([])
+  const [attempts, setAttempts]         = useState<MeetAttempt[]>([])
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [selectedComp, setSelectedComp] = useState<string | null>(null)
-  const [meetDate, setMeetDate]     = useState(new Date().toISOString().split('T')[0])
-  const [loading, setLoading]       = useState(true)
-  const [showDatePicker, setShowDatePicker] = useState(false)
+  const [loading, setLoading]           = useState(true)
+  const [showCompPicker, setShowCompPicker] = useState(false)
+  const compPickerRef = useRef<HTMLDivElement>(null)
 
   // For admin — which athlete to view
-  const [athleteId, setAthleteId]   = useState(userId)
+  const [athleteId] = useState(userId)
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
       const [{ data: comps }, { data: atts }] = await Promise.all([
-        supabase.from('competitions').select('id,name,date,location,status').gte('date', new Date(Date.now() - 365*24*3600*1000).toISOString().split('T')[0]).order('date', { ascending: false }),
+        supabase.from('competitions').select('id,name,date,location,status').order('date', { ascending: false }),
         supabase.from('meet_attempts').select('*').eq('athlete_id', athleteId).order('created_at', { ascending: false }),
       ])
-      setCompetitions((comps ?? []) as Competition[])
-      setAttempts((atts ?? []) as MeetAttempt[])
-      // Auto-select latest date
-      if (atts && atts.length > 0) setMeetDate(atts[0].meet_date)
+      const compList = (comps ?? []) as Competition[]
+      const attList  = (atts ?? []) as MeetAttempt[]
+      setCompetitions(compList)
+      setAttempts(attList)
+      // Auto-select comp that has most recent attempts, or latest comp
+      const latestCompId = attList[0]?.competition_id
+      if (latestCompId) {
+        setSelectedComp(latestCompId)
+      } else if (compList.length > 0) {
+        setSelectedComp(compList[0].id)
+      }
       setLoading(false)
     }
     load()
   }, [athleteId])
 
-  // Get attempts for current date
-  const dateAttempts = attempts.filter(a => a.meet_date === meetDate)
-  const attemptByLift = (lift: Lift) => dateAttempts.find(a => a.lift === lift) ?? null
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!showCompPicker) return
+    const handler = (e: MouseEvent) => {
+      if (compPickerRef.current && !compPickerRef.current.contains(e.target as Node))
+        setShowCompPicker(false)
+    }
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [showCompPicker])
 
-  // Unique dates with attempts
-  const meetDates = Array.from(new Set(attempts.map(a => a.meet_date))).sort((a,b) => b.localeCompare(a))
+  // Set of competition ids that have saved attempts
+  const compsWithData = new Set(attempts.map(a => a.competition_id).filter(Boolean) as string[])
+
+  // Get attempts for selected competition
+  const activeAttempts = selectedComp
+    ? attempts.filter(a => a.competition_id === selectedComp)
+    : []
+  const attemptByLift = (lift: Lift) => activeAttempts.find(a => a.lift === lift) ?? null
+
+  const currentComp = selectedComp ? competitions.find(c => c.id === selectedComp) ?? null : null
 
   const upsertAttempt = async (data: Partial<MeetAttempt> & { lift: Lift; athlete_id: string }): Promise<MeetAttempt> => {
-    const existing = dateAttempts.find(a => a.lift === data.lift)
+    const existing = activeAttempts.find(a => a.lift === data.lift)
+    const today = new Date().toISOString().split('T')[0]
+    const meetDate = currentComp?.date ?? today
     let result: MeetAttempt
     if (existing) {
       const { data: row } = await supabase.from('meet_attempts').update({ ...data, updated_at: new Date().toISOString() }).eq('id', existing.id).select('*').single()
@@ -322,24 +346,6 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
     await supabase.from('meet_attempts').delete().eq('id', id)
     setAttempts(prev => prev.filter(a => a.id !== id))
   }
-
-  // Sync selectedComp with current date's saved competition_id
-  useEffect(() => {
-    setSelectedComp(dateAttempts[0]?.competition_id ?? null)
-  }, [meetDate, attempts])
-
-  const saveCompLink = async (compId: string | null) => {
-    setSelectedComp(compId)
-    if (dateAttempts.length === 0) return
-    const ids = dateAttempts.map(a => a.id)
-    await supabase.from('meet_attempts').update({ competition_id: compId }).in('id', ids)
-    setAttempts(prev => prev.map(a => ids.includes(a.id) ? { ...a, competition_id: compId } : a))
-  }
-
-  // Competition linked to current date's attempts
-  const linkedComp = dateAttempts[0]?.competition_id
-    ? competitions.find(c => c.id === dateAttempts[0].competition_id)
-    : null
 
   // Total from good lifts
   const bestByLift: Record<Lift, number | null> = { squat: null, bench: null, deadlift: null }
@@ -368,52 +374,55 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
   return (
     <div style={{ animation: 'fadeUp 0.3s ease' }}>
 
-      {/* Header bar — date selector + comp link */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '24px' }}>
-        {/* Date selector */}
-        <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowDatePicker(o => !o)}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: '9px', cursor: 'pointer', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.82rem', fontWeight: 500, transition: 'all 0.15s' }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            {meetDate}
-          </button>
-          {showDatePicker && (
-            <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, background: '#09090e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', boxShadow: '0 16px 48px rgba(0,0,0,0.7)', zIndex: 200, minWidth: '200px', overflow: 'hidden', animation: 'dropDown 0.18s ease' }}>
-              {/* New meet date */}
-              <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                <div style={{ fontSize: '0.54rem', color: '#555', letterSpacing: '0.2em', marginBottom: '6px', fontFamily: 'var(--fm)' }}>NOVI DATUM</div>
-                <input type="date" value={meetDate} onChange={e => { setMeetDate(e.target.value); setShowDatePicker(false) }}
-                  style={{ background: 'transparent', border: 'none', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.82rem', outline: 'none', cursor: 'pointer' }} />
+      {/* Competition selector */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '8px' }}>NATJECANJE</div>
+        <div ref={compPickerRef} style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowCompPicker(o => !o)}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 14px', background: currentComp ? 'rgba(107,140,255,0.06)' : 'rgba(255,255,255,0.03)', border: `1.5px solid ${currentComp ? 'rgba(107,140,255,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '11px', cursor: 'pointer', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.88rem', fontWeight: 500, transition: 'all 0.15s', textAlign: 'left' as const }}>
+            {/* Dot indicator */}
+            {currentComp && compsWithData.has(currentComp.id) && (
+              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#4ade80', flexShrink: 0, boxShadow: '0 0 6px #4ade80aa' }} />
+            )}
+            {currentComp ? (
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.88rem', color: '#f0f0f5', fontWeight: 600 }}>{currentComp.name}</div>
+                <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.35)', marginTop: '1px' }}>{currentComp.date}{currentComp.location ? ` · ${currentComp.location}` : ''}</div>
               </div>
-              {/* Existing dates */}
-              {meetDates.map(d => (
-                <button key={d} onClick={() => { setMeetDate(d); setShowDatePicker(false) }}
-                  style={{ width: '100%', padding: '9px 14px', background: d === meetDate ? 'rgba(255,255,255,0.05)' : 'transparent', border: 'none', color: d === meetDate ? '#fff' : 'rgba(255,255,255,0.5)', cursor: 'pointer', textAlign: 'left', fontSize: '0.8rem', fontFamily: 'var(--fm)', transition: 'background 0.1s', display: 'flex', alignItems: 'center', gap: '8px' }}
-                  onMouseEnter={e => { if (d !== meetDate) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-                  onMouseLeave={e => { if (d !== meetDate) e.currentTarget.style.background = 'transparent' }}>
-                  {d === meetDate && <Check size={11} color="#4ade80" />}
-                  {d}
-                </button>
-              ))}
+            ) : (
+              <span style={{ flex: 1, color: 'rgba(255,255,255,0.35)', fontSize: '0.82rem' }}>Odaberi natjecanje...</span>
+            )}
+            <ChevronDown size={14} color="rgba(255,255,255,0.3)" style={{ transform: showCompPicker ? 'rotate(180deg)' : 'none', transition: 'transform 0.22s', flexShrink: 0 }} />
+          </button>
+
+          {showCompPicker && (
+            <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: '#09090e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '11px', boxShadow: '0 16px 48px rgba(0,0,0,0.8)', zIndex: 300, overflow: 'hidden', animation: 'dropDown 0.18s ease' }}>
+              {competitions.length === 0 && (
+                <div style={{ padding: '14px 16px', fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>Nema natjecanja u sustavu</div>
+              )}
+              {competitions.map(c => {
+                const hasSaved = compsWithData.has(c.id)
+                const isActive = c.id === selectedComp
+                return (
+                  <button key={c.id}
+                    onClick={() => { setSelectedComp(c.id); setShowCompPicker(false) }}
+                    style={{ width: '100%', padding: '11px 16px', background: isActive ? 'rgba(107,140,255,0.1)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' as const, display: 'flex', alignItems: 'center', gap: '10px', transition: 'background 0.1s', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}>
+                    {/* Saved indicator dot */}
+                    <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: hasSaved ? '#4ade80' : 'rgba(255,255,255,0.1)', flexShrink: 0, boxShadow: hasSaved ? '0 0 6px #4ade8066' : 'none', transition: 'all 0.2s' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.84rem', fontWeight: isActive ? 600 : 400, color: isActive ? '#f0f0f5' : 'rgba(255,255,255,0.7)', fontFamily: 'var(--fm)' }}>{c.name}</div>
+                      <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', marginTop: '1px' }}>{c.date}{c.location ? ` · ${c.location}` : ''}</div>
+                    </div>
+                    {isActive && <Check size={12} color="#6b8cff" />}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
-
-        {/* Comp link — optional */}
-        {competitions.length > 0 && isAdmin && (
-          <select value={selectedComp ?? ''} onChange={e => saveCompLink(e.target.value || null)}
-            style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: '9px', color: '#aaa', fontFamily: 'var(--fm)', fontSize: '0.78rem', outline: 'none', cursor: 'pointer' }}>
-            <option value="">Poveži natjecanje (opcionalno)</option>
-            {competitions.map(c => <option key={c.id} value={c.id}>{c.name} — {c.date}</option>)}
-          </select>
-        )}
-        {linkedComp && !isAdmin && (
-          <div style={{ padding: '7px 14px', background: 'rgba(107,140,255,0.08)', border: '1px solid rgba(107,140,255,0.2)', borderRadius: '9px', fontSize: '0.72rem', color: '#8ba8ff', fontFamily: 'var(--fm)' }}>
-            🏆 {linkedComp.name} — {linkedComp.date}
-          </div>
-        )}
       </div>
 
       {/* Total summary */}
@@ -436,42 +445,50 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
         </div>
       )}
 
-      {/* Lift cards */}
-      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '12px' }}>
-        {(['squat','bench','deadlift'] as Lift[]).map(lift => (
-          <LiftCard
-            key={lift}
-            lift={lift}
-            attempt={attemptByLift(lift)}
-            isAdmin={isAdmin}
-            athleteId={athleteId}
-            onUpdate={upsertAttempt}
-            onDelete={deleteAttempt}
-          />
-        ))}
-      </div>
+      {/* Lift cards — shown only when a competition is selected */}
+      {selectedComp ? (
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '12px' }}>
+          {(['squat','bench','deadlift'] as Lift[]).map(lift => (
+            <LiftCard
+              key={`${lift}-${selectedComp ?? 'none'}`}
+              lift={lift}
+              attempt={attemptByLift(lift)}
+              isAdmin={isAdmin}
+              athleteId={athleteId}
+              onUpdate={upsertAttempt}
+              onDelete={deleteAttempt}
+            />
+          ))}
+        </div>
+      ) : (
+        <div style={{ padding: '40px 20px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>
+          Odaberi natjecanje za prikaz planova
+        </div>
+      )}
 
       {/* Lifter notes */}
-      <div style={{ marginTop: '20px', padding: '16px 20px', background: '#0f0f18', border: '1px solid rgba(255,255,255,0.13)', borderRadius: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-          <div style={{ height: '1px', width: '16px', background: 'rgba(255,255,255,0.12)' }} />
-          <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>MOJE BILJEŠKE S NATJECANJA</span>
+      {selectedComp && (
+        <div style={{ marginTop: '20px', padding: '16px 20px', background: '#0f0f18', border: '1px solid rgba(255,255,255,0.13)', borderRadius: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+            <div style={{ height: '1px', width: '16px', background: 'rgba(255,255,255,0.12)' }} />
+            <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>MOJE BILJEŠKE S NATJECANJA</span>
+          </div>
+          <textarea
+            value={activeAttempts[0]?.lifter_notes ?? ''}
+            onChange={async e => {
+              const notes = e.target.value
+              const first = activeAttempts[0]
+              if (first) {
+                await supabase.from('meet_attempts').update({ lifter_notes: notes }).eq('id', first.id)
+                setAttempts(prev => prev.map(a => a.id === first.id ? { ...a, lifter_notes: notes } : a))
+              }
+            }}
+            placeholder="Kako si se osjećao/la, što je prošlo dobro, što bi promijenio/la..."
+            disabled={activeAttempts.length === 0}
+            style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', color: 'rgba(255,255,255,0.6)', fontSize: '0.84rem', fontFamily: 'var(--fm)', resize: 'vertical', minHeight: '60px', boxSizing: 'border-box' as const, lineHeight: 1.7 }}
+          />
         </div>
-        <textarea
-          value={dateAttempts[0]?.lifter_notes ?? ''}
-          onChange={async e => {
-            const notes = e.target.value
-            const first = dateAttempts[0]
-            if (first) {
-              await supabase.from('meet_attempts').update({ lifter_notes: notes }).eq('id', first.id)
-              setAttempts(prev => prev.map(a => a.id === first.id ? { ...a, lifter_notes: notes } : a))
-            }
-          }}
-          placeholder="Kako si se osjećao/la, što je prošlo dobro, što bi promijenio/la..."
-          disabled={dateAttempts.length === 0}
-          style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', color: 'rgba(255,255,255,0.6)', fontSize: '0.84rem', fontFamily: 'var(--fm)', resize: 'vertical', minHeight: '60px', boxSizing: 'border-box' as const, lineHeight: 1.7 }}
-        />
-      </div>
+      )}
 
       <style>{`
         @keyframes spin    { to { transform: rotate(360deg) } }

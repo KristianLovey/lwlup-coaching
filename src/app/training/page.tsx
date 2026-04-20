@@ -25,12 +25,13 @@ export default function TrainingPage() {
   const [isCoach, setIsCoach] = useState(false)
   const [avatarIcon, setAvatarIcon] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'program' | 'hub' | 'meet'>(() => {
-    if (typeof window === 'undefined') return 'program'
-    return (localStorage.getItem('training:activeTab') as 'program' | 'hub' | 'meet') ?? 'program'
-  })
+  const [activeTab, setActiveTab] = useState<'program' | 'hub' | 'meet'>('program')
   const [activeTool, setActiveTool] = useState<string | null>(null)
 
+  useEffect(() => {
+    const saved = localStorage.getItem('training:activeTab') as 'program' | 'hub' | 'meet' | null
+    if (saved && ['program', 'hub', 'meet'].includes(saved)) setActiveTab(saved)
+  }, [])
   useEffect(() => { localStorage.setItem('training:activeTab', activeTab) }, [activeTab])
   const router = useRouter()
   const blockSelectorRef = useRef<HTMLDivElement>(null)

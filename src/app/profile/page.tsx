@@ -230,8 +230,25 @@ function MuscleDonut({ data, view }: { data: MuscleEntry[]; view: 'percent' | 't
   const total = data.reduce((s, d) => s + getValue(d), 0)
 
   if (total === 0) return (
-    <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#333', fontSize: '0.72rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)' }}>
-      NEMA PODATAKA U AKTIVNOM BLOKU
+    <div style={{ height: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', fontFamily: 'var(--fm)' }}>
+      <div style={{ position: 'relative', width: '48px', height: '48px' }}>
+        <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid rgba(99,102,241,0.15)', animation: 'ms-ping 2s ease-out infinite' }} />
+        <div style={{ position: 'absolute', inset: '6px', borderRadius: '50%', border: '2px solid rgba(99,102,241,0.25)', animation: 'ms-ping 2s ease-out infinite 0.4s' }} />
+        <div style={{ position: 'absolute', inset: '14px', borderRadius: '50%', background: 'rgba(99,102,241,0.18)', border: '1.5px solid rgba(99,102,241,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+      </div>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.25em', color: '#818cf8', marginBottom: '5px' }}>DOLAZI USKORO</div>
+        <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.08em' }}>Statistika mišićnih skupina</div>
+      </div>
+      <style>{`
+        @keyframes ms-ping {
+          0%   { transform: scale(1);   opacity: 0.6; }
+          60%  { transform: scale(1.5); opacity: 0;   }
+          100% { transform: scale(1.5); opacity: 0;   }
+        }
+      `}</style>
     </div>
   )
 

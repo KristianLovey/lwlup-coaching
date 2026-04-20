@@ -669,10 +669,7 @@ export default function AdminPage() {
   const [selectedAthlete, setSelectedAthlete] = useState<AthleteProfile | null>(null)
   const [searchQ, setSearchQ] = useState('')
   const [managingUsers, setManagingUsers] = useState(false)
-  const [dashSection, setDashSection] = useState<'athletes' | 'competitions' | 'obavijesti' | 'treneri' | 'tim'>(() => {
-    if (typeof window === 'undefined') return 'athletes'
-    return (localStorage.getItem('admin:dashSection') as any) ?? 'athletes'
-  })
+  const [dashSection, setDashSection] = useState<'athletes' | 'competitions' | 'obavijesti' | 'treneri' | 'tim'>('athletes')
   const [notifMsg, setNotifMsg] = useState('')
   const [notifSelected, setNotifSelected] = useState<string[]>([])
   const [notifSending, setNotifSending] = useState(false)
@@ -692,7 +689,12 @@ export default function AdminPage() {
   const [teamSaving, setTeamSaving] = useState<Record<string, boolean>>({})
   const [teamEntries, setTeamEntries] = useState<TeamEntry[]>([])
 
-  // Persist navigation state
+  // Load + persist navigation state
+  useEffect(() => {
+    const saved = localStorage.getItem('admin:dashSection')
+    if (saved && ['athletes','competitions','obavijesti','treneri','tim'].includes(saved))
+      setDashSection(saved as any)
+  }, [])
   useEffect(() => { localStorage.setItem('admin:dashSection', dashSection) }, [dashSection])
   useEffect(() => {
     if (selectedAthlete) localStorage.setItem('admin:selectedAthleteId', selectedAthlete.id)

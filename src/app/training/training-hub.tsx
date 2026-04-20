@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { X, Calculator, BookOpen, BarChart2 } from 'lucide-react'
+import { X, Calculator, BookOpen, BarChart2, ChevronDown, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 const supabase = createClient()
@@ -254,9 +254,11 @@ export function WaterCutCalc() {
   const [showPlan, setShowPlan] = useState(false)
 
   const cur = parseFloat(curKg), tgt = parseFloat(tgtKg)
-  const lose  = (cur && tgt) ? cur - tgt : 0
-  const days  = date ? Math.max(0, Math.ceil((new Date(date).getTime() - Date.now()) / 86400000)) : 0
-  const maxWC = cur ? parseFloat((cur * 0.03).toFixed(1)) : 0
+  const validInputs = !isNaN(cur) && cur > 0 && !isNaN(tgt) && tgt > 0 && !!date
+  const lose  = validInputs ? +(cur - tgt).toFixed(2) : 0
+  const rawDays = date ? Math.ceil((new Date(date).getTime() - Date.now()) / 86400000) : 0
+  const days  = isNaN(rawDays) ? 0 : Math.max(0, rawDays)
+  const maxWC = validInputs ? parseFloat((cur * 0.03).toFixed(1)) : 0
   const needsGut = lose > maxWC
   const gutKg    = needsGut ? parseFloat((lose - maxWC).toFixed(1)) : 0
 
@@ -276,7 +278,7 @@ export function WaterCutCalc() {
       {/* Inputs */}
       <div>
         <SectionTitle>Unesi podatke</SectionTitle>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px' }}>
           <CalcInput label="Trenutna masa (kg)" value={curKg} onChange={setCurKg} color="#22c55e" step="0.1" placeholder="npr. 95.5" />
           <CalcInput label="Ciljna masa (kg)"   value={tgtKg} onChange={setTgtKg} color="#22c55e" step="0.1" placeholder="npr. 93.0" />
           <CalcInput label="Datum natjecanja"   value={date}  onChange={setDate}  color="#22c55e" type="date" />
@@ -284,7 +286,7 @@ export function WaterCutCalc() {
       </div>
 
       {/* Results */}
-      {cur && tgt && date && lose >= 0 && (
+      {validInputs && lose >= 0 && (
         <div style={{ animation: 'popIn 0.3s ease' }}>
           <SectionTitle>Analiza</SectionTitle>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '16px' }}>
@@ -363,14 +365,210 @@ export function WaterCutCalc() {
   )
 }
 
+// ─── BAR LOADER ─────────────────────────────────────────────────
+const BL_PLATES = [
+  { kg: 25,   color: '#ef4444', border: '#b91c1c', text: '#fff', h: 84, w: 20, label: '25'   },
+  { kg: 20,   color: '#3b82f6', border: '#1d4ed8', text: '#fff', h: 76, w: 18, label: '20'   },
+  { kg: 15,   color: '#eab308', border: '#a16207', text: '#111', h: 68, w: 16, label: '15'   },
+  { kg: 10,   color: '#22c55e', border: '#15803d', text: '#fff', h: 58, w: 14, label: '10'   },
+  { kg: 5,    color: '#e5e7eb', border: '#9ca3af', text: '#111', h: 46, w: 12, label: '5'    },
+  { kg: 2.5,  color: '#1f2937', border: '#374151', text: '#e5e7eb', h: 36, w: 9,  label: '2.5'  },
+  { kg: 1.25, color: '#6b7280', border: '#4b5563', text: '#fff', h: 28, w: 7,  label: '1.25' },
+  { kg: 1,    color: '#6b7280', border: '#4b5563', text: '#fff', h: 25, w: 6,  label: '1'    },
+  { kg: 0.5,  color: '#6b7280', border: '#4b5563', text: '#fff', h: 22, w: 5,  label: '0.5'  },
+  { kg: 0.25, color: '#6b7280', border: '#4b5563', text: '#fff', h: 19, w: 4,  label: '0.25' },
+]
+const BL_BAR_KG   = 20
+const BL_COLLAR_KG = 2.5
+const BL_BASE_KG  = BL_BAR_KG + BL_COLLAR_KG * 2  // 25 kg
+
+function blCalcSide(perSide: number) {
+  const plates: typeof BL_PLATES = []
+  let rem = Math.round(perSide * 1000) / 1000
+  for (const p of BL_PLATES) {
+    while (rem >= p.kg - 0.0001) {
+      plates.push(p)
+      rem = Math.round((rem - p.kg) * 1000) / 1000
+    }
+  }
+  return { plates, ok: rem < 0.0001 }
+}
+
+function BarLoader() {
+  const [target, setTarget] = useState('')
+  const COLOR = '#60a5fa'
+
+  const raw = parseFloat(target.replace(',', '.'))
+  const isNum   = !isNaN(raw)
+  const tooLight = isNum && raw < BL_BASE_KG
+  const oddSplit = isNum && !tooLight && Math.round((raw - BL_BASE_KG) * 1000) % 500 !== 0
+  const perSide  = isNum && !tooLight && !oddSplit ? (raw - BL_BASE_KG) / 2 : 0
+  const { plates, ok } = isNum && !tooLight && !oddSplit ? blCalcSide(perSide) : { plates: [], ok: true }
+  const leftPlates = [...plates].reverse()
+
+  // Plate height is the visual "radius" — bar is centered
+  const maxH    = 84
+  const barH    = 12
+  const collarH = 44
+  const collarW = 14
+
+  // Unique plate summary
+  const summary = BL_PLATES.map(p => ({ ...p, count: plates.filter(x => x.kg === p.kg).length })).filter(x => x.count > 0)
+
+  const Plate = ({ p, side }: { p: typeof BL_PLATES[0]; side: 'L' | 'R' }) => (
+    <div style={{
+      width: p.w, height: p.h, background: p.color,
+      border: `1px solid ${p.border}`,
+      borderRadius: side === 'L' ? '3px 0 0 3px' : '0 3px 3px 0',
+      flexShrink: 0, boxShadow: `inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.2)`,
+    }} />
+  )
+
+  const Collar = ({ side }: { side: 'L' | 'R' }) => (
+    <div style={{
+      width: collarW, height: collarH, flexShrink: 0,
+      background: 'linear-gradient(180deg, #9ca3af, #6b7280 40%, #4b5563 60%, #6b7280)',
+      border: '1px solid #374151',
+      borderRadius: side === 'L' ? '4px 0 0 4px' : '0 4px 4px 0',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
+    }} />
+  )
+
+  return (
+    <div style={{ fontFamily: 'var(--fm)' }}>
+
+      {/* Input row */}
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', marginBottom: '24px' }}>
+        <div style={{ flex: 1 }}>
+          <label style={{ display: 'block', fontSize: '0.58rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase' }}>
+            Ciljna kilaza (kg)
+          </label>
+          <input
+            type="number" value={target} onChange={e => setTarget(e.target.value)}
+            placeholder="npr. 100" min={BL_BASE_KG} step={0.5}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: `1px solid ${COLOR}33`, borderRadius: '8px', color: '#f0f0f5', padding: '12px 14px', fontFamily: 'var(--fm)', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' }}
+            onFocus={e => e.currentTarget.style.borderColor = `${COLOR}88`}
+            onBlur={e  => e.currentTarget.style.borderColor = `${COLOR}33`}
+          />
+        </div>
+      </div>
+
+      {/* Errors */}
+      {isNum && tooLight && (
+        <div style={{ padding: '10px 14px', background: 'rgba(248,113,113,0.07)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: '8px', color: '#f87171', fontSize: '0.8rem', marginBottom: '16px' }}>
+          Minimalna kilaza je {BL_BASE_KG} kg (šipka + 2 collara).
+        </div>
+      )}
+      {isNum && !tooLight && oddSplit && (
+        <div style={{ padding: '10px 14px', background: 'rgba(248,113,113,0.07)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: '8px', color: '#f87171', fontSize: '0.8rem', marginBottom: '16px' }}>
+          Kilaza mora biti višekratnik od 0.5 kg za ravnomjernu raspodjelu.
+        </div>
+      )}
+      {isNum && !tooLight && !oddSplit && !ok && (
+        <div style={{ padding: '10px 14px', background: 'rgba(248,113,113,0.07)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: '8px', color: '#f87171', fontSize: '0.8rem', marginBottom: '16px' }}>
+          Nije moguće sastaviti tu kilažu s dostupnim utezima.
+        </div>
+      )}
+
+      {/* Bar visual */}
+      {isNum && !tooLight && !oddSplit && ok && (
+        <>
+          <div style={{ overflowX: 'auto', paddingBottom: '8px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: `${(plates.length * 22 + 200)}px`, height: `${maxH + 24}px`, position: 'relative' }}>
+
+              {/* Full-width bar behind everything */}
+              <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: barH, transform: 'translateY(-50%)', background: 'linear-gradient(180deg,#9ca3af,#374151 45%,#1f2937 55%,#6b7280)', borderRadius: 4, zIndex: 0 }} />
+
+              {/* Content on top of bar */}
+              <div style={{ display: 'flex', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+
+                {/* Left collar */}
+                <Collar side="L" />
+
+                {/* Left plates (innermost=largest on right, outermost=smallest on left) */}
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  {leftPlates.map((p, i) => <Plate key={i} p={p} side="L" />)}
+                </div>
+
+                {/* Center bar label */}
+                <div style={{ padding: '0 10px', flexShrink: 0 }}>
+                  <div style={{ background: '#0d0d16', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, padding: '3px 10px', fontSize: '0.6rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em', whiteSpace: 'nowrap' as const }}>
+                    {raw} kg
+                  </div>
+                </div>
+
+                {/* Right plates (innermost=largest on left, outermost=smallest on right) */}
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  {plates.map((p, i) => <Plate key={i} p={p} side="R" />)}
+                </div>
+
+                {/* Right collar */}
+                <Collar side="R" />
+              </div>
+            </div>
+          </div>
+
+          {/* Weight breakdown */}
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '16px' }}>
+            <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.3em', marginBottom: '12px', fontWeight: 600, textTransform: 'uppercase' as const }}>
+              Utezi po strani
+            </div>
+            {summary.length === 0 ? (
+              <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.35)' }}>Samo šipka i collari — nema utega.</div>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '8px' }}>
+                {summary.map((p, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 12px', background: `${p.color}14`, border: `1px solid ${p.border}44`, borderRadius: '8px' }}>
+                    <div style={{ width: 12, height: 12, borderRadius: 2, background: p.color, border: `1px solid ${p.border}`, flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f0f0f5' }}>{p.count} × {p.label} kg</span>
+                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)' }}>= {+(p.count * p.kg).toFixed(2)} kg</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Totals */}
+            <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '8px', overflow: 'hidden' }}>
+              {[
+                { label: 'Šipka', val: `${BL_BAR_KG} kg` },
+                { label: 'Collari', val: `${BL_COLLAR_KG * 2} kg` },
+                { label: 'Utezi', val: `${+(perSide * 2).toFixed(2)} kg` },
+              ].map(({ label, val }) => (
+                <div key={label} style={{ padding: '10px', background: '#09090f', textAlign: 'center' as const }}>
+                  <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.2em', marginBottom: '4px' }}>{label}</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: COLOR }}>{val}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Plate legend */}
+      <div style={{ marginTop: '24px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
+        <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.3em', marginBottom: '10px', fontWeight: 600, textTransform: 'uppercase' as const }}>Dostupni utezi</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '6px' }}>
+          {BL_PLATES.map((p, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 8px', background: `${p.color}14`, border: `1px solid ${p.border}33`, borderRadius: '6px' }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: p.color, border: `1px solid ${p.border}` }} />
+              <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)' }}>{p.label} kg</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── HUB TAB COMPONENT ──────────────────────────────────────────
 const HUB_TOOLS = [
   { id:'rpe',        label:'RPE Kalkulator',     sub:'Izračun 1RM i preporučene težine', color:'#f59e0b', badge:'CALC',  group:'calc'  },
   { id:'gl',         label:'GL Points',           sub:'IPF Goodlift formula',             color:'#6b8cff', badge:'CALC',  group:'calc'  },
   { id:'watercut',   label:'Water Cut',           sub:'Plan hidratacije i rezanja',       color:'#22c55e', badge:'CALC',  group:'calc'  },
-  { id:'guide-wc',   label:'Water Cut Guide',     sub:'Protokol dehidracije',             color:'#34d399', badge:'GUIDE', group:'guide' },
-  { id:'guide-rpe',  label:'RPE Guide',           sub:'Kako koristiti RPE',               color:'#fbbf24', badge:'GUIDE', group:'guide' },
-  { id:'guide-peak', label:'Peaking Guide',       sub:'Priprema za natjecanje',           color:'#a78bfa', badge:'GUIDE', group:'guide' },
+  { id:'barloader',  label:'Bar Loader',          sub:'Vizualni prikaz utega na šipci',   color:'#60a5fa', badge:'CALC',  group:'calc'  },
+  { id:'guide-wc',   label:'Water Cut Guide',     sub:'Protokol dehidracije',             color:'#34d399', badge:'GUIDE', group:'guide', upcoming: true },
+  { id:'guide-rpe',  label:'RPE Guide',           sub:'Kako koristiti RPE',               color:'#fbbf24', badge:'GUIDE', group:'guide', upcoming: true },
+  { id:'guide-peak', label:'Peaking Guide',       sub:'Priprema za natjecanje',           color:'#a78bfa', badge:'GUIDE', group:'guide', upcoming: true },
   { id:'progress',   label:'Graf napretka',       sub:'Kilaze kroz blokove po liftu',     color:'#22d3ee', badge:'GRAF',  group:'log'   },
   { id:'weight',     label:'Tjelesna kilaza',     sub:'Unos i praćenje kilaze kroz dane', color:'#f472b6', badge:'LOG',   group:'log'   },
   { id:'nutrition',  label:'Prehrana & Kalorije', sub:'TDEE, makrosi i dnevni log',       color:'#f97316', badge:'LOG',   group:'log'   },
@@ -485,7 +683,8 @@ function ProgressGraph({ userId }: { userId: string }) {
       setRows(allRows)
       // All exercises from DB, with logged ones listed first
       const allEx = (allExRes.data ?? []).map((e: any) => e.name as string)
-      const loggedFirst = [...Array.from(loggedExSet).sort(), ...allEx.filter(e => !loggedExSet.has(e))]
+      const seen = new Set<string>()
+      const loggedFirst = [...Array.from(loggedExSet).sort(), ...allEx.filter(e => !loggedExSet.has(e))].filter(e => { if (seen.has(e)) return false; seen.add(e); return true })
       setExercises(loggedFirst)
       const logged = Array.from(loggedExSet).sort()
       if (logged.length > 0) setPrimary(logged[0])
@@ -557,7 +756,7 @@ function ProgressGraph({ userId }: { userId: string }) {
           ))}
           {/* Block dividers */}
           {blockLabels.map((bl, i) => i > 0 && (
-            <g key={bl.name}>
+            <g key={i}>
               <line x1={bl.x} y1={PT} x2={bl.x} y2={H - PB} stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="3 3" />
             </g>
           ))}
@@ -581,9 +780,63 @@ function ProgressGraph({ userId }: { userId: string }) {
           ))}
           {/* Block name labels on x-axis */}
           {blockLabels.map((bl, i) => (
-            <text key={bl.name} x={bl.x + 4} y={H - 3} fontSize="7" fill="rgba(255,255,255,0.18)" fontFamily="var(--fm)">{bl.name.slice(0, 14)}</text>
+            <text key={i} x={bl.x + 4} y={H - 3} fontSize="7" fill="rgba(255,255,255,0.18)" fontFamily="var(--fm)">{bl.name.slice(0, 14)}</text>
           ))}
         </svg>
+      </div>
+    )
+  }
+
+  // Custom exercise dropdown
+  function ExSelect({ value, onChange, color, label }: { value: string; onChange: (v: string) => void; color: string; label: string }) {
+    const [open, setOpen] = useState(false)
+    const [query, setQuery] = useState('')
+    const filtered = query ? exercises.filter(e => e.toLowerCase().includes(query.toLowerCase())) : exercises
+    useEffect(() => {
+      if (!open) return
+      const handler = (e: MouseEvent) => {
+        const t = e.target as Element
+        if (!t.closest('.exsel-wrap')) setOpen(false)
+      }
+      document.addEventListener('mousedown', handler)
+      return () => document.removeEventListener('mousedown', handler)
+    }, [open])
+    return (
+      <div>
+        <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color, fontFamily: 'var(--fm)', marginBottom: '6px', fontWeight: 700 }}>{label}</div>
+        <div className="exsel-wrap" style={{ position: 'relative' }}>
+          <button onClick={() => { setOpen(o => !o); setQuery('') }}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '9px 12px', background: open ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.04)', border: `1.5px solid ${open ? color : color + '44'}`, borderRadius: '9px', color: value ? '#f0f0f5' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left' as const, transition: 'all 0.15s', boxShadow: open ? `0 0 0 3px ${color}14` : 'none' }}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{value || '— bez odabira —'}</span>
+            <ChevronDown size={13} color={color} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
+          </button>
+          {open && (
+            <div style={{ position: 'absolute', top: 'calc(100% + 5px)', left: 0, right: 0, background: '#0d0d17', border: `1px solid ${color}33`, borderRadius: '10px', boxShadow: '0 16px 48px rgba(0,0,0,0.85)', zIndex: 400, overflow: 'hidden', animation: 'dropDown 0.15s ease' }}>
+              <div style={{ padding: '8px' }}>
+                <input autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder="Pretraži..."
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: `1px solid ${color}22`, borderRadius: '7px', color: '#e0e0e0', padding: '7px 10px', fontFamily: 'var(--fm)', fontSize: '0.8rem', outline: 'none', boxSizing: 'border-box' as const }} />
+              </div>
+              <div style={{ maxHeight: '220px', overflowY: 'auto' as const }}>
+                <button onClick={() => { onChange(''); setOpen(false) }}
+                  style={{ width: '100%', padding: '8px 14px', background: !value ? `${color}10` : 'transparent', border: 'none', color: !value ? color : 'rgba(255,255,255,0.35)', cursor: 'pointer', textAlign: 'left' as const, fontSize: '0.8rem', fontFamily: 'var(--fm)', transition: 'background 0.1s' }}
+                  onMouseEnter={e => { if (value) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                  onMouseLeave={e => { if (value) e.currentTarget.style.background = 'transparent' }}>
+                  — bez odabira —
+                </button>
+                {filtered.map(ex => (
+                  <button key={ex} onClick={() => { onChange(ex); setOpen(false) }}
+                    style={{ width: '100%', padding: '8px 14px', background: ex === value ? `${color}10` : 'transparent', border: 'none', color: ex === value ? color : 'rgba(255,255,255,0.7)', cursor: 'pointer', textAlign: 'left' as const, fontSize: '0.82rem', fontFamily: 'var(--fm)', transition: 'background 0.1s', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                    onMouseEnter={e => { if (ex !== value) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                    onMouseLeave={e => { if (ex !== value) e.currentTarget.style.background = 'transparent' }}>
+                    {ex}
+                    {ex === value && <Check size={11} color={color} />}
+                  </button>
+                ))}
+                {filtered.length === 0 && <div style={{ padding: '12px 14px', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', fontFamily: 'var(--fm)' }}>Nema rezultata</div>}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     )
   }
@@ -596,22 +849,8 @@ function ProgressGraph({ userId }: { userId: string }) {
 
       {/* Filters */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-        <div>
-          <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: COLOR, fontFamily: 'var(--fm)', marginBottom: '6px', fontWeight: 700 }}>PRIMARNI LIFT</div>
-          <select value={primaryLift} onChange={e => setPrimary(e.target.value)}
-            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: `1.5px solid ${COLOR}33`, borderRadius: '9px', color: '#f0f0f5', padding: '9px 12px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', cursor: 'pointer' }}>
-            <option value="">— bez odabira —</option>
-            {exercises.map(e => <option key={e} value={e}>{e}</option>)}
-          </select>
-        </div>
-        <div>
-          <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: '#f59e0b', fontFamily: 'var(--fm)', marginBottom: '6px', fontWeight: 700 }}>SEKUNDARNI LIFT</div>
-          <select value={secondaryLift} onChange={e => setSecondary(e.target.value)}
-            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(245,158,11,0.3)', borderRadius: '9px', color: '#f0f0f5', padding: '9px 12px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', cursor: 'pointer' }}>
-            <option value="">— bez odabira —</option>
-            {exercises.map(e => <option key={e} value={e}>{e}</option>)}
-          </select>
-        </div>
+        <ExSelect value={primaryLift} onChange={setPrimary} color={COLOR} label="PRVI LIFT" />
+        <ExSelect value={secondaryLift} onChange={setSecondary} color="#f59e0b" label="DRUGI LIFT" />
       </div>
 
       {/* Reps filter */}
@@ -1326,17 +1565,21 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
   const renderToolCard = (tool: typeof HUB_TOOLS[0], groupColor?: string) => {
     const isActive = active === tool.id
     const c = groupColor ?? tool.color
+    const isUpcoming = (tool as any).upcoming === true
     return (
-      <button key={tool.id} onClick={() => setActive(isActive ? null : tool.id)}
+      <button key={tool.id}
+        onClick={() => { if (!isUpcoming) setActive(isActive ? null : tool.id) }}
         style={{
+          position: 'relative' as const,
           display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', textAlign: 'left' as const,
-          background: isActive ? `${c}18` : 'rgba(255,255,255,0.05)',
-          border: `1.5px solid ${isActive ? c + '55' : c + '22'}`,
-          borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
+          background: isUpcoming ? 'rgba(255,255,255,0.03)' : isActive ? `${c}18` : 'rgba(255,255,255,0.05)',
+          border: `1.5px solid ${isUpcoming ? c + '18' : isActive ? c + '55' : c + '22'}`,
+          borderRadius: '12px', cursor: isUpcoming ? 'default' : 'pointer', transition: 'all 0.2s',
           boxShadow: isActive ? `0 4px 20px ${c}20` : '0 2px 8px rgba(0,0,0,0.3)',
+          opacity: isUpcoming ? 0.75 : 1,
         }}
-        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = `${c}10`; e.currentTarget.style.borderColor = `${c}44` } }}
-        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = `${c}22` } }}>
+        onMouseEnter={e => { if (!isActive && !isUpcoming) { e.currentTarget.style.background = `${c}10`; e.currentTarget.style.borderColor = `${c}44` } }}
+        onMouseLeave={e => { if (!isActive && !isUpcoming) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = `${c}22` } }}>
         <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: `${c}18`, border: `1px solid ${c}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: c, boxShadow: isActive ? `0 0 8px ${c}` : `0 0 4px ${c}88`, transition: 'box-shadow 0.2s' }} />
         </div>
@@ -1344,9 +1587,15 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
           <div style={{ fontSize: '0.82rem', fontWeight: 600, color: isActive ? c : '#f0f0f8', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}>{tool.label}</div>
           <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.45)', marginTop: '1px', fontFamily: 'var(--fm)' }}>{tool.sub}</div>
         </div>
-        <span style={{ fontSize: '0.5rem', fontWeight: 700, color: c, background: `${c}18`, padding: '3px 8px', borderRadius: '5px', border: `1px solid ${c}35`, letterSpacing: '0.06em', fontFamily: 'var(--fm)', flexShrink: 0 }}>
-          {tool.badge}
-        </span>
+        {isUpcoming ? (
+          <span style={{ fontSize: '0.48rem', fontWeight: 700, color: c, background: `${c}14`, padding: '3px 7px', borderRadius: '5px', border: `1px solid ${c}30`, letterSpacing: '0.08em', fontFamily: 'var(--fm)', flexShrink: 0, animation: 'uskoro-pulse 2.5s ease-in-out infinite' }}>
+            USKORO
+          </span>
+        ) : (
+          <span style={{ fontSize: '0.5rem', fontWeight: 700, color: c, background: `${c}18`, padding: '3px 8px', borderRadius: '5px', border: `1px solid ${c}35`, letterSpacing: '0.06em', fontFamily: 'var(--fm)', flexShrink: 0 }}>
+            {tool.badge}
+          </span>
+        )}
       </button>
     )
   }
@@ -1423,6 +1672,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
               {active === 'rpe'       && <RpeCalc />}
               {active === 'gl'        && <GlCalc />}
               {active === 'watercut'  && <WaterCutCalc />}
+              {active === 'barloader' && <BarLoader />}
               {active === 'progress'  && userId  && <ProgressGraph userId={userId} />}
               {active === 'progress'  && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za prikaz grafa.</div>}
               {active === 'weight'    && userId  && <WeightTracker userId={userId} />}
