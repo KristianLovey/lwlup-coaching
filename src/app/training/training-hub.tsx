@@ -395,10 +395,13 @@ function blCalcSide(perSide: number) {
 function BarLoader() {
   const [target, setTarget]           = useState('')
   const [collarType, setCollarType]   = useState<'competition' | 'classic'>('competition')
+  const [barKg, setBarKg]             = useState(BL_BAR_KG)
+  const [customBar, setCustomBar]     = useState('')
   const COLOR = '#60a5fa'
 
+  const BL_BAR_PRESETS = [10, 15, 17.5, 20, 25]
   const collarKg  = collarType === 'competition' ? 2.5 : 0
-  const baseKg    = BL_BAR_KG + collarKg * 2
+  const baseKg    = barKg + collarKg * 2
 
   const raw      = parseFloat(target.replace(',', '.'))
   const isNum    = !isNaN(raw)
@@ -416,7 +419,7 @@ function BarLoader() {
     <div style={{ fontFamily: 'var(--fm)' }}>
 
       {/* Input + collar toggle */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px', alignItems: 'flex-end', marginBottom: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px', alignItems: 'flex-end', marginBottom: '12px' }}>
         <div>
           <label style={{ display: 'block', fontSize: '0.58rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase' as const }}>
             Ciljna kilaza (kg)
@@ -441,6 +444,32 @@ function BarLoader() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Bar weight selector */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' as const }}>
+        <span style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap' as const }}>ŠIPKA</span>
+        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' as const }}>
+          {BL_BAR_PRESETS.map(kg => (
+            <button key={kg} onClick={() => { setBarKg(kg); setCustomBar('') }}
+              style={{ padding: '5px 10px', background: barKg === kg && !customBar ? `${COLOR}18` : 'rgba(255,255,255,0.03)', border: `1px solid ${barKg === kg && !customBar ? COLOR : 'rgba(255,255,255,0.1)'}`, borderRadius: '6px', color: barKg === kg && !customBar ? COLOR : 'rgba(255,255,255,0.45)', cursor: 'pointer', fontSize: '0.7rem', fontFamily: 'var(--fm)', fontWeight: 600, transition: 'all 0.15s' }}>
+              {kg} kg
+            </button>
+          ))}
+        </div>
+        {/* Custom bar input */}
+        <input
+          type="number" value={customBar} placeholder="ostalo"
+          step={0.5} min={5}
+          onChange={e => {
+            setCustomBar(e.target.value)
+            const v = parseFloat(e.target.value)
+            if (!isNaN(v) && v > 0) setBarKg(v)
+          }}
+          style={{ width: '72px', background: customBar ? `${COLOR}0a` : 'rgba(255,255,255,0.03)', border: `1px solid ${customBar ? COLOR : 'rgba(255,255,255,0.1)'}`, borderRadius: '6px', color: customBar ? COLOR : 'rgba(255,255,255,0.4)', padding: '5px 8px', fontFamily: 'var(--fm)', fontSize: '0.7rem', outline: 'none', transition: 'all 0.15s' }}
+          onFocus={e => e.currentTarget.style.borderColor = COLOR}
+          onBlur={e  => e.currentTarget.style.borderColor = customBar ? COLOR : 'rgba(255,255,255,0.1)'}
+        />
       </div>
 
       {/* Errors */}
@@ -481,7 +510,7 @@ function BarLoader() {
 
               {/* Sleeve — fixed width, shows bar weight label */}
               <div style={{ width: 80, height: barH, background: 'transparent', flexShrink: 0, zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', letterSpacing: '0.1em', userSelect: 'none' as const }}>{BL_BAR_KG} kg</span>
+                <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', letterSpacing: '0.1em', userSelect: 'none' as const }}>{barKg} kg</span>
               </div>
 
               {/* Plates: innermost (largest) first → outermost (smallest) last */}
@@ -530,7 +559,7 @@ function BarLoader() {
             {/* Totals row */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '8px', overflow: 'hidden' }}>
               {[
-                { label: 'Šipka',   val: `${BL_BAR_KG} kg` },
+                { label: 'Šipka',   val: `${barKg} kg` },
                 { label: 'Collari', val: collarKg > 0 ? `${+(collarKg * 2).toFixed(2)} kg` : '—' },
                 { label: 'Utezi',   val: `${+(perSide * 2).toFixed(2)} kg` },
               ].map(({ label, val }) => (
