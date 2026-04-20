@@ -276,8 +276,7 @@ function AthletePanel({
 
   const copyWeek = useCallback(async (weekId: string) => {
     setSaving(true)
-    let src: Week | undefined
-    setBlock(b => { src = b?.weeks?.find(w => w.id === weekId); return b })
+    const src = block?.weeks?.find(w => w.id === weekId)
     if (!src || !block) { setSaving(false); return }
     const ew = block.weeks ?? []
     const weekNum = ew.length + 1
