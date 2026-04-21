@@ -601,10 +601,10 @@ function calcWaterGoal(bw: number, days: number, mins: number) {
 }
 
 const WL_QUICK = [
-  { ml: 200,  label: '0.2L', sub: 'Shot' },
-  { ml: 300,  label: '0.3L', sub: 'Čaša' },
-  { ml: 500,  label: '0.5L', sub: 'Boca' },
-  { ml: 1000, label: '1L',   sub: 'Galon' },
+  { ml: 200,  label: '0.2L' },
+  { ml: 300,  label: '0.3L' },
+  { ml: 500,  label: '0.5L' },
+  { ml: 1000, label: '1L'   },
 ]
 
 function WaterIcon({ ml }: { ml: number }) {
@@ -655,14 +655,15 @@ function WaterLog({ userId }: { userId: string }) {
   const [goalInput, setGoalInput]   = useState('')
   const [saving, setSaving]         = useState(false)
 
-  const today = new Date().toISOString().split('T')[0]
+  const _now = new Date()
+  const today = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`
 
   useEffect(() => {
     const load = async () => {
       const [{ data: sett }, { data: ents }] = await Promise.all([
         supabase.from('water_settings').select('*').eq('user_id', userId).single(),
         supabase.from('water_logs').select('*').eq('user_id', userId)
-          .gte('log_date', (() => { const d = new Date(); d.setHours(0,0,0,0); const day = d.getDay(); d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); return d.toISOString().split('T')[0] })())
+          .gte('log_date', (() => { const d = new Date(); d.setHours(0,0,0,0); const day = d.getDay(); d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })())
           .order('created_at', { ascending: false }),
       ])
       if (sett) {
@@ -722,8 +723,8 @@ function WaterLog({ userId }: { userId: string }) {
     return d
   })()
   const last7 = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekMon.getTime() + i * 86400000)
-    const ds = d.toISOString().split('T')[0]
+    const d = new Date(weekMon); d.setDate(weekMon.getDate() + i)
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
     const ml = entries.filter(e => e.log_date === ds).reduce((s, e) => s + e.amount_ml, 0)
     return { ds, label: d.toLocaleDateString('hr', { weekday: 'short' }), ml }
   })
@@ -789,16 +790,13 @@ function WaterLog({ userId }: { userId: string }) {
           <div>
             <div style={{ fontSize: '0.52rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px', fontWeight: 600 }}>UNOS</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px', marginBottom: '8px' }}>
-              {WL_QUICK.map(({ ml, label, sub }) => (
+              {WL_QUICK.map(({ ml, label }) => (
                 <button key={ml} onClick={() => addWater(ml)}
                   style={{ padding: '12px 6px 10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '11px', cursor: 'pointer', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '7px', transition: 'all 0.15s' }}
                   onMouseEnter={e => { e.currentTarget.style.background = `${COLOR}12`; e.currentTarget.style.borderColor = `${COLOR}44` }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}>
                   <WaterIcon ml={ml} />
-                  <div>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: COLOR, fontFamily: 'var(--fd)' }}>{label}</div>
-                    <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', marginTop: '1px' }}>{sub}</div>
-                  </div>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 800, color: COLOR, fontFamily: 'var(--fd)' }}>{label}</div>
                 </button>
               ))}
             </div>

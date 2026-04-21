@@ -1150,6 +1150,87 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
   const [showPicker, setShowPicker] = useState(false)
   const exCount = workout.workout_exercises?.length ?? 0
 
+  // ── Local exercise order (for optimistic drag-reorder) ──
+  const [localExs, setLocalExs] = useState(() =>
+    [...(workout.workout_exercises ?? [])].sort((a, b) => a.exercise_order - b.exercise_order)
+  )
+  const localExsRef = useRef(localExs)
+  useEffect(() => { localExsRef.current = localExs }, [localExs])
+
+  // Sync if exercises are added / removed externally
+  useEffect(() => {
+    const incoming = workout.workout_exercises ?? []
+    const cur = localExsRef.current
+    const same = incoming.length === cur.length && incoming.every(e => cur.find(l => l.id === e.id))
+    if (!same) setLocalExs([...incoming].sort((a, b) => a.exercise_order - b.exercise_order))
+  }, [workout.workout_exercises])
+
+  // ── Drag state ──
+  const [dragState, setDragState] = useState<{ id: string; overIdx: number } | null>(null)
+  const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+  const dragTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const commitReorder = (fromId: string, toIdx: number) => {
+    setLocalExs(prev => {
+      const fromIdx = prev.findIndex(e => e.id === fromId)
+      if (fromIdx === -1 || fromIdx === toIdx) return prev
+      const arr = [...prev]
+      const [el] = arr.splice(fromIdx, 1)
+      arr.splice(toIdx, 0, el)
+      const updated = arr.map((e, i) => ({ ...e, exercise_order: i + 1 }))
+      updated.forEach(e => onUpdateExercise(e.id, { exercise_order: e.exercise_order }))
+      return updated
+    })
+    setDragState(null)
+  }
+
+  const startDragTimer = (weId: string, startX: number, startY: number) => {
+    if (dragTimerRef.current) clearTimeout(dragTimerRef.current)
+    const onPreMove = (e: PointerEvent) => {
+      if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) cleanup()
+    }
+    const onPreUp = () => cleanup()
+    const cleanup = () => {
+      if (dragTimerRef.current) { clearTimeout(dragTimerRef.current); dragTimerRef.current = null }
+      window.removeEventListener('pointermove', onPreMove)
+      window.removeEventListener('pointerup', onPreUp)
+    }
+    window.addEventListener('pointermove', onPreMove)
+    window.addEventListener('pointerup', onPreUp)
+    dragTimerRef.current = setTimeout(() => {
+      window.removeEventListener('pointermove', onPreMove)
+      window.removeEventListener('pointerup', onPreUp)
+      dragTimerRef.current = null
+      const overIdx = localExsRef.current.findIndex(e => e.id === weId)
+      setDragState({ id: weId, overIdx })
+      try { navigator.vibrate(40) } catch {}
+    }, 400)
+  }
+
+  // Global move/up handlers while drag is active
+  useEffect(() => {
+    if (!dragState) return
+    const onMove = (e: PointerEvent) => {
+      e.preventDefault()
+      for (const [id, el] of rowRefs.current) {
+        const rect = el.getBoundingClientRect()
+        if (e.clientY >= rect.top && e.clientY < rect.bottom) {
+          const idx = localExsRef.current.findIndex(ex => ex.id === id)
+          if (idx !== -1) setDragState(prev => prev ? { ...prev, overIdx: idx } : null)
+          return
+        }
+      }
+    }
+    const onUp = () => commitReorder(dragState.id, dragState.overIdx)
+    window.addEventListener('pointermove', onMove, { passive: false })
+    window.addEventListener('pointerup', onUp)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dragState?.id, dragState?.overIdx])
+
   const handleUpdateExercise = (id: string, data: Partial<WorkoutExercise>) => {
     onUpdateExercise(id, data)
     if ('completed' in data) {
@@ -1225,8 +1306,45 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
           <div style={{ background: '#07070e', animation: 'fadeUp 0.2s ease' }}>
 
             {/* Exercises */}
-            {workout.workout_exercises?.map(we => (
-              <ExerciseRow key={we.id} we={we} isAdmin={isAdmin} userId={userId} weekNumber={weekNumber} onUpdate={handleUpdateExercise} onDelete={onDeleteExercise} />
+            {localExs.map((we, idx) => (
+              <div
+                key={we.id}
+                ref={el => { if (el) rowRefs.current.set(we.id, el); else rowRefs.current.delete(we.id) }}
+                style={{
+                  display: 'flex', alignItems: 'stretch',
+                  opacity: dragState?.id === we.id ? 0.3 : 1,
+                  borderTop: dragState && dragState.overIdx === idx && dragState.id !== we.id ? '2px solid #6366f1' : undefined,
+                  transition: 'opacity 0.15s',
+                  userSelect: 'none',
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <ExerciseRow key={we.id} we={we} isAdmin={isAdmin} userId={userId} weekNumber={weekNumber} onUpdate={handleUpdateExercise} onDelete={onDeleteExercise} />
+                </div>
+                {isAdmin && (
+                  <div
+                    onPointerDown={e => { e.preventDefault(); startDragTimer(we.id, e.clientX, e.clientY) }}
+                    style={{
+                      width: '38px', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      borderLeft: '1px solid rgba(255,255,255,0.08)',
+                      cursor: dragState?.id === we.id ? 'grabbing' : 'grab',
+                      touchAction: 'none',
+                      background: dragState?.id === we.id ? 'rgba(99,102,241,0.08)' : 'transparent',
+                    }}
+                  >
+                    <div style={{
+                      width: '22px', height: '22px',
+                      border: `1.5px dashed ${dragState?.id === we.id ? 'rgba(99,102,241,0.7)' : 'rgba(255,255,255,0.15)'}`,
+                      borderRadius: '4px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'border-color 0.15s',
+                    }}>
+                      <GripVertical size={11} color={dragState?.id === we.id ? '#6366f1' : '#3a3a5c'} />
+                    </div>
+                  </div>
+                )}
+              </div>
             ))}
 
             {/* Add vježbu + bilješka footer */}
