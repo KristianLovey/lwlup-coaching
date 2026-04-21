@@ -25,17 +25,6 @@ type AthleteStat = {
   display_order: number
 }
 
-const GL_PARAMS = {
-  male:   { a: 1199.72839, b: 1025.18162, c: 0.00921 },
-  female: { a: 610.32796,  b: 1045.59282, c: 0.03048 },
-}
-function calcGL(total: number, bw: number, sex: 'male' | 'female' = 'male'): number {
-  if (!total || !bw) return 0
-  const { a, b, c } = GL_PARAMS[sex]
-  const denom = a - b * Math.exp(-c * bw)
-  if (denom <= 0) return 0
-  return Math.round((total * 100 / denom) * 100) / 100
-}
 
 function normName(s: string | null | undefined) {
   if (!s) return ''
@@ -121,91 +110,24 @@ export default function TeamPage() {
 
   useEffect(() => {
     const load = async () => {
-      const [profilesRes, statsRes] = await Promise.all([
-        supabase.from('profiles')
-          .select('id, full_name, role, current_squat_1rm, current_bench_1rm, current_deadlift_1rm, body_weight, weight_class, sex')
-          .neq('role', 'admin')
-          .order('full_name'),
-        supabase.from('athlete_stats').select('*').eq('is_active', true),
-      ])
-
-      // Build lookup: normalized name → athlete_stats row
-      const statsMap = new Map<string, any>()
-      for (const s of (statsRes.data ?? [])) {
-        statsMap.set(normName(s.name), s)
-      }
-
-      const findStats = (fullName: string) => {
-        const key = normName(fullName)
-        if (statsMap.has(key)) return statsMap.get(key)
-        // Fallback: match by last word (surname)
-        const surname = key.split(' ').pop() ?? ''
-        for (const [k, v] of statsMap.entries()) {
-          if (k.split(' ').pop() === surname) return v
-        }
-        return null
-      }
-
-      // Track which athlete_stats rows are matched to a profile
-      const matchedStatIds = new Set<string>()
-
-      const fromProfiles: AthleteStat[] = (profilesRes.data ?? []).map((p: any) => {
-        const s = findStats(p.full_name)
-        if (s) matchedStatIds.add(s.id)
-        const squat    = (p.current_squat_1rm    ?? s?.squat    ?? 0) as number
-        const bench    = (p.current_bench_1rm     ?? s?.bench    ?? 0) as number
-        const deadlift = (p.current_deadlift_1rm  ?? s?.deadlift ?? 0) as number
-        const total    = squat + bench + deadlift
-        const bw       = (p.body_weight ?? 0) as number
-        const sex      = (p.sex ?? 'male') as 'male' | 'female'
-        const wclass   = p.weight_class ?? s?.category ?? ''
-        const cat      = wclass ? `${sex === 'female' ? 'F' : 'M'}-${wclass.replace(/^-/, '')}` : (s?.category ?? '')
-
-        return {
-          id:            p.id,
-          name:          p.full_name ?? s?.name ?? '',
-          nickname:      s?.nickname   ?? null,
-          img:           s?.img        ?? null,
-          category:      cat,
-          squat,
-          bench,
-          deadlift,
-          total,
-          glp:           calcGL(total, bw, sex),
-          highlights:    s?.highlights ?? null,
-          instagram:     s?.instagram  ?? null,
-          display_order: s?.display_order ?? 99,
-        }
-      })
-
-      // Add athlete_stats entries that have no matching profile
-      const fromStatsOnly: AthleteStat[] = (statsRes.data ?? [])
-        .filter((s: any) => !matchedStatIds.has(s.id))
-        .map((s: any) => {
-          const squat    = (s.squat    ?? 0) as number
-          const bench    = (s.bench    ?? 0) as number
-          const deadlift = (s.deadlift ?? 0) as number
-          const total    = squat + bench + deadlift
-          return {
-            id:            s.id,
-            name:          s.name ?? '',
-            nickname:      s.nickname   ?? null,
-            img:           s.img        ?? null,
-            category:      s.category   ?? '',
-            squat,
-            bench,
-            deadlift,
-            total,
-            glp:           s.glp ?? 0,
-            highlights:    s.highlights ?? null,
-            instagram:     s.instagram  ?? null,
-            display_order: s.display_order ?? 99,
-          }
-        })
-
-      const merged = [...fromProfiles, ...fromStatsOnly]
-      merged.sort((a, b) => a.display_order - b.display_order || a.name.localeCompare(b.name))
-      setAthletes(merged)
+      const { data } = await supabase.from('athlete_stats').select('*').eq('is_active', true)
+      const athletes: AthleteStat[] = (data ?? []).map((s: any) => ({
+        id:            s.id,
+        name:          s.name ?? '',
+        nickname:      s.nickname ?? null,
+        img:           s.img ?? null,
+        category:      s.category ?? '',
+        squat:         (s.squat    ?? 0) as number,
+        bench:         (s.bench    ?? 0) as number,
+        deadlift:      (s.deadlift ?? 0) as number,
+        total:         (s.total    ?? 0) as number,
+        glp:           (s.glp      ?? 0) as number,
+        highlights:    s.highlights ?? null,
+        instagram:     s.instagram ?? null,
+        display_order: s.display_order ?? 99,
+      }))
+      athletes.sort((a, b) => a.display_order - b.display_order || a.name.localeCompare(b.name))
+      setAthletes(athletes)
       setLoading(false)
     }
     load()
