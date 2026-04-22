@@ -4,20 +4,20 @@ import { LanguageProvider } from '@/context/LanguageContext'
 
 export const metadata: Metadata = {
   title: 'LWL UP Coaching',
-  description: 'Powerlifting club and coaching system.',
+  description: 'Powerlifting club and coaching system from Croatia.',
   icons: {
     icon: [
-      { url: '/logo.png', type: 'image/png' },
+      { url: '/favicon.ico', type: 'image/x-icon' },
     ],
-    shortcut: '/logo.png',
-    apple: '/logo.png',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
   },
   openGraph: {
     title: 'LWL UP Coaching',
-    description: 'Powerlifting club and coaching system.',
+    description: 'Powerlifting club and coaching system from Croatia.',
     url: 'https://lwlup.com',
     siteName: 'LWL UP Coaching',
-    images: [{ url: '/logo.png', width: 512, height: 512 }],
+    images: [{ url: '/favicon.ico', width: 512, height: 512 }],
     type: 'website',
   },
 }

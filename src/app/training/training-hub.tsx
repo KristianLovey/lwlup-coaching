@@ -2021,12 +2021,33 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
         })
       )}
 
+      {/* Mobile bottom-sheet CSS */}
+      <style>{`
+        @media (max-width: 640px) {
+          .hub-modal-overlay {
+            align-items: flex-end !important;
+            padding: 0 !important;
+          }
+          .hub-modal-panel {
+            max-width: 100% !important;
+            max-height: 90vh !important;
+            border-radius: 20px 20px 0 0 !important;
+            border-left: none !important;
+            border-right: none !important;
+            border-bottom: none !important;
+          }
+        }
+      `}</style>
+
       {/* Modal overlay */}
       {active && activeTool && (
         <div
           onClick={e => { if (e.target === e.currentTarget) setActive(null) }}
-          style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', animation: 'fadeIn 0.18s ease' }}>
-          <div style={{ width: '100%', maxWidth: '680px', maxHeight: '82vh', display: 'flex', flexDirection: 'column' as const, border: `1.5px solid ${activeTool.color}44`, borderRadius: '18px', overflow: 'hidden', boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px ${activeTool.color}18, 0 0 60px ${activeTool.color}10`, animation: 'panelIn 0.25s cubic-bezier(0.16,1,0.3,1)', background: '#0d0d16' }}>
+          className="hub-modal-overlay"
+          style={{ position: 'fixed', inset: 0, zIndex: 1010, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', animation: 'fadeIn 0.18s ease' }}>
+          <div
+            className="hub-modal-panel"
+            style={{ width: '100%', maxWidth: '680px', maxHeight: '82vh', display: 'flex', flexDirection: 'column' as const, border: `1.5px solid ${activeTool.color}44`, borderRadius: '18px', overflow: 'hidden', boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px ${activeTool.color}18, 0 0 60px ${activeTool.color}10`, animation: 'panelIn 0.25s cubic-bezier(0.16,1,0.3,1)', background: '#0d0d16' }}>
 
             {/* Modal header */}
             <div style={{ padding: '16px 20px', background: `${activeTool.color}14`, borderBottom: `1px solid ${activeTool.color}2a`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
