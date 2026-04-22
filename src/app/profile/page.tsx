@@ -584,7 +584,7 @@ export default function ProfilePage() {
         background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.65) 100%)' }} />
       {/* logopng — bottom right */}
       <div style={{ position: 'fixed', bottom: '5vh', right: '2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.03, filter: 'blur(0.5px) grayscale(1)' }}>
-        <img src="/slike/logopng.png" alt="" style={{ width: '160px', height: 'auto' }} />
+        <img src="/slike/logopng.png" alt="" width="160" height="80" style={{ width: '160px', height: 'auto' }} />
       </div>
 
       <AppNav

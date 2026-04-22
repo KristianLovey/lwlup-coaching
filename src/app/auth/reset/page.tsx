@@ -75,7 +75,7 @@ export default function ResetPasswordPage() {
       <div style={{ width: '100%', maxWidth: '440px', animation: 'fadeUp 0.6s cubic-bezier(0.16,1,0.3,1)', position: 'relative', zIndex: 1 }}>
 
         <Link href="/">
-          <img src="/slike/logopng.png" alt="LWL UP" style={{ height: '44px', marginBottom: '48px', display: 'block' }} />
+          <img src="/slike/logopng.png" alt="LWL UP" width="147" height="44" style={{ height: '44px', marginBottom: '48px', display: 'block' }} />
         </Link>
 
         <div style={{ marginBottom: '48px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '24px' }}>

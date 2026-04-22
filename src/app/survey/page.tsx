@@ -315,7 +315,7 @@ export default function SurveyPage() {
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px)', backgroundSize: '48px 48px', pointerEvents: 'none' }} />
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(20px,5vw,60px)', background: 'rgba(6,6,6,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <img src="/slike/logopng.png" alt="LWL UP" style={{ height: '60px' }} />
+          <img src="/slike/logopng.png" alt="LWL UP" width="200" height="60" style={{ height: '60px' }} />
         </Link>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '0.7rem', letterSpacing: '0.25em', fontWeight: 600, fontFamily: "'Barlow',sans-serif" }}>
           <ArrowLeft size={13} /> NATRAG
@@ -383,7 +383,7 @@ export default function SurveyPage() {
       {/* NAVBAR */}
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(20px,5vw,60px)', background: 'rgba(6,6,6,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.4)' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <img src="/slike/logopng.png" alt="LWL UP" style={{ height: '60px' }} />
+          <img src="/slike/logopng.png" alt="LWL UP" width="200" height="60" style={{ height: '60px' }} />
         </Link>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '0.7rem', letterSpacing: '0.25em', fontWeight: 600, transition: '0.2s', fontFamily: "'Barlow',sans-serif" }}
           onMouseEnter={e => e.currentTarget.style.color = '#fff'}

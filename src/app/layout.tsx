@@ -25,6 +25,19 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="hr">
+      <head>
+        {/* Preconnect to font origins before any parsing */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* Non-blocking font load — replaces @import in globals.css */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700&display=swap"
+        />
+        {/* Preconnect to Supabase API */}
+        <link rel="preconnect" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" />
+        <link rel="dns-prefetch" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" />
+      </head>
       <body>
         <LanguageProvider>{children}</LanguageProvider>
       </body>

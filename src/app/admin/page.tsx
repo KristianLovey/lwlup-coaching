@@ -1221,7 +1221,7 @@ export default function AdminPage() {
         background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.65) 100%)' }} />
       {/* ipflogo — top left, very faint */}
       <div style={{ position: 'fixed', top: '12vh', left: '-1vw', zIndex: 0, pointerEvents: 'none', opacity: 0.035, filter: 'blur(1px) grayscale(1)' }}>
-        <img src="/slike/ipflogo.png" alt="" style={{ width: '200px', height: 'auto' }} />
+        <img src="/slike/ipflogo.png" alt="" width="200" height="200" loading="lazy" decoding="async" style={{ width: '200px', height: 'auto' }} />
       </div>
 
       <AppNav athleteName={adminName} isAdmin={true} onLogout={handleLogout} />

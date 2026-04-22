@@ -421,19 +421,19 @@ export default function TrainingPage() {
         background: 'radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(0,0,0,0.8) 100%)' }} />
       {/* plate.png — bottom left, large, rotated */}
       <div className="bg-decorative" style={{ position: 'fixed', bottom: '-8vh', left: '-8vw', zIndex: 0, pointerEvents: 'none', opacity: 0.07, transform: 'rotate(12deg)', filter: 'blur(1px)' }}>
-        <img src="/slike/plate.png" alt="" loading="lazy" decoding="async" style={{ width: '380px', height: 'auto' }} />
+        <img src="/slike/plate.png" alt="" width="380" height="380" loading="lazy" decoding="async" style={{ width: '380px', height: 'auto' }} />
       </div>
       {/* plate.png — top right, smaller */}
       <div className="bg-decorative" style={{ position: 'fixed', top: '6vh', right: '-6vw', zIndex: 0, pointerEvents: 'none', opacity: 0.05, transform: 'rotate(-18deg)', filter: 'blur(1.5px)' }}>
-        <img src="/slike/plate.png" alt="" loading="lazy" decoding="async" style={{ width: '260px', height: 'auto' }} />
+        <img src="/slike/plate.png" alt="" width="260" height="260" loading="lazy" decoding="async" style={{ width: '260px', height: 'auto' }} />
       </div>
       {/* ipflogo.png — mid left, faded */}
       <div className="bg-decorative" style={{ position: 'fixed', top: '35vh', left: '-2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.04, filter: 'blur(1px) grayscale(1)' }}>
-        <img src="/slike/ipflogo.png" alt="" loading="lazy" decoding="async" style={{ width: '220px', height: 'auto' }} />
+        <img src="/slike/ipflogo.png" alt="" width="220" height="220" loading="lazy" decoding="async" style={{ width: '220px', height: 'auto' }} />
       </div>
       {/* logopng.png — bottom right, very subtle */}
       <div className="bg-decorative" style={{ position: 'fixed', bottom: '6vh', right: '2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.035, filter: 'blur(0.5px) grayscale(1)' }}>
-        <img src="/slike/logopng.png" alt="" loading="lazy" decoding="async" style={{ width: '180px', height: 'auto' }} />
+        <img src="/slike/logopng.png" alt="" width="180" height="90" loading="lazy" decoding="async" style={{ width: '180px', height: 'auto' }} />
       </div>
 
       <AppNav athleteName={athleteName} isAdmin={isAdmin} onLogout={handleLogout} avatarIcon={avatarIcon} userId={userId ?? undefined} />
