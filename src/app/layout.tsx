@@ -6,7 +6,19 @@ export const metadata: Metadata = {
   title: 'LWL UP Coaching',
   description: 'Powerlifting club and coaching system.',
   icons: {
-    icon: '/slike/logopng.png',
+    icon: [
+      { url: '/logo.png', type: 'image/png' },
+    ],
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
+  openGraph: {
+    title: 'LWL UP Coaching',
+    description: 'Powerlifting club and coaching system.',
+    url: 'https://lwlup.com',
+    siteName: 'LWL UP Coaching',
+    images: [{ url: '/logo.png', width: 512, height: 512 }],
+    type: 'website',
   },
 }
 
