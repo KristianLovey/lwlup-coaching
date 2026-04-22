@@ -471,16 +471,16 @@ export default function TrainingPage() {
 
             {/* Stats row */}
             {!loading && block && (
-              <div className="stats-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.13)', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.1)' }}>
+              <div className="stats-row" style={{ display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07)' }}>
                 {[
                   { val: block.weeks?.length ?? 0, label: 'TJEDANA' },
                   { val: totalWorkouts, label: 'TRENINGA' },
                   { val: totalSets > 0 ? `${doneSets}/${totalSets}` : `${completedWorkouts}/${totalWorkouts}`, label: 'SERIJA', accent: doneSets > 0 },
                   { val: `${pct}%`, label: 'NAPREDAK', accent: pct > 50 },
                 ].map((s, i) => (
-                  <div key={i} style={{ padding: '16px 12px', background: 'rgba(6,6,18,0.92)', textAlign: 'center' }}>
-                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1.9rem', fontWeight: 900, lineHeight: 1, color: s.accent ? '#4ade80' : '#fff', letterSpacing: '-0.03em', textShadow: s.accent ? '0 0 20px rgba(74,222,128,0.4)' : 'none' }}>{s.val}</div>
-                    <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.28)', marginTop: '7px', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.2em' }}>{s.label}</div>
+                  <div key={i} style={{ flex: 1, padding: '14px 20px', background: '#060610', textAlign: 'center', minWidth: '80px', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
+                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1.7rem', fontWeight: 800, lineHeight: 1, color: s.accent ? '#4ade80' : '#f0f0f8', letterSpacing: '-0.02em' }}>{s.val}</div>
+                    <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', marginTop: '6px', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.18em' }}>{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -830,18 +830,12 @@ export default function TrainingPage() {
           .athlete-name-label { display: none !important; }
         }
 
-        /* ─ Stats: 2×2 grid on mobile ─ */
+        /* ─ Stats: compact single row on mobile ─ */
         @media (max-width: 640px) {
-          .stats-row {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            width: 100% !important; gap: 1px !important;
-          }
-          .stats-row > div { padding: 10px 12px !important; }
-          .stats-row > div:nth-child(1) { border-right: 1px solid rgba(255,255,255,0.08) !important; border-bottom: 1px solid rgba(255,255,255,0.08) !important; }
-          .stats-row > div:nth-child(2) { border-bottom: 1px solid rgba(255,255,255,0.08) !important; }
-          .stats-row > div > div:first-child { font-size: 1.5rem !important; }
-          .stats-row > div > div:last-child { font-size: 0.44rem !important; margin-top: 4px !important; }
+          .stats-row { width: 100% !important; }
+          .stats-row > div { padding: 10px 8px !important; min-width: 0 !important; }
+          .stats-row > div > div:first-child { font-size: 1.2rem !important; }
+          .stats-row > div > div:last-child { font-size: 0.42rem !important; margin-top: 4px !important; }
         }
 
         /* ─ Block bar: only show switcher on mobile ─ */
