@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Plus, Trash2, ChevronDown, Check, Search,
+  Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
   Loader2, Settings,
   FolderOpen, Copy, Bell,
   AlertCircle, ChevronLeft, Eye, Trophy, Send
@@ -33,6 +33,237 @@ type AthleteProfile = {
   notes?: AthleteNote[]
 }
 
+
+// ── Mini sparkline ────────────────────────────────────────────────
+function Sparkline({ data, color = '#6366f1', h = 40 }: { data: number[]; color?: string; h?: number }) {
+  if (data.length < 2) return null
+  const w = 160
+  const max = Math.max(...data), min = Math.min(...data), range = max - min || 1
+  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * (h - 4) - 2}`).join(' ')
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ overflow: 'visible' }}>
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      {/* last point dot */}
+      {(() => { const last = data[data.length - 1]; const x = w; const y = h - ((last - min) / range) * (h - 4) - 2; return <circle cx={x} cy={y} r="3" fill={color} /> })()}
+    </svg>
+  )
+}
+
+// ── Athlete Overview ───────────────────────────────────────────────
+function AthleteOverview({ athlete, onBack, onGoTraining }: {
+  athlete: AthleteProfile; onBack: () => void; onGoTraining: () => void
+}) {
+  const initials = athlete.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
+  const [bwLogs, setBwLogs] = useState<any[]>([])
+  const [nutLogs, setNutLogs] = useState<any[]>([])
+  const [waterLogs, setWaterLogs] = useState<any[]>([])
+  const [lastMeets, setLastMeets] = useState<any[]>([])
+  const [bwOpen, setBwOpen] = useState(true)
+  const [calOpen, setCalOpen] = useState(true)
+  const [waterOpen, setWaterOpen] = useState(true)
+  const [compOpen, setCompOpen] = useState(true)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      const [bwRes, nutRes, waterRes, meetRes] = await Promise.all([
+        supabase.from('weight_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(20),
+        supabase.from('nutrition_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(14),
+        supabase.from('water_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(7),
+        supabase.from('meet_attempts').select('*, competition:competitions(name,date)').eq('athlete_id', athlete.id).order('meet_date', { ascending: false }).limit(9),
+      ])
+      setBwLogs(bwRes.data ?? [])
+      setNutLogs(nutRes.data ?? [])
+      setWaterLogs(waterRes.data ?? [])
+      setLastMeets(meetRes.data ?? [])
+      setLoading(false)
+    }
+    load()
+  }, [athlete.id])
+
+  const FM = 'var(--fm)', FD = 'var(--fd)'
+  const row = (label: string, val: React.ReactNode, sub?: string) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontFamily: FM }}>{label}</span>
+      <div style={{ textAlign: 'right' }}>
+        <span style={{ fontSize: '0.88rem', color: '#e0e0f0', fontFamily: FM, fontWeight: 700 }}>{val}</span>
+        {sub && <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>{sub}</div>}
+      </div>
+    </div>
+  )
+
+  const Section = ({ title, open, onToggle, children, accent = '#6366f1' }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode; accent?: string }) => (
+    <div style={{ background: '#0d0d18', border: `1px solid rgba(255,255,255,0.07)`, borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
+      <button onClick={onToggle} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', color: '#fff' }}>
+        <span style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: accent, fontFamily: FM, fontWeight: 700 }}>{title}</span>
+        <ChevronDown size={14} color={accent} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+      </button>
+      {open && <div style={{ padding: '0 16px 16px' }}>{children}</div>}
+    </div>
+  )
+
+  // Group meet attempts by competition
+  const meetsByComp: Record<string, any[]> = {}
+  for (const m of lastMeets) {
+    const key = m.competition_id ?? m.meet_date
+    if (!meetsByComp[key]) meetsByComp[key] = []
+    meetsByComp[key].push(m)
+  }
+
+  const bwValues = [...bwLogs].reverse().map(l => Number(l.weight_kg))
+  const calValues = [...nutLogs].reverse().map(l => Number(l.calories)).filter(Boolean)
+  const waterValues = [...waterLogs].reverse().map(l => Number(l.amount_ml))
+
+  const latestBw = bwLogs[0]?.weight_kg ?? '—'
+  const latestCal = nutLogs[0]?.calories ?? '—'
+  const todayWater = waterLogs[0] ? Math.round(Number(waterLogs[0].amount_ml) / 100) / 10 : '—'
+
+  return (
+    <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto', paddingBottom: '40px' }}>
+
+      {/* Back */}
+      <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: FM, padding: '0 0 20px', marginBottom: '4px' }}>
+        <ChevronLeft size={13} /> NATRAG
+      </button>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+        <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(99,102,241,0.35),rgba(139,92,246,0.15))', border: '2px solid rgba(99,102,241,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 900, color: '#c7d2fe', fontFamily: FM, flexShrink: 0 }}>{initials}</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#f0f0ff', fontFamily: FD, lineHeight: 1 }}>{athlete.full_name}</div>
+          <div style={{ fontSize: '0.55rem', color: athlete.role === 'trener' ? '#fbbf24' : '#4ade80', letterSpacing: '0.2em', marginTop: '4px', fontFamily: FM }}>{(athlete.role ?? 'lifter').toUpperCase()}</div>
+        </div>
+      </div>
+
+      {/* Quick stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
+        {[
+          { label: 'BW', val: latestBw ? `${latestBw}kg` : '—', color: '#a78bfa' },
+          { label: 'KALORIJE', val: latestCal !== '—' ? `${latestCal}` : '—', color: '#f59e0b' },
+          { label: 'VODA', val: todayWater !== '—' ? `${todayWater}L` : '—', color: '#38bdf8' },
+        ].map(s => (
+          <div key={s.label} style={{ background: '#0d0d18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '12px 14px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px', fontFamily: FM }}>{s.label}</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 900, color: s.color, fontFamily: FD }}>{s.val}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* TRENING button */}
+      <button onClick={onGoTraining} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.15))', border: '1px solid rgba(99,102,241,0.5)', borderRadius: '12px', color: '#a5b4fc', fontFamily: FM, fontWeight: 800, fontSize: '0.78rem', letterSpacing: '0.25em', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '20px', transition: 'all 0.2s' }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        UREDI TRENING
+        <ChevronRight size={14} />
+      </button>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '32px', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.2em', fontFamily: FM }}>
+          <Loader2 size={18} style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }} />
+        </div>
+      ) : (
+        <>
+          {/* BW section */}
+          <Section title="TJELESNA MASA" open={bwOpen} onToggle={() => setBwOpen(v => !v)} accent="#a78bfa">
+            {bwLogs.length === 0 ? (
+              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
+                  <div>
+                    {bwLogs.slice(0, 5).map(l => (
+                      <div key={l.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '4px 0' }}>
+                        <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM, width: '70px' }}>{l.date}</span>
+                        <span style={{ fontSize: '0.82rem', color: '#c4b5fd', fontFamily: FM, fontWeight: 700 }}>{l.weight_kg} kg</span>
+                      </div>
+                    ))}
+                    {bwLogs.length > 5 && <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, marginTop: '4px' }}>+ {bwLogs.length - 5} više</div>}
+                  </div>
+                  {bwValues.length >= 2 && <Sparkline data={bwValues} color="#a78bfa" />}
+                </div>
+              </>
+            )}
+          </Section>
+
+          {/* Calorie section */}
+          <Section title="KALORIJE & MAKROSI" open={calOpen} onToggle={() => setCalOpen(v => !v)} accent="#f59e0b">
+            {nutLogs.length === 0 ? (
+              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
+                  <div style={{ flex: 1 }}>
+                    {nutLogs.slice(0, 5).map(l => (
+                      <div key={l.id} style={{ padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'grid', gridTemplateColumns: '72px 60px auto', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>{l.date}</span>
+                        <span style={{ fontSize: '0.78rem', color: '#fbbf24', fontFamily: FM, fontWeight: 800 }}>{l.calories ?? '—'} kcal</span>
+                        <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>
+                          P:{l.protein_g ?? '?'}g · U:{l.carbs_g ?? '?'}g · M:{l.fat_g ?? '?'}g
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {calValues.length >= 2 && <div style={{ marginLeft: '12px' }}><Sparkline data={calValues} color="#f59e0b" /></div>}
+                </div>
+                {nutLogs[0]?.steps && row('Koraci danas', `${nutLogs[0].steps.toLocaleString()} 👟`)}
+              </>
+            )}
+          </Section>
+
+          {/* Water section */}
+          <Section title="HIDRATACIJA" open={waterOpen} onToggle={() => setWaterOpen(v => !v)} accent="#38bdf8">
+            {waterLogs.length === 0 ? (
+              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                <div>
+                  {waterLogs.slice(0, 5).map(l => (
+                    <div key={l.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '4px 0' }}>
+                      <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM, width: '70px' }}>{l.log_date}</span>
+                      <span style={{ fontSize: '0.82rem', color: '#38bdf8', fontFamily: FM, fontWeight: 700 }}>{(Number(l.amount_ml) / 1000).toFixed(1)} L</span>
+                    </div>
+                  ))}
+                </div>
+                {waterValues.length >= 2 && <Sparkline data={waterValues} color="#38bdf8" />}
+              </div>
+            )}
+          </Section>
+
+          {/* Competitions */}
+          <Section title="ZADNJA NATJECANJA" open={compOpen} onToggle={() => setCompOpen(v => !v)} accent="#22c55e">
+            {Object.keys(meetsByComp).length === 0 ? (
+              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
+            ) : Object.entries(meetsByComp).slice(0, 3).map(([key, attempts]) => {
+                const squat = attempts.find(a => a.lift === 'squat')
+                const bench = attempts.find(a => a.lift === 'bench')
+                const dl = attempts.find(a => a.lift === 'deadlift')
+                const compName = attempts[0]?.competition?.name ?? key
+                const compDate = attempts[0]?.competition?.date ?? attempts[0]?.meet_date
+                const bestSq = squat ? [squat.attempt1_actual, squat.attempt2_actual, squat.attempt3_actual].filter((v, i) => v && [squat.attempt1_good, squat.attempt2_good, squat.attempt3_good][i]).pop() : null
+                const bestBe = bench ? [bench.attempt1_actual, bench.attempt2_actual, bench.attempt3_actual].filter((v, i) => v && [bench.attempt1_good, bench.attempt2_good, bench.attempt3_good][i]).pop() : null
+                const bestDl = dl ? [dl.attempt1_actual, dl.attempt2_actual, dl.attempt3_actual].filter((v, i) => v && [dl.attempt1_good, dl.attempt2_good, dl.attempt3_good][i]).pop() : null
+                const total = (bestSq ?? 0) + (bestBe ?? 0) + (bestDl ?? 0)
+                return (
+                  <div key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px', marginBottom: '10px' }}>
+                    <div style={{ fontSize: '0.65rem', color: '#86efac', fontFamily: FM, fontWeight: 700, marginBottom: '4px' }}>{compName}</div>
+                    <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM, marginBottom: '8px' }}>{compDate}</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                      {[['SQ', bestSq], ['BP', bestBe], ['DL', bestDl], ['TOTAL', total || null]].map(([label, val]) => (
+                        <div key={String(label)} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '6px', padding: '6px 4px', textAlign: 'center' }}>
+                          <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', marginBottom: '3px', fontFamily: FM }}>{label}</div>
+                          <div style={{ fontSize: '0.82rem', color: label === 'TOTAL' ? '#22c55e' : '#e0e0f0', fontFamily: FD, fontWeight: 700 }}>{val ?? '—'}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })
+            }
+          </Section>
+        </>
+      )}
+    </div>
+  )
+}
 
 // ── Athlete Detail Panel (training-page style) ─────────────────────
 function AthletePanel({
@@ -667,6 +898,7 @@ export default function AdminPage() {
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedAthlete, setSelectedAthlete] = useState<AthleteProfile | null>(null)
+  const [adminView, setAdminView] = useState<'overview' | 'training'>('overview')
   const [searchQ, setSearchQ] = useState('')
   const [managingUsers, setManagingUsers] = useState(false)
   const [dashSection, setDashSection] = useState<'athletes' | 'competitions' | 'obavijesti' | 'treneri' | 'tim'>('athletes')
@@ -998,17 +1230,27 @@ export default function AdminPage() {
       <div style={{ paddingTop: '56px', position: 'relative', zIndex: 1 }}>
 
         {selectedAthlete ? (
-          /* ─── ATHLETE DETAIL VIEW ─── */
-          <div className="admin-outer" style={{ padding: '48px 60px 100px', maxWidth: '1300px', margin: '0 auto' }}>
-            <AthletePanel
-              athlete={selectedAthlete}
-              exercises={exercises}
-              allAthletes={athletes}
-              adminId={adminId}
-              onBack={() => setSelectedAthlete(null)}
-              onRefresh={loadAthletes}
-            />
-          </div>
+          /* ─── ATHLETE VIEW ─── */
+          adminView === 'overview' ? (
+            <div style={{ padding: '16px 16px 80px', maxWidth: '640px', margin: '0 auto' }}>
+              <AthleteOverview
+                athlete={selectedAthlete}
+                onBack={() => { setSelectedAthlete(null); setAdminView('overview') }}
+                onGoTraining={() => setAdminView('training')}
+              />
+            </div>
+          ) : (
+            <div className="admin-outer" style={{ padding: '24px 16px 100px', maxWidth: '1300px', margin: '0 auto' }}>
+              <AthletePanel
+                athlete={selectedAthlete}
+                exercises={exercises}
+                allAthletes={athletes}
+                adminId={adminId}
+                onBack={() => setAdminView('overview')}
+                onRefresh={loadAthletes}
+              />
+            </div>
+          )
         ) : (
           /* ─── DASHBOARD ─── */
           <div className="admin-outer" style={{ padding: '48px 60px 100px', maxWidth: '1400px', margin: '0 auto' }}>
@@ -1124,7 +1366,7 @@ export default function AdminPage() {
                   <div style={{ padding: '40px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>Nema liftera.</div>
                 )}
 
-                <div className="admin-tim-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+                <div className="admin-tim-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                   {teamEntries.map(a => {
                     const stats = teamStats[a.id] ?? { squat: '', bench: '', deadlift: '', bw: '', wclass: '', sex: 'male' }
                     const saving = teamSaving[a.id]
@@ -1274,8 +1516,8 @@ export default function AdminPage() {
 
             {/* Athlete circles grid */}
             <div style={{ marginBottom: '12px' }}>
-              <div style={{ fontSize: '0.52rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '20px', fontFamily: 'var(--fm)' }}>KORISNICI — KLIKNI NA PROFIL ZA UREĐIVANJE</div>
-              <div className="admin-athlete-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+              <div style={{ fontSize: '0.52rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '16px', fontFamily: 'var(--fm)' }}>KORISNICI — KLIKNI NA PROFIL ZA UREĐIVANJE</div>
+              <div className="admin-athlete-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
                 {filteredAthletes.length === 0 && (
                   <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.8rem', padding: '40px 0' }}>Nema lifera.</div>
                 )}
@@ -1289,35 +1531,34 @@ export default function AdminPage() {
                     <div key={athlete.id} style={{ position: 'relative', animation: 'fadeUp 0.4s ease', minWidth: 0 }}>
                       {/* Card */}
                       <div
-                        onClick={() => !managingUsers && setSelectedAthlete(athlete)}
-                        style={{ width: '160px', minWidth: 0, padding: '20px 16px 16px', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', cursor: managingUsers ? 'default' : 'pointer', transition: 'all 0.25s', textAlign: 'center', position: 'relative', boxSizing: 'border-box' as const }}
-                        onMouseEnter={e => { if (!managingUsers) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' } }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.background = 'rgba(255,255,255,0.025)' }}
+                        onClick={() => { if (!managingUsers) { setSelectedAthlete(athlete); setAdminView('overview') } }}
+                        style={{ width: '100%', minWidth: 0, padding: '18px 14px 0', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.09)', borderTop: `2px solid ${athlete.role === 'admin' ? 'rgba(239,68,68,0.55)' : activeBlock ? 'rgba(74,222,128,0.45)' : 'rgba(255,255,255,0.09)'}`, borderRadius: '10px', overflow: 'hidden', cursor: managingUsers ? 'default' : 'pointer', transition: 'all 0.22s', textAlign: 'center', position: 'relative', boxSizing: 'border-box' as const }}
+                        onMouseEnter={e => { if (!managingUsers) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' } }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)'; e.currentTarget.style.background = 'rgba(255,255,255,0.025)' }}
                       >
                         {/* Avatar circle */}
-                        <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(255,255,255,0.12) 0%,rgba(255,255,255,0.04) 100%)', border: '2px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fm)', margin: '0 auto 12px', position: 'relative' }}>
+                        <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(255,255,255,0.14) 0%,rgba(255,255,255,0.04) 100%)', border: '1.5px solid rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fm)', margin: '0 auto 10px', position: 'relative' }}>
                           {initials}
-                          {/* Active indicator */}
-                          {(activeBlock || athlete.role === 'admin') && <div style={{ position: 'absolute', bottom: '2px', right: '2px', width: '10px', height: '10px', borderRadius: '50%', background: athlete.role === 'admin' ? '#ef4444' : '#4ade80', border: '2px solid #08080a', boxShadow: athlete.role === 'admin' ? '0 0 6px #ef4444' : '0 0 6px #4ade80' }} />}
+                          {(activeBlock || athlete.role === 'admin') && <div style={{ position: 'absolute', bottom: '1px', right: '1px', width: '9px', height: '9px', borderRadius: '50%', background: athlete.role === 'admin' ? '#ef4444' : '#4ade80', border: '2px solid #09090e', boxShadow: athlete.role === 'admin' ? '0 0 6px #ef4444' : '0 0 6px #4ade80' }} />}
                         </div>
 
                         {/* Name */}
-                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)', marginBottom: '4px', lineHeight: 1.2 }}>{athlete.full_name}</div>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)', marginBottom: '3px', lineHeight: 1.25, padding: '0 2px' }}>{athlete.full_name}</div>
 
-                        {/* Active block name */}
-                        <div style={{ fontSize: '0.58rem', color: athlete.role === 'admin' ? '#ef4444' : (activeBlock ? '#4ade80' : 'rgba(255,255,255,0.2)'), letterSpacing: '0.08em', marginBottom: '12px', minHeight: '16px' }}>
+                        {/* Active block / role */}
+                        <div style={{ fontSize: '0.5rem', color: athlete.role === 'admin' ? '#ef4444' : (activeBlock ? '#4ade80' : 'rgba(255,255,255,0.2)'), letterSpacing: '0.07em', marginBottom: '12px', minHeight: '13px' }}>
                           {athlete.role === 'admin' ? '⚙ ADMINISTRATOR' : (activeBlock ? activeBlock.name : 'Nema ak. bloka')}
                         </div>
 
-                        {/* Micro stats */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: 'rgba(255,255,255,0.06)' }}>
-                          <div style={{ padding: '6px', background: '#08080a', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)' }}>{blockCount}</div>
-                            <div style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em' }}>BLOKOVA</div>
+                        {/* Micro stats — flush to card edges */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: 'rgba(255,255,255,0.07)', margin: '0 -14px' }}>
+                          <div style={{ padding: '8px 4px', background: 'rgba(6,6,16,0.92)', textAlign: 'center' }}>
+                            <div style={{ fontSize: '1rem', fontWeight: 900, color: '#fff', fontFamily: 'var(--fd)' }}>{blockCount}</div>
+                            <div style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.14em', marginTop: '2px' }}>BLOKOVA</div>
                           </div>
-                          <div style={{ padding: '6px', background: '#08080a', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: noteCount > 0 ? '#facc15' : '#fff', fontFamily: 'var(--fd)' }}>{noteCount}</div>
-                            <div style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em' }}>BILJEŠKI</div>
+                          <div style={{ padding: '8px 4px', background: 'rgba(6,6,16,0.92)', textAlign: 'center' }}>
+                            <div style={{ fontSize: '1rem', fontWeight: 900, color: noteCount > 0 ? '#facc15' : '#fff', fontFamily: 'var(--fd)' }}>{noteCount}</div>
+                            <div style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.14em', marginTop: '2px' }}>BILJEŠKI</div>
                           </div>
                         </div>
 
@@ -1465,12 +1706,12 @@ export default function AdminPage() {
         }
 
         /* ── Athlete cards grid ── */
-        .admin-athlete-grid { display: flex; flex-wrap: wrap; gap: 12px; }
-        .admin-athlete-grid > div { flex: 0 0 150px; }
-        @media (max-width: 520px) {
-          .admin-athlete-grid { gap: 10px; }
-          .admin-athlete-grid > div { flex: 1 1 calc(50% - 5px); max-width: calc(50% - 5px); }
-          .admin-athlete-grid > div > div { width: 100% !important; }
+        @media (max-width: 640px) {
+          .admin-athlete-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 8px !important;
+            margin: 0 -14px !important;
+          }
         }
 
         /* ── Treneri section ── */

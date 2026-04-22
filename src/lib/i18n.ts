@@ -122,7 +122,7 @@ const translations = {
     'comp.days':                  'DANA',
     'comp.today':                 'DANAS / USKORO',
     'comp.results':               'REZULTATI',
-    'comp.lifters':               'LIFTERA',
+    'comp.lifters':               'LIFTERI',
     'comp.hide':                  'SAKRIJ',
     'comp.athleteResults':        'REZULTATI LIFTERA',
     'comp.athletesAt':            'LIFTERI NA NATJECANJU',
@@ -170,7 +170,7 @@ const translations = {
     'comp.title1':                'KALENDAR',
     'comp.title2':                'NATJECANJA',
     'comp.count':                 'NATJECANJA',
-    'comp.liftersCount':          'liftera',
+    'comp.liftersCount':          'lifteri',
 
     // ── BigThree ────────────────────────────────────────────────────
     'bt.eyebrow':        'ŠTO JE POWERLIFTING?',

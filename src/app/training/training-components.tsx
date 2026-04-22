@@ -1289,10 +1289,12 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
                   <span>{workout.completed ? 'GOTOVO' : 'ODRADITI'}</span>
                 </div>
               )}
-              {/* Delete */}
-              <button onClick={e => { e.stopPropagation(); onDeleteWorkout(workout.id) }} className="icon-btn-danger">
-                <Trash2 size={11} />
-              </button>
+              {/* Delete — admin only */}
+              {isAdmin && (
+                <button onClick={e => { e.stopPropagation(); onDeleteWorkout(workout.id) }} className="icon-btn-danger">
+                  <Trash2 size={11} />
+                </button>
+              )}
               {/* Expand arrow */}
               <div style={{ color: open ? '#818cf8' : '#444', transition: 'transform 0.25s, color 0.2s', transform: open ? 'rotate(90deg)' : 'none' }}>
                 <ChevronRight size={14} />
@@ -1522,7 +1524,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
 
       {/* ── Workout cards ── */}
       {open && (
-        <div style={{ padding: '14px', background: '#08080f' }}>
+        <div style={{ padding: '22px 14px 14px', background: '#08080f' }}>
           {week.workouts?.map(w => (
             <WorkoutCard key={w.id} workout={w} exercises={exercises} isAdmin={isAdmin} userId={userId} weekNumber={week.week_number}
               onUpdateWorkout={onUpdateWorkout} onDeleteWorkout={onDeleteWorkout}

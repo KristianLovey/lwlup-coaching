@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { Loader2, Plus, Check, FolderOpen, ChevronDown, X, Copy } from 'lucide-react'
+import { Loader2, Plus, Check, FolderOpen, ChevronDown, X, Copy, Menu } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { Block, BlockSummary, Week, Exercise, WorkoutExercise, Workout } from './types'
 import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-components'
@@ -27,6 +27,7 @@ export default function TrainingPage() {
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'program' | 'hub' | 'meet'>('program')
   const [activeTool, setActiveTool] = useState<string | null>(null)
+  const [navOpen, setNavOpen] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('training:activeTab') as 'program' | 'hub' | 'meet' | null
@@ -87,6 +88,35 @@ export default function TrainingPage() {
     }
     init()
   }, [])
+
+  // Realtime: sync admin edits to exercise fields instantly (no refresh needed)
+  useEffect(() => {
+    if (!userId) return
+    const channel = supabase
+      .channel(`we-sync-${userId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'workout_exercises' }, (payload) => {
+        const updated = payload.new as WorkoutExercise
+        setBlock(b => {
+          if (!b) return b
+          const inBlock = b.weeks?.some(w => w.workouts?.some(wo => wo.workout_exercises?.some(we => we.id === updated.id)))
+          if (!inBlock) return b
+          return {
+            ...b,
+            weeks: b.weeks?.map(w => ({
+              ...w,
+              workouts: w.workouts?.map(wo => ({
+                ...wo,
+                workout_exercises: wo.workout_exercises?.map(we =>
+                  we.id === updated.id ? { ...we, ...updated, exercise: we.exercise } : we
+                ),
+              })),
+            })),
+          }
+        })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [userId])
 
   const effectiveAthleteId = userId
 
@@ -411,8 +441,8 @@ export default function TrainingPage() {
       {/* ─── HEADER ──────────────────────────────────────────────── */}
       <div style={{ paddingTop: '56px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
         {/* Header glow strip at top */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '180px', zIndex: 0, pointerEvents: 'none',
-          background: 'linear-gradient(180deg, rgba(56,100,255,0.04) 0%, transparent 100%)' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '260px', zIndex: 0, pointerEvents: 'none',
+          background: 'linear-gradient(180deg, rgba(99,102,241,0.13) 0%, rgba(99,102,241,0.04) 50%, transparent 100%)' }} />
 
         <div className='page-header' style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 32px 0', position: 'relative', zIndex: 1 }}>
 
@@ -430,8 +460,8 @@ export default function TrainingPage() {
           {/* Page title row — only in program tab */}
           {activeTab === 'program' && <div className="page-title-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '28px', gap: '20px', flexWrap: 'wrap', animation: 'fadeUp 0.5s ease 0.05s both' }}>
             <div>
-              <div className="athlete-name-label" style={{ fontSize: '0.6rem', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.3)', marginBottom: '10px', fontFamily: 'var(--fm)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ display: 'inline-block', width: '18px', height: '1px', background: 'rgba(255,255,255,0.2)' }} />
+              <div className="athlete-name-label" style={{ fontSize: '0.6rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.38)', marginBottom: '12px', fontFamily: 'var(--fm)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px', textTransform: 'uppercase' }}>
+                <span style={{ display: 'inline-block', width: '22px', height: '1px', background: 'linear-gradient(90deg, rgba(99,102,241,0.8), transparent)' }} />
                 {loading ? '...' : athleteName}
               </div>
               <h1 className="page-title-h1" style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.8rem,4.5vw,3.2rem)', fontWeight: 900, lineHeight: 0.9, margin: 0, letterSpacing: '-0.04em', background: 'linear-gradient(135deg, #ffffff 0%, #c7d2fe 60%, #a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
@@ -441,16 +471,16 @@ export default function TrainingPage() {
 
             {/* Stats row */}
             {!loading && block && (
-              <div className="stats-row" style={{ display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07)' }}>
+              <div className="stats-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.13)', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.1)' }}>
                 {[
                   { val: block.weeks?.length ?? 0, label: 'TJEDANA' },
                   { val: totalWorkouts, label: 'TRENINGA' },
                   { val: totalSets > 0 ? `${doneSets}/${totalSets}` : `${completedWorkouts}/${totalWorkouts}`, label: 'SERIJA', accent: doneSets > 0 },
                   { val: `${pct}%`, label: 'NAPREDAK', accent: pct > 50 },
                 ].map((s, i) => (
-                  <div key={i} style={{ padding: '14px 20px', background: '#060610', textAlign: 'center', minWidth: '80px', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
-                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1.7rem', fontWeight: 800, lineHeight: 1, color: s.accent ? '#4ade80' : '#f0f0f8', letterSpacing: '-0.02em' }}>{s.val}</div>
-                    <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', marginTop: '6px', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.18em' }}>{s.label}</div>
+                  <div key={i} style={{ padding: '16px 12px', background: 'rgba(6,6,18,0.92)', textAlign: 'center' }}>
+                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1.9rem', fontWeight: 900, lineHeight: 1, color: s.accent ? '#4ade80' : '#fff', letterSpacing: '-0.03em', textShadow: s.accent ? '0 0 20px rgba(74,222,128,0.4)' : 'none' }}>{s.val}</div>
+                    <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.28)', marginTop: '7px', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.2em' }}>{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -461,7 +491,7 @@ export default function TrainingPage() {
           {activeTab === 'program' && <>
           {!loading && block && (
             <div style={{ position: 'relative', marginBottom: '24px' }} ref={blockSelectorRef}>
-              <div className="block-bar" style={{ display: 'flex', alignItems: 'stretch', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.3)' }}>
+              <div className="block-bar" style={{ display: 'flex', alignItems: 'stretch', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)', borderTop: '1px solid rgba(255,255,255,0.14)' }}>
 
                 {/* Block switcher */}
                 <button onClick={() => setShowBlockSelector(!showBlockSelector)}
@@ -779,54 +809,9 @@ export default function TrainingPage() {
           .bg-decorative { display: none !important; }
         }
 
-        /* ─ Tab switcher → fixed bottom navigation bar ─ */
+        /* ─ Tab switcher → hide on mobile (replaced by FAB popup) ─ */
         @media (max-width: 768px) {
-          .tab-switcher {
-            position: fixed !important;
-            bottom: 0 !important; left: 0 !important; right: 0 !important;
-            width: 100% !important; max-width: 100% !important;
-            margin: 0 !important; padding: 0 !important;
-            border-radius: 0 !important;
-            border: none !important;
-            border-top: 1px solid rgba(255,255,255,0.1) !important;
-            background: rgba(4,4,10,0.96) !important;
-            backdrop-filter: blur(28px) saturate(180%) !important;
-            -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
-            z-index: 999 !important;
-            gap: 0 !important;
-            overflow: visible !important;
-            height: 64px !important;
-            align-items: stretch !important;
-            animation: none !important;
-            box-shadow: 0 -1px 0 rgba(255,255,255,0.06), 0 -12px 40px rgba(0,0,0,0.6) !important;
-          }
-          .tab-btn {
-            flex: 1 !important;
-            border-radius: 0 !important;
-            border: none !important;
-            border-top: 2px solid transparent !important;
-            background: transparent !important;
-            box-shadow: none !important;
-            padding: 8px 4px 12px !important;
-            font-size: 0.55rem !important;
-            letter-spacing: 0.08em !important;
-            color: rgba(255,255,255,0.38) !important;
-            height: 100% !important;
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            justify-content: center !important;
-            gap: 4px !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            transition: color 0.15s, border-color 0.15s !important;
-          }
-          .tab-btn-active {
-            border-top-color: #818cf8 !important;
-            color: #a5b4fc !important;
-            background: rgba(99,102,241,0.06) !important;
-            font-weight: 700 !important;
-          }
+          .tab-switcher { display: none !important; }
         }
 
         /* ─ Block selector bar: stack vertically on mobile ─ */
@@ -845,17 +830,18 @@ export default function TrainingPage() {
           .athlete-name-label { display: none !important; }
         }
 
-        /* ─ Stats: compact single row on mobile ─ */
+        /* ─ Stats: 2×2 grid on mobile ─ */
         @media (max-width: 640px) {
           .stats-row {
-            display: flex !important;
-            width: 100% !important; gap: 0 !important;
-            grid-template-columns: unset !important;
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            width: 100% !important; gap: 1px !important;
           }
-          .stats-row > div { flex: 1 !important; min-width: 0 !important; padding: 10px 6px !important; border-right: 1px solid rgba(255,255,255,0.07) !important; border-bottom: none !important; }
-          .stats-row > div:nth-child(4) { border-right: none !important; }
-          .stats-row > div > div:first-child { font-size: 1.25rem !important; }
-          .stats-row > div > div:last-child { font-size: 0.42rem !important; margin-top: 2px !important; letter-spacing: 0.12em !important; }
+          .stats-row > div { padding: 10px 12px !important; }
+          .stats-row > div:nth-child(1) { border-right: 1px solid rgba(255,255,255,0.08) !important; border-bottom: 1px solid rgba(255,255,255,0.08) !important; }
+          .stats-row > div:nth-child(2) { border-bottom: 1px solid rgba(255,255,255,0.08) !important; }
+          .stats-row > div > div:first-child { font-size: 1.5rem !important; }
+          .stats-row > div > div:last-child { font-size: 0.44rem !important; margin-top: 4px !important; }
         }
 
         /* ─ Block bar: only show switcher on mobile ─ */
@@ -958,7 +944,64 @@ export default function TrainingPage() {
         /* ─ Card border glow on touch (active) ─ */
         .workout-card:active { border-color: #2a2a3a !important; }
         .bt-card:active { background: #0d0d0e !important; }
+
+        /* ─ FAB nav: only show on mobile ─ */
+        .fab-nav { display: none; }
+        @media (max-width: 768px) {
+          .fab-nav { display: block; }
+        }
       `}</style>
+
+      {/* Floating nav button — mobile only */}
+      <div className="fab-nav" style={{ position: 'fixed', bottom: '24px', right: '20px', zIndex: 1000 }}>
+        {/* Backdrop */}
+        {navOpen && (
+          <div onClick={() => setNavOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: -1 }} />
+        )}
+
+        {/* Pop-up menu */}
+        {navOpen && (
+          <div style={{
+            position: 'absolute', bottom: '64px', right: 0,
+            background: 'rgba(12,12,18,0.97)', border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '16px', overflow: 'hidden',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
+            backdropFilter: 'blur(24px)',
+            animation: 'fadeUp 0.18s cubic-bezier(0.16,1,0.3,1)',
+            minWidth: '160px',
+          }}>
+            {([['program','Program'],['hub','Hub & Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label]) => (
+              <button key={tab} onClick={() => { setActiveTab(tab as 'program'|'hub'|'meet'); setNavOpen(false) }}
+                style={{
+                  display: 'flex', alignItems: 'center',
+                  width: '100%', padding: '14px 18px',
+                  background: activeTab === tab ? 'rgba(99,102,241,0.15)' : 'transparent',
+                  border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  color: activeTab === tab ? '#a5b4fc' : 'rgba(255,255,255,0.7)',
+                  fontFamily: 'var(--fm)', fontSize: '0.78rem', fontWeight: activeTab === tab ? 700 : 400,
+                  letterSpacing: '0.06em', cursor: 'pointer', textAlign: 'left',
+                  borderLeft: activeTab === tab ? '3px solid #818cf8' : '3px solid transparent',
+                }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* FAB button */}
+        <button onClick={() => setNavOpen(v => !v)} style={{
+          width: '54px', height: '54px', borderRadius: '50%',
+          background: navOpen ? 'rgba(99,102,241,0.9)' : 'rgba(30,30,45,0.95)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          boxShadow: navOpen ? '0 4px 24px rgba(99,102,241,0.5)' : '0 4px 24px rgba(0,0,0,0.6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', transition: 'all 0.2s',
+          backdropFilter: 'blur(16px)',
+          fontSize: '1.3rem',
+        }}>
+          {navOpen ? <X size={20} color="#fff" /> : <Menu size={20} color="rgba(255,255,255,0.85)" />}
+        </button>
+      </div>
     </div>
   )
 }
