@@ -218,7 +218,7 @@ export default function Landing() {
                   {t('home.hero.cta1')}
                 </button>
               </Link>
-              <Link href="/training" style={{ textDecoration: 'none', flex: 1 }}>
+              <Link href="/training" style={{ textDecoration: 'none', flex: 1, display: 'flex', minHeight: '44px' }}>
                 <button className="btn-secondary-cta" style={{ width: '100%', padding: '16px 24px', background: 'rgba(255,255,255,0.03)', color: '#fff', border: '1px solid rgba(255,255,255,0.22)', fontSize: 'clamp(0.58rem, 1.6vw, 0.74rem)', fontWeight: 600, letterSpacing: '0.22em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const }}>
                   {t('home.hero.cta2')}
                 </button>
@@ -345,7 +345,7 @@ export default function Landing() {
               <div className="club-info-cards">
                 {([['home.about.community.title', 'home.about.community.desc'], ['home.about.expertise.title', 'home.about.expertise.desc']] as const).map(([tk, dk]) => (
                   <div key={tk} className="info-card" style={{ cursor: 'pointer', transition: '0.3s' }}>
-                    <h4 style={{ color: '#fff', fontSize: 'clamp(0.95rem,2vw,1.1rem)', marginBottom: '8px' }}>{t(tk)}</h4>
+                    <h3 style={{ color: '#fff', fontSize: 'clamp(0.95rem,2vw,1.1rem)', marginBottom: '8px', fontWeight: 700 }}>{t(tk)}</h3>
                     <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.8rem,1.8vw,0.9rem)' }}>{t(dk)}</p>
                   </div>
                 ))}

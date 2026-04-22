@@ -20,7 +20,7 @@ export default function Footer() {
 
           {/* Brand col */}
           <div>
-            <img src="/slike/logopng.png" alt="LWL UP" width="233" height="70" style={{ height: '70px', marginBottom: '24px', display: 'block' }} />
+            <img src="/slike/logopng.png" alt="LWL UP" width="96" height="70" style={{ height: '70px', marginBottom: '24px', display: 'block' }} />
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.82rem', lineHeight: 1.75, margin: '0 0 28px', maxWidth: '260px' }}>
               {t('footer.desc')}
             </p>

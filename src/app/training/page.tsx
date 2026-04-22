@@ -433,7 +433,7 @@ export default function TrainingPage() {
       </div>
       {/* logopng.png — bottom right, very subtle */}
       <div className="bg-decorative" style={{ position: 'fixed', bottom: '6vh', right: '2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.035, filter: 'blur(0.5px) grayscale(1)' }}>
-        <img src="/slike/logopng.png" alt="" width="180" height="90" loading="lazy" decoding="async" style={{ width: '180px', height: 'auto' }} />
+        <img src="/slike/logopng.png" alt="" width="180" height="131" loading="lazy" decoding="async" style={{ width: '180px', height: 'auto' }} />
       </div>
 
       <AppNav athleteName={athleteName} isAdmin={isAdmin} onLogout={handleLogout} avatarIcon={avatarIcon} userId={userId ?? undefined} />

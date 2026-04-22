@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
+import Image from 'next/image'
 import { useLanguage } from '@/context/LanguageContext'
 import type { TranslationKey } from '@/lib/i18n'
 
@@ -126,7 +127,7 @@ function PortraitModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
     <div className="bt-modal bt-modal-portrait" style={{ width: '100%', maxWidth: '1000px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.12)', display: 'grid', gridTemplateColumns: '1fr 380px', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.8)', animation: 'slideUp 0.45s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
       onClick={e => e.stopPropagation()}>
       <div style={{ position: 'relative', background: '#000', overflowY: 'auto' }}>
-        <img src={LIFT_DETAILS[lift].img} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} alt={lift} />
+        <Image src={LIFT_DETAILS[lift].img} alt={lift} width={1000} height={1500} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} sizes="(max-width: 768px) 100vw, 620px" />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 55%, rgba(0,0,0,0.92) 100%)' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, transparent 65%, #0a0a0a 100%)' }} />
         {LIFT_DETAILS[lift].points.map((p, i) => (
@@ -160,7 +161,7 @@ function LandscapeModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
     <div className="bt-modal bt-modal-landscape" style={{ width: '100%', maxWidth: '900px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.8)', animation: 'slideUp 0.45s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
       onClick={e => e.stopPropagation()}>
       <div style={{ position: 'relative', background: '#000', flexShrink: 0 }}>
-        <img src={LIFT_DETAILS[lift].img} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} alt={lift} />
+        <Image src={LIFT_DETAILS[lift].img} alt={lift} width={1200} height={900} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} sizes="100vw" />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.88) 100%)' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.15) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.15) 100%)' }} />
         {LIFT_DETAILS[lift].points.map((p, i) => (
@@ -284,7 +285,7 @@ export default function BigThree() {
                     </div>
                   </div>
                   <div className="bt-img-col" style={{ position: 'relative', overflow: 'hidden' }}>
-                    <img src={LIFT_DETAILS[lift].img} alt={lift} className="bt-img" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: lift === 'BENCH PRESS' ? 'center 30%' : 'center top', display: 'block', transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' }} />
+                    <Image src={LIFT_DETAILS[lift].img} alt={lift} fill className="bt-img" style={{ objectFit: 'cover', objectPosition: lift === 'BENCH PRESS' ? 'center 30%' : 'center top', transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 100vw, 50vw" />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #0a0a0a 0%, rgba(10,10,10,0.15) 40%, transparent 100%)' }} />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%)' }} />
                     <div style={{ position: 'absolute', bottom: '24px', right: '24px', fontFamily: 'var(--fd)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.35em', color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase' }}>{lift}</div>
