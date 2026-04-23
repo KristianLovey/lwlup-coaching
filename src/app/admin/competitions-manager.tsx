@@ -146,7 +146,7 @@ export function CompetitionsManager() {
       {showNewForm && (
         <div style={{ marginBottom: '20px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)', padding: '24px', animation: 'fadeUp 0.25s ease' }}>
           <div style={{ fontSize: '0.55rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.25)', marginBottom: '18px', fontFamily: 'var(--fm)' }}>NOVO NATJECANJE</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+          <div className="comp-new-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             {[
               { key: 'name', placeholder: 'Naziv natjecanja', label: 'NAZIV *' },
               { key: 'date', placeholder: '', label: 'DATUM *', type: 'date' },
@@ -185,6 +185,15 @@ export function CompetitionsManager() {
       )}
 
       {/* Competitions list */}
+      <style>{`
+        @media (max-width: 600px) {
+          .comp-header-row { padding: 12px !important; }
+          .comp-athletes-grid { grid-template-columns: 1fr !important; }
+          .comp-results-grid { grid-template-columns: repeat(3, 1fr) !important; }
+          .comp-new-form-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+
       {competitions.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.2)', border: '1px dashed rgba(255,255,255,0.08)', fontSize: '0.78rem', letterSpacing: '0.2em' }}>
           NEMA NATJECANJA — KREIRAJ PRVO
@@ -199,40 +208,43 @@ export function CompetitionsManager() {
             <div style={{ height: '2px', background: STATUS_COLORS[comp.status], opacity: comp.status === 'completed' ? 0.3 : 0.8 }} />
 
             {/* Header row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '18px 20px' }}>
+            <div className="comp-header-row" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                   <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: STATUS_COLORS[comp.status], flexShrink: 0 }} />
-                  <span style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{comp.name}</span>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{comp.name}</span>
                   <span style={{ fontSize: '0.55rem', color: STATUS_COLORS[comp.status], letterSpacing: '0.2em', fontWeight: 700, flexShrink: 0 }}>{STATUS_LABELS[comp.status]}</span>
                 </div>
-                <div style={{ display: 'flex', gap: '16px', paddingLeft: '19px' }}>
-                  <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '5px' }}><Calendar size={11} />{comp.date}</span>
-                  {comp.location && <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={11} />{comp.location}</span>}
-                  <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '5px' }}><Users size={11} />{athleteIds.size} lifera</span>
+                <div className="comp-meta-row" style={{ display: 'flex', gap: '12px', paddingLeft: '15px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.66rem', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={11} />{comp.date}</span>
+                  {comp.location && <span style={{ fontSize: '0.66rem', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={11} />{comp.location}</span>}
+                  <span style={{ fontSize: '0.66rem', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}><Users size={11} />{athleteIds.size} lifera</span>
                 </div>
               </div>
 
-              {/* Status quick-change */}
-              <select value={comp.status} onChange={e => updateComp(comp.id, { status: e.target.value as Competition['status'] })}
-                style={{ background: '#0d0d10', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '6px 10px', fontSize: '0.62rem', fontFamily: 'var(--fm)', cursor: 'pointer', outline: 'none', letterSpacing: '0.1em' }}>
-                <option value="announced">NAJAVLJENO</option>
-                <option value="ongoing">U TIJEKU</option>
-                <option value="completed">ZAVRŠENO</option>
-              </select>
+              {/* Actions row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                {/* Status quick-change */}
+                <select value={comp.status} onChange={e => updateComp(comp.id, { status: e.target.value as Competition['status'] })}
+                  style={{ background: '#0d0d10', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '6px 8px', fontSize: '0.6rem', fontFamily: 'var(--fm)', cursor: 'pointer', outline: 'none', letterSpacing: '0.1em', maxWidth: '100px' }}>
+                  <option value="announced">NAJAVLJENO</option>
+                  <option value="ongoing">U TIJEKU</option>
+                  <option value="completed">ZAVRŠENO</option>
+                </select>
 
-              <button onClick={() => setExpandedComp(isExpanded ? null : comp.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: isExpanded ? 'rgba(255,255,255,0.07)' : 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.62rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}>
-                <Users size={12} /> LIFTERI
-                <ChevronDown size={11} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-              </button>
+                <button onClick={() => setExpandedComp(isExpanded ? null : comp.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 10px', background: isExpanded ? 'rgba(255,255,255,0.07)' : 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.6rem', letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
+                  <Users size={11} /> LIFTERI
+                  <ChevronDown size={10} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                </button>
 
-              <button onClick={() => deleteComp(comp.id)}
-                style={{ padding: '8px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', transition: 'color 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#ff4444'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}>
-                <Trash2 size={14} />
-              </button>
+                <button onClick={() => deleteComp(comp.id)}
+                  style={{ padding: '7px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', transition: 'color 0.2s', flexShrink: 0 }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#ff4444'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}>
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
 
             {/* Athletes checkboxes + results */}
@@ -241,7 +253,7 @@ export function CompetitionsManager() {
                 <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.2)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>
                   ODABERI LIFERE {comp.status === 'completed' && '— UNESI REZULTATE'}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '8px' }}>
+                <div className="comp-athletes-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '8px' }}>
                   {allAthletes.map(athlete => {
                     const isSelected = athleteIds.has(athlete.id)
                     const compAthlete = comp.comp_athletes?.find(ca => ca.athlete_id === athlete.id)
@@ -266,7 +278,7 @@ export function CompetitionsManager() {
                         {/* Results inputs (only if selected and comp is completed) */}
                         {isSelected && comp.status === 'completed' && (
                           <div style={{ padding: '0 14px 12px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '10px' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
+                            <div className="comp-results-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px' }}>
                               {[
                                 { key: 'result_squat', label: 'SQ' },
                                 { key: 'result_bench', label: 'BP' },

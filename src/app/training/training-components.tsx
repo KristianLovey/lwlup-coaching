@@ -896,6 +896,33 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   )
 }
 
+// ─── ADMIN PLAN CELL ──────────────────────────────────────────────
+// Inline editable number/text cell for the admin exercise plan grid
+function AdminPlanCell({ value, placeholder, type, color, onSave }: {
+  value: string | number | null; placeholder: string; type: string; color: string; onSave: (v: string) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [val, setVal] = useState(String(value ?? ''))
+  const ref = useRef<HTMLInputElement>(null)
+  useEffect(() => { if (editing) ref.current?.focus() }, [editing])
+  useEffect(() => { setVal(String(value ?? '')) }, [value])
+  const commit = () => { setEditing(false); onSave(val) }
+  if (editing) return (
+    <input ref={ref} type={type} value={val}
+      onChange={e => setVal(e.target.value)}
+      onBlur={commit}
+      onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
+      style={{ width: '52px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${color}66`, borderRadius: '5px', color, padding: '3px 6px', fontSize: '1rem', fontWeight: 800, outline: 'none', fontFamily: 'var(--fm)', textAlign: 'center', boxSizing: 'border-box' }}
+    />
+  )
+  return (
+    <span onClick={() => setEditing(true)}
+      style={{ cursor: 'text', color: value != null && value !== '' ? color : 'rgba(255,255,255,0.15)', borderBottom: `1px dashed ${color}44`, paddingBottom: '1px' }}>
+      {value != null && value !== '' ? value : placeholder}
+    </span>
+  )
+}
+
 // ─── EXERCISE ROW ─────────────────────────────────────────────────
 // isAdmin=true  → edits planned_ + target_rpe + coach_note + delete
 // isAdmin=false → reads planned_, edits actual_ + actual_note + completed
@@ -969,55 +996,63 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
     <div className="ex-row-wrap">
       {/* ── Main row ── */}
       {isAdmin ? (
-        /* Admin: compact 2-col — name+info | delete */
-        <div className="ex-row-main" style={{ display: 'grid', gridTemplateColumns: '1fr 36px', alignItems: 'stretch', borderBottom: '1px solid rgba(255,255,255,0.08)', minHeight: '52px' }}>
-          {/* Name + inline plan info */}
-          <div onClick={() => setSetsOpen(v => !v)} style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '5px', cursor: 'pointer', minWidth: 0 }}>
-            {/* Row 1: icon + name + buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" style={{ flexShrink: 0 }}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#a78bfa', fontFamily: 'var(--fm)', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>{we.exercise?.name ?? '—'}</span>
-              <button onClick={toggleHistory}
-                title="Usporedi s prošlim tjednom"
-                style={{ background: showHistory ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${showHistory ? 'rgba(129,140,248,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showHistory ? '#818cf8' : '#444', fontSize: '0.55rem', fontWeight: 800, flexShrink: 0, transition: 'all 0.15s' }}>
-                i
-              </button>
-              <button onClick={e => { e.stopPropagation(); setExpanded(!expanded) }}
-                style={{ background: hasNote ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${hasNote ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '4px', color: hasNote ? '#f59e0b' : '#555', fontSize: '0.52rem', fontWeight: 800, padding: '2px 6px', cursor: 'pointer', fontFamily: 'var(--fm)', letterSpacing: '0.06em', flexShrink: 0, transition: 'all 0.15s' }}>
-                {expanded ? '▲' : (hasNote ? '!' : '+')}
-              </button>
-              <div style={{ color: setsOpen ? '#818cf8' : '#333', transition: 'transform 0.2s, color 0.2s', transform: setsOpen ? 'rotate(90deg)' : 'none', flexShrink: 0 }}>
-                <ChevronRight size={11} />
+        /* Admin: full-width card layout */
+        <div className="ex-row-main" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          {/* Top bar: name + action buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 14px 8px', minWidth: 0 }}>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" style={{ flexShrink: 0 }}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span
+              onClick={() => setSetsOpen(v => !v)}
+              style={{ fontSize: '0.92rem', fontWeight: 800, color: '#a78bfa', fontFamily: 'var(--fm)', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0, cursor: 'pointer' }}>
+              {we.exercise?.name ?? '—'}
+            </span>
+            {/* ⓘ history */}
+            <button onClick={toggleHistory}
+              title="Usporedi s prošlim tjednom"
+              style={{ background: showHistory ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${showHistory ? 'rgba(129,140,248,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showHistory ? '#818cf8' : '#555', fontSize: '0.58rem', fontWeight: 800, flexShrink: 0, transition: 'all 0.15s' }}>
+              i
+            </button>
+            {/* Note/expand */}
+            <button onClick={e => { e.stopPropagation(); setExpanded(!expanded) }}
+              style={{ background: hasNote ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${hasNote ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '4px', color: hasNote ? '#f59e0b' : '#555', fontSize: '0.52rem', fontWeight: 800, padding: '3px 7px', cursor: 'pointer', fontFamily: 'var(--fm)', flexShrink: 0, transition: 'all 0.15s' }}>
+              {expanded ? '▲' : (hasNote ? '!' : '+')}
+            </button>
+            {/* Delete */}
+            <button onClick={() => onDelete(we.id)} className="icon-btn-danger" style={{ flexShrink: 0 }}><Trash2 size={12} /></button>
+          </div>
+
+          {/* Plan row: 4 tappable fields in a grid */}
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', borderTop: '1px solid rgba(255,255,255,0.05)', marginBottom: '0' }}>
+            {([
+              { label: 'SETOVI', value: we.planned_sets,                 field: 'planned_sets'      as keyof WorkoutExercise, accent: '#94a3b8', isNum: true  },
+              { label: 'REPS',   value: we.planned_reps,                 field: 'planned_reps'      as keyof WorkoutExercise, accent: '#e2e8f0', isNum: false },
+              { label: 'KG',     value: we.planned_weight_kg,            field: 'planned_weight_kg' as keyof WorkoutExercise, accent: '#818cf8', isNum: true  },
+              { label: 'RPE',    value: we.target_rpe ?? we.planned_rpe, field: 'target_rpe'        as keyof WorkoutExercise, accent: '#facc15', isNum: true  },
+            ] as Array<{ label: string; value: string | number | null; field: keyof WorkoutExercise; accent: string; isNum: boolean }>).map((f, fi) => (
+              <div key={String(f.field)} style={{ padding: '10px 8px 8px', borderRight: fi < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center', cursor: 'text' }}>
+                <div style={{ fontSize: '0.4rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.22)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{f.label}</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: f.accent, fontFamily: 'var(--fm)' }}>
+                  <AdminPlanCell value={f.value} placeholder="—" type={f.isNum ? 'number' : 'text'} color={f.accent} onSave={(v: string) => save(f.field, v, f.isNum)} />
+                </div>
               </div>
-            </div>
-            {/* Row 2: sets × reps · kg · RPE — editable, single line */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '15px' }} onClick={e => e.stopPropagation()}>
-              <span style={{ fontSize: '0.62rem', color: '#666', fontFamily: 'var(--fm)' }}>
-                <EditableField value={we.planned_sets} placeholder="3" type="number" small onSave={v => save('planned_sets', v, true)} />
-              </span>
-              <span style={{ fontSize: '0.6rem', color: '#444' }}>×</span>
-              <span style={{ fontSize: '0.62rem', color: '#666', fontFamily: 'var(--fm)' }}>
-                <EditableField value={we.planned_reps} placeholder="reps" small onSave={v => save('planned_reps', v)} />
-              </span>
-              <span style={{ fontSize: '0.6rem', color: '#333' }}>·</span>
-              <span style={{ fontSize: '0.62rem', color: '#818cf8' }}>
-                <EditableField value={we.planned_weight_kg} placeholder="kg" type="number" small onSave={v => save('planned_weight_kg', v, true)} />
-              </span>
-              <span style={{ fontSize: '0.6rem', color: '#333' }}>·</span>
-              <span style={{ fontSize: '0.62rem', color: '#facc15' }}>
-                @<EditableField value={we.target_rpe ?? we.planned_rpe} placeholder="—" type="number" small onSave={v => save('target_rpe', v, true)} />
-              </span>
-            </div>
-            {/* Coach note */}
-            {we.coach_note && (
-              <div style={{ fontSize: '0.6rem', color: '#f59e0b', paddingLeft: '15px', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            ))}
+          </div>
+
+          {/* Coach note + sets toggle row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 14px 10px', gap: '8px' }}>
+            {we.coach_note ? (
+              <div style={{ fontSize: '0.6rem', color: '#f59e0b', lineHeight: 1.4, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 ↳ {we.coach_note}
               </div>
-            )}
-          </div>
-          {/* Delete */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
-            <button onClick={() => onDelete(we.id)} className="icon-btn-danger"><Trash2 size={11} /></button>
+            ) : <div style={{ flex: 1 }} />}
+            <button
+              onClick={() => setSetsOpen(v => !v)}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', background: setsOpen ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${setsOpen ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '5px', color: setsOpen ? '#818cf8' : '#555', cursor: 'pointer', padding: '4px 10px', fontSize: '0.56rem', letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700, flexShrink: 0, transition: 'all 0.2s' }}>
+              SETOVI
+              <ChevronRight size={10} style={{ transform: setsOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
           </div>
         </div>
       ) : (

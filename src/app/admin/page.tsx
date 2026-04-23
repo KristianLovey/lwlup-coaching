@@ -64,17 +64,22 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const [bwOpen, setBwOpen] = useState(true)
   const [calOpen, setCalOpen] = useState(true)
   const [waterOpen, setWaterOpen] = useState(true)
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+  const [calViewDate, setCalViewDate] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
   const [compOpen, setCompOpen] = useState(true)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const load = async () => {
+  const loadAll = async () => {
       const [bwRes, nutRes, waterRes, meetRes, woRes] = await Promise.all([
-        supabase.from('weight_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(30),
-        supabase.from('nutrition_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(30),
-        supabase.from('water_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(30),
+        supabase.from('weight_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(60),
+        supabase.from('nutrition_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(60),
+        supabase.from('water_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(60),
         supabase.from('meet_attempts').select('*, competition:competitions(name,date)').eq('athlete_id', athlete.id).order('meet_date', { ascending: false }).limit(9),
-        supabase.from('workouts').select('id, workout_date, completed, workout_exercises(id, exercise:exercises(name,category), actual_weight_kg, actual_reps, actual_rpe, actual_note, planned_sets, planned_reps, planned_weight_kg)').eq('athlete_id', athlete.id).eq('completed', true).order('workout_date', { ascending: false }).limit(20),
+        supabase.from('workouts')
+          .select('id, workout_date, completed, day_name, workout_exercises(id, exercise_order, exercise:exercises(name,category), actual_weight_kg, actual_reps, actual_rpe, actual_note, planned_sets, planned_reps, planned_weight_kg, set_logs(set_number, weight_kg, reps, rpe, completed, is_top_set))')
+          .eq('athlete_id', athlete.id)
+          .order('workout_date', { ascending: false })
+          .limit(60),
       ])
       setBwLogs(bwRes.data ?? [])
       setNutLogs(nutRes.data ?? [])
@@ -111,8 +116,20 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
       }
 
       setLoading(false)
-    }
-    load()
+  }
+
+  useEffect(() => {
+    loadAll()
+
+    // Real-time: refresh when any relevant table changes for this athlete
+    const ch = supabase.channel(`overview-${athlete.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'workouts',        filter: `athlete_id=eq.${athlete.id}` }, loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'set_logs',        filter: `athlete_id=eq.${athlete.id}` }, loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'weight_logs',     filter: `user_id=eq.${athlete.id}` },    loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'nutrition_logs',  filter: `user_id=eq.${athlete.id}` },    loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'water_logs',      filter: `user_id=eq.${athlete.id}` },    loadAll)
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
   }, [athlete.id])
 
   const FM = 'var(--fm)', FD = 'var(--fd)'
@@ -148,19 +165,25 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const calValues = [...nutLogs].reverse().map(l => Number(l.calories)).filter(Boolean)
   const waterValues = [...waterLogs].reverse().map(l => Number(l.amount_ml))
 
-  const latestBw = bwLogs[0]?.weight_kg ?? '—'
-  const latestCal = nutLogs[0]?.calories ?? '—'
-  const todayWater = waterLogs[0] ? Math.round(Number(waterLogs[0].amount_ml) / 100) / 10 : '—'
+  // ── Today's date string ──
+  const todayStr = new Date().toISOString().split('T')[0]
 
-  // ── Frekvencija logiranja — zadnjih 7 dana ──
+  const todayBw  = bwLogs.find(l => l.date === todayStr)?.weight_kg ?? '—'
+  const todayCal = nutLogs.find(l => l.date === todayStr)?.calories ?? '—'
+  const todayWaterMl = waterLogs.filter(l => l.log_date === todayStr).reduce((s, l) => s + Number(l.amount_ml), 0)
+  const todayWater = todayWaterMl > 0 ? Math.round(todayWaterMl / 100) / 10 : '—'
+
+  // ── Frekvencija logiranja — zadnjih 7 dana (PON→NED redoslijed) ──
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i))
     return d.toISOString().split('T')[0]
   })
-  const dayLabels = ['P','U','S','Č','P','S','N']
-  const today = new Date()
-  const startIdx = (today.getDay() + 6) % 7 // Monday=0
-  const orderedLabels = Array.from({ length: 7 }, (_, i) => dayLabels[(startIdx - 6 + i + 7) % 7])
+  const dayLabels = ['N','P','U','S','Č','P','S'] // Sunday=0 in JS Date
+  // Label for each day in last7 based on actual weekday
+  const orderedLabels = last7.map(dateStr => {
+    const dow = new Date(dateStr + 'T12:00:00').getDay()
+    return dayLabels[dow]
+  })
 
   const hasBw    = (d: string) => bwLogs.some(l => l.date === d)
   const hasWater = (d: string) => waterLogs.some(l => l.log_date === d)
@@ -237,8 +260,8 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
           {/* Quick stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '12px' }}>
             {[
-              { label: 'BW', val: latestBw ? `${latestBw}kg` : '—', color: '#a78bfa' },
-              { label: 'KALORIJE', val: latestCal !== '—' ? `${latestCal}` : '—', color: '#f59e0b' },
+              { label: 'BW', val: todayBw !== '—' ? `${todayBw}kg` : '—', color: '#a78bfa' },
+              { label: 'KALORIJE', val: todayCal !== '—' ? `${todayCal}` : '—', color: '#f59e0b' },
               { label: 'VODA', val: todayWater !== '—' ? `${todayWater}L` : '—', color: '#38bdf8' },
             ].map(s => (
               <div key={s.label} style={{ background: '#0d0d18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '12px 10px', textAlign: 'center' }}>
@@ -303,84 +326,184 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
         </>
       ) : (
         <>
-          {/* DETALJNO tab */}
+          {/* DETALJNO — calendar + day detail */}
+          {(() => {
+            const { y, m } = calViewDate
+            const firstDay = new Date(y, m, 1)
+            const daysInMonth = new Date(y, m + 1, 0).getDate()
+            // Monday-first offset
+            const startOffset = (firstDay.getDay() + 6) % 7
+            const cells = startOffset + daysInMonth
 
-          {/* Treninzi */}
-          <Section title="TRENINZI" open={bwOpen} onToggle={() => setBwOpen(v => !v)} accent="#6366f1">
-            {workoutLogs.length === 0 ? (
-              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema odrađenih treninga</div>
-            ) : workoutLogs.map((wo: any) => (
-              <div key={wo.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px', marginBottom: '10px' }}>
-                <div style={{ fontSize: '0.6rem', color: '#818cf8', fontFamily: FM, fontWeight: 700, marginBottom: '6px' }}>{wo.workout_date}</div>
-                {(wo.workout_exercises ?? []).map((we: any) => (
-                  <div key={we.id} style={{ padding: '4px 0 4px 8px', borderLeft: '2px solid rgba(99,102,241,0.2)', marginBottom: '4px' }}>
-                    <div style={{ fontSize: '0.7rem', color: '#c7d2fe', fontFamily: FM, fontWeight: 700 }}>{we.exercise?.name ?? '—'}</div>
-                    <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM, marginTop: '2px' }}>
-                      {we.actual_weight_kg ? `${we.actual_weight_kg}kg` : (we.planned_weight_kg ? `${we.planned_weight_kg}kg (plan)` : '—')}
-                      {we.actual_reps ? ` × ${we.actual_reps}` : (we.planned_reps ? ` × ${we.planned_reps} (plan)` : '')}
-                      {we.actual_rpe ? ` @ RPE ${we.actual_rpe}` : ''}
-                    </div>
-                    {we.actual_note && <div style={{ fontSize: '0.55rem', color: '#f59e0b', fontFamily: FM, marginTop: '2px' }}>↳ {we.actual_note}</div>}
+            const woByDate: Record<string, any> = {}
+            for (const wo of workoutLogs) woByDate[wo.workout_date] = wo
+            const bwByDate: Record<string, any> = {}
+            for (const l of bwLogs) bwByDate[l.date] = l
+            const calByDate: Record<string, any> = {}
+            for (const l of nutLogs) calByDate[l.date] = l
+            const waterByDate: Record<string, number> = {}
+            for (const l of waterLogs) waterByDate[l.log_date] = (waterByDate[l.log_date] ?? 0) + Number(l.amount_ml)
+
+            const monthNames = ['Siječanj','Veljača','Ožujak','Travanj','Svibanj','Lipanj','Srpanj','Kolovoz','Rujan','Listopad','Studeni','Prosinac']
+
+            const selWo = selectedDay ? woByDate[selectedDay] : null
+            const selBw = selectedDay ? bwByDate[selectedDay] : null
+            const selCal = selectedDay ? calByDate[selectedDay] : null
+            const selWater = selectedDay ? waterByDate[selectedDay] : null
+
+            return (
+              <>
+                {/* Calendar card */}
+                <div style={{ background: '#0d0d18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px', marginBottom: '12px' }}>
+                  {/* Month nav */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <button onClick={() => setCalViewDate(({ y, m }) => m === 0 ? { y: y-1, m: 11 } : { y, m: m-1 })}
+                      style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#e0e0f0', fontFamily: FM, letterSpacing: '0.1em' }}>
+                      {monthNames[m]} {y}
+                    </span>
+                    <button onClick={() => setCalViewDate(({ y, m }) => m === 11 ? { y: y+1, m: 0 } : { y, m: m+1 })}
+                      style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
                   </div>
-                ))}
-              </div>
-            ))}
-          </Section>
 
-          {/* BW detalji */}
-          <Section title="TJELESNA MASA" open={calOpen} onToggle={() => setCalOpen(v => !v)} accent="#a78bfa">
-            {bwLogs.length === 0 ? (
-              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
-            ) : (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1 }}>
-                  {bwLogs.map(l => (
-                    <div key={l.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                      <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM, width: '72px' }}>{l.date}</span>
-                      <span style={{ fontSize: '0.82rem', color: '#c4b5fd', fontFamily: FM, fontWeight: 700 }}>{l.weight_kg} kg</span>
-                      {l.notes && <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM }}>{l.notes}</span>}
+                  {/* Day-of-week headers */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '2px', marginBottom: '4px' }}>
+                    {['P','U','S','Č','P','S','N'].map(d => (
+                      <div key={d} style={{ textAlign: 'center', fontSize: '0.44rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, fontWeight: 700, padding: '2px 0' }}>{d}</div>
+                    ))}
+                  </div>
+
+                  {/* Day cells */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '3px' }}>
+                    {Array.from({ length: Math.ceil(cells / 7) * 7 }, (_, ci) => {
+                      const dayNum = ci - startOffset + 1
+                      if (dayNum < 1 || dayNum > daysInMonth) return <div key={ci} />
+                      const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`
+                      const wo = woByDate[dateStr]
+                      const hasBwD = !!bwByDate[dateStr]
+                      const hasCalD = !!calByDate[dateStr]
+                      const hasWaterD = !!waterByDate[dateStr]
+                      const isSelected = selectedDay === dateStr
+                      const isToday = dateStr === todayStr
+                      const hasWoCompleted = wo?.completed
+                      const hasWoPlanned = !!wo && !wo.completed
+
+                      return (
+                        <button key={ci} onClick={() => setSelectedDay(isSelected ? null : dateStr)}
+                          style={{
+                            background: isSelected ? 'rgba(99,102,241,0.2)' : 'transparent',
+                            border: isSelected ? '1px solid rgba(99,102,241,0.5)' : isToday ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent',
+                            borderRadius: '7px', cursor: 'pointer', padding: '4px 2px',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
+                            transition: 'all 0.15s',
+                          }}>
+                          <span style={{ fontSize: '0.7rem', fontWeight: isToday ? 800 : 500, color: isToday ? '#fff' : 'rgba(255,255,255,0.6)', fontFamily: FM, lineHeight: 1 }}>{dayNum}</span>
+                          {/* Dot row */}
+                          <div style={{ display: 'flex', gap: '2px', flexWrap: 'wrap', justifyContent: 'center', minHeight: '7px' }}>
+                            {hasWoCompleted && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#4ade80', flexShrink: 0 }} />}
+                            {hasWoPlanned  && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#6366f1', opacity: 0.5, flexShrink: 0 }} />}
+                            {hasBwD   && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#a78bfa', flexShrink: 0 }} />}
+                            {hasCalD  && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />}
+                            {hasWaterD && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#38bdf8', flexShrink: 0 }} />}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* Legend */}
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+                    {[
+                      { color: '#4ade80', label: 'Trening' },
+                      { color: '#a78bfa', label: 'BW' },
+                      { color: '#f59e0b', label: 'Kal' },
+                      { color: '#38bdf8', label: 'Voda' },
+                    ].map(l => (
+                      <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: l.color }} />
+                        <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>{l.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Day detail panel */}
+                {selectedDay && (
+                  <div style={{ background: '#0d0d18', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '12px', padding: '14px', marginBottom: '12px', animation: 'fadeUp 0.2s ease' }}>
+                    <div style={{ fontSize: '0.55rem', color: '#818cf8', fontFamily: FM, fontWeight: 700, letterSpacing: '0.2em', marginBottom: '12px' }}>
+                      {selectedDay}
                     </div>
-                  ))}
-                </div>
-                {bwValues.length >= 2 && <div style={{ marginLeft: '12px', flexShrink: 0 }}><Sparkline data={bwValues} color="#a78bfa" /></div>}
-              </div>
-            )}
-          </Section>
 
-          {/* Kalorije detalji */}
-          <Section title="KALORIJE & MAKROSI" open={waterOpen} onToggle={() => setWaterOpen(v => !v)} accent="#f59e0b">
-            {nutLogs.length === 0 ? (
-              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
-            ) : nutLogs.map(l => (
-              <div key={l.id} style={{ padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'grid', gridTemplateColumns: '72px 1fr', gap: '8px', alignItems: 'start' }}>
-                <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>{l.date}</span>
-                <div>
-                  <div style={{ fontSize: '0.78rem', color: '#fbbf24', fontFamily: FM, fontWeight: 800 }}>{l.calories ?? '—'} kcal</div>
-                  <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>P:{l.protein_g ?? '?'}g · U:{l.carbs_g ?? '?'}g · M:{l.fat_g ?? '?'}g</div>
-                  {l.notes && <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, marginTop: '2px' }}>{l.notes}</div>}
-                </div>
-              </div>
-            ))}
-          </Section>
+                    {/* Workout */}
+                    {selWo ? (
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '0.5rem', letterSpacing: '0.25em', color: selWo.completed ? '#4ade80' : 'rgba(255,255,255,0.3)', fontFamily: FM, fontWeight: 700, marginBottom: '8px' }}>
+                          {selWo.completed ? '✓ TRENING ODRAĐEN' : '◦ TRENING PLANIRAN'}{selWo.day_name ? ` — ${selWo.day_name}` : ''}
+                        </div>
+                        {(selWo.workout_exercises ?? [])
+                          .sort((a: any, b: any) => a.exercise_order - b.exercise_order)
+                          .map((we: any) => {
+                            const sets: any[] = we.set_logs ?? []
+                            const topSet = sets.find((s: any) => s.is_top_set)
+                            const doneSets = sets.filter((s: any) => s.completed && s.weight_kg)
+                            const heaviest = doneSets.sort((a: any, b: any) => Number(b.weight_kg) - Number(a.weight_kg))[0]
+                            const displaySet = topSet ?? heaviest
+                            return (
+                              <div key={we.id} style={{ padding: '8px 0 8px 10px', borderLeft: `2px solid ${we.actual_weight_kg || doneSets.length ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`, marginBottom: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                                  <span style={{ fontSize: '0.75rem', color: '#c7d2fe', fontFamily: FM, fontWeight: 700 }}>{we.exercise?.name ?? '—'}</span>
+                                  {topSet && <span style={{ fontSize: '0.48rem', color: '#facc15', background: 'rgba(250,204,21,0.1)', border: '1px solid rgba(250,204,21,0.25)', borderRadius: '3px', padding: '1px 5px', fontFamily: FM, fontWeight: 700 }}>★ TOP</span>}
+                                </div>
+                                {displaySet ? (
+                                  <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.45)', fontFamily: FM }}>
+                                    {displaySet.weight_kg}kg × {displaySet.reps}{displaySet.rpe ? ` @ RPE ${displaySet.rpe}` : ''}
+                                    {doneSets.length > 1 && <span style={{ color: 'rgba(255,255,255,0.25)', marginLeft: '6px' }}>({doneSets.length} setova)</span>}
+                                  </div>
+                                ) : (
+                                  <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM }}>
+                                    {we.planned_sets}×{we.planned_reps}{we.planned_weight_kg ? ` · ${we.planned_weight_kg}kg` : ''} (plan)
+                                  </div>
+                                )}
+                                {we.actual_note && (
+                                  <div style={{ fontSize: '0.58rem', color: '#f59e0b', fontFamily: FM, marginTop: '3px' }}>↳ {we.actual_note}</div>
+                                )}
+                              </div>
+                            )
+                          })}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.18)', fontFamily: FM, marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Nema treninga</div>
+                    )}
 
-          {/* Voda detalji */}
-          <Section title="HIDRATACIJA" open={compOpen} onToggle={() => setCompOpen(v => !v)} accent="#38bdf8">
-            {waterLogs.length === 0 ? (
-              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
-            ) : (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1 }}>
-                  {waterLogs.map(l => (
-                    <div key={l.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                      <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM, width: '72px' }}>{l.log_date}</span>
-                      <span style={{ fontSize: '0.82rem', color: '#38bdf8', fontFamily: FM, fontWeight: 700 }}>{(Number(l.amount_ml) / 1000).toFixed(1)} L</span>
+                    {/* BW / Cal / Water chips */}
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {selBw && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: '6px' }}>
+                          <span style={{ fontSize: '0.44rem', color: '#a78bfa', fontFamily: FM, fontWeight: 700, letterSpacing: '0.15em' }}>BW</span>
+                          <span style={{ fontSize: '0.82rem', color: '#c4b5fd', fontFamily: FM, fontWeight: 800 }}>{selBw.weight_kg} kg</span>
+                        </div>
+                      )}
+                      {selCal && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '6px' }}>
+                          <span style={{ fontSize: '0.44rem', color: '#f59e0b', fontFamily: FM, fontWeight: 700, letterSpacing: '0.15em' }}>KCAL</span>
+                          <span style={{ fontSize: '0.82rem', color: '#fbbf24', fontFamily: FM, fontWeight: 800 }}>{selCal.calories}</span>
+                        </div>
+                      )}
+                      {selWater != null && selWater > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: '6px' }}>
+                          <span style={{ fontSize: '0.44rem', color: '#38bdf8', fontFamily: FM, fontWeight: 700, letterSpacing: '0.15em' }}>VODA</span>
+                          <span style={{ fontSize: '0.82rem', color: '#7dd3fc', fontFamily: FM, fontWeight: 800 }}>{(selWater / 1000).toFixed(1)} L</span>
+                        </div>
+                      )}
+                      {!selBw && !selCal && !(selWater && selWater > 0) && !selWo && (
+                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.18)', fontFamily: FM }}>Nema podataka za ovaj dan</div>
+                      )}
                     </div>
-                  ))}
-                </div>
-                {waterValues.length >= 2 && <div style={{ marginLeft: '12px', flexShrink: 0 }}><Sparkline data={waterValues} color="#38bdf8" /></div>}
-              </div>
-            )}
-          </Section>
+                  </div>
+                )}
+              </>
+            )
+          })()}
         </>
       )}
     </div>

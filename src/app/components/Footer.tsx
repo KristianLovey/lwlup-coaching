@@ -25,14 +25,14 @@ export default function Footer() {
               {t('footer.desc')}
             </p>
             <div style={{ display: 'flex', gap: '12px' }}>
-              <a href="https://www.instagram.com/lwlup/" target="_blank" rel="noopener noreferrer"
+              <a href="https://www.instagram.com/lwlup/" target="_blank" rel="noopener noreferrer" aria-label="LWL UP na Instagramu"
                 className="footer-social-btn"
                 style={{ width: '36px', height: '36px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', transition: 'all 0.25s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#fff'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}>
                 <Instagram size={14} />
               </a>
-              <a href="#"
+              <a href="#" aria-label="LWL UP na Facebooku"
                 className="footer-social-btn"
                 style={{ width: '36px', height: '36px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', transition: 'all 0.25s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#fff'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}

@@ -39,7 +39,7 @@ function ScrollToTop() {
     return () => window.removeEventListener('scroll', fn)
   }, [])
   return (
-    <button className="scroll-to-top-btn" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+    <button aria-label="Scroll to top" className="scroll-to-top-btn" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       onMouseEnter={() => lottieRef.current?.play()} onMouseLeave={() => lottieRef.current?.stop()}
       style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 500, width: '48px', height: '48px', background: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: visible ? 1 : 0, transform: visible ? 'scale(1)' : 'scale(0.8)', transition: 'all 0.4s cubic-bezier(0.16,1,0.3,1)', pointerEvents: visible ? 'auto' : 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
       {animData ? <Lottie lottieRef={lottieRef} animationData={animData} loop autoplay={false} style={{ width: '28px', height: '28px' }} /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15" /></svg>}
@@ -243,7 +243,7 @@ export default function Landing() {
               style={{ padding: 'clamp(40px,6vw,80px) clamp(16px,3vw,40px)', textAlign: 'center', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.1)' : 'none', cursor: 'pointer', opacity: statsReveal.visible ? 1 : 0, transform: statsReveal.visible ? 'none' : 'translateY(30px)', transition: `opacity 0.7s ${i * 0.1}s, transform 0.7s ${i * 0.1}s, background 0.4s, border-color 0.4s` }}>
               <div className="stat-icon" style={{ color: 'rgba(255,255,255,0.2)', marginBottom: '16px', display: 'flex', justifyContent: 'center', transition: 'color 0.4s' }}>{s.icon}</div>
               <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,6vw,4.5rem)', lineHeight: 1, marginBottom: '10px' }}>{s.val}</div>
-              <div style={{ fontSize: 'clamp(0.5rem,1.5vw,0.65rem)', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.4)', transition: 'color 0.4s' }}>{s.label}</div>
+              <div style={{ fontSize: 'clamp(0.5rem,1.5vw,0.65rem)', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.6)', transition: 'color 0.4s' }}>{s.label}</div>
             </div>
           ))}
         </div>

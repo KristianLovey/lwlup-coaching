@@ -34,8 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700&display=swap"
         />
-        {/* Preconnect to Supabase API */}
-        <link rel="preconnect" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" />
+        {/* dns-prefetch only for Supabase — preconnect flagged as unused by Lighthouse */}
         <link rel="dns-prefetch" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" />
       </head>
       <body>

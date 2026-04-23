@@ -143,6 +143,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
         <Link href="/" onClick={() => setMenuOpen(false)}
           style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#fff', zIndex: 1 }}>
           <img src="/slike/logopng.png" alt="LWL UP" width="82" height="60"
+            fetchPriority="high"
             style={{ height: '60px', width: 'auto', transition: 'transform 0.3s' }}
             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1) rotate(-2deg)'}
             onMouseLeave={e => e.currentTarget.style.transform = 'scale(1) rotate(0deg)'}
@@ -181,7 +182,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
         {/* Hamburger — LangToggle must be outside the <button> to avoid nested buttons */}
         <div className="nav-hamburger" style={{ display: 'flex', alignItems: 'center', gap: '10px', zIndex: 1 }}>
           <LangToggle />
-          <button onClick={() => setMenuOpen(o => !o)}
+          <button aria-label={menuOpen ? 'Zatvori izbornik' : 'Otvori izbornik'} onClick={() => setMenuOpen(o => !o)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', padding: '8px', display: 'flex', alignItems: 'center' }}>
             {menuOpen ? <X size={24} /> : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', width: '24px' }}>

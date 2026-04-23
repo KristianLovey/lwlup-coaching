@@ -333,8 +333,8 @@ export default function ExerciseLibraryPage() {
 
           {/* Title row */}
           <div className="ex-hero-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '24px', marginBottom: 'clamp(36px,5vw,56px)' }}>
-            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3.5rem,9vw,7.5rem)', fontWeight: 800, lineHeight: 0.87, margin: 0, letterSpacing: '-0.03em', opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(24px)', transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s' }}>
-              {t('ex.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>{t('ex.title2')}</span>
+            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3.5rem,9vw,7.5rem)', fontWeight: 800, lineHeight: 1, margin: 0, letterSpacing: '-0.03em', opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(24px)', transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s' }}>
+              {t('ex.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.32)', display: 'block', marginTop: '4px' }}>{t('ex.title2')}</span>
             </h1>
 
             {/* Stats */}

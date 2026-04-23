@@ -419,7 +419,7 @@ function BarLoader() {
     <div style={{ fontFamily: 'var(--fm)' }}>
 
       {/* Input + collar toggle */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px', alignItems: 'flex-end', marginBottom: '12px' }}>
+      <div className="bl-input-row" style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px', alignItems: 'flex-end', marginBottom: '12px' }}>
         <div>
           <label style={{ display: 'block', fontSize: '0.58rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase' as const }}>
             Ciljna kilaza (kg)
@@ -2037,6 +2037,12 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
             border-left: none !important;
             border-right: none !important;
             border-bottom: none !important;
+          }
+          .hub-tools-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .bl-input-row {
+            grid-template-columns: 1fr !important;
           }
         }
       `}</style>
