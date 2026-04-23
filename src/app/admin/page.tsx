@@ -69,7 +69,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const [compOpen, setCompOpen] = useState(true)
   const [loading, setLoading] = useState(true)
 
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
       const [bwRes, nutRes, waterRes, meetRes, woRes] = await Promise.all([
         supabase.from('weight_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(60),
         supabase.from('nutrition_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(60),
@@ -116,7 +116,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
       }
 
       setLoading(false)
-  }
+  }, [athlete.id])
 
   useEffect(() => {
     loadAll()
@@ -130,7 +130,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'water_logs',      filter: `user_id=eq.${athlete.id}` },    loadAll)
       .subscribe()
     return () => { supabase.removeChannel(ch) }
-  }, [athlete.id])
+  }, [loadAll, athlete.id])
 
   const FM = 'var(--fm)', FD = 'var(--fd)'
   const row = (label: string, val: React.ReactNode, sub?: string) => (
@@ -173,17 +173,18 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const todayWaterMl = waterLogs.filter(l => l.log_date === todayStr).reduce((s, l) => s + Number(l.amount_ml), 0)
   const todayWater = todayWaterMl > 0 ? Math.round(todayWaterMl / 100) / 10 : '—'
 
-  // ── Frekvencija logiranja — zadnjih 7 dana (PON→NED redoslijed) ──
-  const last7 = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (6 - i))
-    return d.toISOString().split('T')[0]
-  })
-  const dayLabels = ['N','P','U','S','Č','P','S'] // Sunday=0 in JS Date
-  // Label for each day in last7 based on actual weekday
-  const orderedLabels = last7.map(dateStr => {
-    const dow = new Date(dateStr + 'T12:00:00').getDay()
-    return dayLabels[dow]
-  })
+  // ── Frekvencija logiranja — tekući tjedan PON→NED ──
+  const weekDates = (() => {
+    const now = new Date()
+    const dow = now.getDay() // 0=Sun, 1=Mon...
+    const mondayOffset = dow === 0 ? -6 : 1 - dow // days back to Monday
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(now)
+      d.setDate(now.getDate() + mondayOffset + i)
+      return d.toISOString().split('T')[0]
+    })
+  })()
+  const orderedLabels = ['PON','UTO','SRI','ČET','PET','SUB','NED']
 
   const hasBw    = (d: string) => bwLogs.some(l => l.date === d)
   const hasWater = (d: string) => waterLogs.some(l => l.log_date === d)
@@ -194,22 +195,25 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
     <div style={{ background: '#0d0d18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px 16px', marginBottom: '12px' }}>
       <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontFamily: FM, marginBottom: '12px', fontWeight: 700 }}>FREKVENCIJA LOGIRANJA</div>
       {/* Header — days */}
-      <div style={{ display: 'grid', gridTemplateColumns: '80px repeat(7, 1fr)', gap: '4px', marginBottom: '6px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', gap: '2px', marginBottom: '6px' }}>
         <div />
-        {orderedLabels.map((d, i) => (
-          <div key={i} style={{ textAlign: 'center', fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM, fontWeight: 700 }}>{d}</div>
-        ))}
+        {orderedLabels.map((d, i) => {
+          const isToday = weekDates[i] === todayStr
+          return (
+            <div key={i} style={{ textAlign: 'center', fontSize: '0.46rem', color: isToday ? '#fff' : 'rgba(255,255,255,0.3)', fontFamily: FM, fontWeight: isToday ? 800 : 700, letterSpacing: 0 }}>{d}</div>
+          )
+        })}
       </div>
       {/* Rows */}
       {[
-        { label: 'BW log',     check: hasBw,    color: '#a78bfa' },
-        { label: 'Water log',  check: hasWater,  color: '#38bdf8' },
-        { label: 'Calorie log',check: hasCal,    color: '#f59e0b' },
-        { label: 'Trening log',check: hasWo,     color: '#4ade80' },
+        { label: 'BW',     check: hasBw,    color: '#a78bfa' },
+        { label: 'Voda',   check: hasWater,  color: '#38bdf8' },
+        { label: 'Kcal',   check: hasCal,    color: '#f59e0b' },
+        { label: 'Trening',check: hasWo,     color: '#4ade80' },
       ].map(row => (
-        <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '80px repeat(7, 1fr)', gap: '4px', marginBottom: '5px', alignItems: 'center' }}>
-          <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM }}>{row.label}</div>
-          {last7.map((d, i) => {
+        <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', gap: '2px', marginBottom: '4px', alignItems: 'center' }}>
+          <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM }}>{row.label}</div>
+          {weekDates.map((d: string, i: number) => {
             const ok = row.check(d)
             return (
               <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

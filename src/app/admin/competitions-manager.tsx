@@ -4,6 +4,7 @@
 // kao zasebni tab ili sekcija
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Trash2, Check, Loader2, ChevronDown, Users, Trophy, Calendar, MapPin, X, Edit3 } from 'lucide-react'
 
@@ -265,9 +266,9 @@ export function CompetitionsManager() {
                           <div style={{ width: '22px', height: '22px', border: `1px solid ${isSelected ? '#fff' : 'rgba(255,255,255,0.2)'}`, background: isSelected ? '#fff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>
                             {isSelected && <Check size={13} color="#000" />}
                           </div>
-                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: '#111' }}>
-                            <img src={athlete.img ?? '/slike/placeholder-athlete.jpg'} alt={athlete.name} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(0.4)' }}
-                              onError={e => { (e.currentTarget as HTMLImageElement).src = '/slike/placeholder-athlete.jpg' }} />
+                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: '#111', position: 'relative' }}>
+                            <Image src={athlete.img ?? '/slike/placeholder-athlete.jpg'} alt={athlete.name}
+                              fill sizes="32px" style={{ objectFit: 'cover', filter: 'grayscale(0.4)' }} loading="lazy" />
                           </div>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)' }}>{athlete.name}</div>

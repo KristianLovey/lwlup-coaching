@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
   GripVertical, Loader2, LogOut,
@@ -108,9 +109,11 @@ export function TrainingNav({ athleteName, isAdmin, onLogout, avatarIcon }: {
 
       {/* Logo */}
       <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', marginRight: '32px', flexShrink: 0 }}>
-        <img src="/slike/logopng.png" alt="LWL UP" width="49" height="36" className="nav-logo" style={{ height: '36px', opacity: 0.95, transition: 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1), filter 0.25s ease' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.12)'; (e.currentTarget as HTMLImageElement).style.filter = 'drop-shadow(0 0 12px rgba(255,255,255,0.7)) drop-shadow(0 0 28px rgba(255,255,255,0.35))' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLImageElement).style.filter = 'none' }} />
+        <div className="nav-logo" style={{ height: '36px', opacity: 0.95, transition: 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1), filter 0.25s ease' }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.12)'; e.currentTarget.style.filter = 'drop-shadow(0 0 12px rgba(255,255,255,0.7)) drop-shadow(0 0 28px rgba(255,255,255,0.35))' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.filter = 'none' }}>
+          <Image src="/slike/logopng.png" alt="LWL UP" width={49} height={36} style={{ height: '36px', width: 'auto' }} />
+        </div>
       </Link>
 
       {/* Nav links — Apple style, center-left */}
@@ -300,9 +303,11 @@ export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon, userId }: {
 
       {/* Logo */}
       <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-        <img src="/slike/logopng.png" alt="LWL UP" width="49" height="36" className="nav-logo" style={{ height: '36px', opacity: 0.95, transition: 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1), filter 0.25s ease' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.12)'; (e.currentTarget as HTMLImageElement).style.filter = 'drop-shadow(0 0 12px rgba(255,255,255,0.7)) drop-shadow(0 0 28px rgba(255,255,255,0.35))' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLImageElement).style.filter = 'none' }} />
+        <div className="nav-logo" style={{ height: '36px', opacity: 0.95, transition: 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1), filter 0.25s ease' }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.12)'; e.currentTarget.style.filter = 'drop-shadow(0 0 12px rgba(255,255,255,0.7)) drop-shadow(0 0 28px rgba(255,255,255,0.35))' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.filter = 'none' }}>
+          <Image src="/slike/logopng.png" alt="LWL UP" width={49} height={36} style={{ height: '36px', width: 'auto' }} />
+        </div>
       </Link>
 
       {/* Push avatar to right */}

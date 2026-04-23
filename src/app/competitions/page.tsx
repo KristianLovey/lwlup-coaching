@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
 import { MapPin, Calendar, Trophy, Users, ChevronRight, Loader2, ExternalLink } from 'lucide-react'
 import Footer from '@/app/components/Footer'
 import Navbar from '@/app/components/Navbar'
@@ -202,10 +203,9 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
                   style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px', border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)', transition: 'all 0.2s' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}>
-                  <div style={{ width: '44px', height: '44px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)', background: '#111' }}>
-                    <img src={athlete.img ?? '/slike/placeholder-athlete.jpg'} alt={athlete.name}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(0.3)' }}
-                      onError={e => { (e.currentTarget as HTMLImageElement).src = '/slike/placeholder-athlete.jpg' }} />
+                  <div style={{ width: '44px', height: '44px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)', background: '#111', position: 'relative' }}>
+                    <Image src={athlete.img ?? '/slike/placeholder-athlete.jpg'} alt={athlete.name}
+                      fill sizes="44px" style={{ objectFit: 'cover', filter: 'grayscale(0.3)' }} loading="lazy" />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

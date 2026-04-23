@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react'
 
@@ -75,7 +76,7 @@ export default function ResetPasswordPage() {
       <div style={{ width: '100%', maxWidth: '440px', animation: 'fadeUp 0.6s cubic-bezier(0.16,1,0.3,1)', position: 'relative', zIndex: 1 }}>
 
         <Link href="/">
-          <img src="/slike/logopng.png" alt="LWL UP" width="60" height="44" style={{ height: '44px', marginBottom: '48px', display: 'block' }} />
+          <Image src="/slike/logopng.png" alt="LWL UP" width={60} height={44} priority style={{ height: '44px', marginBottom: '48px', display: 'block', width: 'auto' }} />
         </Link>
 
         <div style={{ marginBottom: '48px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '24px' }}>

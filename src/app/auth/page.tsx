@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react'
 
@@ -82,7 +83,7 @@ export default function AuthPage() {
       <div className="auth-left-panel" style={{ width: 'clamp(280px,40vw,520px)', borderRight: '1px solid rgba(255,255,255,0.06)', padding: '60px 60px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', zIndex: 1, flexShrink: 0 }}>
         <div>
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <img src="/slike/logopng.png" alt="LWL UP" width="71" height="52" style={{ height: '52px', marginBottom: '80px', display: 'block' }} />
+            <Image src="/slike/logopng.png" alt="LWL UP" width={71} height={52} priority style={{ height: '52px', marginBottom: '80px', display: 'block', width: 'auto' }} />
           </Link>
 
           <div style={{ fontSize: '0.58rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.2)', marginBottom: '20px' }}>
