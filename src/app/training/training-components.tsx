@@ -970,55 +970,54 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
       {/* ── Main row ── */}
       {isAdmin ? (
         /* Admin: compact 2-col — name+info | delete */
-        <div className="ex-row-main" style={{ display: 'grid', gridTemplateColumns: '1fr 44px', alignItems: 'stretch', borderBottom: '1px solid rgba(255,255,255,0.08)', minHeight: '58px' }}>
+        <div className="ex-row-main" style={{ display: 'grid', gridTemplateColumns: '1fr 36px', alignItems: 'stretch', borderBottom: '1px solid rgba(255,255,255,0.08)', minHeight: '52px' }}>
           {/* Name + inline plan info */}
-          <div onClick={() => setSetsOpen(v => !v)} style={{ padding: '13px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '6px', cursor: 'pointer' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#a78bfa', fontFamily: 'var(--fm)', letterSpacing: '-0.01em' }}>{we.exercise?.name ?? '—'}</span>
-              {/* ⓘ history button */}
+          <div onClick={() => setSetsOpen(v => !v)} style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '5px', cursor: 'pointer', minWidth: 0 }}>
+            {/* Row 1: icon + name + buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" style={{ flexShrink: 0 }}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#a78bfa', fontFamily: 'var(--fm)', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>{we.exercise?.name ?? '—'}</span>
               <button onClick={toggleHistory}
                 title="Usporedi s prošlim tjednom"
-                style={{ background: showHistory ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${showHistory ? 'rgba(129,140,248,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showHistory ? '#818cf8' : '#444', fontSize: '0.6rem', fontWeight: 800, flexShrink: 0, transition: 'all 0.15s' }}>
+                style={{ background: showHistory ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${showHistory ? 'rgba(129,140,248,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showHistory ? '#818cf8' : '#444', fontSize: '0.55rem', fontWeight: 800, flexShrink: 0, transition: 'all 0.15s' }}>
                 i
               </button>
-              {/* "!" badge — click to expand notes */}
               <button onClick={e => { e.stopPropagation(); setExpanded(!expanded) }}
-                style={{ background: hasNote ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${hasNote ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '4px', color: hasNote ? '#f59e0b' : '#555', fontSize: '0.58rem', fontWeight: 800, padding: '2px 7px', cursor: 'pointer', fontFamily: 'var(--fm)', letterSpacing: '0.08em', transition: 'all 0.15s' }}>
-                {expanded ? '▲' : (hasNote ? '! BILJEŠKA' : '+ BILJEŠKA')}
+                style={{ background: hasNote ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${hasNote ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '4px', color: hasNote ? '#f59e0b' : '#555', fontSize: '0.52rem', fontWeight: 800, padding: '2px 6px', cursor: 'pointer', fontFamily: 'var(--fm)', letterSpacing: '0.06em', flexShrink: 0, transition: 'all 0.15s' }}>
+                {expanded ? '▲' : (hasNote ? '!' : '+')}
               </button>
-              <div style={{ marginLeft: 'auto', color: setsOpen ? '#818cf8' : '#333', transition: 'transform 0.2s, color 0.2s', transform: setsOpen ? 'rotate(90deg)' : 'none' }}>
-                <ChevronRight size={12} />
+              <div style={{ color: setsOpen ? '#818cf8' : '#333', transition: 'transform 0.2s, color 0.2s', transform: setsOpen ? 'rotate(90deg)' : 'none', flexShrink: 0 }}>
+                <ChevronRight size={11} />
               </div>
             </div>
-            {/* Inline plan: sets × reps + kg plan + RPE cilj — all editable */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingLeft: '18px', flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
-              <span style={{ fontSize: '0.6rem', color: '#555', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>
+            {/* Row 2: sets × reps · kg · RPE — editable, single line */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '15px' }} onClick={e => e.stopPropagation()}>
+              <span style={{ fontSize: '0.62rem', color: '#666', fontFamily: 'var(--fm)' }}>
                 <EditableField value={we.planned_sets} placeholder="3" type="number" small onSave={v => save('planned_sets', v, true)} />
               </span>
               <span style={{ fontSize: '0.6rem', color: '#444' }}>×</span>
-              <span style={{ fontSize: '0.6rem', color: '#555', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>
-                <EditableField value={we.planned_reps} placeholder="5 reps" small onSave={v => save('planned_reps', v)} />
+              <span style={{ fontSize: '0.62rem', color: '#666', fontFamily: 'var(--fm)' }}>
+                <EditableField value={we.planned_reps} placeholder="reps" small onSave={v => save('planned_reps', v)} />
               </span>
               <span style={{ fontSize: '0.6rem', color: '#333' }}>·</span>
-              <span style={{ fontSize: '0.6rem', color: '#818cf8', letterSpacing: '0.08em' }}>
-                <EditableField value={we.planned_weight_kg} placeholder="kg plan" type="number" small onSave={v => save('planned_weight_kg', v, true)} />
+              <span style={{ fontSize: '0.62rem', color: '#818cf8' }}>
+                <EditableField value={we.planned_weight_kg} placeholder="kg" type="number" small onSave={v => save('planned_weight_kg', v, true)} />
               </span>
               <span style={{ fontSize: '0.6rem', color: '#333' }}>·</span>
-              <span style={{ fontSize: '0.6rem', color: '#facc15', letterSpacing: '0.08em' }}>
-                RPE <EditableField value={we.target_rpe ?? we.planned_rpe} placeholder="—" type="number" small onSave={v => save('target_rpe', v, true)} />
+              <span style={{ fontSize: '0.62rem', color: '#facc15' }}>
+                @<EditableField value={we.target_rpe ?? we.planned_rpe} placeholder="—" type="number" small onSave={v => save('target_rpe', v, true)} />
               </span>
             </div>
-            {/* Coach note — shown when present */}
+            {/* Coach note */}
             {we.coach_note && (
-              <div style={{ fontSize: '0.63rem', color: '#f59e0b', letterSpacing: '0.04em', paddingLeft: '18px', lineHeight: 1.5 }}>
+              <div style={{ fontSize: '0.6rem', color: '#f59e0b', paddingLeft: '15px', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 ↳ {we.coach_note}
               </div>
             )}
           </div>
           {/* Delete */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
-            <button onClick={() => onDelete(we.id)} className="icon-btn-danger"><Trash2 size={12} /></button>
+            <button onClick={() => onDelete(we.id)} className="icon-btn-danger"><Trash2 size={11} /></button>
           </div>
         </div>
       ) : (
@@ -1336,24 +1335,24 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
                   userSelect: 'none',
                 }}
               >
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                   <ExerciseRow key={we.id} we={we} isAdmin={isAdmin} userId={userId} weekNumber={weekNumber} onUpdate={handleUpdateExercise} onDelete={onDeleteExercise} />
                 </div>
                 {isAdmin && (
                   <div
                     onPointerDown={e => { e.preventDefault(); startDragTimer(we.id, e.clientX, e.clientY) }}
                     style={{
-                      width: '38px', flexShrink: 0,
+                      width: '32px', flexShrink: 0,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      borderLeft: '1px solid rgba(255,255,255,0.08)',
+                      borderLeft: '1px solid rgba(255,255,255,0.06)',
                       cursor: dragState?.id === we.id ? 'grabbing' : 'grab',
                       touchAction: 'none',
                       background: dragState?.id === we.id ? 'rgba(99,102,241,0.08)' : 'transparent',
                     }}
                   >
                     <div style={{
-                      width: '22px', height: '22px',
-                      border: `1.5px dashed ${dragState?.id === we.id ? 'rgba(99,102,241,0.7)' : 'rgba(255,255,255,0.15)'}`,
+                      width: '18px', height: '18px',
+                      border: `1.5px dashed ${dragState?.id === we.id ? 'rgba(99,102,241,0.7)' : 'rgba(255,255,255,0.12)'}`,
                       borderRadius: '4px',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       transition: 'border-color 0.15s',

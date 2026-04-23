@@ -2030,6 +2030,8 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
           }
           .hub-modal-panel {
             max-width: 100% !important;
+            width: 100% !important;
+            height: 90vh !important;
             max-height: 90vh !important;
             border-radius: 20px 20px 0 0 !important;
             border-left: none !important;

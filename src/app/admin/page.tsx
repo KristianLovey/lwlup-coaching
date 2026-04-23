@@ -54,10 +54,12 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   athlete: AthleteProfile; onBack: () => void; onGoTraining: () => void
 }) {
   const initials = athlete.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
+  const [tab, setTab] = useState<'opcenito' | 'detaljno'>('opcenito')
   const [bwLogs, setBwLogs] = useState<any[]>([])
   const [nutLogs, setNutLogs] = useState<any[]>([])
   const [waterLogs, setWaterLogs] = useState<any[]>([])
   const [lastMeets, setLastMeets] = useState<any[]>([])
+  const [workoutLogs, setWorkoutLogs] = useState<any[]>([])
   const [e1rms, setE1rms] = useState<{ sq: number|null; bp: number|null; dl: number|null }>({ sq: null, bp: null, dl: null })
   const [bwOpen, setBwOpen] = useState(true)
   const [calOpen, setCalOpen] = useState(true)
@@ -67,16 +69,18 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
 
   useEffect(() => {
     const load = async () => {
-      const [bwRes, nutRes, waterRes, meetRes] = await Promise.all([
-        supabase.from('weight_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(20),
-        supabase.from('nutrition_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(14),
-        supabase.from('water_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(7),
+      const [bwRes, nutRes, waterRes, meetRes, woRes] = await Promise.all([
+        supabase.from('weight_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(30),
+        supabase.from('nutrition_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(30),
+        supabase.from('water_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(30),
         supabase.from('meet_attempts').select('*, competition:competitions(name,date)').eq('athlete_id', athlete.id).order('meet_date', { ascending: false }).limit(9),
+        supabase.from('workouts').select('id, workout_date, completed, workout_exercises(id, exercise:exercises(name,category), actual_weight_kg, actual_reps, actual_rpe, actual_note, planned_sets, planned_reps, planned_weight_kg)').eq('athlete_id', athlete.id).eq('completed', true).order('workout_date', { ascending: false }).limit(20),
       ])
       setBwLogs(bwRes.data ?? [])
       setNutLogs(nutRes.data ?? [])
       setWaterLogs(waterRes.data ?? [])
       setLastMeets(meetRes.data ?? [])
+      setWorkoutLogs(woRes.data ?? [])
 
       // Fetch top sets for e1RM — join workout_exercises → workouts → exercises
       const { data: topSets } = await supabase
@@ -148,16 +152,65 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const latestCal = nutLogs[0]?.calories ?? '—'
   const todayWater = waterLogs[0] ? Math.round(Number(waterLogs[0].amount_ml) / 100) / 10 : '—'
 
+  // ── Frekvencija logiranja — zadnjih 7 dana ──
+  const last7 = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i))
+    return d.toISOString().split('T')[0]
+  })
+  const dayLabels = ['P','U','S','Č','P','S','N']
+  const today = new Date()
+  const startIdx = (today.getDay() + 6) % 7 // Monday=0
+  const orderedLabels = Array.from({ length: 7 }, (_, i) => dayLabels[(startIdx - 6 + i + 7) % 7])
+
+  const hasBw    = (d: string) => bwLogs.some(l => l.date === d)
+  const hasWater = (d: string) => waterLogs.some(l => l.log_date === d)
+  const hasCal   = (d: string) => nutLogs.some(l => l.date === d)
+  const hasWo    = (d: string) => workoutLogs.some(l => l.workout_date === d)
+
+  const FreqGrid = () => (
+    <div style={{ background: '#0d0d18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px 16px', marginBottom: '12px' }}>
+      <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontFamily: FM, marginBottom: '12px', fontWeight: 700 }}>FREKVENCIJA LOGIRANJA</div>
+      {/* Header — days */}
+      <div style={{ display: 'grid', gridTemplateColumns: '80px repeat(7, 1fr)', gap: '4px', marginBottom: '6px' }}>
+        <div />
+        {orderedLabels.map((d, i) => (
+          <div key={i} style={{ textAlign: 'center', fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM, fontWeight: 700 }}>{d}</div>
+        ))}
+      </div>
+      {/* Rows */}
+      {[
+        { label: 'BW log',     check: hasBw,    color: '#a78bfa' },
+        { label: 'Water log',  check: hasWater,  color: '#38bdf8' },
+        { label: 'Calorie log',check: hasCal,    color: '#f59e0b' },
+        { label: 'Trening log',check: hasWo,     color: '#4ade80' },
+      ].map(row => (
+        <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '80px repeat(7, 1fr)', gap: '4px', marginBottom: '5px', alignItems: 'center' }}>
+          <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM }}>{row.label}</div>
+          {last7.map((d, i) => {
+            const ok = row.check(d)
+            return (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: `1.5px solid ${ok ? row.color + '80' : 'rgba(255,255,255,0.1)'}`, background: ok ? row.color + '20' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5rem', color: ok ? row.color : 'rgba(255,255,255,0.15)' }}>
+                  {ok ? '✓' : '✗'}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ))}
+    </div>
+  )
+
   return (
-    <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto', paddingBottom: '40px' }}>
+    <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto', paddingBottom: '60px' }}>
 
       {/* Back */}
-      <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: FM, padding: '0 0 20px', marginBottom: '4px' }}>
+      <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: FM, padding: '0 0 16px', marginBottom: '4px' }}>
         <ChevronLeft size={13} /> NATRAG
       </button>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
         <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(99,102,241,0.35),rgba(139,92,246,0.15))', border: '2px solid rgba(99,102,241,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 900, color: '#c7d2fe', fontFamily: FM, flexShrink: 0 }}>{initials}</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#f0f0ff', fontFamily: FD, lineHeight: 1 }}>{athlete.full_name}</div>
@@ -165,136 +218,74 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
         </div>
       </div>
 
-      {/* Quick stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
-        {[
-          { label: 'BW', val: latestBw ? `${latestBw}kg` : '—', color: '#a78bfa' },
-          { label: 'KALORIJE', val: latestCal !== '—' ? `${latestCal}` : '—', color: '#f59e0b' },
-          { label: 'VODA', val: todayWater !== '—' ? `${todayWater}L` : '—', color: '#38bdf8' },
-        ].map(s => (
-          <div key={s.label} style={{ background: '#0d0d18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '12px 14px', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px', fontFamily: FM }}>{s.label}</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 900, color: s.color, fontFamily: FD }}>{s.val}</div>
-          </div>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '2px', marginBottom: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '3px' }}>
+        {([['opcenito','OPĆENITO'],['detaljno','DETALJNO'],['trening','UREĐIVANJE TRENINGA']] as const).map(([id, label]) => (
+          <button key={id} onClick={() => id === 'trening' ? onGoTraining() : setTab(id as 'opcenito'|'detaljno')}
+            style={{ flex: 1, padding: '8px 6px', background: tab === id ? 'rgba(99,102,241,0.18)' : 'transparent', border: tab === id ? '1px solid rgba(99,102,241,0.4)' : '1px solid transparent', borderRadius: '7px', cursor: 'pointer', fontSize: '0.55rem', fontFamily: FM, fontWeight: tab === id ? 700 : 400, color: tab === id ? '#a5b4fc' : 'rgba(255,255,255,0.35)', transition: 'all 0.15s', letterSpacing: '0.04em', whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {label}
+          </button>
         ))}
       </div>
 
-      {/* 1RM kartice */}
-      {(e1rms.sq || e1rms.bp || e1rms.dl) && (
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ fontSize: '0.45rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginBottom: '8px' }}>ESTIMATED 1RM (top set)</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '48px', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.2em', fontFamily: FM }}>
+          <Loader2 size={18} style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }} />
+        </div>
+      ) : tab === 'opcenito' ? (
+        <>
+          {/* Quick stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '12px' }}>
             {[
-              { label: 'SQ', val: e1rms.sq, color: '#a78bfa' },
-              { label: 'BP', val: e1rms.bp, color: '#f472b6' },
-              { label: 'DL', val: e1rms.dl, color: '#fb923c' },
+              { label: 'BW', val: latestBw ? `${latestBw}kg` : '—', color: '#a78bfa' },
+              { label: 'KALORIJE', val: latestCal !== '—' ? `${latestCal}` : '—', color: '#f59e0b' },
+              { label: 'VODA', val: todayWater !== '—' ? `${todayWater}L` : '—', color: '#38bdf8' },
             ].map(s => (
-              <div key={s.label} style={{ background: '#0d0d18', border: `1px solid ${s.val ? s.color + '30' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', padding: '12px 14px', textAlign: 'center' }}>
+              <div key={s.label} style={{ background: '#0d0d18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '12px 10px', textAlign: 'center' }}>
                 <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px', fontFamily: FM }}>{s.label}</div>
-                <div style={{ fontSize: '1.3rem', fontWeight: 900, color: s.val ? s.color : 'rgba(255,255,255,0.15)', fontFamily: FD }}>{s.val ? `${s.val}` : '—'}</div>
-                {s.val && <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginTop: '2px' }}>kg</div>}
+                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: s.color, fontFamily: FD }}>{s.val}</div>
               </div>
             ))}
           </div>
-        </div>
-      )}
 
-      {/* TRENING button */}
-      <button onClick={onGoTraining} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.15))', border: '1px solid rgba(99,102,241,0.5)', borderRadius: '12px', color: '#a5b4fc', fontFamily: FM, fontWeight: 800, fontSize: '0.78rem', letterSpacing: '0.25em', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '20px', transition: 'all 0.2s' }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        UREDI TRENING
-        <ChevronRight size={14} />
-      </button>
+          {/* Frekvencija logiranja */}
+          <FreqGrid />
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '32px', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.2em', fontFamily: FM }}>
-          <Loader2 size={18} style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }} />
-        </div>
-      ) : (
-        <>
-          {/* BW section */}
-          <Section title="TJELESNA MASA" open={bwOpen} onToggle={() => setBwOpen(v => !v)} accent="#a78bfa">
-            {bwLogs.length === 0 ? (
-              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
-            ) : (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
-                  <div>
-                    {bwLogs.slice(0, 5).map(l => (
-                      <div key={l.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '4px 0' }}>
-                        <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM, width: '70px' }}>{l.date}</span>
-                        <span style={{ fontSize: '0.82rem', color: '#c4b5fd', fontFamily: FM, fontWeight: 700 }}>{l.weight_kg} kg</span>
-                      </div>
-                    ))}
-                    {bwLogs.length > 5 && <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, marginTop: '4px' }}>+ {bwLogs.length - 5} više</div>}
-                  </div>
-                  {bwValues.length >= 2 && <Sparkline data={bwValues} color="#a78bfa" />}
+          {/* 1RM kartice */}
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '0.45rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginBottom: '8px' }}>ESTIMATED 1RM (top set)</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+              {[
+                { label: 'SQ', val: e1rms.sq, color: '#a78bfa' },
+                { label: 'BP', val: e1rms.bp, color: '#f472b6' },
+                { label: 'DL', val: e1rms.dl, color: '#fb923c' },
+              ].map(s => (
+                <div key={s.label} style={{ background: '#0d0d18', border: `1px solid ${s.val ? s.color + '30' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', padding: '14px 10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px', fontFamily: FM }}>{s.label}</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: s.val ? s.color : 'rgba(255,255,255,0.15)', fontFamily: FD }}>{s.val ?? '—'}</div>
+                  {s.val && <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginTop: '2px' }}>kg e1RM</div>}
                 </div>
-              </>
-            )}
-          </Section>
+              ))}
+            </div>
+          </div>
 
-          {/* Calorie section */}
-          <Section title="KALORIJE & MAKROSI" open={calOpen} onToggle={() => setCalOpen(v => !v)} accent="#f59e0b">
-            {nutLogs.length === 0 ? (
-              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
-            ) : (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
-                  <div style={{ flex: 1 }}>
-                    {nutLogs.slice(0, 5).map(l => (
-                      <div key={l.id} style={{ padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'grid', gridTemplateColumns: '72px 60px auto', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>{l.date}</span>
-                        <span style={{ fontSize: '0.78rem', color: '#fbbf24', fontFamily: FM, fontWeight: 800 }}>{l.calories ?? '—'} kcal</span>
-                        <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>
-                          P:{l.protein_g ?? '?'}g · U:{l.carbs_g ?? '?'}g · M:{l.fat_g ?? '?'}g
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  {calValues.length >= 2 && <div style={{ marginLeft: '12px' }}><Sparkline data={calValues} color="#f59e0b" /></div>}
-                </div>
-                {nutLogs[0]?.steps && row('Koraci danas', `${nutLogs[0].steps.toLocaleString()} 👟`)}
-              </>
-            )}
-          </Section>
-
-          {/* Water section */}
-          <Section title="HIDRATACIJA" open={waterOpen} onToggle={() => setWaterOpen(v => !v)} accent="#38bdf8">
-            {waterLogs.length === 0 ? (
-              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
-            ) : (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                <div>
-                  {waterLogs.slice(0, 5).map(l => (
-                    <div key={l.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '4px 0' }}>
-                      <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM, width: '70px' }}>{l.log_date}</span>
-                      <span style={{ fontSize: '0.82rem', color: '#38bdf8', fontFamily: FM, fontWeight: 700 }}>{(Number(l.amount_ml) / 1000).toFixed(1)} L</span>
-                    </div>
-                  ))}
-                </div>
-                {waterValues.length >= 2 && <Sparkline data={waterValues} color="#38bdf8" />}
-              </div>
-            )}
-          </Section>
-
-          {/* Competitions */}
+          {/* Zadnja natjecanja */}
           <Section title="ZADNJA NATJECANJA" open={compOpen} onToggle={() => setCompOpen(v => !v)} accent="#22c55e">
             {Object.keys(meetsByComp).length === 0 ? (
               <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
             ) : Object.entries(meetsByComp).slice(0, 3).map(([key, attempts]) => {
-                const squat = attempts.find(a => a.lift === 'squat')
-                const bench = attempts.find(a => a.lift === 'bench')
-                const dl = attempts.find(a => a.lift === 'deadlift')
+                const squat = attempts.find((a: any) => a.lift === 'squat')
+                const bench = attempts.find((a: any) => a.lift === 'bench')
+                const dl = attempts.find((a: any) => a.lift === 'deadlift')
                 const compName = attempts[0]?.competition?.name ?? key
                 const compDate = attempts[0]?.competition?.date ?? attempts[0]?.meet_date
-                const bestSq = squat ? [squat.attempt1_actual, squat.attempt2_actual, squat.attempt3_actual].filter((v, i) => v && [squat.attempt1_good, squat.attempt2_good, squat.attempt3_good][i]).pop() : null
-                const bestBe = bench ? [bench.attempt1_actual, bench.attempt2_actual, bench.attempt3_actual].filter((v, i) => v && [bench.attempt1_good, bench.attempt2_good, bench.attempt3_good][i]).pop() : null
-                const bestDl = dl ? [dl.attempt1_actual, dl.attempt2_actual, dl.attempt3_actual].filter((v, i) => v && [dl.attempt1_good, dl.attempt2_good, dl.attempt3_good][i]).pop() : null
+                const bestSq = squat ? [squat.attempt1_actual, squat.attempt2_actual, squat.attempt3_actual].filter((v: any, i: number) => v && [squat.attempt1_good, squat.attempt2_good, squat.attempt3_good][i]).pop() : null
+                const bestBe = bench ? [bench.attempt1_actual, bench.attempt2_actual, bench.attempt3_actual].filter((v: any, i: number) => v && [bench.attempt1_good, bench.attempt2_good, bench.attempt3_good][i]).pop() : null
+                const bestDl = dl ? [dl.attempt1_actual, dl.attempt2_actual, dl.attempt3_actual].filter((v: any, i: number) => v && [dl.attempt1_good, dl.attempt2_good, dl.attempt3_good][i]).pop() : null
                 const total = (bestSq ?? 0) + (bestBe ?? 0) + (bestDl ?? 0)
                 return (
                   <div key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px', marginBottom: '10px' }}>
-                    <div style={{ fontSize: '0.65rem', color: '#86efac', fontFamily: FM, fontWeight: 700, marginBottom: '4px' }}>{compName}</div>
+                    <div style={{ fontSize: '0.65rem', color: '#86efac', fontFamily: FM, fontWeight: 700, marginBottom: '2px' }}>{compName}</div>
                     <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM, marginBottom: '8px' }}>{compDate}</div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                       {[['SQ', bestSq], ['BP', bestBe], ['DL', bestDl], ['TOTAL', total || null]].map(([label, val]) => (
@@ -308,6 +299,87 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                 )
               })
             }
+          </Section>
+        </>
+      ) : (
+        <>
+          {/* DETALJNO tab */}
+
+          {/* Treninzi */}
+          <Section title="TRENINZI" open={bwOpen} onToggle={() => setBwOpen(v => !v)} accent="#6366f1">
+            {workoutLogs.length === 0 ? (
+              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema odrađenih treninga</div>
+            ) : workoutLogs.map((wo: any) => (
+              <div key={wo.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px', marginBottom: '10px' }}>
+                <div style={{ fontSize: '0.6rem', color: '#818cf8', fontFamily: FM, fontWeight: 700, marginBottom: '6px' }}>{wo.workout_date}</div>
+                {(wo.workout_exercises ?? []).map((we: any) => (
+                  <div key={we.id} style={{ padding: '4px 0 4px 8px', borderLeft: '2px solid rgba(99,102,241,0.2)', marginBottom: '4px' }}>
+                    <div style={{ fontSize: '0.7rem', color: '#c7d2fe', fontFamily: FM, fontWeight: 700 }}>{we.exercise?.name ?? '—'}</div>
+                    <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM, marginTop: '2px' }}>
+                      {we.actual_weight_kg ? `${we.actual_weight_kg}kg` : (we.planned_weight_kg ? `${we.planned_weight_kg}kg (plan)` : '—')}
+                      {we.actual_reps ? ` × ${we.actual_reps}` : (we.planned_reps ? ` × ${we.planned_reps} (plan)` : '')}
+                      {we.actual_rpe ? ` @ RPE ${we.actual_rpe}` : ''}
+                    </div>
+                    {we.actual_note && <div style={{ fontSize: '0.55rem', color: '#f59e0b', fontFamily: FM, marginTop: '2px' }}>↳ {we.actual_note}</div>}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </Section>
+
+          {/* BW detalji */}
+          <Section title="TJELESNA MASA" open={calOpen} onToggle={() => setCalOpen(v => !v)} accent="#a78bfa">
+            {bwLogs.length === 0 ? (
+              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  {bwLogs.map(l => (
+                    <div key={l.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM, width: '72px' }}>{l.date}</span>
+                      <span style={{ fontSize: '0.82rem', color: '#c4b5fd', fontFamily: FM, fontWeight: 700 }}>{l.weight_kg} kg</span>
+                      {l.notes && <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM }}>{l.notes}</span>}
+                    </div>
+                  ))}
+                </div>
+                {bwValues.length >= 2 && <div style={{ marginLeft: '12px', flexShrink: 0 }}><Sparkline data={bwValues} color="#a78bfa" /></div>}
+              </div>
+            )}
+          </Section>
+
+          {/* Kalorije detalji */}
+          <Section title="KALORIJE & MAKROSI" open={waterOpen} onToggle={() => setWaterOpen(v => !v)} accent="#f59e0b">
+            {nutLogs.length === 0 ? (
+              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
+            ) : nutLogs.map(l => (
+              <div key={l.id} style={{ padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'grid', gridTemplateColumns: '72px 1fr', gap: '8px', alignItems: 'start' }}>
+                <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>{l.date}</span>
+                <div>
+                  <div style={{ fontSize: '0.78rem', color: '#fbbf24', fontFamily: FM, fontWeight: 800 }}>{l.calories ?? '—'} kcal</div>
+                  <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>P:{l.protein_g ?? '?'}g · U:{l.carbs_g ?? '?'}g · M:{l.fat_g ?? '?'}g</div>
+                  {l.notes && <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, marginTop: '2px' }}>{l.notes}</div>}
+                </div>
+              </div>
+            ))}
+          </Section>
+
+          {/* Voda detalji */}
+          <Section title="HIDRATACIJA" open={compOpen} onToggle={() => setCompOpen(v => !v)} accent="#38bdf8">
+            {waterLogs.length === 0 ? (
+              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  {waterLogs.map(l => (
+                    <div key={l.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM, width: '72px' }}>{l.log_date}</span>
+                      <span style={{ fontSize: '0.82rem', color: '#38bdf8', fontFamily: FM, fontWeight: 700 }}>{(Number(l.amount_ml) / 1000).toFixed(1)} L</span>
+                    </div>
+                  ))}
+                </div>
+                {waterValues.length >= 2 && <div style={{ marginLeft: '12px', flexShrink: 0 }}><Sparkline data={waterValues} color="#38bdf8" /></div>}
+              </div>
+            )}
           </Section>
         </>
       )}
