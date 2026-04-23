@@ -465,7 +465,7 @@ export default function TrainingPage() {
                 {loading ? '...' : athleteName}
               </div>
               <h1 className="page-title-h1" style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.8rem,4.5vw,3.2rem)', fontWeight: 900, lineHeight: 0.9, margin: 0, letterSpacing: '-0.04em', background: 'linear-gradient(135deg, #ffffff 0%, #c7d2fe 60%, #a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                {loading ? 'Učitavanje…' : (block?.name ?? 'Moj program')}
+                {loading ? 'Učitavanje…' : 'Moj program'}
               </h1>
             </div>
 

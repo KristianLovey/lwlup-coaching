@@ -7,7 +7,7 @@ export type WorkoutExercise = {
   target_rpe: number | null; coach_note: string | null
   actual_sets: number | null; actual_reps: string | null; actual_weight_kg: number | null
   actual_rpe: number | null; actual_note: string | null
-  notes: string | null; completed: boolean; exercise?: Exercise
+  notes: string | null; completed: boolean; is_top_set: boolean | null; exercise?: Exercise
   // runtime-only (not in DB) — used for progress tracking
   _completedSets?: number; _totalSets?: number
 }
@@ -27,7 +27,7 @@ export type Block = {
 export type BlockSummary = { id: string; name: string; status: string; start_date: string; end_date: string }
 export type CoachTip = { id: string; title: string; content: string; category: string; priority: number; created_at: string }
 export type Competition = { id: string; name: string; date: string; location: string | null; status: string }
-export type SetLog = { set_number: number; weight_kg: number | null; reps: string | null; rpe: number | null; completed: boolean }
+export type SetLog = { set_number: number; weight_kg: number | null; reps: string | null; rpe: number | null; completed: boolean; is_top_set?: boolean }
 export interface MeetAttempt {
   id: string;
   athlete_id: string;

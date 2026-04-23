@@ -58,6 +58,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const [nutLogs, setNutLogs] = useState<any[]>([])
   const [waterLogs, setWaterLogs] = useState<any[]>([])
   const [lastMeets, setLastMeets] = useState<any[]>([])
+  const [e1rms, setE1rms] = useState<{ sq: number|null; bp: number|null; dl: number|null }>({ sq: null, bp: null, dl: null })
   const [bwOpen, setBwOpen] = useState(true)
   const [calOpen, setCalOpen] = useState(true)
   const [waterOpen, setWaterOpen] = useState(true)
@@ -76,6 +77,35 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
       setNutLogs(nutRes.data ?? [])
       setWaterLogs(waterRes.data ?? [])
       setLastMeets(meetRes.data ?? [])
+
+      // Fetch top sets for e1RM — join workout_exercises → workouts → exercises
+      const { data: topSets } = await supabase
+        .from('set_logs')
+        .select('weight_kg, reps, workout_exercise_id, workout_exercises!inner(exercise:exercises(name,category))')
+        .eq('athlete_id', athlete.id)
+        .eq('is_top_set', true)
+        .order('id', { ascending: false })
+        .limit(100)
+
+      if (topSets && topSets.length > 0) {
+        // Epley: e1RM = weight * (1 + reps/30)
+        const epley = (kg: number, reps: number) => Math.round(kg * (1 + reps / 30))
+        const catMap: Record<string, number> = {}
+        for (const s of topSets) {
+          const cat: string = (s as any).workout_exercises?.exercise?.category ?? ''
+          const kg = Number(s.weight_kg)
+          const reps = parseInt(String(s.reps)) || 1
+          if (!kg || !reps) continue
+          const e1 = epley(kg, reps)
+          const key = cat === 'Squat' || cat === 'Squat Variation' ? 'sq'
+            : cat === 'Bench' || cat === 'Bench Variation' ? 'bp'
+            : cat === 'Deadlift' || cat === 'Deadlift Variation' ? 'dl'
+            : null
+          if (key && (!catMap[key] || e1 > catMap[key])) catMap[key] = e1
+        }
+        setE1rms({ sq: catMap['sq'] ?? null, bp: catMap['bp'] ?? null, dl: catMap['dl'] ?? null })
+      }
+
       setLoading(false)
     }
     load()
@@ -148,6 +178,26 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
           </div>
         ))}
       </div>
+
+      {/* 1RM kartice */}
+      {(e1rms.sq || e1rms.bp || e1rms.dl) && (
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ fontSize: '0.45rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginBottom: '8px' }}>ESTIMATED 1RM (top set)</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {[
+              { label: 'SQ', val: e1rms.sq, color: '#a78bfa' },
+              { label: 'BP', val: e1rms.bp, color: '#f472b6' },
+              { label: 'DL', val: e1rms.dl, color: '#fb923c' },
+            ].map(s => (
+              <div key={s.label} style={{ background: '#0d0d18', border: `1px solid ${s.val ? s.color + '30' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', padding: '12px 14px', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px', fontFamily: FM }}>{s.label}</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 900, color: s.val ? s.color : 'rgba(255,255,255,0.15)', fontFamily: FD }}>{s.val ? `${s.val}` : '—'}</div>
+                {s.val && <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginTop: '2px' }}>kg</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* TRENING button */}
       <button onClick={onGoTraining} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.15))', border: '1px solid rgba(99,102,241,0.5)', borderRadius: '12px', color: '#a5b4fc', fontFamily: FM, fontWeight: 800, fontSize: '0.78rem', letterSpacing: '0.25em', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '20px', transition: 'all 0.2s' }}>

@@ -670,7 +670,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   // Initialise logs array — one entry per planned set
   useEffect(() => {
     supabase.from('set_logs')
-      .select('set_number, weight_kg, reps, rpe, completed')
+      .select('set_number, weight_kg, reps, rpe, completed, is_top_set')
       .eq('workout_exercise_id', we.id)
       .eq('athlete_id', userId)
       .order('set_number')
@@ -678,7 +678,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
         const existing = (data ?? []) as SetLog[]
         const filled: SetLog[] = Array.from({ length: plannedSets }, (_, i) => {
           const found = existing.find(s => s.set_number === i + 1)
-          return found ?? { set_number: i + 1, weight_kg: null, reps: null, rpe: null, completed: false }
+          return found ?? { set_number: i + 1, weight_kg: null, reps: null, rpe: null, completed: false, is_top_set: false }
         })
         setLogs(filled)
         propagateCounts(filled)
@@ -768,11 +768,23 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     propagateCounts(newLogs)
   }
 
+  const toggleTopSet = async (setNum: number) => {
+    const s = logs.find(l => l.set_number === setNum)
+    if (!s) return
+    const isTop = !s.is_top_set
+    // Only one top set per exercise — clear others first
+    const newLogs = logs.map(l => ({ ...l, is_top_set: l.set_number === setNum ? isTop : false }))
+    setLogs(newLogs)
+    // Save all logs: clear others, set this one
+    for (const l of newLogs) {
+      await upsertDirect(l.set_number, 'is_top_set', l.is_top_set)
+    }
+  }
+
   // Both admin and lifter use the same table layout.
   // Admin routes saves through service-role API; lifter writes directly via anon client.
   const targetRpe = we.target_rpe ?? we.planned_rpe
-  // Admin has no done-checkbox column; lifter has it
-  const SLR_GRID = isAdmin ? '52px 1fr 1fr 80px' : '52px 1fr 1fr 80px 44px'
+  const SLR_GRID = '52px 1fr 1fr 80px 44px'
   const cellStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)' }
   const inputStyle: React.CSSProperties = { width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#e8e8ff', padding: '5px 6px', fontSize: '1rem', outline: 'none', fontFamily: 'var(--fm)', fontWeight: 700, textAlign: 'center', boxSizing: 'border-box' }
 
@@ -804,7 +816,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
             RPE{targetRpe ? ` · ${targetRpe}` : ''}
           </span>
         </div>
-        <div />
+        <div style={{ ...cellStyle, padding: '6px 0', borderRight: 'none' }}>
+          <span style={{ fontSize: '0.4rem', color: '#facc1588', letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)' }}>{isAdmin ? 'TOP' : '✓'}</span>
+        </div>
       </div>
 
       {logs.map((log, i) => (
@@ -860,16 +874,22 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
             />
           </div>
 
-          {/* Done toggle — only for lifter */}
-          {!isAdmin && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {/* Admin: top set toggle ★ | Lifter: done toggle ✓ */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {isAdmin ? (
+              <button onClick={() => toggleTopSet(log.set_number)}
+                title={log.is_top_set ? 'Makni top set' : 'Označi kao top set'}
+                style={{ background: log.is_top_set ? 'rgba(250,204,21,0.12)' : 'transparent', border: 'none', cursor: 'pointer', color: log.is_top_set ? '#facc15' : '#333', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', fontSize: '0.9rem' }}>
+                {log.is_top_set ? '★' : '☆'}
+              </button>
+            ) : (
               <button onClick={() => markSetDone(log.set_number)}
                 style={{ background: log.completed ? 'rgba(34,197,94,0.15)' : 'transparent', border: 'none', cursor: 'pointer', color: log.completed ? '#22c55e' : '#444', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
                 title={log.completed ? 'Poništi' : 'Odrađeno'}>
                 <Check size={14} strokeWidth={log.completed ? 3 : 1.5} />
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       ))}
     </div>
@@ -949,12 +969,8 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
     <div className="ex-row-wrap">
       {/* ── Main row ── */}
       {isAdmin ? (
-        /* Admin: compact 3-col — grip | name+info | delete */
-        <div className="ex-row-main" style={{ display: 'grid', gridTemplateColumns: '48px 1fr 44px', alignItems: 'stretch', borderBottom: '1px solid rgba(255,255,255,0.08)', minHeight: '58px' }}>
-          {/* Grip */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
-            <GripVertical size={13} color="#555" style={{ cursor: 'grab' }} />
-          </div>
+        /* Admin: compact 2-col — name+info | delete */
+        <div className="ex-row-main" style={{ display: 'grid', gridTemplateColumns: '1fr 44px', alignItems: 'stretch', borderBottom: '1px solid rgba(255,255,255,0.08)', minHeight: '58px' }}>
           {/* Name + inline plan info */}
           <div onClick={() => setSetsOpen(v => !v)} style={{ padding: '13px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '6px', cursor: 'pointer' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
