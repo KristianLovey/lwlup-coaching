@@ -1929,54 +1929,100 @@ function NutritionTracker({ userId }: { userId: string }) {
 export function HubTab({ athleteName, userId }: { athleteName: string; userId?: string }) {
   const [active, setActive] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [isMobile, setIsMobile] = useState(false)
   const activeTool = HUB_TOOLS.find(t => t.id === active)
 
   useEffect(() => {
-    if (!active) return
+    const check = () => setIsMobile(window.innerWidth <= 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  useEffect(() => {
+    if (!active || isMobile) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setActive(null) }
     document.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
     return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = '' }
-  }, [active])
+  }, [active, isMobile])
 
   const q = search.trim().toLowerCase()
   const filtered = q ? HUB_TOOLS.filter(t => t.label.toLowerCase().includes(q) || t.sub.toLowerCase().includes(q)) : null
+
+  const renderToolContent = (toolId: string) => {
+    if (toolId === 'rpe')       return <RpeCalc />
+    if (toolId === 'gl')        return <GlCalc />
+    if (toolId === 'watercut')  return <WaterCutCalc />
+    if (toolId === 'barloader') return <BarLoader />
+    if (toolId === 'progress')  return userId ? <ProgressGraph userId={userId} /> : <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za prikaz grafa.</div>
+    if (toolId === 'weight')    return userId ? <WeightTracker userId={userId} /> : <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje kilaze.</div>
+    if (toolId === 'hydration') return userId ? <WaterLog userId={userId} /> : <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za log vode.</div>
+    if (toolId === 'nutrition') return userId ? <NutritionTracker userId={userId} /> : <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje prehrane.</div>
+    if (['guide-wc','guide-rpe','guide-peak'].includes(toolId)) {
+      const g = GUIDE_CONTENT[toolId]
+      if (!g) return null
+      return (
+        <div>
+          <SectionTitle>{g.title}</SectionTitle>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0' }}>
+            {g.body.map((para, i) => (
+              <div key={i} style={{ padding: '14px 0', borderBottom: i < g.body.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                <p style={{ fontSize: '0.85rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.65)', margin: 0, fontFamily: 'var(--fm)' }}>{para}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+    return null
+  }
 
   const renderToolCard = (tool: typeof HUB_TOOLS[0], groupColor?: string) => {
     const isActive = active === tool.id
     const c = groupColor ?? tool.color
     const isUpcoming = (tool as any).upcoming === true
     return (
-      <button key={tool.id}
-        onClick={() => { if (!isUpcoming) setActive(isActive ? null : tool.id) }}
-        style={{
-          position: 'relative' as const,
-          display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', textAlign: 'left' as const,
-          background: isUpcoming ? 'rgba(255,255,255,0.03)' : isActive ? `${c}18` : 'rgba(255,255,255,0.05)',
-          border: `1.5px solid ${isUpcoming ? c + '18' : isActive ? c + '55' : c + '22'}`,
-          borderRadius: '12px', cursor: isUpcoming ? 'default' : 'pointer', transition: 'all 0.2s',
-          boxShadow: isActive ? `0 4px 20px ${c}20` : '0 2px 8px rgba(0,0,0,0.3)',
-          opacity: isUpcoming ? 0.75 : 1,
-        }}
-        onMouseEnter={e => { if (!isActive && !isUpcoming) { e.currentTarget.style.background = `${c}10`; e.currentTarget.style.borderColor = `${c}44` } }}
-        onMouseLeave={e => { if (!isActive && !isUpcoming) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = `${c}22` } }}>
-        <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: `${c}18`, border: `1px solid ${c}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: c, boxShadow: isActive ? `0 0 8px ${c}` : `0 0 4px ${c}88`, transition: 'box-shadow 0.2s' }} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: isActive ? c : '#f0f0f8', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}>{tool.label}</div>
-          <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.45)', marginTop: '1px', fontFamily: 'var(--fm)' }}>{tool.sub}</div>
-        </div>
-        {isUpcoming ? (
-          <span style={{ fontSize: '0.48rem', fontWeight: 700, color: c, background: `${c}14`, padding: '3px 7px', borderRadius: '5px', border: `1px solid ${c}30`, letterSpacing: '0.08em', fontFamily: 'var(--fm)', flexShrink: 0, animation: 'uskoro-pulse 2.5s ease-in-out infinite' }}>
-            USKORO
-          </span>
-        ) : (
-          <span style={{ fontSize: '0.5rem', fontWeight: 700, color: c, background: `${c}18`, padding: '3px 8px', borderRadius: '5px', border: `1px solid ${c}35`, letterSpacing: '0.06em', fontFamily: 'var(--fm)', flexShrink: 0 }}>
-            {tool.badge}
-          </span>
+      <div key={tool.id} style={{ display: 'flex', flexDirection: 'column' as const }}>
+        <button
+          onClick={() => { if (!isUpcoming) setActive(isActive ? null : tool.id) }}
+          style={{
+            position: 'relative' as const,
+            display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', textAlign: 'left' as const,
+            background: isUpcoming ? 'rgba(255,255,255,0.03)' : isActive ? `${c}18` : 'rgba(255,255,255,0.05)',
+            border: `1.5px solid ${isUpcoming ? c + '18' : isActive ? c + '55' : c + '22'}`,
+            borderRadius: isActive && isMobile ? '12px 12px 0 0' : '12px',
+            cursor: isUpcoming ? 'default' : 'pointer', transition: 'all 0.2s',
+            boxShadow: isActive ? `0 4px 20px ${c}20` : '0 2px 8px rgba(0,0,0,0.3)',
+            opacity: isUpcoming ? 0.75 : 1, width: '100%',
+          }}
+          onMouseEnter={e => { if (!isActive && !isUpcoming) { e.currentTarget.style.background = `${c}10`; e.currentTarget.style.borderColor = `${c}44` } }}
+          onMouseLeave={e => { if (!isActive && !isUpcoming) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = `${c}22` } }}>
+          <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: `${c}18`, border: `1px solid ${c}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: c, boxShadow: isActive ? `0 0 8px ${c}` : `0 0 4px ${c}88`, transition: 'box-shadow 0.2s' }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '0.82rem', fontWeight: 600, color: isActive ? c : '#f0f0f8', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}>{tool.label}</div>
+            <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.45)', marginTop: '1px', fontFamily: 'var(--fm)' }}>{tool.sub}</div>
+          </div>
+          {isUpcoming ? (
+            <span style={{ fontSize: '0.48rem', fontWeight: 700, color: c, background: `${c}14`, padding: '3px 7px', borderRadius: '5px', border: `1px solid ${c}30`, letterSpacing: '0.08em', fontFamily: 'var(--fm)', flexShrink: 0, animation: 'uskoro-pulse 2.5s ease-in-out infinite' }}>
+              USKORO
+            </span>
+          ) : (
+            <span style={{ fontSize: '0.5rem', fontWeight: 700, color: c, background: `${c}18`, padding: '3px 8px', borderRadius: '5px', border: `1px solid ${c}35`, letterSpacing: '0.06em', fontFamily: 'var(--fm)', flexShrink: 0 }}>
+              {tool.badge}
+            </span>
+          )}
+        </button>
+
+        {/* Inline expansion on mobile */}
+        {isActive && isMobile && (
+          <div style={{ border: `1.5px solid ${c}44`, borderTop: 'none', borderRadius: '0 0 12px 12px', background: '#0d0d16', padding: '20px 16px', animation: 'fadeUp 0.2s ease' }}>
+            {renderToolContent(tool.id)}
+          </div>
         )}
-      </button>
+      </div>
     )
   }
 
@@ -2004,7 +2050,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
       {filtered ? (
         filtered.length === 0
           ? <div style={{ padding: '32px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', fontFamily: 'var(--fm)' }}>Nema rezultata za "{search}"</div>
-          : <div className="hub-tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(clamp(160px,26vw,260px),1fr))', gap: '8px', marginBottom: '20px' }}>
+          : <div className="hub-tools-grid" style={{ display: 'grid', gap: '8px', marginBottom: '20px' }}>
               {filtered.map(t => renderToolCard(t))}
             </div>
       ) : (
@@ -2013,7 +2059,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
           return (
             <div key={g.key} style={{ marginBottom: '4px' }}>
               <SectionTitle icon={g.icon} color={g.color}>{g.title}</SectionTitle>
-              <div className="hub-tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(clamp(160px,26vw,260px),1fr))', gap: '8px', marginBottom: '20px' }}>
+              <div className="hub-tools-grid" style={{ display: 'grid', gap: '8px', marginBottom: '20px' }}>
                 {tools.map(t => renderToolCard(t, g.color))}
               </div>
             </div>
@@ -2021,40 +2067,20 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
         })
       )}
 
-      {/* Mobile bottom-sheet CSS */}
       <style>{`
-        @media (max-width: 640px) {
-          .hub-modal-overlay {
-            align-items: flex-end !important;
-            padding: 0 !important;
-          }
-          .hub-modal-panel {
-            max-width: 100% !important;
-            width: 100% !important;
-            height: 90vh !important;
-            max-height: 90vh !important;
-            border-radius: 20px 20px 0 0 !important;
-            border-left: none !important;
-            border-right: none !important;
-            border-bottom: none !important;
-          }
-          .hub-tools-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .bl-input-row {
-            grid-template-columns: 1fr !important;
-          }
+        .hub-tools-grid { grid-template-columns: repeat(auto-fill, minmax(clamp(160px,26vw,260px), 1fr)); }
+        @media (max-width: 768px) {
+          .hub-tools-grid { grid-template-columns: 1fr !important; }
+          .bl-input-row   { grid-template-columns: 1fr !important; }
         }
       `}</style>
 
-      {/* Modal overlay */}
-      {active && activeTool && (
+      {/* Desktop modal overlay — not rendered on mobile (inline expansion used instead) */}
+      {active && activeTool && !isMobile && (
         <div
           onClick={e => { if (e.target === e.currentTarget) setActive(null) }}
-          className="hub-modal-overlay"
           style={{ position: 'fixed', inset: 0, zIndex: 1010, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', animation: 'fadeIn 0.18s ease' }}>
           <div
-            className="hub-modal-panel"
             style={{ width: '100%', maxWidth: '680px', maxHeight: '82vh', display: 'flex', flexDirection: 'column' as const, border: `1.5px solid ${activeTool.color}44`, borderRadius: '18px', overflow: 'hidden', boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px ${activeTool.color}18, 0 0 60px ${activeTool.color}10`, animation: 'panelIn 0.25s cubic-bezier(0.16,1,0.3,1)', background: '#0d0d16' }}>
 
             {/* Modal header */}
@@ -2078,34 +2104,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
 
             {/* Modal content — scrollable */}
             <div style={{ padding: 'clamp(20px,4vw,28px)', overflowY: 'auto' as const, flex: 1 }}>
-              {active === 'rpe'       && <RpeCalc />}
-              {active === 'gl'        && <GlCalc />}
-              {active === 'watercut'  && <WaterCutCalc />}
-              {active === 'barloader' && <BarLoader />}
-              {active === 'progress'  && userId  && <ProgressGraph userId={userId} />}
-              {active === 'progress'  && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za prikaz grafa.</div>}
-              {active === 'weight'    && userId  && <WeightTracker userId={userId} />}
-              {active === 'weight'    && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje kilaze.</div>}
-              {active === 'hydration' && userId  && <WaterLog userId={userId} />}
-              {active === 'hydration' && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za log vode.</div>}
-              {active === 'nutrition' && userId  && <NutritionTracker userId={userId} />}
-              {active === 'nutrition' && !userId && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje prehrane.</div>}
-              {['guide-wc','guide-rpe','guide-peak'].includes(active) && (() => {
-                const g = GUIDE_CONTENT[active]
-                if (!g) return null
-                return (
-                  <div>
-                    <SectionTitle>{g.title}</SectionTitle>
-                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0' }}>
-                      {g.body.map((para, i) => (
-                        <div key={i} style={{ padding: '14px 0', borderBottom: i < g.body.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                          <p style={{ fontSize: '0.85rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.65)', margin: 0, fontFamily: 'var(--fm)' }}>{para}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })()}
+              {renderToolContent(active)}
             </div>
           </div>
         </div>
