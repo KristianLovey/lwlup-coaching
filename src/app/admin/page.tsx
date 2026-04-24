@@ -71,9 +71,14 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
 
   const loadAll = useCallback(async () => {
       const [bwRes, nutRes, waterRes, meetRes, woRes] = await Promise.all([
-        supabase.from('weight_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(60),
+        // BW: lifter logs via WeightTracker → pr_logs (lift='other', notes='Tjelesna težina')
+        supabase.from('pr_logs')
+          .select('id, date, weight_kg')
+          .eq('athlete_id', athlete.id)
+          .eq('lift', 'other').eq('notes', 'Tjelesna težina')
+          .order('date', { ascending: false }).limit(60),
         supabase.from('nutrition_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(60),
-        supabase.from('water_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(60),
+        supabase.from('water_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(90),
         supabase.from('meet_attempts').select('*, competition:competitions(name,date)').eq('athlete_id', athlete.id).order('meet_date', { ascending: false }).limit(9),
         supabase.from('workouts')
           .select('id, workout_date, completed, day_name, workout_exercises(id, exercise_order, exercise:exercises(name,category), actual_weight_kg, actual_reps, actual_rpe, actual_note, planned_sets, planned_reps, planned_weight_kg, set_logs(set_number, weight_kg, reps, rpe, completed, is_top_set))')
@@ -123,11 +128,11 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
 
     // Real-time: refresh when any relevant table changes for this athlete
     const ch = supabase.channel(`overview-${athlete.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'workouts',        filter: `athlete_id=eq.${athlete.id}` }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'set_logs',        filter: `athlete_id=eq.${athlete.id}` }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'weight_logs',     filter: `user_id=eq.${athlete.id}` },    loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'nutrition_logs',  filter: `user_id=eq.${athlete.id}` },    loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'water_logs',      filter: `user_id=eq.${athlete.id}` },    loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'workouts',       filter: `athlete_id=eq.${athlete.id}` }, loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'set_logs',       filter: `athlete_id=eq.${athlete.id}` }, loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pr_logs',        filter: `athlete_id=eq.${athlete.id}` }, loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'nutrition_logs', filter: `user_id=eq.${athlete.id}` },    loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'water_logs',     filter: `user_id=eq.${athlete.id}` },    loadAll)
       .subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [loadAll, athlete.id])
@@ -161,12 +166,11 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
     meetsByComp[key].push(m)
   }
 
-  const bwValues = [...bwLogs].reverse().map(l => Number(l.weight_kg))
-  const calValues = [...nutLogs].reverse().map(l => Number(l.calories)).filter(Boolean)
-  const waterValues = [...waterLogs].reverse().map(l => Number(l.amount_ml))
-
-  // ── Today's date string ──
-  const todayStr = new Date().toISOString().split('T')[0]
+  // ── Today's date string — local timezone ──
+  const todayStr = (() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  })()
 
   const todayBw  = bwLogs.find(l => l.date === todayStr)?.weight_kg ?? '—'
   const todayCal = nutLogs.find(l => l.date === todayStr)?.calories ?? '—'
@@ -174,14 +178,15 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const todayWater = todayWaterMl > 0 ? Math.round(todayWaterMl / 100) / 10 : '—'
 
   // ── Frekvencija logiranja — tekući tjedan PON→NED ──
+  const toLocalDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
   const weekDates = (() => {
     const now = new Date()
-    const dow = now.getDay() // 0=Sun, 1=Mon...
-    const mondayOffset = dow === 0 ? -6 : 1 - dow // days back to Monday
+    const dow = now.getDay()
+    const mondayOffset = dow === 0 ? -6 : 1 - dow
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(now)
       d.setDate(now.getDate() + mondayOffset + i)
-      return d.toISOString().split('T')[0]
+      return toLocalDate(d)
     })
   })()
   const orderedLabels = ['PON','UTO','SRI','ČET','PET','SUB','NED']
