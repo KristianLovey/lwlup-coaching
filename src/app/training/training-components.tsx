@@ -6,7 +6,7 @@ import Image from 'next/image'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
   GripVertical, Loader2, LogOut,
-  User, Shield, X, Dumbbell, BarChart2, MessageSquare, Copy
+  User, Shield, X, Dumbbell, BarChart2, MessageSquare, Copy, CalendarDays
 } from 'lucide-react'
 import type { Exercise, WorkoutExercise, Workout, Week, SetLog, Competition } from './types'
 
@@ -1212,12 +1212,16 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
   const localExsRef = useRef(localExs)
   useEffect(() => { localExsRef.current = localExs }, [localExs])
 
-  // Sync if exercises are added / removed externally
+  // Sync when exercises are added/removed, or when their properties change (e.g. completed)
   useEffect(() => {
     const incoming = workout.workout_exercises ?? []
     const cur = localExsRef.current
-    const same = incoming.length === cur.length && incoming.every(e => cur.find(l => l.id === e.id))
-    if (!same) setLocalExs([...incoming].sort((a, b) => a.exercise_order - b.exercise_order))
+    const sameSet = incoming.length === cur.length && incoming.every(e => cur.find(l => l.id === e.id))
+    if (!sameSet) {
+      setLocalExs([...incoming].sort((a, b) => a.exercise_order - b.exercise_order))
+    } else {
+      setLocalExs(cur.map(l => ({ ...l, ...incoming.find(e => e.id === l.id) })))
+    }
   }, [workout.workout_exercises])
 
   // ── Drag state ──
@@ -1319,6 +1323,14 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
               <div style={{ fontSize: '1rem', fontWeight: 900, color: workout.completed ? '#86efac' : '#f0f0ff', fontFamily: 'var(--fd)', letterSpacing: '0.02em', textTransform: 'uppercase' as const }}>
                 <EditableField value={workout.day_name} placeholder="DAN TRENINGA" onSave={v => onUpdateWorkout(workout.id, { day_name: v })} />
               </div>
+              {workout.completed && workout.completion_date && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
+                  <CalendarDays size={9} color="rgba(134,239,172,0.5)" />
+                  <span style={{ fontSize: '0.5rem', color: 'rgba(134,239,172,0.55)', fontFamily: 'var(--fm)', letterSpacing: '0.1em' }}>
+                    {new Date(workout.completion_date).toLocaleString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Right controls */}

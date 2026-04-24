@@ -1,10 +1,10 @@
 'use client'
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
+  Plus, Trash2, ChevronDown, Check, Search,
   Loader2, Settings,
   FolderOpen, Copy, Bell,
   AlertCircle, ChevronLeft, Eye, Trophy, Send
@@ -34,21 +34,6 @@ type AthleteProfile = {
 }
 
 
-// ── Mini sparkline ────────────────────────────────────────────────
-function Sparkline({ data, color = '#6366f1', h = 40 }: { data: number[]; color?: string; h?: number }) {
-  if (data.length < 2) return null
-  const w = 160
-  const max = Math.max(...data), min = Math.min(...data), range = max - min || 1
-  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * (h - 4) - 2}`).join(' ')
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ overflow: 'visible' }}>
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      {/* last point dot */}
-      {(() => { const last = data[data.length - 1]; const x = w; const y = h - ((last - min) / range) * (h - 4) - 2; return <circle cx={x} cy={y} r="3" fill={color} /> })()}
-    </svg>
-  )
-}
-
 // ── Athlete Overview ───────────────────────────────────────────────
 function AthleteOverview({ athlete, onBack, onGoTraining }: {
   athlete: AthleteProfile; onBack: () => void; onGoTraining: () => void
@@ -61,9 +46,6 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const [lastMeets, setLastMeets] = useState<any[]>([])
   const [workoutLogs, setWorkoutLogs] = useState<any[]>([])
   const [e1rms, setE1rms] = useState<{ sq: number|null; bp: number|null; dl: number|null }>({ sq: null, bp: null, dl: null })
-  const [bwOpen, setBwOpen] = useState(true)
-  const [calOpen, setCalOpen] = useState(true)
-  const [waterOpen, setWaterOpen] = useState(true)
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [calViewDate, setCalViewDate] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
   const [compOpen, setCompOpen] = useState(true)
@@ -78,16 +60,17 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
           .eq('lift', 'other').eq('notes', 'Tjelesna težina')
           .order('date', { ascending: false }).limit(60),
         supabase.from('nutrition_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(60),
-        supabase.from('water_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(90),
+        supabase.from('water_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(300),
         supabase.from('meet_attempts').select('*, competition:competitions(name,date)').eq('athlete_id', athlete.id).order('meet_date', { ascending: false }).limit(9),
         supabase.from('workouts')
-          .select('id, workout_date, completed, day_name, workout_exercises(id, exercise_order, exercise:exercises(name,category), actual_weight_kg, actual_reps, actual_rpe, actual_note, planned_sets, planned_reps, planned_weight_kg, set_logs(set_number, weight_kg, reps, rpe, completed, is_top_set))')
+          .select('id, workout_date, completed, completion_date, day_name, workout_exercises(id, exercise_order, exercise:exercises(name,category), actual_weight_kg, actual_reps, actual_rpe, actual_note, planned_sets, planned_reps, planned_weight_kg, set_logs(set_number, weight_kg, reps, rpe, completed, is_top_set))')
           .eq('athlete_id', athlete.id)
           .order('workout_date', { ascending: false })
           .limit(60),
       ])
       setBwLogs(bwRes.data ?? [])
       setNutLogs(nutRes.data ?? [])
+      if (waterRes.error) console.warn('[admin] water_logs error:', waterRes.error.message, waterRes.error.code)
       setWaterLogs(waterRes.data ?? [])
       setLastMeets(meetRes.data ?? [])
       setWorkoutLogs(woRes.data ?? [])
@@ -138,15 +121,6 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   }, [loadAll, athlete.id])
 
   const FM = 'var(--fm)', FD = 'var(--fd)'
-  const row = (label: string, val: React.ReactNode, sub?: string) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-      <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontFamily: FM }}>{label}</span>
-      <div style={{ textAlign: 'right' }}>
-        <span style={{ fontSize: '0.88rem', color: '#e0e0f0', fontFamily: FM, fontWeight: 700 }}>{val}</span>
-        {sub && <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>{sub}</div>}
-      </div>
-    </div>
-  )
 
   const Section = ({ title, open, onToggle, children, accent = '#6366f1' }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode; accent?: string }) => (
     <div style={{ background: '#0d0d18', border: `1px solid rgba(255,255,255,0.07)`, borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
@@ -174,7 +148,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
 
   const todayBw  = bwLogs.find(l => l.date === todayStr)?.weight_kg ?? '—'
   const todayCal = nutLogs.find(l => l.date === todayStr)?.calories ?? '—'
-  const todayWaterMl = waterLogs.filter(l => l.log_date === todayStr).reduce((s, l) => s + Number(l.amount_ml), 0)
+  const todayWaterMl = waterLogs.filter(l => String(l.log_date).slice(0, 10) === todayStr).reduce((s, l) => s + Number(l.amount_ml), 0)
   const todayWater = todayWaterMl > 0 ? Math.round(todayWaterMl / 100) / 10 : '—'
 
   // ── Frekvencija logiranja — tekući tjedan PON→NED ──
@@ -192,9 +166,9 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const orderedLabels = ['PON','UTO','SRI','ČET','PET','SUB','NED']
 
   const hasBw    = (d: string) => bwLogs.some(l => l.date === d)
-  const hasWater = (d: string) => waterLogs.some(l => l.log_date === d)
+  const hasWater = (d: string) => waterLogs.some(l => String(l.log_date).slice(0, 10) === d)
   const hasCal   = (d: string) => nutLogs.some(l => l.date === d)
-  const hasWo    = (d: string) => workoutLogs.some(l => l.workout_date === d)
+  const hasWo    = (d: string) => workoutLogs.some(l => l.workout_date === d && l.completed)
 
   const FreqGrid = () => (
     <div style={{ background: '#0d0d18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px 16px', marginBottom: '12px' }}>
@@ -351,7 +325,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
             const calByDate: Record<string, any> = {}
             for (const l of nutLogs) calByDate[l.date] = l
             const waterByDate: Record<string, number> = {}
-            for (const l of waterLogs) waterByDate[l.log_date] = (waterByDate[l.log_date] ?? 0) + Number(l.amount_ml)
+            for (const l of waterLogs) { const k = String(l.log_date).slice(0, 10); waterByDate[k] = (waterByDate[k] ?? 0) + Number(l.amount_ml) }
 
             const monthNames = ['Siječanj','Veljača','Ožujak','Travanj','Svibanj','Lipanj','Srpanj','Kolovoz','Rujan','Listopad','Studeni','Prosinac']
 
@@ -377,8 +351,8 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
 
                   {/* Day-of-week headers */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '2px', marginBottom: '4px' }}>
-                    {['P','U','S','Č','P','S','N'].map(d => (
-                      <div key={d} style={{ textAlign: 'center', fontSize: '0.44rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, fontWeight: 700, padding: '2px 0' }}>{d}</div>
+                    {['P','U','S','Č','P','S','N'].map((d, i) => (
+                      <div key={i} style={{ textAlign: 'center', fontSize: '0.44rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, fontWeight: 700, padding: '2px 0' }}>{d}</div>
                     ))}
                   </div>
 
@@ -395,7 +369,6 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                       const isSelected = selectedDay === dateStr
                       const isToday = dateStr === todayStr
                       const hasWoCompleted = wo?.completed
-                      const hasWoPlanned = !!wo && !wo.completed
 
                       return (
                         <button key={ci} onClick={() => setSelectedDay(isSelected ? null : dateStr)}
@@ -407,10 +380,9 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                             transition: 'all 0.15s',
                           }}>
                           <span style={{ fontSize: '0.7rem', fontWeight: isToday ? 800 : 500, color: isToday ? '#fff' : 'rgba(255,255,255,0.6)', fontFamily: FM, lineHeight: 1 }}>{dayNum}</span>
-                          {/* Dot row */}
+                          {/* Dot row — only show completed events */}
                           <div style={{ display: 'flex', gap: '2px', flexWrap: 'wrap', justifyContent: 'center', minHeight: '7px' }}>
                             {hasWoCompleted && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#4ade80', flexShrink: 0 }} />}
-                            {hasWoPlanned  && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#6366f1', opacity: 0.5, flexShrink: 0 }} />}
                             {hasBwD   && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#a78bfa', flexShrink: 0 }} />}
                             {hasCalD  && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />}
                             {hasWaterD && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#38bdf8', flexShrink: 0 }} />}
@@ -449,11 +421,11 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                       </div>
                     </div>
 
-                    {/* Workout table */}
-                    {selWo ? (
+                    {/* Workout table — only show completed workouts */}
+                    {selWo?.completed ? (
                       <>
-                        <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: selWo.completed ? '#4ade80' : 'rgba(255,255,255,0.3)', fontFamily: FM, fontWeight: 700, marginBottom: '10px' }}>
-                          {selWo.completed ? '✓ ODRAĐENO' : '◦ PLANIRANO'}{selWo.day_name ? ` · ${selWo.day_name}` : ''}
+                        <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: '#4ade80', fontFamily: FM, fontWeight: 700, marginBottom: '10px' }}>
+                          ✓ ODRAĐENO{selWo.day_name ? ` · ${selWo.day_name}` : ''}{selWo.completion_date ? ` · ${new Date(selWo.completion_date).toLocaleString('hr-HR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : ''}
                         </div>
 
                         {/* Table: VJEŽBA | set1 | set2 | ... */}
@@ -497,34 +469,44 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                                     const topSetNum = allSets.find((s: any) => s.is_top_set)?.set_number
                                     const hasLogged = doneSets.length > 0
                                     return (
-                                      <tr key={we.id} style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                                        <td style={{ padding: '7px 8px 7px 0', verticalAlign: 'middle' as const }}>
-                                          <span style={{ fontSize: '0.7rem', color: hasLogged ? '#c7d2fe' : 'rgba(255,255,255,0.35)', fontFamily: FM, fontWeight: 700, whiteSpace: 'nowrap' as const, display: 'block', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{we.exercise?.name ?? '—'}</span>
-                                          {!hasLogged && (
-                                            <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM }}>{we.planned_sets}×{we.planned_reps}{we.planned_weight_kg ? ` · ${we.planned_weight_kg}kg` : ''}</span>
-                                          )}
-                                        </td>
-                                        {Array.from({ length: maxSets }, (_, i) => {
-                                          const s = doneSets[i]
-                                          const isTop = s && s.set_number === topSetNum
-                                          return (
-                                            <td key={i} style={{ textAlign: 'center', padding: '7px 4px', verticalAlign: 'middle' as const }}>
-                                              {s ? (
-                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px' }}>
-                                                  {isTop && <span style={{ fontSize: '0.4rem', color: '#facc15', lineHeight: 1 }}>★</span>}
-                                                  <span style={{ fontSize: '0.65rem', color: isTop ? '#facc15' : '#e2e8f0', fontFamily: FM, fontWeight: isTop ? 800 : 600, whiteSpace: 'nowrap' as const }}>{s.weight_kg}×{s.reps}</span>
-                                                  {s.rpe && <span style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>@{s.rpe}</span>}
-                                                </div>
-                                              ) : (
-                                                <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.1)', fontFamily: FM }}>—</span>
-                                              )}
+                                      <React.Fragment key={we.id}>
+                                        <tr style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                                          <td style={{ padding: '7px 8px 7px 0', verticalAlign: 'middle' as const }}>
+                                            <span style={{ fontSize: '0.7rem', color: hasLogged ? '#c7d2fe' : 'rgba(255,255,255,0.35)', fontFamily: FM, fontWeight: 700, whiteSpace: 'nowrap' as const, display: 'block', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{we.exercise?.name ?? '—'}</span>
+                                            {!hasLogged && (
+                                              <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM }}>{we.planned_sets}×{we.planned_reps}{we.planned_weight_kg ? ` · ${we.planned_weight_kg}kg` : ''}</span>
+                                            )}
+                                          </td>
+                                          {Array.from({ length: maxSets }, (_, i) => {
+                                            const s = doneSets[i]
+                                            const isTop = s && s.set_number === topSetNum
+                                            return (
+                                              <td key={i} style={{ textAlign: 'center', padding: '7px 4px', verticalAlign: 'middle' as const }}>
+                                                {s ? (
+                                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px' }}>
+                                                    {isTop && <span style={{ fontSize: '0.4rem', color: '#facc15', lineHeight: 1 }}>★</span>}
+                                                    <span style={{ fontSize: '0.65rem', color: isTop ? '#facc15' : '#e2e8f0', fontFamily: FM, fontWeight: isTop ? 800 : 600, whiteSpace: 'nowrap' as const }}>{s.weight_kg}×{s.reps}</span>
+                                                    {s.rpe && <span style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>@{s.rpe}</span>}
+                                                  </div>
+                                                ) : (
+                                                  <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.1)', fontFamily: FM }}>—</span>
+                                                )}
+                                              </td>
+                                            )
+                                          })}
+                                          <td style={{ width: '16px' }} />
+                                        </tr>
+                                        {we.actual_note && (
+                                          <tr>
+                                            <td colSpan={maxSets + 2} style={{ padding: '2px 0 8px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', background: 'rgba(99,102,241,0.07)', borderRadius: '6px', padding: '5px 8px' }}>
+                                                <span style={{ fontSize: '0.65rem', flexShrink: 0, marginTop: '1px' }}>💬</span>
+                                                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, lineHeight: 1.4 }}>{we.actual_note}</span>
+                                              </div>
                                             </td>
-                                          )
-                                        })}
-                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' as const, padding: '7px 0' }}>
-                                          {we.actual_note && <span title={we.actual_note} style={{ fontSize: '0.85rem', cursor: 'default' }}>💬</span>}
-                                        </td>
-                                      </tr>
+                                          </tr>
+                                        )}
+                                      </React.Fragment>
                                     )
                                   })}
                                 </tbody>
@@ -533,11 +515,9 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                           )
                         })()}
                       </>
-                    ) : (
-                      <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.18)', fontFamily: FM, paddingBottom: '4px' }}>Nema treninga ovaj dan.</div>
-                    )}
+                    ) : null}
 
-                    {!selBw && !selCal && !(selWater && selWater > 0) && !selWo && (
+                    {!selBw && !selCal && !(selWater && selWater > 0) && !selWo?.completed && (
                       <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.18)', fontFamily: FM, marginTop: '4px' }}>Nema podataka za ovaj dan.</div>
                     )}
                   </div>
@@ -553,12 +533,11 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
 
 // ── Athlete Detail Panel (training-page style) ─────────────────────
 function AthletePanel({
-  athlete, exercises, allAthletes, adminId, onBack, onRefresh
+  athlete, exercises, allAthletes, onBack, onRefresh
 }: {
   athlete: AthleteProfile
   exercises: Exercise[]
   allAthletes: AthleteProfile[]
-  adminId: string
   onBack: () => void
   onRefresh: () => void
 }) {
@@ -916,15 +895,12 @@ function AthletePanel({
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.filter(we => we.id !== weId) })) })) } : b)
   }, [])
 
-  const { totalWorkouts, completedWorkouts, totalSets, doneSets, pct } = useMemo(() => {
+  const { totalWorkouts, pct } = useMemo(() => {
     const allWorkouts = block?.weeks?.flatMap(w => w.workouts ?? []) ?? []
     const totalWorkouts = allWorkouts.length
     const completedWorkouts = allWorkouts.filter(w => w.completed).length
-    const allExercises = allWorkouts.flatMap(wo => wo.workout_exercises ?? [])
-    const totalSets = allExercises.reduce((s, e) => s + (e.planned_sets ?? 0), 0)
-    const doneSets = 0
     const pct = totalWorkouts > 0 ? Math.round((completedWorkouts / totalWorkouts) * 100) : 0
-    return { totalWorkouts, completedWorkouts, totalSets, doneSets, pct }
+    return { totalWorkouts, pct }
   }, [block])
 
   return (
@@ -1531,7 +1507,6 @@ export default function AdminPage() {
                 athlete={selectedAthlete}
                 exercises={exercises}
                 allAthletes={athletes}
-                adminId={adminId}
                 onBack={() => setAdminView('overview')}
                 onRefresh={loadAthletes}
               />

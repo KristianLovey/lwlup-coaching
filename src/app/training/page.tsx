@@ -327,8 +327,11 @@ export default function TrainingPage() {
     setSaving(false)
   }, [userId])
   const updateWorkout = useCallback(async (workoutId: string, data: Partial<Workout>) => {
-    await supabase.from('workouts').update(data).eq('id', workoutId)
-    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, ...data } : wo) })) } : b)
+    const payload: Partial<Workout> = { ...data }
+    if (data.completed === true)  payload.completion_date = new Date().toISOString()
+    if (data.completed === false) payload.completion_date = null
+    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, ...payload } : wo) })) } : b)
+    await supabase.from('workouts').update(payload).eq('id', workoutId)
   }, [])
   const deleteWorkout = useCallback(async (workoutId: string) => {
     await supabase.from('workouts').delete().eq('id', workoutId)
@@ -358,8 +361,8 @@ export default function TrainingPage() {
     if (Object.keys(filtered).length === 0) return
     // Strip runtime-only fields before sending to DB
     const forDb = Object.fromEntries(Object.entries(filtered).filter(([k]) => !RUNTIME_ONLY.includes(k)))
-    if (Object.keys(forDb).length > 0) await supabase.from('workout_exercises').update(forDb).eq('id', weId)
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.map(we => we.id === weId ? { ...we, ...filtered } : we) })) })) } : b)
+    if (Object.keys(forDb).length > 0) await supabase.from('workout_exercises').update(forDb).eq('id', weId)
   }, [canEdit])
   const deleteExercise = useCallback(async (weId: string) => {
     await supabase.from('workout_exercises').delete().eq('id', weId)

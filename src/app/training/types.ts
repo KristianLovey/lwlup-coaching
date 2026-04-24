@@ -13,7 +13,7 @@ export type WorkoutExercise = {
 }
 export type Workout = {
   id: string; week_id: string; athlete_id: string; day_name: string; workout_date: string
-  completed: boolean; notes: string | null; overall_rpe: number | null; duration_minutes: number | null
+  completed: boolean; completion_date?: string | null; notes: string | null; overall_rpe: number | null; duration_minutes: number | null
   workout_exercises?: WorkoutExercise[]
 }
 export type Week = {
