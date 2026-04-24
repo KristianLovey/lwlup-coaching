@@ -434,75 +434,107 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                 {/* Day detail panel */}
                 {selectedDay && (
                   <div style={{ background: '#0d0d18', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '12px', padding: '14px', marginBottom: '12px', animation: 'fadeUp 0.2s ease' }}>
-                    <div style={{ fontSize: '0.55rem', color: '#818cf8', fontFamily: FM, fontWeight: 700, letterSpacing: '0.2em', marginBottom: '12px' }}>
-                      {selectedDay}
+                    {/* Header row */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '0.55rem', color: '#818cf8', fontFamily: FM, fontWeight: 700, letterSpacing: '0.2em' }}>{selectedDay}</span>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {selBw && <span style={{ fontSize: '0.62rem', color: '#c4b5fd', fontFamily: FM, fontWeight: 700 }}>{selBw.weight_kg}kg</span>}
+                        {selCal && <span style={{ fontSize: '0.62rem', color: '#fbbf24', fontFamily: FM, fontWeight: 700 }}>{selCal.calories}kcal</span>}
+                        {selWater != null && selWater > 0 && <span style={{ fontSize: '0.62rem', color: '#7dd3fc', fontFamily: FM, fontWeight: 700 }}>{(selWater/1000).toFixed(1)}L</span>}
+                      </div>
                     </div>
 
-                    {/* Workout */}
+                    {/* Workout table */}
                     {selWo ? (
-                      <div style={{ marginBottom: '12px' }}>
-                        <div style={{ fontSize: '0.5rem', letterSpacing: '0.25em', color: selWo.completed ? '#4ade80' : 'rgba(255,255,255,0.3)', fontFamily: FM, fontWeight: 700, marginBottom: '8px' }}>
-                          {selWo.completed ? '✓ TRENING ODRAĐEN' : '◦ TRENING PLANIRAN'}{selWo.day_name ? ` — ${selWo.day_name}` : ''}
+                      <>
+                        <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: selWo.completed ? '#4ade80' : 'rgba(255,255,255,0.3)', fontFamily: FM, fontWeight: 700, marginBottom: '10px' }}>
+                          {selWo.completed ? '✓ ODRAĐENO' : '◦ PLANIRANO'}{selWo.day_name ? ` · ${selWo.day_name}` : ''}
                         </div>
-                        {(selWo.workout_exercises ?? [])
-                          .sort((a: any, b: any) => a.exercise_order - b.exercise_order)
-                          .map((we: any) => {
-                            const sets: any[] = we.set_logs ?? []
-                            const topSet = sets.find((s: any) => s.is_top_set)
-                            const doneSets = sets.filter((s: any) => s.completed && s.weight_kg)
-                            const heaviest = doneSets.sort((a: any, b: any) => Number(b.weight_kg) - Number(a.weight_kg))[0]
-                            const displaySet = topSet ?? heaviest
-                            return (
-                              <div key={we.id} style={{ padding: '8px 0 8px 10px', borderLeft: `2px solid ${we.actual_weight_kg || doneSets.length ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`, marginBottom: '6px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                                  <span style={{ fontSize: '0.75rem', color: '#c7d2fe', fontFamily: FM, fontWeight: 700 }}>{we.exercise?.name ?? '—'}</span>
-                                  {topSet && <span style={{ fontSize: '0.48rem', color: '#facc15', background: 'rgba(250,204,21,0.1)', border: '1px solid rgba(250,204,21,0.25)', borderRadius: '3px', padding: '1px 5px', fontFamily: FM, fontWeight: 700 }}>★ TOP</span>}
-                                </div>
-                                {displaySet ? (
-                                  <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.45)', fontFamily: FM }}>
-                                    {displaySet.weight_kg}kg × {displaySet.reps}{displaySet.rpe ? ` @ RPE ${displaySet.rpe}` : ''}
-                                    {doneSets.length > 1 && <span style={{ color: 'rgba(255,255,255,0.25)', marginLeft: '6px' }}>({doneSets.length} setova)</span>}
-                                  </div>
-                                ) : (
-                                  <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM }}>
-                                    {we.planned_sets}×{we.planned_reps}{we.planned_weight_kg ? ` · ${we.planned_weight_kg}kg` : ''} (plan)
-                                  </div>
-                                )}
-                                {we.actual_note && (
-                                  <div style={{ fontSize: '0.58rem', color: '#f59e0b', fontFamily: FM, marginTop: '3px' }}>↳ {we.actual_note}</div>
-                                )}
+
+                        {/* Table: VJEŽBA | set1 | set2 | ... */}
+                        {(() => {
+                          const exercises = (selWo.workout_exercises ?? [])
+                            .slice().sort((a: any, b: any) => a.exercise_order - b.exercise_order)
+
+                          // Find max number of logged sets across all exercises
+                          const maxSets = exercises.reduce((mx: number, we: any) => {
+                            const doneSets = (we.set_logs ?? []).filter((s: any) => s.completed && s.weight_kg)
+                            return Math.max(mx, doneSets.length)
+                          }, 0)
+
+                          if (maxSets === 0) {
+                            // No logged sets — show plan only
+                            return exercises.map((we: any) => (
+                              <div key={we.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                <span style={{ fontSize: '0.7rem', color: '#c7d2fe', fontFamily: FM, fontWeight: 700, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{we.exercise?.name ?? '—'}</span>
+                                <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, flexShrink: 0 }}>{we.planned_sets}×{we.planned_reps}{we.planned_weight_kg ? ` · ${we.planned_weight_kg}kg` : ''}</span>
+                                {we.actual_note && <span title={we.actual_note} style={{ fontSize: '0.8rem', cursor: 'default', flexShrink: 0 }}>💬</span>}
                               </div>
-                            )
-                          })}
-                      </div>
+                            ))
+                          }
+
+                          return (
+                            <div style={{ overflowX: 'auto', marginBottom: '4px' }}>
+                              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' as const }}>
+                                <thead>
+                                  <tr>
+                                    <th style={{ textAlign: 'left', fontSize: '0.44rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, fontWeight: 700, letterSpacing: '0.15em', padding: '0 8px 6px 0', whiteSpace: 'nowrap' as const }}>VJEŽBA</th>
+                                    {Array.from({ length: maxSets }, (_, i) => (
+                                      <th key={i} style={{ textAlign: 'center', fontSize: '0.44rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, fontWeight: 700, letterSpacing: '0.1em', padding: '0 4px 6px', whiteSpace: 'nowrap' as const }}>SET {i+1}</th>
+                                    ))}
+                                    <th style={{ width: '20px' }} />
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {exercises.map((we: any) => {
+                                    const allSets: any[] = (we.set_logs ?? []).slice().sort((a: any, b: any) => a.set_number - b.set_number)
+                                    const doneSets = allSets.filter((s: any) => s.completed && s.weight_kg)
+                                    const topSetNum = allSets.find((s: any) => s.is_top_set)?.set_number
+                                    const hasLogged = doneSets.length > 0
+                                    return (
+                                      <tr key={we.id} style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                                        <td style={{ padding: '7px 8px 7px 0', verticalAlign: 'middle' as const }}>
+                                          <span style={{ fontSize: '0.7rem', color: hasLogged ? '#c7d2fe' : 'rgba(255,255,255,0.35)', fontFamily: FM, fontWeight: 700, whiteSpace: 'nowrap' as const, display: 'block', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{we.exercise?.name ?? '—'}</span>
+                                          {!hasLogged && (
+                                            <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM }}>{we.planned_sets}×{we.planned_reps}{we.planned_weight_kg ? ` · ${we.planned_weight_kg}kg` : ''}</span>
+                                          )}
+                                        </td>
+                                        {Array.from({ length: maxSets }, (_, i) => {
+                                          const s = doneSets[i]
+                                          const isTop = s && s.set_number === topSetNum
+                                          return (
+                                            <td key={i} style={{ textAlign: 'center', padding: '7px 4px', verticalAlign: 'middle' as const }}>
+                                              {s ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px' }}>
+                                                  {isTop && <span style={{ fontSize: '0.4rem', color: '#facc15', lineHeight: 1 }}>★</span>}
+                                                  <span style={{ fontSize: '0.65rem', color: isTop ? '#facc15' : '#e2e8f0', fontFamily: FM, fontWeight: isTop ? 800 : 600, whiteSpace: 'nowrap' as const }}>{s.weight_kg}×{s.reps}</span>
+                                                  {s.rpe && <span style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>@{s.rpe}</span>}
+                                                </div>
+                                              ) : (
+                                                <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.1)', fontFamily: FM }}>—</span>
+                                              )}
+                                            </td>
+                                          )
+                                        })}
+                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' as const, padding: '7px 0' }}>
+                                          {we.actual_note && <span title={we.actual_note} style={{ fontSize: '0.85rem', cursor: 'default' }}>💬</span>}
+                                        </td>
+                                      </tr>
+                                    )
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )
+                        })()}
+                      </>
                     ) : (
-                      <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.18)', fontFamily: FM, marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Nema treninga</div>
+                      <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.18)', fontFamily: FM, paddingBottom: '4px' }}>Nema treninga ovaj dan.</div>
                     )}
 
-                    {/* BW / Cal / Water chips */}
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {selBw && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: '6px' }}>
-                          <span style={{ fontSize: '0.44rem', color: '#a78bfa', fontFamily: FM, fontWeight: 700, letterSpacing: '0.15em' }}>BW</span>
-                          <span style={{ fontSize: '0.82rem', color: '#c4b5fd', fontFamily: FM, fontWeight: 800 }}>{selBw.weight_kg} kg</span>
-                        </div>
-                      )}
-                      {selCal && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '6px' }}>
-                          <span style={{ fontSize: '0.44rem', color: '#f59e0b', fontFamily: FM, fontWeight: 700, letterSpacing: '0.15em' }}>KCAL</span>
-                          <span style={{ fontSize: '0.82rem', color: '#fbbf24', fontFamily: FM, fontWeight: 800 }}>{selCal.calories}</span>
-                        </div>
-                      )}
-                      {selWater != null && selWater > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: '6px' }}>
-                          <span style={{ fontSize: '0.44rem', color: '#38bdf8', fontFamily: FM, fontWeight: 700, letterSpacing: '0.15em' }}>VODA</span>
-                          <span style={{ fontSize: '0.82rem', color: '#7dd3fc', fontFamily: FM, fontWeight: 800 }}>{(selWater / 1000).toFixed(1)} L</span>
-                        </div>
-                      )}
-                      {!selBw && !selCal && !(selWater && selWater > 0) && !selWo && (
-                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.18)', fontFamily: FM }}>Nema podataka za ovaj dan</div>
-                      )}
-                    </div>
+                    {!selBw && !selCal && !(selWater && selWater > 0) && !selWo && (
+                      <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.18)', fontFamily: FM, marginTop: '4px' }}>Nema podataka za ovaj dan.</div>
+                    )}
                   </div>
                 )}
               </>
