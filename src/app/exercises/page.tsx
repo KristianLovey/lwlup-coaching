@@ -38,6 +38,7 @@ const CAT_COLORS: Record<string, string> = {
   'Delts Side':         '#cbd5e1',
   'Delts Front':        '#e2e8f0',
   'Adductors':          '#fda4af',
+  'Knee Rehab':         '#2dd4bf',
 }
 
 const CATEGORY_GROUPS = [
@@ -45,6 +46,7 @@ const CATEGORY_GROUPS = [
   { label: 'VARIJACIJE', cats: ['Squat Variation', 'Bench Variation', 'Deadlift Variation'] },
   { label: 'UPPER', cats: ['Back Mid', 'Back Lats', 'Biceps Inner', 'Biceps Brachialis', 'Triceps Lateral', 'Triceps Medial', 'Delts Rear', 'Delts Side', 'Delts Front'] },
   { label: 'LOWER', cats: ['Quads', 'Hamstring', 'Glute', 'Adductors'] },
+  { label: 'REHAB', cats: ['Knee Rehab'] },
 ]
 
 // Top-level filter structure
@@ -54,6 +56,7 @@ const TOP_FILTERS = [
   { id: 'VAR',   label: 'VARIJACIJE', color: '#f59e0b', cats: ['Squat Variation','Bench Variation','Deadlift Variation'] },
   { id: 'UPPER', label: 'UPPER',      color: '#f87171', cats: ['Back Mid','Back Lats','Biceps Inner','Biceps Brachialis','Triceps Lateral','Triceps Medial','Delts Rear','Delts Side','Delts Front'] },
   { id: 'LOWER', label: 'LOWER',      color: '#22c55e', cats: ['Quads','Hamstring','Glute','Adductors'] },
+  { id: 'REHAB', label: 'REHAB',      color: '#2dd4bf', cats: ['Knee Rehab'] },
 ]
 
 function getCatColor(cat: string) {

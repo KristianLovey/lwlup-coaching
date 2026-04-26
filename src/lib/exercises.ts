@@ -28,6 +28,7 @@ export type ExerciseCategory =
   | 'Hamstring 2'
   | 'Glute 1'
   | 'Glute 2'
+  | 'Knee Rehab'
 
 export interface Exercise {
   name: string
@@ -153,6 +154,11 @@ export const EXERCISES: Exercise[] = [
   { name: 'Cable Kickback', category: 'Glute 1', defaultSets: 3, defaultReps: 15 },
   { name: 'Sumo RDL', category: 'Glute 2', defaultSets: 3, defaultReps: 10 },
   { name: 'Abduction Machine', category: 'Glute 2', defaultSets: 3, defaultReps: 15 },
+
+  // Knee Rehab
+  { name: 'Wall Squat', category: 'Knee Rehab', defaultSets: 3, defaultReps: 10 },
+  { name: 'Spanish Squat s trakom', category: 'Knee Rehab', defaultSets: 3, defaultReps: 10 },
+  { name: 'Box Squat', category: 'Knee Rehab', defaultSets: 3, defaultReps: 8 },
 ]
 
 export const CATEGORY_GROUPS = {
@@ -167,6 +173,7 @@ export const CATEGORY_GROUPS = {
   'QUADS': ['Quads 1', 'Quads 2'],
   'HAMSTRINGS': ['Hamstring 1', 'Hamstring 2'],
   'GLUTES': ['Glute 1', 'Glute 2'],
+  'REHAB': ['Knee Rehab'],
 }
 
 // Formula resolver: supports expressions like "0.9*prev", "90%prev", number
