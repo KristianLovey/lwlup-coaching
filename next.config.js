@@ -6,6 +6,9 @@ const nextConfig = {
     deviceSizes: [390, 640, 828, 1080, 1280, 1920],
     imageSizes: [48, 96, 128, 256],
   },
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@supabase/supabase-js'],
+  },
 }
 
 module.exports = nextConfig

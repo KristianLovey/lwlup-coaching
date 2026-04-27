@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { ArrowRight, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -142,11 +143,11 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
         {/* Logo */}
         <Link href="/" onClick={() => setMenuOpen(false)}
           style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#fff', zIndex: 1 }}>
-          <img src="/slike/logopng.png" alt="LWL UP" width="82" height="60"
-            fetchPriority="high"
+          <Image src="/slike/logopng.png" alt="LWL UP" width={82} height={60}
+            priority
             style={{ height: '60px', width: 'auto', transition: 'transform 0.3s' }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1) rotate(-2deg)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1) rotate(0deg)'}
+            onMouseEnter={e => (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.1) rotate(-2deg)'}
+            onMouseLeave={e => (e.currentTarget as HTMLImageElement).style.transform = 'scale(1) rotate(0deg)'}
           />
         </Link>
 

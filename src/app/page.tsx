@@ -2,13 +2,11 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import dynamic from 'next/dynamic'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
 import BigThree from '@/app/components/big_three'
 import { useLanguage } from '@/context/LanguageContext'
 
-const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
 
 const SLIDES = [
   { src: '/slike/20251220-IMG_0729.jpg', quote: 'STRENGTH DOES NOT COME FROM THE BODY, BUT FROM THE WILL.', sub: 'Arnold Schwarzenegger' },
@@ -30,9 +28,6 @@ type FounderData = { name: string; nickname: string | null; img: string; imgLeft
 
 function ScrollToTop() {
   const [visible, setVisible] = useState(false)
-  const [animData, setAnimData] = useState<object | null>(null)
-  const lottieRef = useRef<any>(null)
-  
   useEffect(() => {
     const fn = () => setVisible(window.scrollY > 400)
     window.addEventListener('scroll', fn, { passive: true })
@@ -40,9 +35,8 @@ function ScrollToTop() {
   }, [])
   return (
     <button aria-label="Scroll to top" className="scroll-to-top-btn" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      onMouseEnter={() => lottieRef.current?.play()} onMouseLeave={() => lottieRef.current?.stop()}
       style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 500, width: '48px', height: '48px', background: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: visible ? 1 : 0, transform: visible ? 'scale(1)' : 'scale(0.8)', transition: 'all 0.4s cubic-bezier(0.16,1,0.3,1)', pointerEvents: visible ? 'auto' : 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
-      {animData ? <Lottie lottieRef={lottieRef} animationData={animData} loop autoplay={false} style={{ width: '28px', height: '28px' }} /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15" /></svg>}
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15" /></svg>
     </button>
   )
 }
@@ -51,12 +45,15 @@ function NetworkCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return
-    const ctx = canvas.getContext('2d')!; let animId: number
+    const ctx = canvas.getContext('2d')!; let animId: number; let lastT = 0
     const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight }
     resize(); window.addEventListener('resize', resize)
-    const NODES = 50
+    const NODES = 40
     const nodes = Array.from({ length: NODES }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3, r: Math.random() * 1.5 + 0.5 }))
-    const draw = () => {
+    const draw = (t: number) => {
+      animId = requestAnimationFrame(draw)
+      if (t - lastT < 33) return  // cap at ~30fps
+      lastT = t
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       nodes.forEach(n => { n.x += n.vx; n.y += n.vy; if (n.x < 0 || n.x > canvas.width) n.vx *= -1; if (n.y < 0 || n.y > canvas.height) n.vy *= -1 })
       for (let i = 0; i < NODES; i++) for (let j = i + 1; j < NODES; j++) {
@@ -64,9 +61,8 @@ function NetworkCanvas() {
         if (dist < 160) { ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y); ctx.strokeStyle = `rgba(255,255,255,${0.1 * (1 - dist / 160)})`; ctx.lineWidth = 0.7; ctx.stroke() }
       }
       nodes.forEach(n => { ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fill() })
-      animId = requestAnimationFrame(draw)
     }
-    draw()
+    animId = requestAnimationFrame(draw)
     return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize) }
   }, [])
   return <canvas ref={canvasRef} style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.9 }} />
@@ -198,6 +194,7 @@ export default function Landing() {
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', width: '100%', maxWidth: '600px', margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '32px' }}>
               <Image src="/slike/logopng.png" alt="LWL UP Logo" width={480} height={480} priority
+                sizes="(max-width: 768px) 38vw, 340px"
                 style={{ width: 'clamp(140px, 38vw, 340px)', height: 'auto', filter: 'drop-shadow(0 0 60px rgba(255,255,255,0.18)) drop-shadow(0 0 120px rgba(255,255,255,0.06))' }} />
             </div>
 
@@ -473,7 +470,7 @@ export default function Landing() {
 
         /* ══ GLOW TEXT ════════════════════════════════════════════ */
         .cta-glow-text {
-          text-shadow: 0 0 40px rgba(255,255,255,0.08);
+          will-change: filter;
           animation: textGlow 3s ease-in-out infinite;
         }
 
@@ -509,8 +506,8 @@ export default function Landing() {
         /* ══ KEYFRAMES ════════════════════════════════════════════ */
         @keyframes slowZoom { from { transform: scale(1); } to { transform: scale(1.08); } }
         @keyframes textGlow {
-          0%,100% { text-shadow: 0 0 40px rgba(255,255,255,0.08), 0 0 80px rgba(255,255,255,0.03); }
-          50%      { text-shadow: 0 0 60px rgba(255,255,255,0.2), 0 0 120px rgba(255,255,255,0.1), 0 0 200px rgba(255,255,255,0.05); }
+          0%,100% { filter: drop-shadow(0 0 40px rgba(255,255,255,0.08)); }
+          50%      { filter: drop-shadow(0 0 60px rgba(255,255,255,0.2)) drop-shadow(0 0 120px rgba(255,255,255,0.1)); }
         }
 
         /* ══ MOBILE ═══════════════════════════════════════════════ */
