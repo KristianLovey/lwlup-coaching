@@ -285,7 +285,7 @@ export default function BigThree() {
                     </div>
                   </div>
                   <div className="bt-img-col" style={{ position: 'relative', overflow: 'hidden' }}>
-                    <Image src={LIFT_DETAILS[lift].img} alt={lift} fill className="bt-img" style={{ objectFit: 'cover', objectPosition: lift === 'BENCH PRESS' ? 'center 30%' : 'center top', transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 100vw, 340px" />
+                    <Image src={LIFT_DETAILS[lift].img} alt={lift} fill quality={65} className="bt-img" style={{ objectFit: 'cover', objectPosition: lift === 'BENCH PRESS' ? 'center 30%' : 'center top', transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 100vw, 340px" />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #0a0a0a 0%, rgba(10,10,10,0.15) 40%, transparent 100%)' }} />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%)' }} />
                     <div style={{ position: 'absolute', bottom: '24px', right: '24px', fontFamily: 'var(--fd)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.35em', color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase' }}>{lift}</div>

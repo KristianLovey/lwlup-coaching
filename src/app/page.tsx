@@ -182,7 +182,7 @@ export default function Landing() {
       <section style={{ position: 'relative', height: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
         {SLIDES.map((s, i) => (
           <div key={i} style={{ position: 'absolute', inset: 0, opacity: i === slide ? 1 : 0, transition: 'opacity 1.5s ease-in-out', zIndex: 0 }}>
-            <Image src={s.src} alt="" fill priority={i === 0}
+            <Image src={s.src} alt="" fill priority={i === 0} quality={50}
               style={{ objectFit: 'cover', filter: 'brightness(0.25) saturate(0.7)', transform: i === slide ? 'scale(1.05)' : 'scale(1)', transition: 'transform 8s ease-out' }}
               sizes="100vw" />
           </div>
@@ -408,7 +408,7 @@ export default function Landing() {
       {/* ══ CTA ═══════════════════════════════════════════════════ */}
       <section style={{ height: 'clamp(60vh,80vh,80vh)', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', position: 'relative' }}>
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 0 }}>
-          <Image src="/slike/IMG_1886-2.jpg" fill style={{ objectFit: 'cover', filter: 'brightness(0.15) grayscale(1)', animation: 'slowZoom 20s ease-in-out infinite alternate' }} alt="Legacy" sizes="100vw" />
+          <Image src="/slike/IMG_1886-2.jpg" fill quality={40} style={{ objectFit: 'cover', filter: 'brightness(0.15) grayscale(1)', animation: 'slowZoom 20s ease-in-out infinite alternate' }} alt="Legacy" sizes="100vw" />
         </div>
         <div style={{ position: 'relative', zIndex: 1, padding: '0 20px' }}>
           <h2 className="cta-glow-text" style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,12vw,12rem)', lineHeight: 0.85, marginBottom: 'clamp(24px,4vw,40px)' }}>
