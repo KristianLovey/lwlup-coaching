@@ -161,7 +161,7 @@ function LandscapeModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
     <div className="bt-modal bt-modal-landscape" style={{ width: '100%', maxWidth: '900px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.8)', animation: 'slideUp 0.45s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
       onClick={e => e.stopPropagation()}>
       <div style={{ position: 'relative', background: '#000', flexShrink: 0 }}>
-        <Image src={LIFT_DETAILS[lift].img} alt={lift} width={1200} height={900} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} sizes="100vw" />
+        <Image src={LIFT_DETAILS[lift].img} alt={lift} width={1200} height={900} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} sizes="(max-width: 768px) 100vw, 900px" />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.88) 100%)' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.15) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.15) 100%)' }} />
         {LIFT_DETAILS[lift].points.map((p, i) => (
@@ -285,7 +285,7 @@ export default function BigThree() {
                     </div>
                   </div>
                   <div className="bt-img-col" style={{ position: 'relative', overflow: 'hidden' }}>
-                    <Image src={LIFT_DETAILS[lift].img} alt={lift} fill className="bt-img" style={{ objectFit: 'cover', objectPosition: lift === 'BENCH PRESS' ? 'center 30%' : 'center top', transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 100vw, 50vw" />
+                    <Image src={LIFT_DETAILS[lift].img} alt={lift} fill className="bt-img" style={{ objectFit: 'cover', objectPosition: lift === 'BENCH PRESS' ? 'center 30%' : 'center top', transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 100vw, 340px" />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #0a0a0a 0%, rgba(10,10,10,0.15) 40%, transparent 100%)' }} />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%)' }} />
                     <div style={{ position: 'absolute', bottom: '24px', right: '24px', fontFamily: 'var(--fd)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.35em', color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase' }}>{lift}</div>
