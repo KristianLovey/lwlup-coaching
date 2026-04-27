@@ -70,7 +70,6 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
       ])
       setBwLogs(bwRes.data ?? [])
       setNutLogs(nutRes.data ?? [])
-      if (waterRes.error) console.warn('[admin] water_logs error:', waterRes.error.message, waterRes.error.code)
       setWaterLogs(waterRes.data ?? [])
       setLastMeets(meetRes.data ?? [])
       setWorkoutLogs(woRes.data ?? [])
@@ -1325,9 +1324,6 @@ export default function AdminPage() {
           .select('full_name, role')
           .eq('id', user.id)
           .single()
-
-        // Debug: log what we got
-        console.log('Profile data:', profile, 'Profile error:', profileError)
 
         if (profileError) {
           setError(`Greška čitanja profila: ${profileError.message}. Provjeri RLS policies na tablici profiles.`)

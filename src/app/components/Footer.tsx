@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
-import { Instagram, Facebook } from 'lucide-react'
+import Image from 'next/image'
+import { Instagram } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 
 export default function Footer() {
@@ -20,7 +21,7 @@ export default function Footer() {
 
           {/* Brand col */}
           <div>
-            <img src="/slike/logopng.png" alt="LWL UP" width="96" height="70" style={{ height: '70px', marginBottom: '24px', display: 'block' }} />
+            <Image src="/slike/logopng.png" alt="LWL UP" width="96" height="70" style={{ display: 'block', marginBottom: '24px' }} />
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.82rem', lineHeight: 1.75, margin: '0 0 28px', maxWidth: '260px' }}>
               {t('footer.desc')}
             </p>
@@ -31,13 +32,6 @@ export default function Footer() {
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#fff'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}>
                 <Instagram size={14} />
-              </a>
-              <a href="#" aria-label="LWL UP na Facebooku"
-                className="footer-social-btn"
-                style={{ width: '36px', height: '36px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', transition: 'all 0.25s' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#fff'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}>
-                <Facebook size={14} />
               </a>
             </div>
           </div>
