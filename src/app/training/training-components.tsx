@@ -223,8 +223,8 @@ export function TrainingNav({ athleteName, isAdmin, onLogout, avatarIcon }: {
 }
 
 // ─── APP NAVBAR (sve app stranice: trening, profil, vježbe, admin) ─
-export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon, userId }: {
-  athleteName: string; isAdmin: boolean; onLogout: () => void; avatarIcon?: string; userId?: string
+export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userId }: {
+  athleteName: string; isAdmin: boolean; role?: 'admin' | 'trener'; onLogout: () => void; avatarIcon?: string; userId?: string
 }) {
   const [open, setOpen]       = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -317,12 +317,12 @@ export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon, userId }: {
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
 
         {/* Status pill */}
-        <div className="appnav-status" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: isAdmin ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', border: `1px solid ${isAdmin ? 'rgba(239,68,68,0.22)' : 'rgba(34,197,94,0.18)'}`, borderRadius: '20px' }}>
+        <div className="appnav-status" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: role === 'trener' ? 'rgba(245,158,11,0.08)' : isAdmin ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', border: `1px solid ${role === 'trener' ? 'rgba(245,158,11,0.22)' : isAdmin ? 'rgba(239,68,68,0.22)' : 'rgba(34,197,94,0.18)'}`, borderRadius: '20px' }}>
           <div style={{ position: 'relative', width: '6px', height: '6px', flexShrink: 0 }}>
-            <div style={{ position: 'absolute', inset: 0, background: isAdmin ? '#ef4444' : '#22c55e', borderRadius: '50%', boxShadow: `0 0 5px ${isAdmin ? '#ef4444' : '#22c55e'}` }} />
-            <div style={{ position: 'absolute', inset: '-3px', background: isAdmin ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)', borderRadius: '50%', animation: 'appnavPing 2.4s ease-in-out infinite' }} />
+            <div style={{ position: 'absolute', inset: 0, background: role === 'trener' ? '#f59e0b' : isAdmin ? '#ef4444' : '#22c55e', borderRadius: '50%', boxShadow: `0 0 5px ${role === 'trener' ? '#f59e0b' : isAdmin ? '#ef4444' : '#22c55e'}` }} />
+            <div style={{ position: 'absolute', inset: '-3px', background: role === 'trener' ? 'rgba(245,158,11,0.2)' : isAdmin ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)', borderRadius: '50%', animation: 'appnavPing 2.4s ease-in-out infinite' }} />
           </div>
-          <span style={{ fontSize: '0.62rem', color: isAdmin ? '#f87171' : '#4ade80', fontWeight: 600, fontFamily: 'var(--fm)', letterSpacing: '0.04em' }}>{isAdmin ? 'Admin' : 'Aktivan'}</span>
+          <span style={{ fontSize: '0.62rem', color: role === 'trener' ? '#fbbf24' : isAdmin ? '#f87171' : '#4ade80', fontWeight: 600, fontFamily: 'var(--fm)', letterSpacing: '0.04em' }}>{role === 'trener' ? 'Trener' : isAdmin ? 'Admin' : 'Aktivan'}</span>
         </div>
 
         {/* Notification bell */}
@@ -392,8 +392,8 @@ export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon, userId }: {
                   </div>
                   <div>
                     <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#f0f0f8', fontFamily: 'var(--fm)' }}>{athleteName}</div>
-                    <div style={{ fontSize: '0.58rem', color: isAdmin ? '#f87171' : '#4ade80', fontFamily: 'var(--fm)', marginTop: '1px' }}>
-                      {isAdmin ? '● Administrator' : '● Aktivan'}
+                    <div style={{ fontSize: '0.58rem', color: role === 'trener' ? '#fbbf24' : isAdmin ? '#f87171' : '#4ade80', fontFamily: 'var(--fm)', marginTop: '1px' }}>
+                      {role === 'trener' ? '● Trener' : isAdmin ? '● Administrator' : '● Aktivan'}
                     </div>
                   </div>
                 </div>
@@ -410,11 +410,11 @@ export function AppNav({ athleteName, isAdmin, onLogout, avatarIcon, userId }: {
                   </Link>
                 ))}
                 {isAdmin && (
-                  <Link href="/admin" onClick={() => setOpen(false)} style={{ textDecoration: 'none' }}>
+                  <Link href={role === 'trener' ? '/trainer' : '/admin'} onClick={() => setOpen(false)} style={{ textDecoration: 'none' }}>
                     <button className="appnav-item appnav-admin">
                       <Shield size={14} color="#f59e0b"/>
-                      <span>Admin panel</span>
-                      <span style={{ marginLeft: 'auto', fontSize: '0.5rem', background: 'rgba(245,158,11,0.12)', color: '#f59e0b', padding: '2px 7px', letterSpacing: '0.1em', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '4px' }}>ADMIN</span>
+                      <span>{role === 'trener' ? 'Trener panel' : 'Admin panel'}</span>
+                      <span style={{ marginLeft: 'auto', fontSize: '0.5rem', background: 'rgba(245,158,11,0.12)', color: '#f59e0b', padding: '2px 7px', letterSpacing: '0.1em', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '4px' }}>{role === 'trener' ? 'TRENER' : 'ADMIN'}</span>
                     </button>
                   </Link>
                 )}

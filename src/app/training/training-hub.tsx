@@ -1180,73 +1180,143 @@ function WellbeingTracker({ userId }: { userId: string }) {
 
       {tab === 'history' && (
         <>
-          {/* Sleep chart */}
-          <div>
-            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', fontFamily: 'var(--fm)', marginBottom: '8px', fontWeight: 700 }}>SAN (SATI)</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '4px', alignItems: 'flex-end', height: '100px', marginBottom: '4px' }}>
+          {/* ── Weekly averages ── */}
+          {(() => {
+            const sleepVals = weekDates.map(d => wbLogs.find(l => l.log_date === d)?.sleep_hours).filter((v): v is number => v != null)
+            const stressVals = weekDates.map(d => wbLogs.find(l => l.log_date === d)?.stress_level).filter((v): v is number => v != null)
+            const totalCaff = weekDates.reduce((s, d) => s + (wbLogs.find(l => l.log_date === d)?.caffeine_mg ?? 0), 0)
+            const avgSleep  = sleepVals.length  > 0 ? sleepVals.reduce((a, b) => a + b, 0) / sleepVals.length : null
+            const avgStress = stressVals.length > 0 ? Math.round(stressVals.reduce((a, b) => a + b, 0) / stressVals.length) : null
+            const sleepC  = avgSleep  == null ? 'rgba(255,255,255,0.2)' : avgSleep  < 6 ? '#f87171' : avgSleep  < 7 ? '#f59e0b' : '#4ade80'
+            const stressC = avgStress == null ? 'rgba(255,255,255,0.2)' : avgStress <= 3 ? '#4ade80' : avgStress <= 6 ? '#f59e0b' : '#f87171'
+            const caffC   = totalCaff > 2000 ? '#f87171' : '#fbbf24'
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
+                {[
+                  { l: 'SAN',    v: avgSleep  != null ? `${avgSleep.toFixed(1)}h` : '—', c: sleepC  },
+                  { l: 'STRES',  v: avgStress != null ? String(avgStress)          : '—', c: stressC },
+                  { l: 'KOFEIN', v: totalCaff  > 0   ? `${totalCaff}mg`           : '—', c: caffC   },
+                ].map(s => (
+                  <div key={s.l} style={{ background: `${s.c}08`, border: `1px solid ${s.c}22`, borderRadius: '10px', padding: '10px 8px', textAlign: 'center' as const }}>
+                    <div style={{ fontSize: '0.44rem', letterSpacing: '0.2em', color: `${s.c}88`, fontFamily: 'var(--fm)', marginBottom: '4px', fontWeight: 700 }}>{s.l}</div>
+                    <div style={{ fontSize: '1.3rem', fontWeight: 900, color: s.c, fontFamily: 'var(--fd)', lineHeight: 1 }}>{s.v}</div>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+
+          {/* ── Sleep ── */}
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#60a5fa', boxShadow: '0 0 8px #60a5fa88' }} />
+                <span style={{ fontSize: '0.58rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--fm)', fontWeight: 700 }}>SAN</span>
+              </div>
+              <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>ideal: 7–9h</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '6px', alignItems: 'flex-end', height: '96px' }}>
               {weekDates.map((d, i) => {
                 const log = wbLogs.find(l => l.log_date === d)
                 const h = log?.sleep_hours ?? 0
                 const pct = Math.min((h || 0) / 10, 1)
                 const isToday = d === today
+                const bc = h === 0 ? null : h < 6 ? '#f87171' : h < 7 ? '#f59e0b' : h <= 9 ? '#4ade80' : '#60a5fa'
                 return (
-                  <div key={d} style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '3px', height: '100%', justifyContent: 'flex-end' }}>
-                    <div style={{ fontSize: '0.55rem', color: h > 0 ? '#60a5fa' : 'rgba(255,255,255,0.1)', fontFamily: 'var(--fm)', fontWeight: 600, lineHeight: 1 }}>{h > 0 ? `${h}h` : ''}</div>
-                    <div style={{ width: '100%', background: 'rgba(255,255,255,0.06)', borderRadius: '3px 3px 0 0', height: '70px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
-                      <div style={{ width: '100%', height: `${pct * 100}%`, background: isToday ? '#60a5fa' : '#60a5fa66', borderRadius: '2px 2px 0 0', transition: 'height 0.4s ease', minHeight: h > 0 ? '3px' : '0' }} />
+                  <div key={d} style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
+                    {h > 0 && <div style={{ fontSize: '0.5rem', color: bc!, fontFamily: 'var(--fm)', fontWeight: 700, lineHeight: 1 }}>{h}h</div>}
+                    <div style={{ width: '100%', position: 'relative' as const, height: '60px', display: 'flex', alignItems: 'flex-end' }}>
+                      <div style={{ position: 'absolute' as const, inset: 0, background: isToday ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)', borderRadius: '6px', border: isToday ? '1px solid rgba(255,255,255,0.1)' : 'none' }} />
+                      {h > 0 && <div style={{ position: 'absolute' as const, bottom: 0, left: 0, right: 0, height: `${pct * 100}%`, background: `linear-gradient(to top, ${bc!}dd, ${bc!}55)`, borderRadius: '6px', minHeight: '4px', transition: 'height 0.5s cubic-bezier(0.16,1,0.3,1)', boxShadow: `0 2px 12px ${bc!}44` }} />}
                     </div>
-                    <div style={{ fontSize: '0.5rem', color: isToday ? '#fff' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: isToday ? 700 : 400 }}>{DAY_L[i]}</div>
+                    <div style={{ fontSize: '0.5rem', color: isToday ? '#fff' : 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: isToday ? 800 : 400 }}>{DAY_L[i]}</div>
                   </div>
                 )
               })}
             </div>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '10px', flexWrap: 'wrap' as const }}>
+              {([['< 6h','#f87171'],['6–7h','#f59e0b'],['7–9h','#4ade80'],['>9h','#60a5fa']] as const).map(([l, c]) => (
+                <div key={l} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <div style={{ width: '7px', height: '7px', borderRadius: '2px', background: c }} />
+                  <span style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>{l}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Stress row */}
-          <div>
-            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', fontFamily: 'var(--fm)', marginBottom: '8px', fontWeight: 700 }}>STRES</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '4px' }}>
+          {/* ── Stress ── */}
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b', boxShadow: '0 0 8px #f59e0b88' }} />
+                <span style={{ fontSize: '0.58rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--fm)', fontWeight: 700 }}>STRES</span>
+              </div>
+              <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>1 nisko · 10 visoko</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '6px' }}>
               {weekDates.map((d, i) => {
                 const log = wbLogs.find(l => l.log_date === d)
                 const s = log?.stress_level
-                const c = s == null ? 'rgba(255,255,255,0.08)' : s <= 3 ? '#4ade80' : s <= 6 ? '#f59e0b' : '#f87171'
+                const c = s == null ? null : s <= 3 ? '#4ade80' : s <= 6 ? '#f59e0b' : '#f87171'
                 const isToday = d === today
                 return (
-                  <div key={d} style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '4px', padding: '8px 2px', background: s != null ? `${c}10` : 'rgba(255,255,255,0.02)', border: `1px solid ${s != null ? c+'30' : 'rgba(255,255,255,0.06)'}`, borderRadius: '8px' }}>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 900, color: c, fontFamily: 'var(--fd)', lineHeight: 1 }}>{s ?? '—'}</div>
-                    <div style={{ fontSize: '0.5rem', color: isToday ? '#fff' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: isToday ? 700 : 400 }}>{DAY_L[i]}</div>
+                  <div key={d} style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '6px', padding: '10px 4px 8px', background: c ? `${c}0c` : 'rgba(255,255,255,0.02)', border: `1px solid ${c ? c+'28' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', position: 'relative' as const, transition: 'background 0.2s' }}>
+                    {isToday && <div style={{ position: 'absolute' as const, top: '5px', right: '5px', width: '4px', height: '4px', borderRadius: '50%', background: 'rgba(255,255,255,0.35)' }} />}
+                    {s != null
+                      ? <div style={{ fontSize: '1.25rem', fontWeight: 900, color: c!, fontFamily: 'var(--fd)', lineHeight: 1, textShadow: `0 0 12px ${c!}55` }}>{s}</div>
+                      : <div style={{ width: '16px', height: '2px', background: 'rgba(255,255,255,0.08)', borderRadius: '1px', marginTop: '6px' }} />
+                    }
+                    <div style={{ fontSize: '0.5rem', color: isToday ? '#fff' : 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: isToday ? 800 : 400 }}>{DAY_L[i]}</div>
                   </div>
                 )
               })}
             </div>
           </div>
 
-          {/* Caffeine chart */}
-          <div>
-            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', fontFamily: 'var(--fm)', marginBottom: '8px', fontWeight: 700 }}>KOFEIN (mg)</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '4px', alignItems: 'flex-end', height: '64px' }}>
-              {weekDates.map((d, i) => {
-                const log = wbLogs.find(l => l.log_date === d)
-                const mg = log?.caffeine_mg ?? 0
-                const pct = Math.min((mg || 0) / 400, 1)
-                const isToday = d === today
-                const tooMuch = mg > 300
-                return (
-                  <div key={d} style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '3px', height: '100%', justifyContent: 'flex-end' }}>
-                    <div style={{ width: '100%', background: 'rgba(255,255,255,0.04)', borderRadius: '2px 2px 0 0', height: '44px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
-                      <div style={{ width: '100%', height: `${pct * 100}%`, background: tooMuch ? '#f87171' : isToday ? '#fbbf24' : '#fbbf2466', borderRadius: '2px 2px 0 0', minHeight: mg > 0 ? '3px' : '0' }} />
+          {/* ── Caffeine ── */}
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#fbbf24', boxShadow: '0 0 8px #fbbf2488' }} />
+                <span style={{ fontSize: '0.58rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--fm)', fontWeight: 700 }}>KOFEIN</span>
+              </div>
+              <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>max: 400mg</span>
+            </div>
+            <div style={{ position: 'relative' as const }}>
+              {/* 300mg warning line at 75% height */}
+              <div style={{ position: 'absolute' as const, left: 0, right: 0, top: '12px', borderTop: '1px dashed rgba(248,113,113,0.25)', zIndex: 1, pointerEvents: 'none' as const }}>
+                <span style={{ position: 'absolute' as const, right: 0, top: '-9px', fontSize: '0.42rem', color: 'rgba(248,113,113,0.4)', fontFamily: 'var(--fm)' }}>300mg</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '6px', alignItems: 'flex-end', height: '76px', position: 'relative' as const, zIndex: 2 }}>
+                {weekDates.map((d, i) => {
+                  const log = wbLogs.find(l => l.log_date === d)
+                  const mg = log?.caffeine_mg ?? 0
+                  const pct = Math.min((mg || 0) / 400, 1)
+                  const isToday = d === today
+                  const over = mg >= 300
+                  const bc = over ? '#f87171' : isToday ? '#fbbf24' : '#fbbf2470'
+                  return (
+                    <div key={d} style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
+                      {mg > 0 && <div style={{ fontSize: '0.48rem', color: bc, fontFamily: 'var(--fm)', fontWeight: 700, lineHeight: 1 }}>{mg}</div>}
+                      <div style={{ width: '100%', position: 'relative' as const, height: '50px', display: 'flex', alignItems: 'flex-end' }}>
+                        <div style={{ position: 'absolute' as const, inset: 0, background: isToday ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.03)', borderRadius: '6px' }} />
+                        {mg > 0 && <div style={{ position: 'absolute' as const, bottom: 0, left: 0, right: 0, height: `${pct * 100}%`, background: `linear-gradient(to top, ${bc}ee, ${bc}55)`, borderRadius: '6px', minHeight: '4px', transition: 'height 0.5s cubic-bezier(0.16,1,0.3,1)', boxShadow: `0 2px 10px ${bc}44` }} />}
+                      </div>
+                      <div style={{ fontSize: '0.5rem', color: isToday ? '#fff' : 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: isToday ? 800 : 400 }}>{DAY_L[i]}</div>
                     </div>
-                    <div style={{ fontSize: '0.5rem', color: isToday ? '#fff' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: isToday ? 700 : 400 }}>{DAY_L[i]}</div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
           </div>
 
-          {/* Supplement summary */}
+          {/* ── Supplements ── */}
           {suppLogs.length > 0 && (
-            <div>
-              <SectionTitle color="#10b981">Suplementi ovaj tjedan</SectionTitle>
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '12px', padding: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b98188' }} />
+                <span style={{ fontSize: '0.58rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--fm)', fontWeight: 700 }}>SUPLEMENTI OVAJ TJEDAN</span>
+              </div>
               <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '6px' }}>
                 {Object.entries(suppLogs.reduce((acc, s) => { acc[s.name] = (acc[s.name] ?? 0) + 1; return acc }, {} as Record<string, number>)).map(([name, count]) => (
                   <span key={name} style={{ fontSize: '0.72rem', color: '#a7f3d0', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.18)', borderRadius: '6px', padding: '4px 10px', fontFamily: 'var(--fm)' }}>

@@ -17,9 +17,9 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
   const pathname = usePathname()
   const [scrollY, setScrollY]         = useState(0)
   const [menuOpen, setMenuOpen]       = useState(false)
-  const [hoveredLink, setHoveredLink] = useState<string | null>(null)
   const [loggedIn, setLoggedIn]       = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
+  const [userRole, setUserRole]       = useState<string | null>(null)
   const { lang, setLang, t } = useLanguage()
 
   const NAV_LINKS: [string, string][] = [
@@ -41,13 +41,22 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
   // ── Auth state ────────────────────────────────────────────────────
   useEffect(() => {
     const supabase = createClient()
+
+    const fetchRole = async (userId: string) => {
+      const { data } = await supabase.from('profiles').select('role').eq('id', userId).single()
+      setUserRole(data?.role ?? null)
+    }
+
     supabase.auth.getUser().then(({ data: { user } }) => {
       setLoggedIn(!!user)
       setAuthChecked(true)
+      if (user) fetchRole(user.id)
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setLoggedIn(!!session?.user)
       setAuthChecked(true)
+      if (session?.user) fetchRole(session.user.id)
+      else setUserRole(null)
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -101,8 +110,12 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
   // ── Auth CTA button ───────────────────────────────────────────────
   const AuthCTA = ({ mobile = false }: { mobile?: boolean }) => {
     if (!authChecked) return <div style={{ width: mobile ? '100%' : '90px', height: mobile ? '56px' : '40px' }} />
-    const href  = loggedIn ? '/training' : '/auth'
-    const label = loggedIn ? t('nav.training') : t('nav.login')
+    const href  = loggedIn
+      ? (userRole === 'trener' ? '/trainer' : '/training')
+      : '/auth'
+    const label = loggedIn
+      ? (userRole === 'trener' ? 'PANEL' : t('nav.training'))
+      : t('nav.login')
     const isPrimary = !loggedIn
 
     return (

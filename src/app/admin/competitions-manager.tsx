@@ -35,7 +35,6 @@ type Competition = {
   location: string | null
   status: 'announced' | 'ongoing' | 'completed'
   description: string | null
-  results_url: string | null
   comp_athletes?: CompetitionAthlete[]
 }
 
@@ -49,7 +48,7 @@ export function CompetitionsManager() {
   const [expandedComp, setExpandedComp] = useState<string | null>(null)
 
   const [newComp, setNewComp] = useState({
-    name: '', date: '', location: '', status: 'announced' as Competition['status'], description: '', results_url: ''
+    name: '', date: '', location: '', status: 'announced' as Competition['status'], description: ''
   })
 
   useEffect(() => { loadAll() }, [])
@@ -79,11 +78,10 @@ export function CompetitionsManager() {
       location: newComp.location || null,
       status: newComp.status,
       description: newComp.description || null,
-      results_url: newComp.results_url || null,
     }).select('*').single()
     if (data) {
       setCompetitions(c => [...c, { ...data, comp_athletes: [] }])
-      setNewComp({ name: '', date: '', location: '', status: 'announced', description: '', results_url: '' })
+      setNewComp({ name: '', date: '', location: '', status: 'announced', description: '' })
       setShowNewForm(false)
     }
     setSaving(false)
@@ -152,7 +150,6 @@ export function CompetitionsManager() {
               { key: 'name', placeholder: 'Naziv natjecanja', label: 'NAZIV *' },
               { key: 'date', placeholder: '', label: 'DATUM *', type: 'date' },
               { key: 'location', placeholder: 'Zagreb, Hrvatska', label: 'LOKACIJA' },
-              { key: 'results_url', placeholder: 'https://...', label: 'LINK REZULTATA' },
             ].map(f => (
               <div key={f.key}>
                 <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.25)', marginBottom: '6px', fontFamily: 'var(--fm)' }}>{f.label}</div>

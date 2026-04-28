@@ -23,6 +23,7 @@ export default function TrainingPage() {
   const [athleteName, setAthleteName] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
   const [isCoach, setIsCoach] = useState(false)
+  const [userRole, setUserRole] = useState<'admin' | 'trener' | undefined>(undefined)
   const [avatarIcon, setAvatarIcon] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'program' | 'hub' | 'meet'>('program')
@@ -59,8 +60,9 @@ export default function TrainingPage() {
         const { data: profile } = await supabase.from('profiles').select('full_name, role, avatar_icon').eq('id', user.id).single()
         setAthleteName(profile?.full_name ?? user.email?.split('@')[0] ?? 'Atleta')
         const role = profile?.role
-        setIsAdmin(role === 'admin')
+        setIsAdmin(role === 'admin' || role === 'trener')
         setIsCoach(role === 'trener')
+        if (role === 'admin' || role === 'trener') setUserRole(role as 'admin' | 'trener')
         setAvatarIcon(profile?.avatar_icon ?? 'barbell')
         const { data: exData } = await supabase.from('exercises').select('id, name, category, notes').order('category').order('name')
         setExercises(exData ?? [])
@@ -439,7 +441,7 @@ export default function TrainingPage() {
         <img src="/slike/logopng.png" alt="" width="180" height="131" loading="lazy" decoding="async" style={{ width: '180px', height: 'auto' }} />
       </div>
 
-      <AppNav athleteName={athleteName} isAdmin={isAdmin} onLogout={handleLogout} avatarIcon={avatarIcon} userId={userId ?? undefined} />
+      <AppNav athleteName={athleteName} isAdmin={isAdmin} role={userRole} onLogout={handleLogout} avatarIcon={avatarIcon} userId={userId ?? undefined} />
 
       {/* ─── HEADER ──────────────────────────────────────────────── */}
       <div style={{ paddingTop: '56px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
@@ -582,6 +584,15 @@ export default function TrainingPage() {
           )}
           {error && (
             <div style={{ padding: '16px 20px', background: 'linear-gradient(135deg, #1a0808, #120608)', border: '1px solid rgba(239,68,68,0.2)', color: '#ff7070', fontSize: '0.84rem', borderRadius: '10px', marginBottom: '24px', boxShadow: '0 4px 20px rgba(239,68,68,0.08)' }}>{error}</div>
+          )}
+          {!loading && !block && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: '16px' }}>
+              <div style={{ fontFamily: 'var(--fd)', fontSize: '3.5rem', opacity: 0.12, lineHeight: 1 }}>—</div>
+              <div style={{ fontSize: '0.72rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700 }}>NEMA AKTIVNOG PROGRAMA</div>
+              <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', textAlign: 'center', maxWidth: '320px', lineHeight: 1.6 }}>
+                Tvoj trener još nije kreirao program. Javi se treneru za više informacija.
+              </div>
+            </div>
           )}
           {!loading && block && (
             <>
