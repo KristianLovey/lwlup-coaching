@@ -43,6 +43,8 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const [bwLogs, setBwLogs] = useState<any[]>([])
   const [nutLogs, setNutLogs] = useState<any[]>([])
   const [waterLogs, setWaterLogs] = useState<any[]>([])
+  const [wbLogs, setWbLogs] = useState<any[]>([])
+  const [suppLogs, setSuppLogs] = useState<any[]>([])
   const [lastMeets, setLastMeets] = useState<any[]>([])
   const [workoutLogs, setWorkoutLogs] = useState<any[]>([])
   const [e1rms, setE1rms] = useState<{ sq: number|null; bp: number|null; dl: number|null }>({ sq: null, bp: null, dl: null })
@@ -52,7 +54,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const [loading, setLoading] = useState(true)
 
   const loadAll = useCallback(async () => {
-      const [bwRes, nutRes, waterRes, meetRes, woRes] = await Promise.all([
+      const [bwRes, nutRes, waterRes, wbRes, suppRes, meetRes, woRes] = await Promise.all([
         // BW: lifter logs via WeightTracker → pr_logs (lift='other', notes='Tjelesna težina')
         supabase.from('pr_logs')
           .select('id, date, weight_kg')
@@ -61,6 +63,8 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
           .order('date', { ascending: false }).limit(60),
         supabase.from('nutrition_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(60),
         supabase.from('water_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(300),
+        supabase.from('wellbeing_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(90),
+        supabase.from('supplement_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(300),
         supabase.from('meet_attempts').select('*, competition:competitions(name,date)').eq('athlete_id', athlete.id).order('meet_date', { ascending: false }).limit(9),
         supabase.from('workouts')
           .select('id, workout_date, completed, completion_date, day_name, workout_exercises(id, exercise_order, exercise:exercises(name,category), actual_weight_kg, actual_reps, actual_rpe, actual_note, planned_sets, planned_reps, planned_weight_kg, set_logs(set_number, weight_kg, reps, rpe, completed, is_top_set))')
@@ -71,6 +75,8 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
       setBwLogs(bwRes.data ?? [])
       setNutLogs(nutRes.data ?? [])
       setWaterLogs(waterRes.data ?? [])
+      setWbLogs(wbRes.data ?? [])
+      setSuppLogs(suppRes.data ?? [])
       setLastMeets(meetRes.data ?? [])
       setWorkoutLogs(woRes.data ?? [])
 
@@ -113,8 +119,10 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'workouts',       filter: `athlete_id=eq.${athlete.id}` }, loadAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'set_logs',       filter: `athlete_id=eq.${athlete.id}` }, loadAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pr_logs',        filter: `athlete_id=eq.${athlete.id}` }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'nutrition_logs', filter: `user_id=eq.${athlete.id}` },    loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'water_logs',     filter: `user_id=eq.${athlete.id}` },    loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'nutrition_logs',  filter: `user_id=eq.${athlete.id}` },    loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'water_logs',      filter: `user_id=eq.${athlete.id}` },    loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wellbeing_logs',  filter: `user_id=eq.${athlete.id}` },    loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'supplement_logs', filter: `user_id=eq.${athlete.id}` },    loadAll)
       .subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [loadAll, athlete.id])
@@ -149,6 +157,10 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const todayCal = nutLogs.find(l => l.date === todayStr)?.calories ?? '—'
   const todayWaterMl = waterLogs.filter(l => String(l.log_date).slice(0, 10) === todayStr).reduce((s, l) => s + Number(l.amount_ml), 0)
   const todayWater = todayWaterMl > 0 ? Math.round(todayWaterMl / 100) / 10 : '—'
+  const todayWb = wbLogs.find((l: any) => String(l.log_date).slice(0, 10) === todayStr)
+  const todaySleep = todayWb?.sleep_hours ?? '—'
+  const todayStress = todayWb?.stress_level ?? '—'
+  const todaySuppsCount = suppLogs.filter((l: any) => String(l.log_date).slice(0, 10) === todayStr).length
 
   // ── Frekvencija logiranja — tekući tjedan PON→NED ──
   const toLocalDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
@@ -164,10 +176,11 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   })()
   const orderedLabels = ['PON','UTO','SRI','ČET','PET','SUB','NED']
 
-  const hasBw    = (d: string) => bwLogs.some(l => l.date === d)
-  const hasWater = (d: string) => waterLogs.some(l => String(l.log_date).slice(0, 10) === d)
-  const hasCal   = (d: string) => nutLogs.some(l => l.date === d)
-  const hasWo    = (d: string) => workoutLogs.some(l => l.workout_date === d && l.completed)
+  const hasBw      = (d: string) => bwLogs.some(l => l.date === d)
+  const hasWater   = (d: string) => waterLogs.some(l => String(l.log_date).slice(0, 10) === d)
+  const hasCal     = (d: string) => nutLogs.some(l => l.date === d)
+  const hasWo      = (d: string) => workoutLogs.some(l => l.workout_date === d && l.completed)
+  const hasWb      = (d: string) => wbLogs.some((l: any) => String(l.log_date).slice(0, 10) === d)
 
   const FreqGrid = () => (
     <div style={{ background: '#0d0d18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px 16px', marginBottom: '12px' }}>
@@ -184,10 +197,11 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
       </div>
       {/* Rows */}
       {[
-        { label: 'BW',     check: hasBw,    color: '#a78bfa' },
-        { label: 'Voda',   check: hasWater,  color: '#38bdf8' },
-        { label: 'Kcal',   check: hasCal,    color: '#f59e0b' },
-        { label: 'Trening',check: hasWo,     color: '#4ade80' },
+        { label: 'BW',      check: hasBw,    color: '#a78bfa' },
+        { label: 'Voda',    check: hasWater,  color: '#38bdf8' },
+        { label: 'Kcal',    check: hasCal,    color: '#f59e0b' },
+        { label: 'Trening', check: hasWo,     color: '#4ade80' },
+        { label: 'WB',      check: hasWb,     color: '#8b5cf6' },
       ].map(row => (
         <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', gap: '2px', marginBottom: '4px', alignItems: 'center' }}>
           <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM }}>{row.label}</div>
@@ -239,16 +253,29 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
         </div>
       ) : tab === 'opcenito' ? (
         <>
-          {/* Quick stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '12px' }}>
+          {/* Quick stats — row 1 */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '8px' }}>
             {[
-              { label: 'BW', val: todayBw !== '—' ? `${todayBw}kg` : '—', color: '#a78bfa' },
-              { label: 'KALORIJE', val: todayCal !== '—' ? `${todayCal}` : '—', color: '#f59e0b' },
-              { label: 'VODA', val: todayWater !== '—' ? `${todayWater}L` : '—', color: '#38bdf8' },
+              { label: 'BW',       val: todayBw !== '—' ? `${todayBw}kg` : '—',    color: '#a78bfa' },
+              { label: 'KALORIJE', val: todayCal !== '—' ? `${todayCal}` : '—',    color: '#f59e0b' },
+              { label: 'VODA',     val: todayWater !== '—' ? `${todayWater}L` : '—', color: '#38bdf8' },
             ].map(s => (
               <div key={s.label} style={{ background: '#0d0d18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '12px 10px', textAlign: 'center' }}>
                 <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px', fontFamily: FM }}>{s.label}</div>
                 <div style={{ fontSize: '1.1rem', fontWeight: 900, color: s.color, fontFamily: FD }}>{s.val}</div>
+              </div>
+            ))}
+          </div>
+          {/* Quick stats — row 2: wellbeing */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '12px' }}>
+            {[
+              { label: 'SAN',    val: todaySleep !== '—' ? `${todaySleep}h` : '—',  color: '#60a5fa' },
+              { label: 'STRES',  val: todayStress !== '—' ? `${todayStress}/10` : '—', color: (todayStress !== '—' && Number(todayStress) > 7) ? '#f87171' : (todayStress !== '—' && Number(todayStress) > 4) ? '#f59e0b' : '#4ade80' },
+              { label: 'SUPLEM.', val: todaySuppsCount > 0 ? `${todaySuppsCount}×` : '—', color: '#10b981' },
+            ].map(s => (
+              <div key={s.label} style={{ background: '#0d0d18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.44rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.25)', marginBottom: '5px', fontFamily: FM }}>{s.label}</div>
+                <div style={{ fontSize: '1rem', fontWeight: 900, color: s.color, fontFamily: FD }}>{s.val}</div>
               </div>
             ))}
           </div>
@@ -325,13 +352,19 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
             for (const l of nutLogs) calByDate[l.date] = l
             const waterByDate: Record<string, number> = {}
             for (const l of waterLogs) { const k = String(l.log_date).slice(0, 10); waterByDate[k] = (waterByDate[k] ?? 0) + Number(l.amount_ml) }
+            const wbByDate: Record<string, any> = {}
+            for (const l of wbLogs) { const k = String((l as any).log_date).slice(0, 10); wbByDate[k] = l }
+            const suppByDate: Record<string, any[]> = {}
+            for (const l of suppLogs) { const k = String((l as any).log_date).slice(0, 10); if (!suppByDate[k]) suppByDate[k] = []; suppByDate[k].push(l) }
 
             const monthNames = ['Siječanj','Veljača','Ožujak','Travanj','Svibanj','Lipanj','Srpanj','Kolovoz','Rujan','Listopad','Studeni','Prosinac']
 
-            const selWo = selectedDay ? woByDate[selectedDay] : null
-            const selBw = selectedDay ? bwByDate[selectedDay] : null
-            const selCal = selectedDay ? calByDate[selectedDay] : null
+            const selWo    = selectedDay ? woByDate[selectedDay] : null
+            const selBw    = selectedDay ? bwByDate[selectedDay] : null
+            const selCal   = selectedDay ? calByDate[selectedDay] : null
             const selWater = selectedDay ? waterByDate[selectedDay] : null
+            const selWb    = selectedDay ? wbByDate[selectedDay] : null
+            const selSupps = selectedDay ? (suppByDate[selectedDay] ?? []) : []
 
             return (
               <>
@@ -362,9 +395,10 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                       if (dayNum < 1 || dayNum > daysInMonth) return <div key={ci} />
                       const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`
                       const wo = woByDate[dateStr]
-                      const hasBwD = !!bwByDate[dateStr]
-                      const hasCalD = !!calByDate[dateStr]
+                      const hasBwD    = !!bwByDate[dateStr]
+                      const hasCalD   = !!calByDate[dateStr]
                       const hasWaterD = !!waterByDate[dateStr]
+                      const hasWbD    = !!wbByDate[dateStr]
                       const isSelected = selectedDay === dateStr
                       const isToday = dateStr === todayStr
                       const hasWoCompleted = wo?.completed
@@ -379,12 +413,12 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                             transition: 'all 0.15s',
                           }}>
                           <span style={{ fontSize: '0.7rem', fontWeight: isToday ? 800 : 500, color: isToday ? '#fff' : 'rgba(255,255,255,0.6)', fontFamily: FM, lineHeight: 1 }}>{dayNum}</span>
-                          {/* Dot row — only show completed events */}
                           <div style={{ display: 'flex', gap: '2px', flexWrap: 'wrap', justifyContent: 'center', minHeight: '7px' }}>
                             {hasWoCompleted && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#4ade80', flexShrink: 0 }} />}
-                            {hasBwD   && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#a78bfa', flexShrink: 0 }} />}
-                            {hasCalD  && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />}
+                            {hasBwD    && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#a78bfa', flexShrink: 0 }} />}
+                            {hasCalD   && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />}
                             {hasWaterD && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#38bdf8', flexShrink: 0 }} />}
+                            {hasWbD    && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#8b5cf6', flexShrink: 0 }} />}
                           </div>
                         </button>
                       )
@@ -398,6 +432,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                       { color: '#a78bfa', label: 'BW' },
                       { color: '#f59e0b', label: 'Kal' },
                       { color: '#38bdf8', label: 'Voda' },
+                      { color: '#8b5cf6', label: 'WB' },
                     ].map(l => (
                       <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: l.color }} />
@@ -516,7 +551,49 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                       </>
                     ) : null}
 
-                    {!selBw && !selCal && !(selWater && selWater > 0) && !selWo?.completed && (
+                    {/* Wellbeing */}
+                    {selWb && (
+                      <div style={{ marginTop: selWo?.completed ? '12px' : '0', paddingTop: selWo?.completed ? '12px' : '0', borderTop: selWo?.completed ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
+                        <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: '#a78bfa', fontFamily: FM, fontWeight: 700, marginBottom: '8px' }}>WELLBEING</div>
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
+                          {selWb.sleep_hours != null && (
+                            <div style={{ background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.2)', borderRadius: '8px', padding: '6px 10px', textAlign: 'center' as const }}>
+                              <div style={{ fontSize: '0.42rem', color: 'rgba(96,165,250,0.6)', fontFamily: FM, letterSpacing: '0.15em', marginBottom: '2px' }}>SAN</div>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#60a5fa', fontFamily: FD }}>{selWb.sleep_hours}h</div>
+                            </div>
+                          )}
+                          {selWb.stress_level != null && (
+                            <div style={{ background: `rgba(${selWb.stress_level > 7 ? '248,113,113' : selWb.stress_level > 4 ? '245,158,11' : '74,222,128'},0.08)`, border: `1px solid rgba(${selWb.stress_level > 7 ? '248,113,113' : selWb.stress_level > 4 ? '245,158,11' : '74,222,128'},0.2)`, borderRadius: '8px', padding: '6px 10px', textAlign: 'center' as const }}>
+                              <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.4)', fontFamily: FM, letterSpacing: '0.15em', marginBottom: '2px' }}>STRES</div>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: selWb.stress_level > 7 ? '#f87171' : selWb.stress_level > 4 ? '#f59e0b' : '#4ade80', fontFamily: FD }}>{selWb.stress_level}/10</div>
+                            </div>
+                          )}
+                          {selWb.caffeine_mg != null && (
+                            <div style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: '8px', padding: '6px 10px', textAlign: 'center' as const }}>
+                              <div style={{ fontSize: '0.42rem', color: 'rgba(251,191,36,0.6)', fontFamily: FM, letterSpacing: '0.15em', marginBottom: '2px' }}>KOFEIN</div>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fbbf24', fontFamily: FD }}>{selWb.caffeine_mg}mg</div>
+                            </div>
+                          )}
+                        </div>
+                        {selWb.notes && <div style={{ marginTop: '8px', fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontFamily: FM, fontStyle: 'italic' as const }}>"{selWb.notes}"</div>}
+                      </div>
+                    )}
+
+                    {/* Supplements */}
+                    {selSupps.length > 0 && (
+                      <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: '#10b981', fontFamily: FM, fontWeight: 700, marginBottom: '6px' }}>SUPLEMENTI</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '5px' }}>
+                          {selSupps.map((s: any) => (
+                            <span key={s.id} style={{ fontSize: '0.65rem', color: '#a7f3d0', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '6px', padding: '3px 8px', fontFamily: FM }}>
+                              {s.name}{s.amount != null ? ` · ${s.amount}${s.unit}` : ''}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {!selBw && !selCal && !(selWater && selWater > 0) && !selWo?.completed && !selWb && selSupps.length === 0 && (
                       <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.18)', fontFamily: FM, marginTop: '4px' }}>Nema podataka za ovaj dan.</div>
                     )}
                   </div>

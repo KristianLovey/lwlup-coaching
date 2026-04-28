@@ -939,6 +939,338 @@ function WaterLog({ userId }: { userId: string }) {
   )
 }
 
+// ─── WELLBEING TRACKER ──────────────────────────────────────────
+type WellbeingLog = { id: string; user_id: string; log_date: string; sleep_hours: number|null; stress_level: number|null; caffeine_mg: number|null; notes: string|null; created_at: string }
+type SupplementLog = { id: string; user_id: string; log_date: string; name: string; amount: number|null; unit: string; created_at: string }
+
+function WellbeingTracker({ userId }: { userId: string }) {
+  const COLOR = '#8b5cf6'
+  const [tab, setTab] = useState<'log'|'supplements'|'history'>('log')
+  const [wbLogs, setWbLogs] = useState<WellbeingLog[]>([])
+  const [suppLogs, setSuppLogs] = useState<SupplementLog[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [draft, setDraft] = useState({ sleep_hours: '', stress_level: null as number|null, caffeine_mg: '', notes: '' })
+  const [suppDraft, setSuppDraft] = useState({ name: '', amount: '', unit: 'g' })
+
+  const _now = new Date()
+  const today = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`
+
+  const weekStart = (() => {
+    const d = new Date(); const day = d.getDay()
+    d.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  })()
+
+  const weekDates = (() => {
+    const now = new Date(); const dow = now.getDay()
+    const off = dow === 0 ? -6 : 1 - dow
+    return Array.from({ length: 7 }, (_, i) => { const d = new Date(now); d.setDate(now.getDate() + off + i); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })
+  })()
+
+  useEffect(() => {
+    const load = async () => {
+      const [{ data: wb }, { data: sp }] = await Promise.all([
+        supabase.from('wellbeing_logs').select('*').eq('user_id', userId).gte('log_date', weekStart).order('log_date', { ascending: false }),
+        supabase.from('supplement_logs').select('*').eq('user_id', userId).gte('log_date', weekStart).order('created_at', { ascending: false }),
+      ])
+      setWbLogs((wb ?? []) as WellbeingLog[])
+      setSuppLogs((sp ?? []) as SupplementLog[])
+      const todayWb = (wb ?? []).find((l: any) => l.log_date === today) as WellbeingLog|undefined
+      if (todayWb) setDraft({ sleep_hours: todayWb.sleep_hours?.toString() ?? '', stress_level: todayWb.stress_level ?? null, caffeine_mg: todayWb.caffeine_mg?.toString() ?? '', notes: todayWb.notes ?? '' })
+      setLoading(false)
+    }
+    load()
+  }, [userId])
+
+  const saveLog = async () => {
+    setSaving(true)
+    const payload = { user_id: userId, log_date: today, sleep_hours: parseFloat(draft.sleep_hours)||null, stress_level: draft.stress_level, caffeine_mg: parseInt(draft.caffeine_mg)||null, notes: draft.notes||null }
+    const { data: saved } = await supabase.from('wellbeing_logs').upsert(payload, { onConflict: 'user_id,log_date' }).select('*').single()
+    if (saved) setWbLogs(prev => { const i = prev.findIndex(l => l.log_date === today); if (i >= 0) { const n = [...prev]; n[i] = saved as WellbeingLog; return n } return [saved as WellbeingLog, ...prev] })
+    setSaving(false)
+  }
+
+  const addSupp = async () => {
+    if (!suppDraft.name.trim()) return
+    const { data } = await supabase.from('supplement_logs').insert({ user_id: userId, log_date: today, name: suppDraft.name.trim(), amount: parseFloat(suppDraft.amount)||null, unit: suppDraft.unit }).select('*').single()
+    if (data) { setSuppLogs(prev => [data as SupplementLog, ...prev]); setSuppDraft({ name: '', amount: '', unit: 'g' }) }
+  }
+
+  const removeSupp = async (id: string) => { await supabase.from('supplement_logs').delete().eq('id', id); setSuppLogs(prev => prev.filter(s => s.id !== id)) }
+
+  const todayWb = wbLogs.find(l => l.log_date === today)
+  const todaySupps = suppLogs.filter(l => l.log_date === today)
+  const DAY_L = ['P','U','S','Č','P','S','N']
+
+  if (loading) return <div style={{ textAlign: 'center' as const, padding: '32px', color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)' }}>Učitavam...</div>
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '2px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '3px' }}>
+        {([['log','Dnevni unos'],['supplements','Suplementi'],['history','Tjedan']] as const).map(([id, label]) => (
+          <button key={id} onClick={() => setTab(id)} style={{ flex: 1, padding: '8px 4px', background: tab === id ? `${COLOR}20` : 'transparent', border: `1px solid ${tab === id ? COLOR+'44' : 'transparent'}`, borderRadius: '8px', cursor: 'pointer', color: tab === id ? COLOR : 'rgba(255,255,255,0.35)', fontSize: '0.62rem', fontFamily: 'var(--fm)', fontWeight: tab === id ? 700 : 400, transition: 'all 0.15s' }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'log' && (
+        <>
+          {/* Today snapshot */}
+          {todayWb && (
+            <div className="wb-stats-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
+              {[
+                { l:'SAN',    v: todayWb.sleep_hours != null ? `${todayWb.sleep_hours}h` : '—', c:'#60a5fa' },
+                { l:'STRES',  v: todayWb.stress_level != null ? `${todayWb.stress_level}/10` : '—', c: todayWb.stress_level != null && todayWb.stress_level > 7 ? '#f87171' : todayWb.stress_level != null && todayWb.stress_level > 4 ? '#f59e0b' : '#4ade80' },
+                { l:'KOFEIN', v: todayWb.caffeine_mg != null ? `${todayWb.caffeine_mg}mg` : '—', c:'#fbbf24' },
+              ].map(s => (
+                <div key={s.l} style={{ background: `${s.c}0c`, border: `1px solid ${s.c}22`, borderRadius: '10px', padding: '10px', textAlign: 'center' as const }}>
+                  <div style={{ fontSize: '0.44rem', letterSpacing: '0.25em', color: `${s.c}88`, fontFamily: 'var(--fm)', marginBottom: '4px' }}>{s.l}</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 900, color: s.c, fontFamily: 'var(--fd)' }}>{s.v}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Sleep */}
+          <div>
+            <SectionTitle color="#60a5fa">San (sati)</SectionTitle>
+            <div className="wb-sleep-btns" style={{ display: 'grid', gridTemplateColumns: 'repeat(9,1fr)', gap: '4px', marginBottom: '8px' }}>
+              {[5,6,6.5,7,7.5,8,8.5,9,10].map(h => {
+                const active = draft.sleep_hours === String(h)
+                return (
+                  <button key={h} onClick={() => setDraft(d => ({ ...d, sleep_hours: String(h) }))}
+                    style={{ padding: '8px 2px', background: active ? 'rgba(96,165,250,0.16)' : 'rgba(255,255,255,0.03)', border: `1.5px solid ${active ? '#60a5fa55' : 'rgba(255,255,255,0.08)'}`, borderRadius: '8px', cursor: 'pointer', color: active ? '#60a5fa' : 'rgba(255,255,255,0.4)', fontSize: '0.7rem', fontFamily: 'var(--fm)', fontWeight: active ? 700 : 400, transition: 'all 0.15s' }}>
+                    {h}h
+                  </button>
+                )
+              })}
+            </div>
+            <input type="number" placeholder="Ili upiši sate..." value={draft.sleep_hours} onChange={e => setDraft(d => ({ ...d, sleep_hours: e.target.value }))} step="0.5" min="0" max="14"
+              style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.1)', color: '#f0f0f5', padding: '9px 14px', borderRadius: '10px', outline: 'none', fontSize: '0.85rem', fontFamily: 'var(--fm)', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
+              onFocus={e => e.target.style.borderColor = '#60a5fa'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+          </div>
+
+          {/* Stress */}
+          <div>
+            <SectionTitle color={draft.stress_level != null && draft.stress_level > 7 ? '#f87171' : draft.stress_level != null && draft.stress_level > 4 ? '#f59e0b' : '#4ade80'}>Razina stresa (1–10)</SectionTitle>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10,1fr)', gap: '4px' }}>
+              {Array.from({ length: 10 }, (_, i) => i + 1).map(n => {
+                const c = n <= 3 ? '#4ade80' : n <= 6 ? '#f59e0b' : '#f87171'
+                const active = draft.stress_level === n
+                return (
+                  <button key={n} onClick={() => setDraft(d => ({ ...d, stress_level: active ? null : n }))}
+                    style={{ padding: '10px 2px', background: active ? `${c}18` : 'rgba(255,255,255,0.03)', border: `1.5px solid ${active ? c+'55' : 'rgba(255,255,255,0.08)'}`, borderRadius: '8px', cursor: 'pointer', color: active ? c : 'rgba(255,255,255,0.35)', fontSize: '0.85rem', fontFamily: 'var(--fd)', fontWeight: active ? 900 : 400, transition: 'all 0.15s' }}>
+                    {n}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Caffeine */}
+          <div>
+            <SectionTitle color="#fbbf24">Kofein (mg)</SectionTitle>
+            <div className="wb-caff-btns" style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '4px', marginBottom: '8px' }}>
+              {[0,80,160,200,240,300,400].map(mg => {
+                const active = draft.caffeine_mg === String(mg)
+                return (
+                  <button key={mg} onClick={() => setDraft(d => ({ ...d, caffeine_mg: String(mg) }))}
+                    style={{ padding: '8px 2px', background: active ? 'rgba(251,191,36,0.14)' : 'rgba(255,255,255,0.03)', border: `1.5px solid ${active ? '#fbbf2455' : 'rgba(255,255,255,0.08)'}`, borderRadius: '8px', cursor: 'pointer', color: active ? '#fbbf24' : 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontFamily: 'var(--fm)', fontWeight: active ? 700 : 400, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}>
+                    {mg === 0 ? 'Bez' : `${mg}`}
+                  </button>
+                )
+              })}
+            </div>
+            <input type="number" placeholder="Ili upiši mg..." value={draft.caffeine_mg} onChange={e => setDraft(d => ({ ...d, caffeine_mg: e.target.value }))} step="10" min="0"
+              style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.1)', color: '#f0f0f5', padding: '9px 14px', borderRadius: '10px', outline: 'none', fontSize: '0.85rem', fontFamily: 'var(--fm)', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
+              onFocus={e => e.target.style.borderColor = '#fbbf24'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+          </div>
+
+          {/* Notes */}
+          <div>
+            <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', fontFamily: 'var(--fm)', marginBottom: '6px', fontWeight: 600 }}>BILJEŠKA (opcionalno)</div>
+            <textarea value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} rows={2} placeholder="Kako si se osjećao/la danas..."
+              style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.1)', color: '#f0f0f5', padding: '10px 14px', borderRadius: '10px', outline: 'none', resize: 'vertical' as const, fontFamily: 'var(--fm)', fontSize: '0.85rem', lineHeight: 1.6, boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
+              onFocus={e => e.target.style.borderColor = COLOR} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+          </div>
+
+          <button onClick={saveLog} disabled={saving}
+            style={{ padding: '11px 28px', background: `${COLOR}18`, border: `1.5px solid ${COLOR}44`, borderRadius: '10px', cursor: 'pointer', color: COLOR, fontSize: '0.78rem', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.05em', width: 'fit-content' as const, transition: 'all 0.2s' }}>
+            {saving ? 'Sprema...' : todayWb ? 'Ažuriraj unos' : 'Spremi unos'}
+          </button>
+        </>
+      )}
+
+      {tab === 'supplements' && (
+        <>
+          <div>
+            <SectionTitle color="#10b981">Dodaj suplement</SectionTitle>
+            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
+              <input type="text" placeholder="Naziv (npr. Kreatin, Vitamin D3, Omega-3...)" value={suppDraft.name} onChange={e => setSuppDraft(d => ({ ...d, name: e.target.value }))}
+                onKeyDown={e => { if (e.key === 'Enter') addSupp() }}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.1)', color: '#f0f0f5', padding: '10px 14px', borderRadius: '10px', outline: 'none', fontFamily: 'var(--fm)', fontSize: '0.85rem', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
+                onFocus={e => e.target.style.borderColor = '#10b981'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+              <div className="supp-amount-row" style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '8px', alignItems: 'center' }}>
+                <input type="number" placeholder="Količina" value={suppDraft.amount} onChange={e => setSuppDraft(d => ({ ...d, amount: e.target.value }))} step="0.1" min="0"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.1)', color: '#f0f0f5', padding: '10px 14px', borderRadius: '10px', outline: 'none', fontFamily: 'var(--fm)', fontSize: '0.85rem', boxSizing: 'border-box' as const, transition: 'border-color 0.2s', width: '100%' }}
+                  onFocus={e => e.target.style.borderColor = '#10b981'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                <div style={{ display: 'flex', gap: '3px' }}>
+                  {(['g','mg','ml','IU'] as const).map(u => (
+                    <button key={u} onClick={() => setSuppDraft(d => ({ ...d, unit: u }))}
+                      style={{ padding: '8px 9px', background: suppDraft.unit === u ? 'rgba(16,185,129,0.14)' : 'rgba(255,255,255,0.03)', border: `1.5px solid ${suppDraft.unit === u ? '#10b98155' : 'rgba(255,255,255,0.08)'}`, borderRadius: '8px', cursor: 'pointer', color: suppDraft.unit === u ? '#10b981' : 'rgba(255,255,255,0.4)', fontSize: '0.68rem', fontFamily: 'var(--fm)', fontWeight: suppDraft.unit === u ? 700 : 400, transition: 'all 0.15s' }}>
+                      {u}
+                    </button>
+                  ))}
+                </div>
+                <button onClick={addSupp} style={{ padding: '10px 16px', background: 'rgba(16,185,129,0.14)', border: '1.5px solid rgba(16,185,129,0.35)', borderRadius: '10px', cursor: 'pointer', color: '#10b981', fontSize: '0.78rem', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', whiteSpace: 'nowrap' as const }}>
+                  + Dodaj
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <SectionTitle color="#10b981">Danas</SectionTitle>
+            {todaySupps.length === 0
+              ? <div style={{ textAlign: 'center' as const, padding: '20px', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', fontFamily: 'var(--fm)' }}>Nema unesenih suplemenata za danas</div>
+              : <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '6px' }}>
+                  {todaySupps.map(s => (
+                    <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.12)', borderRadius: '10px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#d1fae5', fontFamily: 'var(--fm)' }}>{s.name}</div>
+                        {s.amount != null && <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', marginTop: '2px' }}>{s.amount} {s.unit}</div>}
+                      </div>
+                      <button onClick={() => removeSupp(s.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '4px', display: 'flex', transition: 'color 0.15s' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#f87171'}
+                        onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.2)'}>
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+            }
+          </div>
+
+          {suppLogs.filter(s => s.log_date !== today).length > 0 && (
+            <div>
+              <SectionTitle color="rgba(255,255,255,0.25)">Ovaj tjedan</SectionTitle>
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '6px' }}>
+                {Object.entries(
+                  suppLogs.filter(s => s.log_date !== today).reduce((acc, s) => { if (!acc[s.log_date]) acc[s.log_date] = []; acc[s.log_date].push(s); return acc }, {} as Record<string, SupplementLog[]>)
+                ).map(([date, supps]) => (
+                  <div key={date} style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px' }}>
+                    <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', marginBottom: '6px', letterSpacing: '0.1em' }}>{date}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '6px' }}>
+                      {supps.map(s => (
+                        <span key={s.id} style={{ fontSize: '0.7rem', color: '#a7f3d0', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.18)', borderRadius: '6px', padding: '3px 8px', fontFamily: 'var(--fm)' }}>
+                          {s.name}{s.amount != null ? ` · ${s.amount}${s.unit}` : ''}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === 'history' && (
+        <>
+          {/* Sleep chart */}
+          <div>
+            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', fontFamily: 'var(--fm)', marginBottom: '8px', fontWeight: 700 }}>SAN (SATI)</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '4px', alignItems: 'flex-end', height: '100px', marginBottom: '4px' }}>
+              {weekDates.map((d, i) => {
+                const log = wbLogs.find(l => l.log_date === d)
+                const h = log?.sleep_hours ?? 0
+                const pct = Math.min((h || 0) / 10, 1)
+                const isToday = d === today
+                return (
+                  <div key={d} style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '3px', height: '100%', justifyContent: 'flex-end' }}>
+                    <div style={{ fontSize: '0.55rem', color: h > 0 ? '#60a5fa' : 'rgba(255,255,255,0.1)', fontFamily: 'var(--fm)', fontWeight: 600, lineHeight: 1 }}>{h > 0 ? `${h}h` : ''}</div>
+                    <div style={{ width: '100%', background: 'rgba(255,255,255,0.06)', borderRadius: '3px 3px 0 0', height: '70px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+                      <div style={{ width: '100%', height: `${pct * 100}%`, background: isToday ? '#60a5fa' : '#60a5fa66', borderRadius: '2px 2px 0 0', transition: 'height 0.4s ease', minHeight: h > 0 ? '3px' : '0' }} />
+                    </div>
+                    <div style={{ fontSize: '0.5rem', color: isToday ? '#fff' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: isToday ? 700 : 400 }}>{DAY_L[i]}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Stress row */}
+          <div>
+            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', fontFamily: 'var(--fm)', marginBottom: '8px', fontWeight: 700 }}>STRES</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '4px' }}>
+              {weekDates.map((d, i) => {
+                const log = wbLogs.find(l => l.log_date === d)
+                const s = log?.stress_level
+                const c = s == null ? 'rgba(255,255,255,0.08)' : s <= 3 ? '#4ade80' : s <= 6 ? '#f59e0b' : '#f87171'
+                const isToday = d === today
+                return (
+                  <div key={d} style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '4px', padding: '8px 2px', background: s != null ? `${c}10` : 'rgba(255,255,255,0.02)', border: `1px solid ${s != null ? c+'30' : 'rgba(255,255,255,0.06)'}`, borderRadius: '8px' }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 900, color: c, fontFamily: 'var(--fd)', lineHeight: 1 }}>{s ?? '—'}</div>
+                    <div style={{ fontSize: '0.5rem', color: isToday ? '#fff' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: isToday ? 700 : 400 }}>{DAY_L[i]}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Caffeine chart */}
+          <div>
+            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', fontFamily: 'var(--fm)', marginBottom: '8px', fontWeight: 700 }}>KOFEIN (mg)</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '4px', alignItems: 'flex-end', height: '64px' }}>
+              {weekDates.map((d, i) => {
+                const log = wbLogs.find(l => l.log_date === d)
+                const mg = log?.caffeine_mg ?? 0
+                const pct = Math.min((mg || 0) / 400, 1)
+                const isToday = d === today
+                const tooMuch = mg > 300
+                return (
+                  <div key={d} style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '3px', height: '100%', justifyContent: 'flex-end' }}>
+                    <div style={{ width: '100%', background: 'rgba(255,255,255,0.04)', borderRadius: '2px 2px 0 0', height: '44px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+                      <div style={{ width: '100%', height: `${pct * 100}%`, background: tooMuch ? '#f87171' : isToday ? '#fbbf24' : '#fbbf2466', borderRadius: '2px 2px 0 0', minHeight: mg > 0 ? '3px' : '0' }} />
+                    </div>
+                    <div style={{ fontSize: '0.5rem', color: isToday ? '#fff' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: isToday ? 700 : 400 }}>{DAY_L[i]}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Supplement summary */}
+          {suppLogs.length > 0 && (
+            <div>
+              <SectionTitle color="#10b981">Suplementi ovaj tjedan</SectionTitle>
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '6px' }}>
+                {Object.entries(suppLogs.reduce((acc, s) => { acc[s.name] = (acc[s.name] ?? 0) + 1; return acc }, {} as Record<string, number>)).map(([name, count]) => (
+                  <span key={name} style={{ fontSize: '0.72rem', color: '#a7f3d0', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.18)', borderRadius: '6px', padding: '4px 10px', fontFamily: 'var(--fm)' }}>
+                    {name} <span style={{ color: 'rgba(255,255,255,0.3)' }}>×{count}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      <style>{`
+        @media (max-width: 480px) {
+          .wb-sleep-btns { grid-template-columns: repeat(5,1fr) !important; }
+          .wb-caff-btns  { grid-template-columns: repeat(4,1fr) !important; }
+          .wb-stats-row  { grid-template-columns: repeat(3,1fr) !important; }
+          .supp-amount-row { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 // ─── HUB TOOLS ──────────────────────────────────────────────────
 const HUB_TOOLS = [
   { id:'rpe',        label:'RPE Kalkulator',     sub:'Izračun 1RM i preporučene težine', color:'#f59e0b', badge:'CALC',  group:'calc'  },
@@ -952,6 +1284,7 @@ const HUB_TOOLS = [
   { id:'weight',     label:'Tjelesna kilaza',     sub:'Unos i praćenje kilaze kroz dane', color:'#f472b6', badge:'LOG',   group:'log'   },
   { id:'hydration',  label:'Log Vode',            sub:'Dnevni unos i cilj hidratacije',   color:'#38bdf8', badge:'LOG',   group:'log'   },
   { id:'nutrition',  label:'Prehrana & Kalorije', sub:'TDEE, makrosi i dnevni log',       color:'#f97316', badge:'LOG',   group:'log'   },
+  { id:'wellbeing',  label:'Wellbeing & Zdravlje', sub:'San, stres, kofein i suplementi', color:'#8b5cf6', badge:'LOG',   group:'log'   },
 ]
 
 const HUB_GROUPS = [
@@ -1959,6 +2292,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
     if (toolId === 'weight')    return userId ? <WeightTracker userId={userId} /> : <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje kilaze.</div>
     if (toolId === 'hydration') return userId ? <WaterLog userId={userId} /> : <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za log vode.</div>
     if (toolId === 'nutrition') return userId ? <NutritionTracker userId={userId} /> : <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje prehrane.</div>
+    if (toolId === 'wellbeing') return userId ? <WellbeingTracker userId={userId} /> : <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje wellbeinga.</div>
     if (['guide-wc','guide-rpe','guide-peak'].includes(toolId)) {
       const g = GUIDE_CONTENT[toolId]
       if (!g) return null
@@ -2070,8 +2404,18 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
       <style>{`
         .hub-tools-grid { grid-template-columns: repeat(auto-fill, minmax(clamp(160px,26vw,260px), 1fr)); }
         @media (max-width: 768px) {
-          .hub-tools-grid { grid-template-columns: 1fr !important; }
-          .bl-input-row   { grid-template-columns: 1fr !important; }
+          .hub-tools-grid  { grid-template-columns: 1fr !important; }
+          .bl-input-row    { grid-template-columns: 1fr !important; }
+          .supp-amount-row { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 560px) {
+          .gl-lifts-grid  { grid-template-columns: 1fr !important; }
+          .gl-total-grid  { grid-template-columns: repeat(2,1fr) !important; }
+          .wstats-grid    { grid-template-columns: 1fr !important; grid-template-rows: auto auto; }
+        }
+        @media (max-width: 420px) {
+          .wb-sleep-btns { grid-template-columns: repeat(5,1fr) !important; }
+          .wb-caff-btns  { grid-template-columns: repeat(4,1fr) !important; }
         }
       `}</style>
 
