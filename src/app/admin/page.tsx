@@ -2106,12 +2106,7 @@ export default function AdminPage() {
         }
 
         /* ── ExerciseRow (admin isAdmin=true layout) ── */
-        /* Main row: grip 48px | content 1fr | delete 44px */
         .ex-row-main { min-height: 52px !important; }
-        @media (max-width: 480px) {
-          .ex-row-main { grid-template-columns: 36px 1fr 36px !important; }
-          .ex-row-main > div:first-child { width: 36px !important; }
-        }
 
         /* Inline plan fields below exercise name */
         @media (max-width: 400px) {
