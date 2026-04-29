@@ -1074,7 +1074,7 @@ function WellbeingTracker({ userId }: { userId: string }) {
           <div>
             <SectionTitle color="#fbbf24">Kofein (mg)</SectionTitle>
             <div className="wb-caff-btns" style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '4px', marginBottom: '8px' }}>
-              {[0,75, 150, 200, 250, 300, 250, 400, 500].map(mg => {
+              {[0,75, 150, 200, 250, 300, 350, 400, 500].map(mg => {
                 const active = draft.caffeine_mg === String(mg)
                 return (
                   <button key={mg} onClick={() => setDraft(d => ({ ...d, caffeine_mg: String(mg) }))}
