@@ -1074,7 +1074,7 @@ function WellbeingTracker({ userId }: { userId: string }) {
           <div>
             <SectionTitle color="#fbbf24">Kofein (mg)</SectionTitle>
             <div className="wb-caff-btns" style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '4px', marginBottom: '8px' }}>
-              {[0,80,160,200,240,300,400].map(mg => {
+              {[0,75, 150, 200, 250, 300, 250, 400, 500].map(mg => {
                 const active = draft.caffeine_mg === String(mg)
                 return (
                   <button key={mg} onClick={() => setDraft(d => ({ ...d, caffeine_mg: String(mg) }))}
@@ -1343,18 +1343,18 @@ function WellbeingTracker({ userId }: { userId: string }) {
 
 // ─── HUB TOOLS ──────────────────────────────────────────────────
 const HUB_TOOLS = [
-  { id:'rpe',        label:'RPE Kalkulator',     sub:'Izračun 1RM i preporučene težine', color:'#f59e0b', badge:'CALC',  group:'calc'  },
-  { id:'gl',         label:'GL Points',           sub:'IPF Goodlift formula',             color:'#6b8cff', badge:'CALC',  group:'calc'  },
-  { id:'watercut',   label:'Water Cut',           sub:'Plan hidratacije i rezanja',       color:'#22c55e', badge:'CALC',  group:'calc'  },
+  { id:'rpe',        label:'RPE Kalkulator',     sub:'Izračun 1RM i preporučene težine', color:'#60a5fa', badge:'CALC',  group:'calc'  },
+  { id:'gl',         label:'GL Points',           sub:'IPF Goodlift formula',             color:'#60a5fa', badge:'CALC',  group:'calc'  },
+  { id:'watercut',   label:'Water Cut',           sub:'Plan hidratacije i rezanja',       color:'#60a5fa', badge:'CALC',  group:'calc'  },
   { id:'barloader',  label:'Bar Loader',          sub:'Vizualni prikaz utega na šipci',   color:'#60a5fa', badge:'CALC',  group:'calc'  },
   { id:'guide-wc',   label:'Water Cut Guide',     sub:'Protokol dehidracije',             color:'#34d399', badge:'GUIDE', group:'guide', upcoming: true },
-  { id:'guide-rpe',  label:'RPE Guide',           sub:'Kako koristiti RPE',               color:'#fbbf24', badge:'GUIDE', group:'guide', upcoming: true },
-  { id:'guide-peak', label:'Peaking Guide',       sub:'Priprema za natjecanje',           color:'#a78bfa', badge:'GUIDE', group:'guide', upcoming: true },
-  { id:'progress',   label:'Graf napretka',       sub:'Kilaze kroz blokove po liftu',     color:'#22d3ee', badge:'GRAF',  group:'log'   },
-  { id:'weight',     label:'Tjelesna kilaza',     sub:'Unos i praćenje kilaze kroz dane', color:'#f472b6', badge:'LOG',   group:'log'   },
-  { id:'hydration',  label:'Log Vode',            sub:'Dnevni unos i cilj hidratacije',   color:'#38bdf8', badge:'LOG',   group:'log'   },
-  { id:'nutrition',  label:'Prehrana & Kalorije', sub:'TDEE, makrosi i dnevni log',       color:'#f97316', badge:'LOG',   group:'log'   },
-  { id:'wellbeing',  label:'Wellbeing & Zdravlje', sub:'San, stres, kofein i suplementi', color:'#8b5cf6', badge:'LOG',   group:'log'   },
+  { id:'guide-rpe',  label:'RPE Guide',           sub:'Kako koristiti RPE',               color:'#34d399', badge:'GUIDE', group:'guide', upcoming: true },
+  { id:'guide-peak', label:'Peaking Guide',       sub:'Priprema za natjecanje',           color:'#34d399', badge:'GUIDE', group:'guide', upcoming: true },
+  { id:'progress',   label:'Graf napretka',       sub:'Kilaze kroz blokove po liftu',     color:'#a78bfa', badge:'GRAF',  group:'log'   },
+  { id:'weight',     label:'Tjelesna kilaža',     sub:'Unos i praćenje kilaze kroz dane', color:'#a78bfa', badge:'LOG',   group:'log'   },
+  { id:'hydration',  label:'Unos tekućine',            sub:'Dnevni unos i cilj hidratacije',   color:'#a78bfa', badge:'LOG',   group:'log'   },
+  { id:'nutrition',  label:'Prehrana i Kalorije', sub:'TDEE, makrosi i dnevni log',       color:'#a78bfa', badge:'LOG',   group:'log'   },
+  { id:'wellbeing',  label:'Wellbeing i Zdravlje', sub:'San, stres, kofein i suplementi', color:'#8b5cf6', badge:'LOG',   group:'log'   },
 ]
 
 const HUB_GROUPS = [

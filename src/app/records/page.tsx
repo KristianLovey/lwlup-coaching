@@ -371,16 +371,14 @@ function RecordCell({ entry, highlight, clubMembers }: { entry: RecordEntry | nu
   return (
     <td style={{ padding: '14px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)', background: nameMatch ? 'rgba(250,204,21,0.07)' : 'rgba(255,255,255,0.015)', transition: 'background 0.2s' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', fontWeight: 800, color: nameMatch ? '#facc15' : '#fff' }}>
-            {entry.weight} <span style={{ fontSize: '0.65rem', fontWeight: 400, color: 'rgba(255,255,255,0.55)' }}>kg</span>
-          </span>
-          {isClub && (
-            <span style={{ fontSize: '0.48rem', letterSpacing: '0.2em', padding: '2px 6px', background: 'rgba(250,204,21,0.15)', color: '#facc15', border: '1px solid rgba(250,204,21,0.3)', fontWeight: 700 }}>LWL UP</span>
-          )}
-        </div>
-        <span style={{ fontSize: '0.7rem', color: nameMatch ? 'rgba(250,204,21,0.9)' : 'rgba(255,255,255,0.82)', fontWeight: nameMatch ? 700 : 500 }}>
+        <span style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', fontWeight: 800, color: nameMatch ? '#facc15' : '#fff' }}>
+          {entry.weight} <span style={{ fontSize: '0.65rem', fontWeight: 400, color: 'rgba(255,255,255,0.55)' }}>kg</span>
+        </span>
+        <span style={{ fontSize: '0.7rem', color: nameMatch ? 'rgba(250,204,21,0.9)' : 'rgba(255,255,255,0.82)', fontWeight: nameMatch ? 700 : 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
           {entry.lifter}
+          {isClub && (
+            <span style={{ fontSize: '0.48rem', letterSpacing: '0.2em', padding: '2px 6px', background: 'rgba(250,204,21,0.15)', color: '#facc15', border: '1px solid rgba(250,204,21,0.3)', fontWeight: 700, flexShrink: 0 }}>LWL UP</span>
+          )}
         </span>
         <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.42)', letterSpacing: '0.05em' }}>
           {new Date(entry.date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: 'numeric' })} · {entry.fed}
@@ -436,7 +434,7 @@ export default function RecordsPage() {
       <Navbar variant="solid" />
 
       {/* HERO */}
-      <section style={{ paddingTop: 'clamp(100px,14vw,150px)', paddingBottom: '40px', position: 'relative' }}>
+      <section style={{ paddingTop: 'clamp(100px,14vw,150px)', paddingBottom: '24px', position: 'relative' }}>
         <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '800px', height: '400px', background: 'radial-gradient(ellipse at center top, rgba(255,255,255,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '0 clamp(16px,4vw,60px)', position: 'relative', zIndex: 1 }}>
           <div style={{ fontSize: '0.65rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.55)', marginBottom: '14px' }}>
@@ -446,10 +444,11 @@ export default function RecordsPage() {
             {t('rec.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>{t('rec.title2')}</span>
           </h1>
 
-          {/* Controls */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-            {/* Gender */}
-            <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+          {/* Controls — 3 rows */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+            {/* Row 1: Gender */}
+            <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', width: 'fit-content' }}>
               {(['men','women'] as const).map(g => (
                 <button key={g} onClick={() => { setGender(g); setAgeFilter('Open') }}
                   style={{ padding: '10px 24px', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.2em', cursor: 'pointer', fontFamily: 'var(--fm)', border: 'none', transition: 'all 0.2s', background: gender === g ? '#fff' : 'transparent', color: gender === g ? '#000' : 'rgba(255,255,255,0.65)' }}>
@@ -458,51 +457,49 @@ export default function RecordsPage() {
               ))}
             </div>
 
-            {/* Age category */}
+            {/* Row 2: Age category */}
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               <button onClick={() => setAgeFilter('all')}
-                style={{ padding: '10px 14px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.12em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${ageFilter === 'all' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: ageFilter === 'all' ? 'rgba(255,255,255,0.08)' : 'transparent', color: ageFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.65)', transition: 'all 0.2s' }}>
+                style={{ padding: '9px 14px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.12em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${ageFilter === 'all' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: ageFilter === 'all' ? 'rgba(255,255,255,0.08)' : 'transparent', color: ageFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.65)', transition: 'all 0.2s' }}>
                 {t('rec.allAges')}
               </button>
               {availableAgeCats.map(age => (
                 <button key={age} onClick={() => setAgeFilter(age)}
-                  style={{ padding: '10px 14px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.12em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${ageFilter === age ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: ageFilter === age ? 'rgba(255,255,255,0.08)' : 'transparent', color: ageFilter === age ? '#fff' : 'rgba(255,255,255,0.65)', transition: 'all 0.2s' }}>
+                  style={{ padding: '9px 14px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.12em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${ageFilter === age ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: ageFilter === age ? 'rgba(255,255,255,0.08)' : 'transparent', color: ageFilter === age ? '#fff' : 'rgba(255,255,255,0.65)', transition: 'all 0.2s' }}>
                   {age.toUpperCase()}
                 </button>
               ))}
             </div>
-          </div>
 
-          {/* Lift filter + search */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', marginTop: '12px' }}>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {/* Row 3: Lift filter + search */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
               <button onClick={() => setLiftFilter('all')}
-                style={{ padding: '10px 16px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.15em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${liftFilter === 'all' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: liftFilter === 'all' ? 'rgba(255,255,255,0.08)' : 'transparent', color: liftFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.65)', transition: 'all 0.2s' }}>
+                style={{ padding: '9px 16px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.15em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${liftFilter === 'all' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: liftFilter === 'all' ? 'rgba(255,255,255,0.08)' : 'transparent', color: liftFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.65)', transition: 'all 0.2s' }}>
                 {t('rec.all')}
               </button>
               {LIFTS.map(l => (
                 <button key={l.key} onClick={() => setLiftFilter(l.key)}
-                  style={{ padding: '10px 16px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.15em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${liftFilter === l.key ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: liftFilter === l.key ? 'rgba(255,255,255,0.08)' : 'transparent', color: liftFilter === l.key ? '#fff' : 'rgba(255,255,255,0.65)', transition: 'all 0.2s' }}>
+                  style={{ padding: '9px 16px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.15em', cursor: 'pointer', fontFamily: 'var(--fm)', border: `1px solid ${liftFilter === l.key ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`, background: liftFilter === l.key ? 'rgba(255,255,255,0.08)' : 'transparent', color: liftFilter === l.key ? '#fff' : 'rgba(255,255,255,0.65)', transition: 'all 0.2s' }}>
                   {l.label}
                 </button>
               ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 16px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', minWidth: '220px' }}>
+                <Search size={14} color="rgba(255,255,255,0.3)" />
+                <input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder={t('rec.search')}
+                  style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.78rem', fontFamily: 'var(--fm)', width: '100%' }}
+                />
+              </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', flex: '0 0 auto', minWidth: '240px' }}>
-              <Search size={14} color="rgba(255,255,255,0.3)" />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder={t('rec.search')}
-                style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.78rem', fontFamily: 'var(--fm)', width: '100%' }}
-              />
-            </div>
           </div>
         </div>
       </section>
 
       {/* TABLE */}
-      <section style={{ maxWidth: '1300px', margin: '0 auto', padding: '0 clamp(16px,4vw,60px) 80px', position: 'relative', zIndex: 1 }}>
+      <section style={{ maxWidth: '1300px', margin: '0 auto', padding: '0 clamp(16px,4vw,60px) 80px', position: 'relative', zIndex: 1, marginTop: '8px' }}>
         {matchingClasses.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.2)' }}>
             <Trophy size={36} style={{ opacity: 0.15, display: 'block', margin: '0 auto 16px' }} />
