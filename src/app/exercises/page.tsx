@@ -59,7 +59,7 @@ const TOP_FILTERS = [
   { id: 'UPPER', label: 'UPPER',      color: '#f87171', cats: ['Back Mid','Back Lats','Biceps Inner','Biceps Brachialis','Triceps Lateral','Triceps Medial','Delts Rear','Delts Side','Delts Front'] },
   { id: 'LOWER', label: 'LOWER',      color: '#22c55e', cats: ['Quads','Hamstring','Glute','Adductors'] },
   { id: 'REHAB', label: 'REHAB',      color: '#2dd4bf', cats: ['Knee Rehab'] },
-  { id: 'CARD',  label: 'CARDIO',     color: '#e167f9ff', cats: ['Cardio'] },
+  { id: 'CARDIO',  label: 'CARDIO',     color: '#e167f9ff', cats: ['Cardio'] },
 ]
 
 function getCatColor(cat: string) {
