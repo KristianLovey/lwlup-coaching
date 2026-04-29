@@ -717,19 +717,15 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   }
 
   const upsertDirect = async (setNum: number, field: string, value: unknown) => {
-    const { data: existing } = await supabase.from('set_logs')
-      .select('id')
-      .eq('workout_exercise_id', we.id)
-      .eq('athlete_id', userId)
-      .eq('set_number', setNum)
-      .maybeSingle()
-    if (existing) {
-      await supabase.from('set_logs').update({ [field]: value }).eq('id', existing.id)
-    } else {
-      await supabase.from('set_logs').insert({
-        workout_exercise_id: we.id, athlete_id: userId, set_number: setNum, [field]: value,
-      })
-    }
+    // Atomic upsert — eliminates SELECT+INSERT race condition that caused
+    // silent unique constraint failures when multiple saves fired simultaneously.
+    // Unique constraint: (workout_exercise_id, set_number)
+    await supabase.from('set_logs').upsert({
+      workout_exercise_id: we.id,
+      athlete_id: userId,
+      set_number: setNum,
+      [field]: value,
+    }, { onConflict: 'workout_exercise_id,set_number' })
   }
 
   const saveSet = async (setNum: number, field: keyof SetLog, raw: string) => {
@@ -1347,9 +1343,8 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
                   e.stopPropagation()
                   const newDone = !workout.completed
                   onUpdateWorkout(workout.id, { completed: newDone })
-                  if (newDone) {
-                    workout.workout_exercises?.forEach(we => onUpdateExercise(we.id, { completed: true }))
-                  }
+                  // Sync all exercises — both directions (was only setting true before)
+                  workout.workout_exercises?.forEach(we => onUpdateExercise(we.id, { completed: newDone }))
                 }}
                   className={`done-badge${workout.completed ? ' done-badge-active' : ''}`}>
                   {workout.completed ? <Check size={10} color="#22c55e" strokeWidth={3} /> : <div style={{ width: '8px', height: '8px', border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: '2px' }} />}
