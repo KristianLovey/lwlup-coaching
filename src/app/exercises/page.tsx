@@ -22,23 +22,24 @@ const CAT_COLORS: Record<string, string> = {
   'Squat':              '#6b8cff',
   'Bench':              '#f59e0b',
   'Deadlift':           '#22c55e',
-  'Squat Variation':    '#818cf8',
+  'Squat Variation':    '#fcd34d',
   'Bench Variation':    '#fcd34d',
-  'Deadlift Variation': '#4ade80',
+  'Deadlift Variation': '#fcd34d',
   'Back Mid':           '#f87171',
-  'Back Lats':          '#fb923c',
-  'Quads':              '#a78bfa',
+  'Back Lats':          '#f87171',
+  'Quads':              '#34d399',
   'Hamstring':          '#34d399',
-  'Glute':              '#f472b6',
-  'Biceps Inner':       '#60a5fa',
+  'Glute':              '#34d399',
+  'Biceps Inner':       '#38bdf8',
   'Biceps Brachialis':  '#38bdf8',
-  'Triceps Lateral':    '#e879f9',
+  'Triceps Lateral':    '#c084fc',
   'Triceps Medial':     '#c084fc',
   'Delts Rear':         '#94a3b8',
-  'Delts Side':         '#cbd5e1',
-  'Delts Front':        '#e2e8f0',
-  'Adductors':          '#fda4af',
-  'Knee Rehab':         '#2dd4bf',
+  'Delts Side':         '#94a3b8',
+  'Delts Front':        '#94a3b8',
+  'Adductors':          '#34d399',
+  'Knee Rehab':         '#34d399',
+  'Cardio':             '#e167f9ff',
 }
 
 const CATEGORY_GROUPS = [
@@ -47,6 +48,7 @@ const CATEGORY_GROUPS = [
   { label: 'UPPER', cats: ['Back Mid', 'Back Lats', 'Biceps Inner', 'Biceps Brachialis', 'Triceps Lateral', 'Triceps Medial', 'Delts Rear', 'Delts Side', 'Delts Front'] },
   { label: 'LOWER', cats: ['Quads', 'Hamstring', 'Glute', 'Adductors'] },
   { label: 'REHAB', cats: ['Knee Rehab'] },
+  { label: 'CARDIO', cats: ['Cardio'] }
 ]
 
 // Top-level filter structure
@@ -57,6 +59,7 @@ const TOP_FILTERS = [
   { id: 'UPPER', label: 'UPPER',      color: '#f87171', cats: ['Back Mid','Back Lats','Biceps Inner','Biceps Brachialis','Triceps Lateral','Triceps Medial','Delts Rear','Delts Side','Delts Front'] },
   { id: 'LOWER', label: 'LOWER',      color: '#22c55e', cats: ['Quads','Hamstring','Glute','Adductors'] },
   { id: 'REHAB', label: 'REHAB',      color: '#2dd4bf', cats: ['Knee Rehab'] },
+  { id: 'CARD',  label: 'CARDIO',     color: '#e167f9ff', cats: ['Cardio'] },
 ]
 
 function getCatColor(cat: string) {
