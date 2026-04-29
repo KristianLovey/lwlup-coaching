@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Loader2, Edit3, X } from 'lucide-react'
 import { AppNav, AVATARS, AvatarSvg } from '../training/training-components'
-import { CATEGORY_GROUPS } from '@/lib/exercises'
+
 
 const supabase = createClient()
 
@@ -219,6 +219,40 @@ const GROUP_COLORS: Record<string, string> = {
   'QUADS':      '#84cc16',
   'HAMSTRINGS': '#eab308',
   'GLUTES':     '#fb7185',
+  'CORE':       '#e879f9',
+  'REHAB':      '#94a3b8',
+}
+
+// Mapping from actual DB exercise categories to display groups
+const DB_CAT_TO_GROUP: Record<string, string> = {
+  'Squat':               'SQUAT',
+  'Squat Variation':     'SQUAT',
+  'Bench':               'BENCH',
+  'Bench Variation':     'BENCH',
+  'Deadlift':            'DEADLIFT',
+  'Deadlift Variation':  'DEADLIFT',
+  'Chest Upper':         'CHEST',
+  'Chest Mid':           'CHEST',
+  'Chest Lower':         'CHEST',
+  'Delts Front':         'SHOULDERS',
+  'Delts Side':          'SHOULDERS',
+  'Delts Rear':          'SHOULDERS',
+  'Back Upper':          'BACK',
+  'Back Mid':            'BACK',
+  'Back Lats':           'BACK',
+  'Erectors':            'BACK',
+  'Biceps Inner':        'BICEPS',
+  'Biceps Outer':        'BICEPS',
+  'Biceps Brachialis':   'BICEPS',
+  'Triceps Long':        'TRICEPS',
+  'Triceps Lateral':     'TRICEPS',
+  'Triceps Medial':      'TRICEPS',
+  'Quads':               'QUADS',
+  'Hamstring':           'HAMSTRINGS',
+  'Glute':               'GLUTES',
+  'Adductors':           'QUADS',
+  'Core':                'CORE',
+  'Knee Rehab':          'REHAB',
 }
 
 type MuscleEntry = { group: string; sets: number; tonnage: number; color: string }
@@ -240,8 +274,8 @@ function MuscleDonut({ data, view }: { data: MuscleEntry[]; view: 'percent' | 't
         </div>
       </div>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.25em', color: '#818cf8', marginBottom: '5px' }}>DOLAZI USKORO</div>
-        <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.08em' }}>Statistika mišićnih skupina</div>
+        <div style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.25em', color: '#818cf8', marginBottom: '5px' }}>NEMA PODATAKA</div>
+        <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.08em' }}>Logiraj setove u treningu da se prikaže</div>
       </div>
       <style>{`
         @keyframes ms-ping {
@@ -383,6 +417,7 @@ export default function ProfilePage() {
   const [prReps, setPrReps]           = useState(1)
   const [muscleData, setMuscleData]   = useState<MuscleEntry[]>([])
   const [muscleView, setMuscleView]   = useState<'percent'|'tonnage'>('percent')
+  const [activeBlockName, setActiveBlockName] = useState<string | null>(null)
   const [isCoach, setIsCoach]         = useState(false)
   const [assignedLifterIds, setAssignedLifterIds] = useState<string[]>([])
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
@@ -439,46 +474,77 @@ export default function ProfilePage() {
       setLeaderboard((lb ?? []) as LeaderboardEntry[])
       if (prof) setOrmVals({ squat: String(prof.current_squat_1rm ?? ''), bench: String(prof.current_bench_1rm ?? ''), deadlift: String(prof.current_deadlift_1rm ?? ''), body_weight: String(prof.body_weight ?? ''), sex: (prof.sex ?? 'male') as 'male'|'female' })
 
-      // ── Muscle group data from all logged workout exercises ───────
+      // ── Muscle group data: query set_logs directly by athlete_id ──
       try {
-        const { data: allBlocks } = await supabase
-          .from('blocks').select('id').eq('athlete_id', user.id)
-        const blockIds = (allBlocks ?? []).map((b: any) => b.id)
-        if (blockIds.length > 0) {
-          const { data: wks } = await supabase.from('weeks').select('id').in('block_id', blockIds)
+        // Step 1: get active block name (most recent)
+        const { data: activeBlock } = await supabase
+          .from('blocks')
+          .select('id, name')
+          .eq('athlete_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (activeBlock?.name) setActiveBlockName(activeBlock.name)
+
+        // Step 2: get all completed set_logs for this athlete
+        const { data: setLogs } = await supabase
+          .from('set_logs')
+          .select('workout_exercise_id, reps, weight_kg')
+          .eq('athlete_id', user.id)
+          .eq('completed', true)
+        if (!setLogs || setLogs.length === 0) return
+
+        // Step 3: get exercise categories for those workout_exercises
+        const weIds = [...new Set(setLogs.map((s: any) => s.workout_exercise_id as string))]
+        const { data: weRows } = await supabase
+          .from('workout_exercises')
+          .select('id, ex:exercises(category)')
+          .in('id', weIds)
+        if (!weRows || weRows.length === 0) return
+
+        // Step 4: optionally filter to active block only
+        let filteredWeIds = new Set(weIds)
+        if (activeBlock) {
+          const { data: wks } = await supabase.from('weeks').select('id').eq('block_id', activeBlock.id)
           const wkIds = (wks ?? []).map((w: any) => w.id)
           if (wkIds.length > 0) {
             const { data: wos } = await supabase.from('workouts').select('id').in('week_id', wkIds)
             const woIds = (wos ?? []).map((w: any) => w.id)
             if (woIds.length > 0) {
-              const { data: weRows } = await supabase
-                .from('workout_exercises')
-                .select('actual_reps, actual_weight_kg, planned_sets, planned_reps, planned_weight_kg, exercise:exercises(category)')
-                .in('workout_id', woIds)
-              const groupMap: Record<string, { sets: number; tonnage: number }> = {}
-              for (const we of (weRows ?? [])) {
-                const cat = (we.exercise as any)?.category as string
-                if (!cat) continue
-                let grp: string | null = null
-                for (const [g, cats] of Object.entries(CATEGORY_GROUPS)) {
-                  if ((cats as string[]).includes(cat)) { grp = g; break }
-                }
-                if (!grp) continue
-                if (!groupMap[grp]) groupMap[grp] = { sets: 0, tonnage: 0 }
-                const sets = we.planned_sets ?? 1
-                const repsRaw = we.actual_reps ?? String(we.planned_reps ?? '5')
-                const reps = parseInt(repsRaw.match(/\d+/)?.[0] ?? '5') || 5
-                const kg = we.actual_weight_kg ?? we.planned_weight_kg ?? 0
-                groupMap[grp].sets += sets
-                groupMap[grp].tonnage += sets * reps * kg
+              const { data: blockWes } = await supabase.from('workout_exercises').select('id').in('workout_id', woIds)
+              if (blockWes && blockWes.length > 0) {
+                filteredWeIds = new Set(blockWes.map((w: any) => w.id as string))
               }
-              setMuscleData(Object.entries(groupMap).map(([group, v]) => ({
-                group, ...v, color: GROUP_COLORS[group] ?? '#888'
-              })))
             }
           }
         }
-      } catch { /* ignore muscle data errors */ }
+
+        // Step 5: build muscle group totals
+        const weGroupMap: Record<string, string> = {}
+        for (const we of weRows) {
+          const cat = (we.ex as any)?.category as string
+          if (!cat) continue
+          const grp = DB_CAT_TO_GROUP[cat]
+          if (grp) weGroupMap[we.id] = grp
+        }
+
+        const groupMap: Record<string, { sets: number; tonnage: number }> = {}
+        for (const sl of setLogs) {
+          if (!filteredWeIds.has(sl.workout_exercise_id)) continue
+          const grp = weGroupMap[sl.workout_exercise_id]
+          if (!grp) continue
+          if (!groupMap[grp]) groupMap[grp] = { sets: 0, tonnage: 0 }
+          groupMap[grp].sets++
+          const reps = parseFloat(String(sl.reps)) || 0
+          const kg = Number(sl.weight_kg) || 0
+          groupMap[grp].tonnage += reps * kg
+        }
+
+        const result = Object.entries(groupMap).map(([group, v]) => ({
+          group, ...v, color: GROUP_COLORS[group] ?? '#888'
+        }))
+        if (result.length > 0) setMuscleData(result)
+      } catch (e) { console.error('muscle chart error:', e) }
 
       setLoading(false)
     }
@@ -729,7 +795,9 @@ export default function ProfilePage() {
             <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: '#0e0e14', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                 <div>
-                  <div style={{ fontSize: '0.5rem', letterSpacing: '0.4em', color: '#666', marginBottom: '3px', fontFamily: 'var(--fm)' }}>AKTIVNI BLOK</div>
+                  <div style={{ fontSize: '0.5rem', letterSpacing: '0.4em', color: '#666', marginBottom: '3px', fontFamily: 'var(--fm)' }}>
+                    {activeBlockName ? activeBlockName.toUpperCase() : 'AKTIVNI BLOK'}
+                  </div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e0e0e0' }}>RASPODJELA MIŠIĆNIH SKUPINA</div>
                 </div>
                 <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', overflow: 'hidden' }}>
