@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { X, Calculator, BookOpen, BarChart2, ChevronDown, Check } from 'lucide-react'
+import { X, Calculator, BookOpen, BarChart2, ChevronDown, Check, SlidersHorizontal } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 const supabase = createClient()
@@ -2333,6 +2333,10 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
   const [active, setActive] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [isMobile, setIsMobile] = useState(false)
+  const [hiddenTools, setHiddenTools] = useState<string[]>([])
+  const [showSettings, setShowSettings] = useState(false)
+  const [draftHidden, setDraftHidden] = useState<string[]>([])
+  const [savingSettings, setSavingSettings] = useState(false)
   const activeTool = HUB_TOOLS.find(t => t.id === active)
 
   useEffect(() => {
@@ -2342,6 +2346,15 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
     return () => window.removeEventListener('resize', check)
   }, [])
 
+  // Load hub preferences from profiles
+  useEffect(() => {
+    if (!userId) return
+    supabase.from('profiles').select('hub_hidden_tools').eq('id', userId).single()
+      .then(({ data }) => {
+        if (data?.hub_hidden_tools) setHiddenTools(data.hub_hidden_tools)
+      })
+  }, [userId])
+
   useEffect(() => {
     if (!active || isMobile) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setActive(null) }
@@ -2350,8 +2363,20 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
     return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = '' }
   }, [active, isMobile])
 
+  const openSettings = () => { setDraftHidden([...hiddenTools]); setShowSettings(true) }
+  const toggleDraft = (id: string) => setDraftHidden(d => d.includes(id) ? d.filter(x => x !== id) : [...d, id])
+  const saveSettings = async () => {
+    if (!userId) return
+    setSavingSettings(true)
+    await supabase.from('profiles').update({ hub_hidden_tools: draftHidden }).eq('id', userId)
+    setHiddenTools(draftHidden)
+    setSavingSettings(false)
+    setShowSettings(false)
+  }
+
+  const visibleTools = HUB_TOOLS.filter(t => !hiddenTools.includes(t.id))
   const q = search.trim().toLowerCase()
-  const filtered = q ? HUB_TOOLS.filter(t => t.label.toLowerCase().includes(q) || t.sub.toLowerCase().includes(q)) : null
+  const filtered = q ? visibleTools.filter(t => t.label.toLowerCase().includes(q) || t.sub.toLowerCase().includes(q)) : null
 
   const renderToolContent = (toolId: string) => {
     if (toolId === 'rpe')       return <RpeCalc />
@@ -2433,19 +2458,31 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
   return (
     <div style={{ animation: 'fadeUp 0.3s ease' }}>
 
-      {/* Search bar */}
-      <div style={{ position: 'relative', marginBottom: '20px' }}>
-        <svg style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input
-          value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Pretraži alate..."
-          style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#f0f0f5', padding: '10px 14px 10px 36px', fontFamily: 'var(--fm)', fontSize: '0.82rem', outline: 'none', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
-          onFocus={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)' }}
-          onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
-        />
-        {search && (
-          <button onClick={() => setSearch('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: '2px', display: 'flex' }}>
-            <X size={14} />
+      {/* Search + Settings row */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+        <div style={{ position: 'relative', flex: 1 }}>
+          <svg style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Pretraži alate..."
+            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#f0f0f5', padding: '10px 14px 10px 36px', fontFamily: 'var(--fm)', fontSize: '0.82rem', outline: 'none', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
+            onFocus={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)' }}
+            onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
+          />
+          {search && (
+            <button onClick={() => setSearch('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: '2px', display: 'flex' }}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        {userId && (
+          <button onClick={openSettings}
+            title="Prilagodi hub"
+            style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '7px', padding: '0 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.08em', transition: 'all 0.2s', whiteSpace: 'nowrap' as const }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.color = '#fff' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}>
+            <SlidersHorizontal size={13} strokeWidth={2.2} />
+            PRILAGODI
           </button>
         )}
       </div>
@@ -2459,7 +2496,8 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
             </div>
       ) : (
         HUB_GROUPS.map(g => {
-          const tools = HUB_TOOLS.filter(t => t.group === g.key)
+          const tools = visibleTools.filter(t => t.group === g.key)
+          if (tools.length === 0) return null
           return (
             <div key={g.key} style={{ marginBottom: '4px' }}>
               <SectionTitle icon={g.icon} color={g.color}>{g.title}</SectionTitle>
@@ -2469,6 +2507,70 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
             </div>
           )
         })
+      )}
+
+      {/* Settings modal */}
+      {showSettings && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '0', backdropFilter: 'blur(6px)', animation: 'fadeIn 0.15s' }}
+          onClick={() => setShowSettings(false)}>
+          <div style={{ background: '#0d0d16', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: '520px', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' as const, boxShadow: '0 -20px 60px rgba(0,0,0,0.6)', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
+            onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
+            <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f0f0f8', fontFamily: 'var(--fm)' }}>Prilagodi hub</div>
+                <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em', marginTop: '2px' }}>Odaberi što ti se prikazuje</div>
+              </div>
+              <button onClick={() => setShowSettings(false)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#888', width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Tool list */}
+            <div style={{ overflowY: 'auto', flex: 1, padding: '8px 0' }}>
+              {HUB_GROUPS.map(g => (
+                <div key={g.key}>
+                  <div style={{ padding: '10px 20px 5px', fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.25em', color: g.color, fontFamily: 'var(--fm)' }}>
+                    {g.title.toUpperCase()}
+                  </div>
+                  {HUB_TOOLS.filter(t => t.group === g.key).map(tool => {
+                    const isOn = !draftHidden.includes(tool.id)
+                    return (
+                      <button key={tool.id} onClick={() => toggleDraft(tool.id)}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' as const, transition: 'background 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                        {/* Toggle pill */}
+                        <div style={{ width: '38px', height: '22px', borderRadius: '11px', background: isOn ? g.color : 'rgba(255,255,255,0.1)', border: `1.5px solid ${isOn ? g.color : 'rgba(255,255,255,0.12)'}`, position: 'relative', flexShrink: 0, transition: 'all 0.2s' }}>
+                          <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: isOn ? 'calc(100% - 17px)' : '3px', width: '14px', height: '14px', borderRadius: '50%', background: isOn ? '#fff' : 'rgba(255,255,255,0.35)', transition: 'left 0.2s, background 0.2s' }} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.78rem', fontWeight: 600, color: isOn ? '#f0f0f8' : 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}>{tool.label}</div>
+                          <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>{tool.sub}</div>
+                        </div>
+                        <span style={{ fontSize: '0.48rem', fontWeight: 700, color: isOn ? g.color : 'rgba(255,255,255,0.2)', background: isOn ? `${g.color}18` : 'rgba(255,255,255,0.04)', padding: '2px 7px', borderRadius: '4px', border: `1px solid ${isOn ? g.color + '30' : 'rgba(255,255,255,0.07)'}`, letterSpacing: '0.06em', fontFamily: 'var(--fm)', transition: 'all 0.2s', flexShrink: 0 }}>
+                          {tool.badge}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '14px 20px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', gap: '8px', flexShrink: 0 }}>
+              <button onClick={() => { setDraftHidden([]); }} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.45)', borderRadius: '8px', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', fontFamily: 'var(--fm)' }}>
+                PRIKAŽI SVE
+              </button>
+              <button onClick={saveSettings} disabled={savingSettings}
+                style={{ flex: 2, padding: '10px', background: '#fff', border: 'none', color: '#000', borderRadius: '8px', cursor: 'pointer', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.12em', fontFamily: 'var(--fm)', opacity: savingSettings ? 0.7 : 1, transition: 'opacity 0.2s' }}>
+                {savingSettings ? 'SPREMA...' : 'SPREMI'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <style>{`
