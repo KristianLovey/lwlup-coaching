@@ -1343,7 +1343,7 @@ function WellbeingTracker({ userId }: { userId: string }) {
 
 // ─── HUB TOOLS ──────────────────────────────────────────────────
 const HUB_TOOLS = [
-  { id:'rpe',        label:'RPE Kalkulator',     sub:'Izračun 1RM i preporučene težine', color:'#60a5fa', badge:'CALC',  group:'calc'  },
+  { id:'rpe',        label:'RPE Kalkulator',     sub:'Izračun 1RM i radne serije', color:'#60a5fa', badge:'CALC',  group:'calc'  },
   { id:'gl',         label:'GL Points',           sub:'IPF Goodlift formula',             color:'#60a5fa', badge:'CALC',  group:'calc'  },
   { id:'watercut',   label:'Water Cut',           sub:'Plan hidratacije i rezanja',       color:'#60a5fa', badge:'CALC',  group:'calc'  },
   { id:'barloader',  label:'Bar Loader',          sub:'Vizualni prikaz utega na šipci',   color:'#60a5fa', badge:'CALC',  group:'calc'  },
