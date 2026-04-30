@@ -392,54 +392,12 @@ export default function TrainingPage() {
     <div style={{ background: '#04040a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
 
       {/* ── BACKGROUND ── */}
-      {/* Base noise texture */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.55,
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.09'/%3E%3C/svg%3E")`,
-        backgroundSize: '200px 200px' }} />
-      {/* Primary aurora — top left, electric indigo */}
-      <div style={{ position: 'fixed', top: '-25vh', left: '-15vw', width: '85vw', height: '85vh', zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 40% 40%, rgba(79,70,229,0.28) 0%, rgba(99,102,241,0.14) 35%, transparent 68%)',
-        filter: 'blur(60px)', transform: 'rotate(-15deg)' }} />
-      {/* Secondary aurora — bottom right, deep violet */}
-      <div style={{ position: 'fixed', bottom: '-20vh', right: '-10vw', width: '70vw', height: '70vh', zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 60% 60%, rgba(109,40,217,0.18) 0%, rgba(79,70,229,0.08) 40%, transparent 70%)',
-        filter: 'blur(70px)', transform: 'rotate(10deg)' }} />
-      {/* Accent orb — top right, warm red/amber */}
-      <div style={{ position: 'fixed', top: '5vh', right: '5vw', width: '55vw', height: '55vh', zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at center, rgba(239,68,68,0.07) 0%, rgba(220,38,38,0.03) 50%, transparent 70%)',
-        filter: 'blur(80px)' }} />
-      {/* Center power orb */}
-      <div style={{ position: 'fixed', top: '30vh', left: '35vw', width: '50vw', height: '50vh', zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at center, rgba(99,102,241,0.09) 0%, transparent 65%)',
-        filter: 'blur(90px)' }} />
-      {/* Top beam — bright horizontal light streak */}
-      <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, height: '1px', zIndex: 0, pointerEvents: 'none',
-        background: 'linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.65) 25%, rgba(139,92,246,0.85) 50%, rgba(99,102,241,0.65) 75%, transparent 100%)',
-        boxShadow: '0 0 50px 10px rgba(99,102,241,0.2)' }} />
-      {/* Sharp grid — more visible, with clipping mask */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-        backgroundImage: 'linear-gradient(rgba(255,255,255,0.032) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.032) 1px, transparent 1px)',
-        backgroundSize: '64px 64px',
-        maskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 72%)' }} />
-      {/* Corner vignette — deeper */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(0,0,0,0.8) 100%)' }} />
-      {/* plate.png — bottom left, large, rotated */}
-      <div className="bg-decorative" style={{ position: 'fixed', bottom: '-8vh', left: '-8vw', zIndex: 0, pointerEvents: 'none', opacity: 0.07, transform: 'rotate(12deg)', filter: 'blur(1px)' }}>
-        <img src="/slike/plate.png" alt="" width="380" height="380" loading="lazy" decoding="async" style={{ width: '380px', height: 'auto' }} />
-      </div>
-      {/* plate.png — top right, smaller */}
-      <div className="bg-decorative" style={{ position: 'fixed', top: '6vh', right: '-6vw', zIndex: 0, pointerEvents: 'none', opacity: 0.05, transform: 'rotate(-18deg)', filter: 'blur(1.5px)' }}>
-        <img src="/slike/plate.png" alt="" width="260" height="260" loading="lazy" decoding="async" style={{ width: '260px', height: 'auto' }} />
-      </div>
-      {/* ipflogo.png — mid left, faded */}
-      <div className="bg-decorative" style={{ position: 'fixed', top: '35vh', left: '-2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.04, filter: 'blur(1px) grayscale(1)' }}>
-        <img src="/slike/ipflogo.png" alt="" width="220" height="220" loading="lazy" decoding="async" style={{ width: '220px', height: 'auto' }} />
-      </div>
-      {/* logopng.png — bottom right, very subtle */}
-      <div className="bg-decorative" style={{ position: 'fixed', bottom: '6vh', right: '2vw', zIndex: 0, pointerEvents: 'none', opacity: 0.035, filter: 'blur(0.5px) grayscale(1)' }}>
-        <img src="/slike/logopng.png" alt="" width="180" height="131" loading="lazy" decoding="async" style={{ width: '180px', height: 'auto' }} />
-      </div>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.3, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E")`, backgroundSize: '200px 200px' }} />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px)', backgroundSize: '72px 72px', maskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 70%)' }} />
+      <div style={{ position: 'fixed', top: '-25vh', left: '-15vw', width: '80vw', height: '80vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at 40% 40%, rgba(79,70,229,0.13) 0%, rgba(59,130,246,0.06) 40%, transparent 70%)', filter: 'blur(70px)' }} />
+      <div style={{ position: 'fixed', bottom: '-20vh', right: '-10vw', width: '65vw', height: '65vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at 60% 60%, rgba(16,185,129,0.09) 0%, rgba(5,150,105,0.04) 45%, transparent 70%)', filter: 'blur(80px)' }} />
+      <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, height: '1px', zIndex: 0, pointerEvents: 'none', background: 'linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.35) 30%, rgba(139,92,246,0.45) 50%, rgba(99,102,241,0.35) 70%, transparent 100%)', boxShadow: '0 0 40px 8px rgba(99,102,241,0.08)' }} />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.6) 100%)' }} />
 
       <AppNav athleteName={athleteName} isAdmin={isAdmin} role={userRole} onLogout={handleLogout} avatarIcon={avatarIcon} userId={userId ?? undefined} />
 
@@ -480,7 +438,7 @@ export default function TrainingPage() {
                   { val: totalSets > 0 ? `${doneSets}/${totalSets}` : `${completedWorkouts}/${totalWorkouts}`, label: 'SERIJA', accent: doneSets > 0 },
                   { val: `${pct}%`, label: 'NAPREDAK', accent: pct > 50 },
                 ].map((s, i) => (
-                  <div key={i} style={{ flex: 1, padding: '14px 20px', background: '#060610', textAlign: 'center', minWidth: '80px', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
+                  <div key={i} style={{ flex: 1, padding: '14px 20px', background: 'rgba(255,255,255,0.02)', textAlign: 'center', minWidth: '80px', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
                     <div style={{ fontFamily: 'var(--fd)', fontSize: '1.7rem', fontWeight: 800, lineHeight: 1, color: s.accent ? '#4ade80' : '#f0f0f8', letterSpacing: '-0.02em' }}>{s.val}</div>
                     <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', marginTop: '6px', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.18em' }}>{s.label}</div>
                   </div>
@@ -601,11 +559,11 @@ export default function TrainingPage() {
 
               {/* Admin/trener info banner */}
               {(isAdmin || isCoach) && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 16px', marginBottom: '20px', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '0.62rem', color: '#f59e0b', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.05em' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 16px', marginBottom: '20px', background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.18)', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '0.62rem', color: 'rgba(252,165,165,0.7)', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.05em' }}>
                     Gledaš trening kao lifter. Za uređivanje programa idi na
                   </span>
-                  <a href="/admin" style={{ fontSize: '0.62rem', color: '#fbbf24', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.08em', textDecoration: 'none', borderBottom: '1px solid rgba(251,191,36,0.4)', paddingBottom: '1px' }}>
+                  <a href="/admin" style={{ fontSize: '0.62rem', color: '#f87171', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.08em', textDecoration: 'none', borderBottom: '1px solid rgba(248,113,113,0.4)', paddingBottom: '1px' }}>
                     ADMIN PANEL →
                   </a>
                 </div>
@@ -651,7 +609,7 @@ export default function TrainingPage() {
           border-radius:6px;
         }
         .nav-menu-item:hover { background:#161618; color:#e0e0e0; }
-        .nav-menu-admin:hover { color:#f59e0b !important; }
+        .nav-menu-admin:hover { color:#ef4444 !important; }
         .nav-menu-logout { color:#666; }
         .nav-menu-logout:hover { background:#1a0a0a !important; color:#ff7070 !important; }
 
@@ -770,7 +728,7 @@ export default function TrainingPage() {
           transition: background 0.15s, color 0.15s; text-align: left; letter-spacing: 0.01em;
         }
         .nav-menu-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
-        .nav-menu-admin:hover { background: rgba(245,158,11,0.08) !important; }
+        .nav-menu-admin:hover { background: rgba(239,68,68,0.08) !important; }
         .nav-menu-logout { color: rgba(255,80,80,0.7) !important; }
         .nav-menu-logout:hover { background: rgba(255,60,60,0.08) !important; color: #ff6060 !important; }
 

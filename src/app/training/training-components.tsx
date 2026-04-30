@@ -6,62 +6,55 @@ import Image from 'next/image'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
   GripVertical, Loader2, LogOut,
-  User, Shield, X, Dumbbell, BarChart2, MessageSquare, Copy, CalendarDays
+  User, Shield, X, Dumbbell, BarChart2, MessageSquare, Copy, CalendarDays,
+  Flame, Zap, Rocket, Gauge, Activity, Trophy, Medal, Crown, Star, Award, Gem,
+  Target, Crosshair, Sword, Compass, Mountain, Anchor, Skull, Sparkles, Brain,
+  Timer, Ghost, Forklift, Drama, Cat, Bird, PawPrint, Clover, Spade,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import type { Exercise, WorkoutExercise, Workout, Week, SetLog, Competition } from './types'
 
 const supabase = createClient()
 
 // ─── AVATAR ICONS ─────────────────────────────────────────────────
-export const AVATARS: { id: string; label: string; svg: string }[] = [
-  { id: 'barbell', label: 'Šipka',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="13" y="19" width="14" height="2" fill="currentColor"/><rect x="5" y="17" width="3" height="6" rx="1" fill="currentColor"/><rect x="8" y="15" width="3" height="10" rx="1" fill="currentColor" opacity=".85"/><rect x="29" y="17" width="3" height="6" rx="1" fill="currentColor"/><rect x="29" y="15" width="3" height="10" rx="1" fill="currentColor" opacity=".85"/><rect x="11" y="19.5" width="18" height="1" fill="currentColor" opacity=".5"/><rect x="3" y="18" width="5" height="4" rx=".8" fill="currentColor" opacity=".6"/><rect x="32" y="18" width="5" height="4" rx=".8" fill="currentColor" opacity=".6"/></svg>` },
-  { id: 'squat', label: 'Čučanj',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="6" r="2.5" fill="currentColor"/><rect x="4" y="13" width="32" height="2.5" rx="1.25" fill="currentColor" opacity=".35"/><rect x="4" y="12" width="4.5" height="5" rx="1" fill="currentColor" opacity=".7"/><rect x="31.5" y="12" width="4.5" height="5" rx="1" fill="currentColor" opacity=".7"/><path d="M17 15.5c-.5 0-4 5-5.5 9.5l3 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 15.5c.5 0 4 5 5.5 9.5l-3 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 27.5l5.5 6 5.5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 15.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".6"/></svg>` },
-  { id: 'deadlift', label: 'Mrtvo dizanje',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="5.5" r="2.5" fill="currentColor"/><path d="M20 8v11" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M20 19c-3 0-6 1-7 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 19c3 0 6 1 7 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="3" y="28" width="34" height="3" rx="1.5" fill="currentColor" opacity=".45"/><rect x="3" y="26" width="5.5" height="7" rx="1.2" fill="currentColor" opacity=".75"/><rect x="31.5" y="26" width="5.5" height="7" rx="1.2" fill="currentColor" opacity=".75"/><path d="M13 22l-1 6M27 22l1 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity=".55"/></svg>` },
-  { id: 'bench', label: 'Bench press',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="6" r="2.5" fill="currentColor"/><path d="M20 8.5v7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="5" y="15.5" width="30" height="2.5" rx="1.25" fill="currentColor" opacity=".35"/><rect x="5" y="14.5" width="4.5" height="5" rx="1" fill="currentColor" opacity=".7"/><rect x="30.5" y="14.5" width="4.5" height="5" rx="1" fill="currentColor" opacity=".7"/><rect x="8" y="22" width="24" height="5.5" rx="2" fill="currentColor" opacity=".6"/><rect x="10" y="27.5" width="4" height="7" rx="1.5" fill="currentColor" opacity=".55"/><rect x="26" y="27.5" width="4" height="7" rx="1.5" fill="currentColor" opacity=".55"/></svg>` },
-  { id: 'kettlebell', label: 'Kettlebell',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 14c0-3.31 2.69-6 6-6s6 2.69 6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M12 16c-1 1-2 3-2 5a10 10 0 0 0 20 0c0-2-1-4-2-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" opacity=".5"/><ellipse cx="20" cy="24" rx="9" ry="9.5" fill="currentColor" opacity=".85"/><ellipse cx="20" cy="24" rx="5" ry="5.5" fill="currentColor" opacity="-.3"/><path d="M16.5 13.5h7" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="24" r="3" fill="white" opacity=".12"/></svg>` },
-  { id: 'dumbbell', label: 'Bučica',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="17" y="19" width="6" height="2" rx="1" fill="currentColor"/><rect x="9" y="16" width="3.5" height="8" rx="1.2" fill="currentColor" opacity=".9"/><rect x="7" y="17.5" width="3" height="5" rx="1" fill="currentColor" opacity=".7"/><rect x="27.5" y="16" width="3.5" height="8" rx="1.2" fill="currentColor" opacity=".9"/><rect x="30" y="17.5" width="3" height="5" rx="1" fill="currentColor" opacity=".7"/><rect x="12.5" y="19.2" width="15" height="1.6" rx=".8" fill="currentColor" opacity=".6"/></svg>` },
-  { id: 'trophy', label: 'Trofej',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 5h14v13a7 7 0 0 1-14 0V5Z" fill="currentColor" opacity=".85"/><path d="M13 9H7a4 4 0 0 0 4.5 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" opacity=".7"/><path d="M27 9h6a4 4 0 0 1-4.5 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" opacity=".7"/><rect x="17" y="26" width="6" height="4" rx="1" fill="currentColor" opacity=".6"/><rect x="13" y="30" width="14" height="3.5" rx="1.5" fill="currentColor" opacity=".55"/><path d="M17 13l2.5 3 3-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg>` },
-  { id: 'flame', label: 'Plamen',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 3c0 0 9 10 9 19a9 9 0 0 1-18 0c0-5 2.5-9 5-11.5-1.5 5 2.5 7 2.5 7S20 11 20 3Z" fill="currentColor" opacity=".9"/><path d="M20 28a4 4 0 0 0 4-4c0-3-4-7-4-7s-4 4-4 7a4 4 0 0 0 4 4Z" fill="white" opacity=".2"/><path d="M20 30a2 2 0 0 0 2-2c0-1.5-2-3.5-2-3.5s-2 2-2 3.5a2 2 0 0 0 2 2Z" fill="white" opacity=".35"/></svg>` },
-  { id: 'lightning', label: 'Munja',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M23 3L9 22h13l-5 15 19-22H23L23 3Z" fill="currentColor" opacity=".9"/><path d="M23 3L9 22h13l-5 15 19-22H23Z" stroke="currentColor" stroke-width=".5" stroke-linejoin="round" fill="none" opacity=".3"/></svg>` },
-  { id: 'shield', label: 'Štit',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 3L5 9.5v12C5 30 11.5 35.5 20 38c8.5-2.5 15-8 15-16.5V9.5L20 3Z" fill="currentColor" opacity=".8"/><path d="M13 20l5 5.5 9-10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".6"/></svg>` },
-  { id: 'crown', label: 'Kruna',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 29h28M7 13l5.5 8.5L20 9l7.5 12.5L33 13l-3 16H10L7 13Z" fill="currentColor" opacity=".8"/><circle cx="7" cy="13" r="2.5" fill="currentColor"/><circle cx="20" cy="9" r="2.5" fill="currentColor"/><circle cx="33" cy="13" r="2.5" fill="currentColor"/><rect x="9" y="29" width="22" height="5" rx="1.5" fill="currentColor" opacity=".55"/><path d="M14 21h12" stroke="white" stroke-width="1.2" opacity=".25" stroke-linecap="round"/></svg>` },
-  { id: 'skull', label: 'Lubanja',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 22c0-5.52 4.48-10 10-10s10 4.48 10 10c0 3.5-1.8 6.6-4.5 8.4V34h-11v-3.6C11.8 28.6 10 25.5 10 22Z" fill="currentColor" opacity=".85"/><rect x="14.5" y="34" width="11" height="3" rx="1" fill="currentColor" opacity=".5"/><rect x="14" y="31.5" width="2.5" height="2.5" rx=".5" fill="white" opacity=".15"/><rect x="23.5" y="31.5" width="2.5" height="2.5" rx=".5" fill="white" opacity=".15"/><ellipse cx="16" cy="22" rx="3" ry="3.5" fill="white" opacity=".2"/><ellipse cx="24" cy="22" rx="3" ry="3.5" fill="white" opacity=".2"/><path d="M18 27h4M20 25v4" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity=".18"/></svg>` },
-  { id: 'fist', label: 'Šaka',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="17" width="20" height="16" rx="4" fill="currentColor" opacity=".85"/><rect x="12" y="11" width="5" height="8" rx="2.5" fill="currentColor" opacity=".9"/><rect x="17.5" y="10" width="5" height="9" rx="2.5" fill="currentColor" opacity=".9"/><rect x="23" y="11" width="5" height="8" rx="2.5" fill="currentColor" opacity=".9"/><rect x="8" y="20" width="5" height="7" rx="2.5" fill="currentColor" opacity=".8"/><path d="M12 21h16M12 25h16" stroke="white" stroke-width=".8" opacity=".12"/></svg>` },
-  { id: 'wolf', label: 'Vuk',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 34C9 34 7 24 7 20c0-2 1-5 3-7L6 7l7 5c2-1 4.5-2 7-2s5 1 7 2l7-5-4 6c2 2 3 5 3 7 0 4-2 14-13 14Z" fill="currentColor" opacity=".85"/><path d="M6 7l4 6" stroke="currentColor" stroke-width="1" opacity=".4" stroke-linecap="round"/><path d="M34 7l-4 6" stroke="currentColor" stroke-width="1" opacity=".4" stroke-linecap="round"/><ellipse cx="15.5" cy="21" rx="2" ry="2.5" fill="white" opacity=".22"/><ellipse cx="24.5" cy="21" rx="2" ry="2.5" fill="white" opacity=".22"/><path d="M17 27.5c1 1.5 5 1.5 6 0" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity=".3"/></svg>` },
-  { id: 'bull', label: 'Bik',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 12c-3 0-5 2-5 4s1.5 3 3 3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".7"/><path d="M32 12c3 0 5 2 5 4s-1.5 3-3 3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".7"/><ellipse cx="20" cy="22" rx="13" ry="12" fill="currentColor" opacity=".85"/><ellipse cx="15" cy="20" rx="2.5" ry="3" fill="white" opacity=".2"/><ellipse cx="25" cy="20" rx="2.5" ry="3" fill="white" opacity=".2"/><ellipse cx="20" cy="27" rx="4" ry="2.5" fill="white" opacity=".15"/><circle cx="18" cy="27" r="1" fill="white" opacity=".3"/><circle cx="22" cy="27" r="1" fill="white" opacity=".3"/></svg>` },
-  { id: 'diamond', label: 'Dijamant',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4l16 10-16 22L4 14 20 4Z" fill="currentColor" opacity=".85"/><path d="M4 14h32M12 14L20 4M28 14L20 4M12 14L20 36M28 14L20 36" stroke="white" stroke-width="1" opacity=".18"/><path d="M14 14l6-8 6 8" fill="white" opacity=".12"/></svg>` },
-  { id: 'mountain', label: 'Planina',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 35L15 12l5 7 3-4 14 20H3Z" fill="currentColor" opacity=".8"/><path d="M15 12l5 7 3-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".5"/><path d="M20 12l-2 3-3-1" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity=".35"/><path d="M20 12l2 3 2.5-.5" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity=".22"/></svg>` },
-  { id: 'target', label: 'Meta',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="16" stroke="currentColor" stroke-width="2" opacity=".3"/><circle cx="20" cy="20" r="11" stroke="currentColor" stroke-width="2" opacity=".55"/><circle cx="20" cy="20" r="6" stroke="currentColor" stroke-width="2" opacity=".8"/><circle cx="20" cy="20" r="2.5" fill="currentColor"/><line x1="20" y1="4" x2="20" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".4"/><line x1="20" y1="31" x2="20" y2="36" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".4"/><line x1="4" y1="20" x2="9" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".4"/><line x1="31" y1="20" x2="36" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".4"/></svg>` },
-  { id: 'star', label: 'Zvijezda',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 4l4.5 9.5 10.5 1.5-7.5 7.5 1.8 10.5L20 28.2l-9.3 4.8 1.8-10.5L5 15l10.5-1.5L20 4Z" fill="currentColor" opacity=".9"/><path d="M20 4l4.5 9.5 10.5 1.5-7.5 7.5 1.8 10.5L20 28.2l-9.3 4.8 1.8-10.5L5 15l10.5-1.5Z" stroke="white" stroke-width=".5" opacity=".2" stroke-linejoin="round"/></svg>` },
-  { id: 'anchor', label: 'Sidro',
-    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="10" r="3.5" stroke="currentColor" stroke-width="2.2" fill="none"/><line x1="20" y1="13.5" x2="20" y2="34" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M12 34c1-6 4-10 8-10s7 4 8 10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none" opacity=".85"/><line x1="12" y1="18" x2="28" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".5"/><circle cx="12" cy="34" r="2.5" fill="currentColor" opacity=".7"/><circle cx="28" cy="34" r="2.5" fill="currentColor" opacity=".7"/></svg>` },
+export const AVATARS: { id: string; label: string; icon: LucideIcon }[] = [
+  { id: 'dumbbell',  label: 'Teg',       icon: Dumbbell  },
+  { id: 'flame',     label: 'Plamen',    icon: Flame     },
+  { id: 'zap',       label: 'Munja',     icon: Zap       },
+  { id: 'rocket',    label: 'Raketa',    icon: Rocket    },
+  { id: 'gauge',     label: 'Mjerač',    icon: Gauge     },
+  { id: 'activity',  label: 'Puls',      icon: Activity  },
+  { id: 'trophy',    label: 'Trofej',    icon: Trophy    },
+  { id: 'medal',     label: 'Medalja',   icon: Medal     },
+  { id: 'crown',     label: 'Kruna',     icon: Crown     },
+  { id: 'star',      label: 'Zvijezda',  icon: Star      },
+  { id: 'award',     label: 'Nagrada',   icon: Award     },
+  { id: 'gem',       label: 'Dijamant',  icon: Gem       },
+  { id: 'target',    label: 'Meta',      icon: Target    },
+  { id: 'crosshair', label: 'Nišan',     icon: Crosshair },
+  { id: 'shield',    label: 'Štit',      icon: Shield    },
+  { id: 'sword',     label: 'Mač',       icon: Sword     },
+  { id: 'compass',   label: 'Kompas',    icon: Compass   },
+  { id: 'mountain',  label: 'Planina',   icon: Mountain  },
+  { id: 'anchor',    label: 'Sidro',     icon: Anchor    },
+  { id: 'skull',     label: 'Lubanja',   icon: Skull     },
+  { id: 'ghost',     label: 'Duh',       icon: Ghost     },
+  { id: 'forklift',  label: 'Viličar',   icon: Forklift  },
+  { id: 'drama',     label: 'Joker',     icon: Drama     },
+  { id: 'cat',       label: 'Mačka',     icon: Cat       },
+  { id: 'bird',      label: 'Orao',      icon: Bird      },
+  { id: 'paw',       label: 'Lav',       icon: PawPrint  },
+  { id: 'brain',     label: 'Mozak',     icon: Brain     },
+  { id: 'sparkles',  label: 'Iskrice',   icon: Sparkles  },
+  { id: 'clover',    label: 'Djetelina', icon: Clover    },
+  { id: 'spade',     label: 'Pik',       icon: Spade     },
+  { id: 'timer',     label: 'Tajmer',    icon: Timer     },
 ]
 
 export function AvatarSvg({ iconId, size = 32, color = 'currentColor' }: { iconId: string; size?: number; color?: string }) {
-  const icon = AVATARS.find(a => a.id === iconId) ?? AVATARS[0]
-  return (
-    <div style={{ width: size, height: size, color, flexShrink: 0 }}
-      dangerouslySetInnerHTML={{ __html: icon.svg }} />
-  )
+  const avatar = AVATARS.find(a => a.id === iconId) ?? AVATARS[0]
+  const Icon = avatar.icon
+  return <Icon size={size} color={color} strokeWidth={1.5} style={{ flexShrink: 0 }} />
 }
 
 
@@ -182,9 +175,9 @@ export function TrainingNav({ athleteName, isAdmin, onLogout, avatarIcon }: {
                 {isAdmin && (
                   <Link href="/admin" onClick={() => setProfileOpen(false)} style={{ textDecoration: 'none' }}>
                     <button className="nav-menu-item nav-menu-admin">
-                      <Shield size={14} color="#f59e0b"/>
+                      <Shield size={14} color="#ef4444"/>
                       <span>Admin panel</span>
-                      <span style={{ marginLeft: 'auto', fontSize: '0.5rem', background: 'rgba(245,158,11,0.12)', color: '#f59e0b', padding: '2px 7px', letterSpacing: '0.1em', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '4px' }}>ADMIN</span>
+                      <span style={{ marginLeft: 'auto', fontSize: '0.5rem', background: 'rgba(239,68,68,0.12)', color: '#ef4444', padding: '2px 7px', letterSpacing: '0.1em', border: '1px solid rgba(239,68,68,0.28)', borderRadius: '4px' }}>ADMIN</span>
                     </button>
                   </Link>
                 )}
@@ -412,9 +405,9 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
                 {isAdmin && (
                   <Link href={role === 'trener' ? '/trainer' : '/admin'} onClick={() => setOpen(false)} style={{ textDecoration: 'none' }}>
                     <button className="appnav-item appnav-admin">
-                      <Shield size={14} color="#f59e0b"/>
+                      <Shield size={14} color={role === 'trener' ? '#f59e0b' : '#ef4444'}/>
                       <span>{role === 'trener' ? 'Trener panel' : 'Admin panel'}</span>
-                      <span style={{ marginLeft: 'auto', fontSize: '0.5rem', background: 'rgba(245,158,11,0.12)', color: '#f59e0b', padding: '2px 7px', letterSpacing: '0.1em', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '4px' }}>{role === 'trener' ? 'TRENER' : 'ADMIN'}</span>
+                      <span style={{ marginLeft: 'auto', fontSize: '0.5rem', background: role === 'trener' ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)', color: role === 'trener' ? '#f59e0b' : '#ef4444', padding: '2px 7px', letterSpacing: '0.1em', border: `1px solid ${role === 'trener' ? 'rgba(245,158,11,0.25)' : 'rgba(239,68,68,0.28)'}`, borderRadius: '4px' }}>{role === 'trener' ? 'TRENER' : 'ADMIN'}</span>
                     </button>
                   </Link>
                 )}
@@ -536,7 +529,25 @@ export function CompetitionBanner({ userId }: { userId: string }) {
   const [selected, setSelected]         = useState<Competition | null>(null)
   const [open, setOpen]                 = useState(false)
   const [daysOut, setDaysOut]           = useState<number | null>(null)
+  const [countdown, setCountdown]       = useState({ d: 0, h: 0, m: 0, s: 0 })
   const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!selected) return
+    const update = () => {
+      const diff = new Date(selected.date).getTime() - Date.now()
+      if (diff <= 0) { setCountdown({ d: 0, h: 0, m: 0, s: 0 }); return }
+      setCountdown({
+        d: Math.floor(diff / 86400000),
+        h: Math.floor((diff % 86400000) / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000),
+      })
+    }
+    update()
+    const iv = setInterval(update, 1000)
+    return () => clearInterval(iv)
+  }, [selected])
 
   useEffect(() => {
     // Load upcoming competitions
@@ -584,35 +595,45 @@ export function CompetitionBanner({ userId }: { userId: string }) {
 
   return (
     <div ref={ref} style={{ position: 'relative', marginBottom: '20px', animation: 'fadeUp 0.4s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'stretch', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '14px', overflow: 'hidden', background: 'rgba(255,255,255,0.025)', boxShadow: '0 2px 20px rgba(0,0,0,0.3)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', border: '1px solid rgba(129,140,248,0.22)', borderLeft: '3px solid #818cf8', borderRadius: '14px', overflow: 'hidden', background: 'linear-gradient(135deg, rgba(79,70,229,0.1) 0%, rgba(99,102,241,0.05) 50%, rgba(109,40,217,0.07) 100%)', boxShadow: '0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(165,180,252,0.08)', padding: '16px 20px', flexWrap: 'wrap' }}>
 
-        {/* Days out pill */}
-        {selected && daysOut !== null && (
-          <div className="comp-days-pill" style={{ padding: '0 24px', background: daysOut <= 14 ? 'rgba(239,68,68,0.12)' : daysOut <= 30 ? 'rgba(250,204,21,0.08)' : 'rgba(34,197,94,0.08)', borderRight: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: '90px' }}>
-            <div className="comp-days-num" style={{ fontFamily: 'var(--fd)', fontSize: '2rem', fontWeight: 800, lineHeight: 1, color: daysOut <= 14 ? '#ef4444' : daysOut <= 30 ? '#facc15' : '#22c55e' }}>{daysOut}</div>
-            <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: '#666', marginTop: '3px', fontFamily: 'var(--fm)', fontWeight: 700 }}>DAYS OUT</div>
+        {/* Left: label + name + date + picker */}
+        <button onClick={() => setOpen(o => !o)}
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: '160px', padding: 0 }}>
+          <div style={{ fontSize: '0.48rem', letterSpacing: '0.38em', color: 'rgba(129,140,248,0.75)', fontFamily: 'var(--fm)', fontWeight: 700 }}>SLJEDEĆE NATJECANJE</div>
+          {selected ? (
+            <>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f0f0f0', fontFamily: 'var(--fm)', lineHeight: 1.2, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {selected.name}
+                <ChevronDown size={12} color="rgba(255,255,255,0.3)" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
+              </div>
+              <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--fm)' }}>
+                {new Date(selected.date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long', year: 'numeric' })}{selected.location ? ` · ${selected.location}` : ''}
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              Odaberi natjecanje... <ChevronDown size={12} />
+            </div>
+          )}
+        </button>
+
+        {/* Right: countdown chips */}
+        {selected && (
+          <div className="comp-chips" style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+            {([
+              { val: countdown.d, label: 'DANA' },
+              { val: countdown.h, label: 'SATI' },
+              { val: countdown.m, label: 'MIN'  },
+              { val: countdown.s, label: 'SEK'  },
+            ] as {val:number;label:string}[]).map(({ val, label }) => (
+              <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, rgba(79,70,229,0.18) 0%, rgba(99,102,241,0.08) 100%)', border: '1px solid rgba(129,140,248,0.28)', borderRadius: '10px', padding: '10px 14px', minWidth: '54px', boxShadow: 'inset 0 1px 0 rgba(165,180,252,0.1)' }}>
+                <div style={{ fontFamily: 'var(--fd)', fontSize: '1.5rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em', background: 'linear-gradient(135deg, #c7d2fe 0%, #818cf8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{String(val).padStart(2,'0')}</div>
+                <div style={{ fontSize: '0.4rem', letterSpacing: '0.22em', color: 'rgba(165,180,252,0.55)', fontFamily: 'var(--fm)', fontWeight: 700, marginTop: '4px' }}>{label}</div>
+              </div>
+            ))}
           </div>
         )}
-
-        {/* Picker button */}
-        <button onClick={() => setOpen(o => !o)}
-          style={{ flex: 1, padding: '14px 18px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.15s' }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '0.48rem', letterSpacing: '0.35em', color: '#666', marginBottom: '3px', fontFamily: 'var(--fm)' }}>SLJEDEĆE NATJECANJE</div>
-            {selected ? (
-              <>
-                <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#f0f0f0', fontFamily: 'var(--fm)' }}>{selected.name}</div>
-                <div style={{ fontSize: '0.58rem', color: '#777', marginTop: '2px' }}>{selected.date}{selected.location ? ` · ${selected.location}` : ''}</div>
-              </>
-            ) : (
-              <div style={{ fontSize: '0.82rem', color: '#555', fontFamily: 'var(--fm)' }}>Odaberi natjecanje...</div>
-            )}
-          </div>
-          <ChevronDown size={13} color="#555" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
-        </button>
       </div>
 
       {/* Dropdown */}
@@ -1057,46 +1078,81 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
           </div>
         </div>
       ) : (
-        /* Lifter: 2-col — status | name+coach note */
-        <div className="ex-row-main" style={{ display: 'grid', gridTemplateColumns: '52px 1fr', alignItems: 'stretch', borderBottom: '1px solid rgba(255,255,255,0.08)', minHeight: '58px' }}>
-          {/* Status dot */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={we.completed ? '#4ade80' : '#555'} strokeWidth="2.5">
-              {we.completed
-                ? <><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></>
-                : <circle cx="12" cy="12" r="8"/>}
-            </svg>
-          </div>
-          {/* Name + coach instruction */}
-          <div onClick={() => setSetsOpen(v => !v)} style={{ padding: '13px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '5px', cursor: 'pointer' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={we.completed ? '#4ade80' : '#6366f1'} strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              <span style={{ fontSize: '0.95rem', fontWeight: 800, color: we.completed ? '#86efac' : '#a78bfa', fontFamily: 'var(--fm)', letterSpacing: '-0.01em' }}>{we.exercise?.name ?? '—'}</span>
-              {/* ⓘ history button */}
-              <button onClick={toggleHistory}
-                title="Usporedi s prošlim tjednom"
-                style={{ background: showHistory ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${showHistory ? 'rgba(129,140,248,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showHistory ? '#818cf8' : '#444', fontSize: '0.6rem', fontWeight: 800, flexShrink: 0, transition: 'all 0.15s' }}>
-                i
-              </button>
-              {/* Plan label inline */}
-              {(we.planned_sets || we.planned_reps) && (
-                <span style={{ fontSize: '0.6rem', color: '#666', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px', padding: '2px 7px', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>
-                  {we.planned_sets}×{we.planned_reps}{we.planned_weight_kg ? ` · ${we.planned_weight_kg}kg` : ''}
-                  {(we.target_rpe ?? we.planned_rpe) ? ` @ RPE ${we.target_rpe ?? we.planned_rpe}` : ''}
-                </span>
-              )}
-              <div style={{ marginLeft: 'auto', color: setsOpen ? '#818cf8' : '#333', transition: 'transform 0.2s, color 0.2s', transform: setsOpen ? 'rotate(90deg)' : 'none' }}>
-                <ChevronRight size={12} />
+        /* Lifter: colored-left-border design */
+        (() => {
+          const CAT_COLOR: Record<string, string> = {
+            'Squat': '#6b8cff', 'Squat Variation': '#6b8cff',
+            'Bench': '#f59e0b', 'Bench Variation': '#f59e0b',
+            'Deadlift': '#22c55e', 'Deadlift Variation': '#22c55e',
+          }
+          const catColor = CAT_COLOR[we.exercise?.category ?? ''] ?? 'rgba(255,255,255,0.3)'
+          const totalDots = we._totalSets ?? we.planned_sets ?? 0
+          const doneDots  = we._completedSets ?? 0
+          return (
+            <div className="ex-row-main"
+              onClick={() => setSetsOpen(v => !v)}
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.07)', borderLeft: `3px solid ${we.completed ? '#22c55e' : catColor}`, padding: '13px 14px 13px 16px', cursor: 'pointer', background: we.completed ? 'rgba(34,197,94,0.03)' : 'transparent', transition: 'background 0.2s', minHeight: '56px' }}>
+
+              {/* Name + plan line */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '0.92rem', fontWeight: 800, color: we.completed ? '#86efac' : '#f0f0f0', fontFamily: 'var(--fm)', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                    {we.exercise?.name ?? '—'}
+                  </span>
+                  <button onClick={toggleHistory}
+                    title="Usporedi s prošlim tjednom"
+                    style={{ background: showHistory ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${showHistory ? 'rgba(129,140,248,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showHistory ? '#818cf8' : '#444', fontSize: '0.6rem', fontWeight: 800, flexShrink: 0, transition: 'all 0.15s' }}>
+                    i
+                  </button>
+                </div>
+                {/* Plan line: 4×5 @ 160kg → actual */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' as const }}>
+                  {(we.planned_sets || we.planned_reps) && (
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: catColor, fontFamily: 'var(--fm)' }}>
+                      {we.planned_sets}×{we.planned_reps}
+                    </span>
+                  )}
+                  {we.planned_weight_kg && (
+                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.38)', fontFamily: 'var(--fm)' }}>
+                      @ {we.planned_weight_kg}kg
+                    </span>
+                  )}
+                  {we.actual_weight_kg && (
+                    <>
+                      <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.25)' }}>→</span>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f0f0f0', fontFamily: 'var(--fm)' }}>{we.actual_weight_kg}kg</span>
+                    </>
+                  )}
+                  {(we.target_rpe ?? we.planned_rpe) && (
+                    <span style={{ fontSize: '0.62rem', color: 'rgba(250,204,21,0.65)', fontFamily: 'var(--fm)' }}>
+                      @RPE{we.target_rpe ?? we.planned_rpe}
+                    </span>
+                  )}
+                  {we.coach_note && (
+                    <span style={{ fontSize: '0.62rem', color: '#f59e0b', fontFamily: 'var(--fm)' }}>↳ {we.coach_note}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Completion dots + counter + chevron */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                {totalDots > 0 && (
+                  <>
+                    <div style={{ display: 'flex', gap: '3px' }}>
+                      {Array.from({ length: Math.min(totalDots, 6) }).map((_, i) => (
+                        <div key={i} style={{ width: '7px', height: '7px', borderRadius: '50%', background: i < doneDots ? catColor : 'transparent', border: `1.5px solid ${i < doneDots ? catColor : 'rgba(255,255,255,0.2)'}`, boxShadow: i < doneDots ? `0 0 4px ${catColor}80` : 'none', transition: 'all 0.2s' }} />
+                      ))}
+                    </div>
+                    <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{doneDots}/{totalDots}</span>
+                  </>
+                )}
+                <div style={{ color: setsOpen ? catColor : 'rgba(255,255,255,0.25)', transition: 'transform 0.2s, color 0.2s', transform: setsOpen ? 'rotate(90deg)' : 'none' }}>
+                  <ChevronRight size={12} />
+                </div>
               </div>
             </div>
-            {/* Coach note — always visible as instruction */}
-            {we.coach_note && (
-              <div style={{ fontSize: '0.65rem', color: '#f59e0b', letterSpacing: '0.04em', paddingLeft: '18px', lineHeight: 1.5 }}>
-                ↳ {we.coach_note}
-              </div>
-            )}
-          </div>
-        </div>
+          )
+        })()
       )}
 
       {/* ── History panel (prošli tjedan) ── */}
@@ -1316,6 +1372,9 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
           <div className='workout-header-inner' style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px' }}>
             {/* Workout name — large, bold */}
             <div style={{ flex: 1 }} onClick={e => e.stopPropagation()}>
+              <div style={{ fontSize: '0.47rem', fontWeight: 700, fontFamily: 'var(--fm)', letterSpacing: '0.2em', color: workout.completed ? 'rgba(134,239,172,0.45)' : 'rgba(255,255,255,0.25)', textTransform: 'uppercase' as const, marginBottom: '3px' }}>
+                TRENING
+              </div>
               <div style={{ fontSize: '1rem', fontWeight: 900, color: workout.completed ? '#86efac' : '#f0f0ff', fontFamily: 'var(--fd)', letterSpacing: '0.02em', textTransform: 'uppercase' as const }}>
                 <EditableField value={workout.day_name} placeholder="DAN TRENINGA" onSave={v => onUpdateWorkout(workout.id, { day_name: v })} />
               </div>
@@ -1494,7 +1553,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
     setTimeout(() => { addWorkoutLocked.current = false }, 500)
   }
 
-  const { totalSets, doneSets, total, pct, totalEx, doneEx } = useMemo(() => {
+  const { totalSets, doneSets, total, done, pct, totalEx, doneEx } = useMemo(() => {
     const allExercises = week.workouts?.flatMap(w => w.workout_exercises ?? []) ?? []
     const totalSets = allExercises.reduce((s, e) => s + (e._totalSets ?? e.planned_sets ?? 0), 0)
     const doneSets = allExercises.reduce((s, e) => {
@@ -1507,34 +1566,68 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
     const pct = totalSets > 0 ? (doneSets / totalSets) * 100 : (total > 0 ? (done / total) * 100 : 0)
     const totalEx = allExercises.length
     const doneEx = allExercises.filter(e => e.completed).length
-    return { totalSets, doneSets, total, pct, totalEx, doneEx }
+    return { totalSets, doneSets, total, done, pct, totalEx, doneEx }
   }, [week.workouts])
 
   const hasNotes = !!(week.notes?.trim())
 
-  return (
-    <div style={{ marginBottom: '20px', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 48px rgba(0,0,0,0.6), inset 4px 0 0 rgba(99,102,241,0.7), 0 0 0 1px rgba(255,255,255,0.03)' }}>
+  const allDone = done === total && total > 0
+  const accentColor = allDone ? '#22c55e' : pct > 0 ? '#6366f1' : 'rgba(255,255,255,0.1)'
 
-      {/* ── Week header — editorial black band ── */}
-      <div style={{ background: 'linear-gradient(160deg, #0e0e1c 0%, #080810 100%)', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.09)' : 'none' }}
+  return (
+    <div style={{
+      marginBottom: '20px',
+      background: 'rgba(255,255,255,0.03)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderLeft: `3px solid ${accentColor}`,
+      borderRadius: '16px',
+      overflow: 'hidden',
+      boxShadow: `0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)${allDone ? ', 0 0 0 1px rgba(34,197,94,0.06)' : ''}`,
+      transition: 'border-color 0.4s, box-shadow 0.4s',
+    }}>
+
+      {/* ── Week header ── */}
+      <div style={{ background: allDone ? 'rgba(34,197,94,0.04)' : 'rgba(255,255,255,0.01)', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.07)' : 'none' }}
         onClick={() => { const next = !open; setOpen(next); try { sessionStorage.setItem(ssKey, String(next)) } catch {} }}>
 
         {/* Top: large week label row */}
         <div className="week-header-top" style={{ padding: 'clamp(14px,3vw,20px) clamp(16px,4vw,24px) 0', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
-            {/* Giant W number — accent color */}
-            <span className="week-w-num" style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,4.5vw,3.6rem)', fontWeight: 900, lineHeight: 1, background: 'linear-gradient(135deg, #818cf8 0%, #6366f1 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '-0.05em' }}>
-              W{week.week_number}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div>
+              {/* Overline label — profile page style */}
+              <div style={{ fontSize: '0.45rem', fontWeight: 700, fontFamily: 'var(--fm)', letterSpacing: '0.22em', color: allDone ? 'rgba(74,222,128,0.5)' : 'rgba(255,255,255,0.25)', marginBottom: '4px', textTransform: 'uppercase' as const }}>
+                TJEDAN
+              </div>
+              {/* Giant W number — color based on completion */}
+              <span className="week-w-num" style={{
+                fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,4.5vw,3.6rem)', fontWeight: 900, lineHeight: 1,
+                background: allDone
+                  ? 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)'
+                  : pct > 0
+                    ? 'linear-gradient(135deg, #818cf8 0%, #6366f1 100%)'
+                    : 'linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.1) 100%)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                letterSpacing: '-0.05em', transition: 'all 0.4s', display: 'block',
+              }}>
+                W{week.week_number}
+              </span>
+            </div>
+            {allDone && (
+              <span style={{ fontSize: '0.48rem', fontWeight: 800, fontFamily: 'var(--fm)', letterSpacing: '0.18em', color: '#4ade80', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.28)', borderRadius: '6px', padding: '3px 9px' }}>
+                ZAVRŠENO
+              </span>
+            )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '4px' }}>
             {/* Progress pill */}
             {total > 0 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '6px 14px', borderRadius: '20px' }}>
                 <div style={{ width: '52px', height: '3px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', position: 'relative', overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', inset: '0 auto 0 0', width: `${pct}%`, background: pct === 100 ? '#22c55e' : 'linear-gradient(90deg, #6366f1, #818cf8)', boxShadow: pct === 100 ? '0 0 8px rgba(34,197,94,0.6)' : '0 0 8px rgba(99,102,241,0.5)', transition: 'width 0.5s cubic-bezier(0.16,1,0.3,1)', borderRadius: '2px' }} />
+                  <div style={{ position: 'absolute', inset: '0 auto 0 0', width: `${pct}%`, background: allDone ? '#22c55e' : 'linear-gradient(90deg, #6366f1, #818cf8)', boxShadow: allDone ? '0 0 8px rgba(34,197,94,0.6)' : '0 0 8px rgba(99,102,241,0.5)', transition: 'width 0.5s cubic-bezier(0.16,1,0.3,1)', borderRadius: '2px' }} />
                 </div>
-                <span style={{ fontSize: '0.54rem', color: pct === 100 ? '#4ade80' : '#8888bb', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.05em' }}>{totalSets > 0 ? `${doneSets}/${totalSets}` : `${doneEx}/${totalEx}`}</span>
+                <span style={{ fontSize: '0.54rem', color: allDone ? '#4ade80' : '#8888bb', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.05em' }}>{totalSets > 0 ? `${doneSets}/${totalSets}` : `${doneEx}/${totalEx}`}</span>
               </div>
             )}
             <div style={{ color: '#888', transition: 'transform 0.25s, color 0.2s', transform: open ? 'rotate(90deg)' : 'none' }}>

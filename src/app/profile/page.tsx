@@ -580,10 +580,10 @@ export default function ProfilePage() {
               <div className="prof-orm-tiles" style={{ display: 'flex', gap: '8px' }}>
                 {TILES.map((t, i) => (
                   <div key={t.label}
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '14px', padding: 'clamp(10px,2vw,16px) clamp(14px,2.5vw,22px)', textAlign: 'center', minWidth: 'clamp(60px,8vw,90px)', boxShadow: `0 8px 32px ${t.glow}, inset 0 1px 0 rgba(255,255,255,0.07)`, transition: 'transform 0.25s', cursor: 'default' }}
+                    style={{ background: t.val ? `linear-gradient(160deg, ${t.color}12 0%, rgba(255,255,255,0.02) 100%)` : 'rgba(255,255,255,0.03)', border: `1px solid ${t.val ? t.color + '28' : 'rgba(255,255,255,0.07)'}`, borderBottom: `2px solid ${t.val ? t.color + '55' : 'rgba(255,255,255,0.06)'}`, borderRadius: '14px', padding: 'clamp(10px,2vw,16px) clamp(14px,2.5vw,22px)', textAlign: 'center', minWidth: 'clamp(60px,8vw,90px)', boxShadow: '0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)', transition: 'transform 0.25s', cursor: 'default' }}
                     onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                     onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-                    <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.3rem,3vw,1.9rem)', fontWeight: 800, lineHeight: 1, color: t.val ? t.color : 'rgba(255,255,255,0.15)', textShadow: t.val ? `0 0 20px ${t.glow}` : 'none' }}>
+                    <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.3rem,3vw,1.9rem)', fontWeight: 800, lineHeight: 1, color: t.val ? t.color : 'rgba(255,255,255,0.15)' }}>
                       {t.val ?? '—'}
                     </div>
                     <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.22em', marginTop: '6px' }}>{t.label}</div>
