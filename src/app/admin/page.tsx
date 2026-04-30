@@ -15,6 +15,22 @@ import type { Block, Week, Workout, WorkoutExercise, Exercise, BlockSummary } fr
 
 const supabase = createClient()
 
+// ── Glass styles ────────────────────────────────────────────────────
+const glass: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.03)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255,255,255,0.08)',
+  borderRadius: '14px',
+  boxShadow: '0 4px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
+}
+const glassCard: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.08)',
+  borderRadius: '14px',
+  boxShadow: '0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)',
+}
+
 type AthleteNote = {
   id: string
   athlete_id: string
@@ -1609,13 +1625,13 @@ export default function AdminPage() {
               </div>
 
               {/* Summary stats */}
-              <div className="admin-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.09)', maxWidth: '450px' }}>
+              <div className="admin-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', ...glass, overflow: 'hidden', maxWidth: '450px' }}>
                 {[
                   { val: totalAthletes, label: 'LIFERA', color: '#fff' },
                   { val: activeBlocks, label: 'AKT. BLOKOVA', color: '#4ade80' },
                   { val: athletes.reduce((s, a) => s + ((a.blocks as Block[])?.length ?? 0), 0), label: 'UK. BLOKOVA', color: '#fff' },
                 ].map((s, i) => (
-                  <div key={i} style={{ padding: '18px 20px', background: '#08080a', textAlign: 'center' }}>
+                  <div key={i} style={{ padding: '18px 20px', background: 'rgba(255,255,255,0.02)', textAlign: 'center', borderRight: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
                     <div style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.val}</div>
                     <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.25em', marginTop: '4px' }}>{s.label}</div>
                   </div>
@@ -1628,7 +1644,7 @@ export default function AdminPage() {
             {dashSection === 'obavijesti' && (
               <div style={{ animation: 'fadeUp 0.3s ease', maxWidth: '680px' }}>
                 {/* Compose box */}
-                <div style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', overflow: 'hidden', marginBottom: '28px' }}>
+                <div style={{ ...glass, borderRadius: '12px', overflow: 'hidden', marginBottom: '28px' }}>
                   <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>NOVA OBAVIJEST</div>
                   <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column' as const, gap: '14px' }}>
                     <textarea
@@ -1722,9 +1738,9 @@ export default function AdminPage() {
                     )
 
                     return (
-                      <div key={a.id} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '18px 16px', display: 'flex', flexDirection: 'column' as const, gap: '14px', transition: 'border-color 0.2s' }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)' }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}>
+                      <div key={a.id} style={{ ...glassCard, padding: '18px 16px', display: 'flex', flexDirection: 'column' as const, gap: '14px', transition: 'border-color 0.2s, box-shadow 0.2s' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.boxShadow = '0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)' }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.boxShadow = '0 4px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
 
                         {/* Header */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1777,7 +1793,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Coach-lifter assignment */}
-                <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', overflow: 'hidden', marginBottom: '28px' }}>
+                <div style={{ ...glass, borderRadius: '12px', overflow: 'hidden', marginBottom: '28px' }}>
                   <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>DODJELA LIFTERA TRENERU</span>
                     {assignSaving && <span style={{ fontSize: '0.55rem', color: '#fbbf24', fontFamily: 'var(--fm)' }}>Sprema...</span>}
@@ -1831,7 +1847,7 @@ export default function AdminPage() {
             {dashSection === 'athletes' && <>
             {/* Search + manage */}
             <div className="admin-search-row" style={{ display: 'flex', gap: '12px', marginBottom: '28px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '10px 16px', maxWidth: '360px' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', ...glass, padding: '10px 16px', maxWidth: '360px' }}>
                 <Search size={14} color="rgba(255,255,255,0.3)" />
                 <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Pretraži lifere..."
                   style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.88rem', width: '100%', fontFamily: 'var(--fm)' }} />
@@ -1866,9 +1882,9 @@ export default function AdminPage() {
                       {/* Card */}
                       <div
                         onClick={() => { if (!managingUsers) { setSelectedAthlete(athlete); setAdminView('overview') } }}
-                        style={{ width: '100%', minWidth: 0, padding: '18px 14px 0', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.09)', borderTop: `2px solid ${athlete.role === 'admin' ? 'rgba(239,68,68,0.55)' : activeBlock ? 'rgba(74,222,128,0.45)' : 'rgba(255,255,255,0.09)'}`, borderRadius: '10px', overflow: 'hidden', cursor: managingUsers ? 'default' : 'pointer', transition: 'all 0.22s', textAlign: 'center', position: 'relative', boxSizing: 'border-box' as const }}
-                        onMouseEnter={e => { if (!managingUsers) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' } }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)'; e.currentTarget.style.background = 'rgba(255,255,255,0.025)' }}
+                        style={{ width: '100%', minWidth: 0, padding: '18px 14px 0', ...glassCard, borderTop: `2px solid ${athlete.role === 'admin' ? 'rgba(239,68,68,0.55)' : activeBlock ? 'rgba(74,222,128,0.45)' : 'rgba(255,255,255,0.09)'}`, borderRadius: '12px', overflow: 'hidden', cursor: managingUsers ? 'default' : 'pointer', transition: 'all 0.22s', textAlign: 'center', position: 'relative', boxSizing: 'border-box' as const }}
+                        onMouseEnter={e => { if (!managingUsers) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)' } }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)' }}
                       >
                         {/* Avatar circle */}
                         <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(255,255,255,0.14) 0%,rgba(255,255,255,0.04) 100%)', border: '1.5px solid rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fm)', margin: '0 auto 10px', position: 'relative' }}>

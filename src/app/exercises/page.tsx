@@ -17,6 +17,24 @@ interface Exercise {
   created_at: string
 }
 
+// ── Glass styles ───────────────────────────────────────────────────
+// With blur — for containers (search, stats, modals). Max ~3–4 per screen.
+const glass: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.03)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255,255,255,0.09)',
+  borderRadius: '14px',
+  boxShadow: '0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)',
+}
+// No blur — for repeated grid cards (50+ items). Same look, no compositing cost.
+const glassCard: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.09)',
+  borderRadius: '14px',
+  boxShadow: '0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)',
+}
+
 // ── Category colour map ────────────────────────────────────────────
 const CAT_COLORS: Record<string, string> = {
   'Squat':              '#6b8cff',
@@ -115,11 +133,8 @@ function ExCard({ ex, index, onClick }: { ex: Exercise; index: number; onClick: 
       onClick={onClick}
       className="ex-card"
       style={{
-        background: 'linear-gradient(160deg, #0e0e14 0%, #090910 100%)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: '10px', overflow: 'hidden', cursor: 'pointer',
-        transition: 'border-color 0.25s, box-shadow 0.25s, transform 0.25s',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.35)',
+        ...glassCard,
+        overflow: 'hidden', cursor: 'pointer',
         opacity: visible ? 1 : 0,
         transform: visible ? 'none' : 'translateY(18px)',
         transitionProperty: 'opacity, transform, border-color, box-shadow',
@@ -316,12 +331,27 @@ export default function ExerciseLibraryPage() {
   const heroCount = exercises.length
 
   return (
-    <div style={{ background: '#06060a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
+    <div style={{ background: '#04040a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
 
       {/* ── Atmospheric bg ── */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.014) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
-      <div style={{ position: 'fixed', top: '-20vh', right: '-10vw', width: '60vw', height: '60vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse, rgba(107,140,255,0.05) 0%, transparent 70%)', filter: 'blur(60px)' }} />
-      <div style={{ position: 'fixed', bottom: '-10vh', left: '-8vw', width: '50vw', height: '50vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse, rgba(34,197,94,0.04) 0%, transparent 70%)', filter: 'blur(70px)' }} />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.3,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E")`,
+        backgroundSize: '200px 200px' }} />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+        backgroundImage: 'linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px)',
+        backgroundSize: '72px 72px',
+        maskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 70%)' }} />
+      <div style={{ position: 'fixed', top: '-25vh', left: '-15vw', width: '80vw', height: '80vh', zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 40% 40%, rgba(79,70,229,0.13) 0%, rgba(59,130,246,0.06) 40%, transparent 70%)',
+        filter: 'blur(70px)' }} />
+      <div style={{ position: 'fixed', bottom: '-20vh', right: '-10vw', width: '65vw', height: '65vh', zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 60% 60%, rgba(34,197,94,0.08) 0%, rgba(5,150,105,0.04) 45%, transparent 70%)',
+        filter: 'blur(80px)' }} />
+      <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, height: '1px', zIndex: 0, pointerEvents: 'none',
+        background: 'linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.35) 30%, rgba(139,92,246,0.45) 50%, rgba(99,102,241,0.35) 70%, transparent 100%)',
+        boxShadow: '0 0 40px 8px rgba(99,102,241,0.08)' }} />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.6) 100%)' }} />
 
       <AppNav
         athleteName={navUser.name}
@@ -348,15 +378,15 @@ export default function ExerciseLibraryPage() {
             </h1>
 
             {/* Stats */}
-            <div className="ex-stats-bar" style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(16px)', transition: 'all 0.6s ease 0.2s', display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', overflow: 'hidden' }}>
+            <div className="ex-stats-bar" style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(16px)', transition: 'all 0.6s ease 0.2s', display: 'flex', gap: '1px', ...glass, overflow: 'hidden', borderRadius: '12px' }}>
               {[
                 { val: heroCount,                        label: t('ex.exercises') },
                 { val: CATEGORY_GROUPS.length,           label: t('ex.groups') },
                 { val: Object.keys(CAT_COLORS).length,   label: t('ex.categories') },
               ].map((s, i) => (
-                <div key={i} style={{ padding: '14px 22px', background: '#09090e', textAlign: 'center' }}>
+                <div key={i} style={{ padding: '14px 22px', background: 'rgba(255,255,255,0.02)', textAlign: 'center', borderRight: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
                   <div style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', fontWeight: 800, color: '#e0e0e0', lineHeight: 1 }}>{s.val}</div>
-                  <div style={{ fontSize: '0.46rem', color: '#555', letterSpacing: '0.22em', marginTop: '4px' }}>{s.label}</div>
+                  <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.22em', marginTop: '4px' }}>{s.label}</div>
                 </div>
               ))}
             </div>
@@ -364,7 +394,7 @@ export default function ExerciseLibraryPage() {
 
           {/* Search bar */}
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(12px)', transition: 'all 0.6s ease 0.25s', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'linear-gradient(135deg, #0e0e14 0%, #090910 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0 16px', boxShadow: '0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)', transition: 'border-color 0.2s' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', ...glass, borderRadius: '12px', padding: '0 16px', transition: 'border-color 0.2s' }}>
               <Search size={15} color="#555" style={{ flexShrink: 0 }} />
               <input
                 type="text" placeholder={t('ex.search')} value={searchQuery}
