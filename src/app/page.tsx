@@ -238,12 +238,16 @@ export default function Landing() {
             {/* CTA gumbi */}
             <div style={{ display: 'flex', flexDirection: 'row', gap: '14px', marginTop: '44px', width: '100%', maxWidth: '520px', justifyContent: 'center' }}>
               <Link href="/survey" style={{ textDecoration: 'none', flex: 1 }}>
-                <button className="btn-primary-cta" style={{ width: '100%', padding: '18px 24px', background: '#fff', color: '#000', border: 'none', fontSize: 'clamp(0.58rem, 1.6vw, 0.74rem)', fontWeight: 800, letterSpacing: '0.22em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const }}>
+                <button className="btn-primary-cta" style={{ width: '100%', padding: '18px 24px', background: '#fff', color: '#000', border: 'none', fontSize: 'clamp(0.58rem, 1.6vw, 0.74rem)', fontWeight: 800, letterSpacing: '0.22em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const, transition: 'all 0.25s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; e.currentTarget.style.transform = 'translateY(0)' }}>
                   {t('home.hero.cta1')}
                 </button>
               </Link>
               <Link href="/training" style={{ textDecoration: 'none', flex: 1, display: 'flex', minHeight: '44px' }}>
-                <button className="btn-secondary-cta" style={{ width: '100%', padding: '16px 24px', background: 'rgba(255,255,255,0.03)', color: '#fff', border: '1px solid rgba(255,255,255,0.22)', fontSize: 'clamp(0.58rem, 1.6vw, 0.74rem)', fontWeight: 600, letterSpacing: '0.22em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const }}>
+                <button className="btn-secondary-cta" style={{ width: '100%', padding: '16px 24px', background: 'rgba(255,255,255,0.03)', color: '#fff', border: '1px solid rgba(255,255,255,0.22)', fontSize: 'clamp(0.58rem, 1.6vw, 0.74rem)', fontWeight: 600, letterSpacing: '0.22em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const, transition: 'all 0.25s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.7)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.transform = 'translateY(0)' }}>
                   {t('home.hero.cta2')}
                 </button>
               </Link>
@@ -442,7 +446,9 @@ export default function Landing() {
             {t('home.cta.title')}
           </h2>
           <Link href="/survey" style={{ textDecoration: 'none' }}>
-            <button className="btn-cta-final" style={{ padding: 'clamp(16px,2.5vw,25px) clamp(32px,6vw,80px)', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.6)', fontSize: 'clamp(0.75rem,2.5vw,1rem)', fontWeight: 900, letterSpacing: '0.3em', cursor: 'pointer', transition: 'all 0.4s', fontFamily: 'var(--fm)', position: 'relative', overflow: 'hidden' }}>
+            <button className="btn-cta-final" style={{ padding: 'clamp(16px,2.5vw,25px) clamp(32px,6vw,80px)', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.6)', fontSize: 'clamp(0.75rem,2.5vw,1rem)', fontWeight: 900, letterSpacing: '0.3em', cursor: 'pointer', transition: 'all 0.3s', fontFamily: 'var(--fm)', position: 'relative', overflow: 'hidden' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; e.currentTarget.style.borderColor = '#fff'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)'; e.currentTarget.style.transform = 'translateY(0)' }}>
               <span style={{ position: 'relative', zIndex: 2 }}>{t('home.cta.btn')}</span>
             </button>
           </Link>
