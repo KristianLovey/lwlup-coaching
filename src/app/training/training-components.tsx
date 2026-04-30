@@ -1609,7 +1609,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
                     ? 'linear-gradient(135deg, #818cf8 0%, #6366f1 100%)'
                     : 'linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.1) 100%)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-                letterSpacing: '-0.05em', transition: 'all 0.4s', display: 'block',
+                letterSpacing: '-0.05em', transition: 'all 0.4s',
               }}>
                 W{week.week_number}
               </span>

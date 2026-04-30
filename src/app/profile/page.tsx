@@ -656,7 +656,7 @@ export default function ProfilePage() {
         </div>
 
         {/* ── PILL TABS ── */}
-        <div style={{ display: 'flex', gap: '3px', marginBottom: '24px', padding: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', width: 'fit-content', animation: 'fadeUp 0.45s ease' }}>
+        <div style={{ display: 'flex', gap: '3px', marginBottom: '24px', padding: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', width: 'fit-content', maxWidth: '100%', overflowX: 'auto', animation: 'fadeUp 0.45s ease' }}>
           {([['progress', 'NAPREDAK'], ['prs', 'OSOBNI REKORDI'], ['leaderboard', 'LEADERBOARD']] as [string, string][]).map(([tab, label]) => (
             <button key={tab} onClick={() => setActiveTab(tab as any)}
               style={{ padding: '9px 22px', background: activeTab === tab ? '#fff' : 'transparent', border: 'none', borderRadius: '9px', cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.12em', color: activeTab === tab ? '#000' : 'rgba(255,255,255,0.4)', transition: 'all 0.2s', whiteSpace: 'nowrap', boxShadow: activeTab === tab ? '0 2px 12px rgba(0,0,0,0.3)' : 'none' }}>
