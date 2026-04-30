@@ -264,7 +264,7 @@ export default function ExerciseLibraryPage() {
   const [subCat, setSubCat]                 = useState<string | null>(null)
   const filterBarRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const [navUser, setNavUser] = useState({ name: '', isAdmin: false, avatarIcon: '' })
+  const [navUser, setNavUser] = useState({ name: '', isAdmin: false, role: undefined as 'admin' | 'trener' | undefined, avatarIcon: '' })
 
   useEffect(() => {
     supabase.from('exercises').select('*').order('name').then(({ data }) => {
@@ -274,7 +274,10 @@ export default function ExerciseLibraryPage() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
       supabase.from('profiles').select('full_name, role, avatar_icon').eq('id', user.id).single()
-        .then(({ data }) => setNavUser({ name: data?.full_name ?? '', isAdmin: data?.role === 'admin', avatarIcon: data?.avatar_icon ?? 'barbell' }))
+        .then(({ data }) => {
+          const r = data?.role as 'admin' | 'trener' | undefined
+          setNavUser({ name: data?.full_name ?? '', isAdmin: r === 'admin' || r === 'trener', role: r, avatarIcon: data?.avatar_icon ?? 'barbell' })
+        })
     })
   }, [])
 
@@ -323,6 +326,7 @@ export default function ExerciseLibraryPage() {
       <AppNav
         athleteName={navUser.name}
         isAdmin={navUser.isAdmin}
+        role={navUser.role}
         onLogout={async () => { await supabase.auth.signOut(); router.push('/') }}
         avatarIcon={navUser.avatarIcon}
       />

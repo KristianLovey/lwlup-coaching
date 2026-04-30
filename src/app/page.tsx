@@ -45,14 +45,24 @@ function NetworkCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return
-    const ctx = canvas.getContext('2d')!; let animId: number; let lastT = 0
+    const ctx = canvas.getContext('2d')!
+    let animId: number, lastT = 0, paused = false
+
+    const NODES = window.innerWidth < 768 ? 16 : 28
     const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight }
-    resize(); window.addEventListener('resize', resize)
-    const NODES = 40
-    const nodes = Array.from({ length: NODES }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3, r: Math.random() * 1.5 + 0.5 }))
+    resize()
+    window.addEventListener('resize', resize)
+
+    const nodes = Array.from({ length: NODES }, () => ({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 1.5 + 0.5,
+    }))
+
     const draw = (t: number) => {
+      if (paused) return
       animId = requestAnimationFrame(draw)
-      if (t - lastT < 33) return  // cap at ~30fps
+      if (t - lastT < 33) return
       lastT = t
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       nodes.forEach(n => { n.x += n.vx; n.y += n.vy; if (n.x < 0 || n.x > canvas.width) n.vx *= -1; if (n.y < 0 || n.y > canvas.height) n.vy *= -1 })
@@ -62,8 +72,25 @@ function NetworkCanvas() {
       }
       nodes.forEach(n => { ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fill() })
     }
+
+    const resume = () => { if (paused) { paused = false; animId = requestAnimationFrame(draw) } }
+    const pause  = () => { paused = true; cancelAnimationFrame(animId) }
+
+    // Pause when tab is hidden
+    const onVisibility = () => document.hidden ? pause() : resume()
+    document.addEventListener('visibilitychange', onVisibility)
+
+    // Pause when user scrolls well past the hero — canvas becomes invisible behind content
+    const onScroll = () => window.scrollY > window.innerHeight * 1.5 ? pause() : resume()
+    window.addEventListener('scroll', onScroll, { passive: true })
+
     animId = requestAnimationFrame(draw)
-    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize) }
+    return () => {
+      cancelAnimationFrame(animId)
+      window.removeEventListener('resize', resize)
+      window.removeEventListener('scroll', onScroll)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [])
   return <canvas ref={canvasRef} style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.9 }} />
 }
