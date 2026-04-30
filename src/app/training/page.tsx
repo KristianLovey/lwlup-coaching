@@ -57,19 +57,30 @@ export default function TrainingPage() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { setError('Nisi prijavljen/a.'); setLoading(false); return }
         setUserId(user.id)
-        const { data: profile } = await supabase.from('profiles').select('full_name, role, avatar_icon').eq('id', user.id).single()
-        setAthleteName(profile?.full_name ?? user.email?.split('@')[0] ?? 'Atleta')
+
+        // Parallel fetch — profile, exercises, active block, all blocks
+        const [
+          { data: profile },
+          { data: exData },
+          { data: rawBlock },
+          { data: ab },
+        ] = await Promise.all([
+          supabase.from('profiles').select('full_name, role, avatar_icon').eq('id', user.id).single(),
+          supabase.from('exercises').select('id, name, category, notes').order('category').order('name'),
+          supabase.from('blocks').select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))').eq('athlete_id', user.id).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle(),
+          supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', user.id).order('created_at', { ascending: false }),
+        ])
+
         const role = profile?.role
+        setAthleteName(profile?.full_name ?? user.email?.split('@')[0] ?? 'Atleta')
         setIsAdmin(role === 'admin' || role === 'trener')
         setIsCoach(role === 'trener')
         if (role === 'admin' || role === 'trener') setUserRole(role as 'admin' | 'trener')
         setAvatarIcon(profile?.avatar_icon ?? 'barbell')
-        const { data: exData } = await supabase.from('exercises').select('id, name, category, notes').order('category').order('name')
         setExercises(exData ?? [])
+        setAllBlocks((ab ?? []) as BlockSummary[])
 
-        let { data: blockData } = await supabase
-          .from('blocks').select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))')
-          .eq('athlete_id', user.id).eq('status', 'active').order('created_at', { ascending: false }).limit(1).single()
+        let blockData = rawBlock
         if (!blockData && role !== 'trener') {
           const today = new Date(); const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
           const { data: nb } = await supabase.from('blocks').insert({ athlete_id: user.id, name: 'Moj program', start_date: today.toISOString().split('T')[0], end_date: endDate.toISOString().split('T')[0], status: 'active' }).select('*').single()
@@ -84,8 +95,6 @@ export default function TrainingPage() {
           blockData = await injectSetProgress(blockData, user.id)
         }
         setBlock(blockData)
-        const { data: ab } = await supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', user.id).order('created_at', { ascending: false })
-        setAllBlocks((ab ?? []) as BlockSummary[])
       } catch { setError('Greška pri učitavanju.') } finally { setLoading(false) }
     }
     init()
