@@ -49,6 +49,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const [calViewDate, setCalViewDate] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
   const [compOpen, setCompOpen] = useState(true)
   const [loading, setLoading] = useState(true)
+  const initialLoadDone = useRef(false)
 
   const loadAll = useCallback(async () => {
       const [bwRes, nutRes, waterRes, wbRes, suppRes, meetRes, woRes] = await Promise.all([
@@ -56,17 +57,17 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
           .select('id, date, weight_kg')
           .eq('athlete_id', athlete.id)
           .eq('lift', 'other').eq('notes', 'Tjelesna težina')
-          .order('date', { ascending: false }).limit(60),
-        supabase.from('nutrition_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(60),
-        supabase.from('water_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(300),
-        supabase.from('wellbeing_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(90),
-        supabase.from('supplement_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(300),
+          .order('date', { ascending: false }).limit(200),
+        supabase.from('nutrition_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(200),
+        supabase.from('water_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(500),
+        supabase.from('wellbeing_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(200),
+        supabase.from('supplement_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(500),
         supabase.from('meet_attempts').select('*, competition:competitions(name,date)').eq('athlete_id', athlete.id).order('meet_date', { ascending: false }).limit(9),
         supabase.from('workouts')
           .select('id, workout_date, completed, completion_date, day_name, workout_exercises(id, exercise_order, exercise:exercises(name,category), actual_weight_kg, actual_reps, actual_rpe, actual_note, planned_sets, planned_reps, planned_weight_kg, set_logs(set_number, weight_kg, reps, rpe, completed, is_top_set))')
           .eq('athlete_id', athlete.id)
           .order('workout_date', { ascending: false })
-          .limit(60),
+          .limit(200),
       ])
       setBwLogs(bwRes.data ?? [])
       setNutLogs(nutRes.data ?? [])
@@ -74,7 +75,18 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
       setWbLogs(wbRes.data ?? [])
       setSuppLogs(suppRes.data ?? [])
       setLastMeets(meetRes.data ?? [])
-      setWorkoutLogs(woRes.data ?? [])
+      const woData = woRes.data ?? []
+      setWorkoutLogs(woData)
+      // On initial load: navigate calendar to the month of the most recent workout
+      if (!initialLoadDone.current) {
+        initialLoadDone.current = true
+        if (woData.length > 0) {
+          // Add T12:00:00 so date parsing isn't affected by timezone offset
+          const d = new Date(woData[0].workout_date + 'T12:00:00')
+          setCalViewDate({ y: d.getFullYear(), m: d.getMonth() })
+          setSelectedDay(woData[0].workout_date)
+        }
+      }
 
       const { data: topSets } = await supabase
         .from('set_logs')
@@ -168,7 +180,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const hasBw      = (d: string) => bwLogs.some(l => l.date === d)
   const hasWater   = (d: string) => waterLogs.some(l => String(l.log_date).slice(0, 10) === d)
   const hasCal     = (d: string) => nutLogs.some(l => l.date === d)
-  const hasWo      = (d: string) => workoutLogs.some(l => l.workout_date === d && l.completed)
+  const hasWo      = (d: string) => workoutLogs.some(l => l.workout_date === d && (l.completed || (l.workout_exercises ?? []).some((we: any) => (we.set_logs ?? []).some((s: any) => s.completed))))
   const hasWb      = (d: string) => wbLogs.some((l: any) => String(l.log_date).slice(0, 10) === d)
 
   const FreqGrid = () => (
@@ -374,7 +386,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
                       const hasWbD    = !!wbByDate[dateStr]
                       const isSelected = selectedDay === dateStr
                       const isToday = dateStr === todayStr
-                      const hasWoCompleted = wo?.completed
+                      const hasWoCompleted = wo?.completed || (wo?.workout_exercises ?? []).some((we: any) => (we.set_logs ?? []).some((s: any) => s.completed))
 
                       return (
                         <button key={ci} onClick={() => setSelectedDay(isSelected ? null : dateStr)}
@@ -425,10 +437,10 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
                       </div>
                     </div>
 
-                    {selWo?.completed ? (
+                    {selWo ? (
                       <>
-                        <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: '#4ade80', fontFamily: FM, fontWeight: 700, marginBottom: '10px' }}>
-                          ✓ ODRAĐENO{selWo.day_name ? ` · ${selWo.day_name}` : ''}{selWo.completion_date ? ` · ${new Date(selWo.completion_date).toLocaleString('hr-HR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : ''}
+                        <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: selWo.completed ? '#4ade80' : '#f59e0b', fontFamily: FM, fontWeight: 700, marginBottom: '10px' }}>
+                          {selWo.completed ? '✓ ODRAĐENO' : '○ NIJE ZAVRŠENO'}{selWo.day_name ? ` · ${selWo.day_name}` : ''}{selWo.completion_date ? ` · ${new Date(selWo.completion_date).toLocaleString('hr-HR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : ''}
                         </div>
 
                         {(() => {
@@ -557,7 +569,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
                       </div>
                     )}
 
-                    {!selBw && !selCal && !(selWater && selWater > 0) && !selWo?.completed && !selWb && selSupps.length === 0 && (
+                    {!selBw && !selCal && !(selWater && selWater > 0) && !selWo && !selWb && selSupps.length === 0 && (
                       <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.18)', fontFamily: FM, marginTop: '4px' }}>Nema podataka za ovaj dan.</div>
                     )}
                   </div>
