@@ -168,6 +168,8 @@ export default function Landing() {
     { sym: '02', title: t('home.f2.title'), desc: t('home.f2.desc') },
     { sym: '03', title: t('home.f3.title'), desc: t('home.f3.desc') },
     { sym: '04', title: t('home.f4.title'), desc: t('home.f4.desc') },
+    { sym: '05', title: t('home.f5.title'), desc: t('home.f5.desc') },
+    { sym: '06', title: t('home.f6.title'), desc: t('home.f6.desc') },
   ]
   const FOUNDERS: FounderData[] = [
     { name: 'WALTER SMAJLOVIĆ', nickname: 'Gica', img: '/slike/walter.png',  imgLeft: true,
@@ -217,40 +219,52 @@ export default function Landing() {
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, transparent 0%, rgba(5,5,5,0.5) 100%)', zIndex: 1 }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 60%, #050505 100%)', zIndex: 1 }} />
 
-        <div style={{ position: 'relative', zIndex: 2, width: '100%', padding: '0 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', width: '100%', maxWidth: '600px', margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '32px' }}>
-              <Image src="/slike/logopng.png" alt="LWL UP Logo" width={480} height={480} priority
-                sizes="(max-width: 768px) 38vw, 340px"
-                style={{ width: 'clamp(140px, 38vw, 340px)', height: 'auto', filter: 'drop-shadow(0 0 60px rgba(255,255,255,0.18)) drop-shadow(0 0 120px rgba(255,255,255,0.06))' }} />
+        <div style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '0 clamp(20px,5vw,60px)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }} className="hero-content">
+          <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '680px' }}>
+
+            {/* Label */}
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
+              <div style={{ width: '28px', height: '2px', background: '#06b6d4' }} />
+              <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: '#06b6d4', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.hero.label')}</span>
             </div>
 
-            {/* Quote */}
-            <div style={{ width: '100%', maxWidth: '520px' }}>
-              <p style={{ fontSize: 'clamp(0.82rem, 2.5vw, 1.3rem)', color: '#fff', fontStyle: 'italic', letterSpacing: '0.02em', fontWeight: 300, marginBottom: '8px', transition: 'all 0.8s', lineHeight: 1.6 }}>
-                "{SLIDES[slide].quote}"
-              </p>
-              <p style={{ color: 'rgba(255,255,255,0.32)', fontSize: 'clamp(0.56rem, 1.6vw, 0.68rem)', letterSpacing: '0.38em', textTransform: 'uppercase' as const, marginBottom: '0' }}>
-                — {SLIDES[slide].sub}
-              </p>
-            </div>
+            {/* Headline */}
+            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3.2rem, 8vw, 7rem)', lineHeight: 0.88, marginBottom: '28px', letterSpacing: '-0.01em' }}>
+              <span style={{ color: '#fff', display: 'block' }}>{t('home.hero.line1')}</span>
+              <span style={{ color: '#06b6d4', display: 'block' }}>{t('home.hero.line2')}</span>
+            </h1>
+
+            {/* Description */}
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 'clamp(0.85rem,2vw,1rem)', lineHeight: 1.8, marginBottom: '40px', maxWidth: '480px' }}>
+              {t('home.hero.desc')}
+            </p>
 
             {/* CTA gumbi */}
-            <div style={{ display: 'flex', flexDirection: 'row', gap: '14px', marginTop: '44px', width: '100%', maxWidth: '520px', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '14px', width: '100%', maxWidth: '480px' }} className="hero-btns">
               <Link href="/survey" style={{ textDecoration: 'none', flex: 1 }}>
-                <button className="btn-primary-cta" style={{ width: '100%', padding: '18px 24px', background: '#fff', color: '#000', border: 'none', fontSize: 'clamp(0.58rem, 1.6vw, 0.74rem)', fontWeight: 800, letterSpacing: '0.22em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const, transition: 'all 0.25s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; e.currentTarget.style.transform = 'translateY(0)' }}>
+                <button className="btn-primary-cta" style={{ width: '100%', padding: '18px 24px', background: '#06b6d4', color: '#000', border: 'none', fontSize: 'clamp(0.58rem, 1.6vw, 0.72rem)', fontWeight: 800, letterSpacing: '0.2em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const, transition: 'all 0.25s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#0891b2'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(6,182,212,0.35)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#06b6d4'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}>
                   {t('home.hero.cta1')}
                 </button>
               </Link>
               <Link href="/training" style={{ textDecoration: 'none', flex: 1, display: 'flex', minHeight: '44px' }}>
-                <button className="btn-secondary-cta" style={{ width: '100%', padding: '16px 24px', background: 'rgba(255,255,255,0.03)', color: '#fff', border: '1px solid rgba(255,255,255,0.22)', fontSize: 'clamp(0.58rem, 1.6vw, 0.74rem)', fontWeight: 600, letterSpacing: '0.22em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const, transition: 'all 0.25s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.7)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.transform = 'translateY(0)' }}>
+                <button className="btn-secondary-cta" style={{ width: '100%', padding: '16px 24px', background: 'transparent', color: '#06b6d4', border: '1px solid rgba(6,182,212,0.45)', fontSize: 'clamp(0.58rem, 1.6vw, 0.72rem)', fontWeight: 700, letterSpacing: '0.2em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const, transition: 'all 0.25s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(6,182,212,0.1)'; e.currentTarget.style.borderColor = '#06b6d4'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(6,182,212,0.45)'; e.currentTarget.style.transform = 'translateY(0)' }}>
                   {t('home.hero.cta2')}
                 </button>
               </Link>
+            </div>
+
+            {/* Slide quote - subtle below CTAs */}
+            <div style={{ marginTop: '40px', paddingLeft: '14px', borderLeft: '2px solid rgba(6,182,212,0.3)' }}>
+              <p style={{ fontSize: 'clamp(0.72rem,1.8vw,0.85rem)', color: 'rgba(255,255,255,0.32)', fontStyle: 'italic', lineHeight: 1.6, margin: 0, transition: 'all 0.8s' }}>
+                "{SLIDES[slide].quote}"
+              </p>
+              <p style={{ color: 'rgba(255,255,255,0.18)', fontSize: '0.6rem', letterSpacing: '0.32em', textTransform: 'uppercase' as const, marginTop: '6px', marginBottom: 0 }}>
+                — {SLIDES[slide].sub}
+              </p>
             </div>
           </div>
         </div>
@@ -282,78 +296,77 @@ export default function Landing() {
 
 
       {/* ══ KATEGORIJE ═══════════════════════════════════════════ */}
-      <section id="kategorije" style={{ background: '#050508', borderTop: '1px solid rgba(255,255,255,0.06)', padding: 'clamp(80px,12vw,140px) clamp(20px,5vw,60px)' }}>
+      <section id="kategorije" style={{ background: '#04040a', borderTop: '1px solid rgba(255,255,255,0.06)', padding: 'clamp(80px,12vw,140px) clamp(20px,5vw,60px)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
           {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: 'clamp(48px,7vw,88px)' }}>
+          <div style={{ marginBottom: 'clamp(48px,7vw,88px)' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-              <div style={{ height: '1px', width: '32px', background: 'rgba(255,255,255,0.15)' }} />
-              <span style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>{t('home.cats.eyebrow')}</span>
-              <div style={{ height: '1px', width: '32px', background: 'rgba(255,255,255,0.15)' }} />
+              <div style={{ width: '28px', height: '2px', background: '#06b6d4' }} />
+              <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: '#06b6d4', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.cats.eyebrow')}</span>
             </div>
             <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 0.9, marginBottom: '20px' }}>
-              {t('home.cats.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.18)' }}>{t('home.cats.title2')}</span>
+              {t('home.cats.title1')}<br /><span style={{ opacity: 0.22 }}>{t('home.cats.title2')}</span>
             </h2>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.82rem,2vw,0.95rem)', maxWidth: '540px', margin: '0 auto', lineHeight: 1.9 }}>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.82rem,2vw,0.95rem)', maxWidth: '540px', lineHeight: 1.9, marginTop: '16px' }}>
               {t('home.cats.desc')}
             </p>
           </div>
 
-          {/* Dobne kategorije */}
-          <div style={{ marginBottom: 'clamp(40px,6vw,64px)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.06)' }} />
-              <span style={{ fontSize: '0.52rem', letterSpacing: '0.38em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>{t('home.cats.age')}</span>
-              <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.06)' }} />
-            </div>
-            <div className="age-cat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
-              {AGE_CATS.map((cat, i) => (
-                <div key={i} style={{ borderRadius: '12px', overflow: 'hidden', border: `1px solid ${cat.color}22`, background: '#08080f', transition: 'transform 0.2s, box-shadow 0.2s' }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 8px 24px ${cat.color}18` }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}>
-                  {/* Color accent top bar */}
-                  <div style={{ height: '3px', background: cat.color, opacity: 0.7 }} />
-                  <div style={{ padding: '18px 16px 20px', textAlign: 'center' }}>
-                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1.15rem', color: cat.color, marginBottom: '8px', letterSpacing: '0.02em' }}>{t(cat.key)}</div>
-                    <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', fontFamily: 'var(--fm)' }}>{cat.age} {t('home.cats.years')}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Two-column layout: Dobne | Težinske */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(32px,5vw,80px)' }} className="cats-two-col">
 
-          {/* Težinske kategorije */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(12px,3vw,24px)' }} className="cat-weight-grid">
-            {[
-              { label: t('home.cats.men'),   color: '#60a5fa', pillColor: '#93c5fd', pillBg: 'rgba(96,165,250,0.08)', pillBorder: 'rgba(96,165,250,0.2)', cats: ['-59','-66','-74','-83','-93','-105','-120','+120'] },
-              { label: t('home.cats.women'), color: '#f472b6', pillColor: '#f9a8d4', pillBg: 'rgba(244,114,182,0.08)', pillBorder: 'rgba(244,114,182,0.2)', cats: ['-47','-52','-57','-63','-69','-76','-84','+84'] },
-            ].map(g => (
-              <div key={g.label} style={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${g.color}22`, background: '#08080f' }}>
-                {/* Header */}
-                <div style={{ padding: '16px 22px', borderBottom: `1px solid ${g.color}14`, display: 'flex', alignItems: 'center', gap: '10px', background: `${g.color}08` }}>
-                  <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: g.color, boxShadow: `0 0 8px ${g.color}` }} />
-                  <span style={{ fontSize: '0.6rem', letterSpacing: '0.35em', color: g.color, fontFamily: 'var(--fm)', fontWeight: 700 }}>{g.label}</span>
-                </div>
-                {/* Pills */}
-                <div style={{ padding: '18px 20px', display: 'flex', flexWrap: 'wrap' as const, gap: '8px' }}>
-                  {g.cats.map(kg => (
-                    <div key={kg} style={{ padding: '6px 14px', background: g.pillBg, border: `1px solid ${g.pillBorder}`, borderRadius: '6px', fontSize: 'clamp(0.7rem,1.8vw,0.82rem)', color: g.pillColor, fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.04em' }}>
-                      {kg} kg
+            {/* Left: Dobne kategorije */}
+            <div>
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.38em', color: '#06b6d4', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '24px' }}>{t('home.cats.age')}</div>
+              <div>
+                {AGE_CATS.map((cat, i) => (
+                  <div key={i}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <div style={{ width: '6px', height: '6px', background: '#06b6d4', flexShrink: 0 }} />
+                        <span style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1rem,2.2vw,1.3rem)', letterSpacing: '0.04em', color: '#fff' }}>{t(cat.key)}</span>
+                      </div>
+                      <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.38)', letterSpacing: '0.1em', fontFamily: 'var(--fm)' }}>{cat.age} {t('home.cats.years')}</span>
                     </div>
-                  ))}
-                </div>
+                    {i < AGE_CATS.length - 1 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {/* Right: Težinske kategorije */}
+            <div>
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.38em', color: '#06b6d4', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '24px' }}>TEŽINSKE KATEGORIJE</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(16px,3vw,32px)' }}>
+                {[
+                  { label: t('home.cats.men'),   cats: ['-59','-66','-74','-83','-93','-105','-120','+120'] },
+                  { label: t('home.cats.women'), cats: ['-47','-52','-57','-63','-69','-76','-84','+84'] },
+                ].map(g => (
+                  <div key={g.label}>
+                    <div style={{ fontSize: '0.56rem', letterSpacing: '0.35em', color: 'rgba(6,182,212,0.7)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '14px' }}>{g.label}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                      {g.cats.map((kg, i) => (
+                        <div key={kg}>
+                          <div style={{ padding: '9px 0', fontSize: 'clamp(0.78rem,1.8vw,0.9rem)', color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.04em' }}>
+                            {kg} kg
+                          </div>
+                          {i < g.cats.length - 1 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)' }} />}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Footer note */}
-          <div style={{ marginTop: '28px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-            <div style={{ height: '1px', width: '24px', background: 'rgba(255,255,255,0.08)' }} />
-            <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.18)', letterSpacing: '0.14em', fontFamily: 'var(--fm)' }}>
+          <div style={{ marginTop: 'clamp(32px,5vw,56px)', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '4px', height: '4px', background: '#06b6d4', flexShrink: 0, opacity: 0.6 }} />
+            <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.22)', letterSpacing: '0.14em', fontFamily: 'var(--fm)' }}>
               {t('home.cats.note')}
             </span>
-            <div style={{ height: '1px', width: '24px', background: 'rgba(255,255,255,0.08)' }} />
           </div>
 
         </div>
@@ -418,18 +431,24 @@ export default function Landing() {
       </section>
 
       {/* ══ SYSTEM ════════════════════════════════════════════════ */}
-      <section id="system" style={{ background: '#0a0a0a', padding: 'clamp(80px,12vw,150px) clamp(20px,5vw,60px)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <div ref={systemReveal.ref} style={{ maxWidth: '1400px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 'clamp(48px,8vw,100px)', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>
-            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,7vw,5rem)', marginBottom: '16px' }}>{t('home.system.eyebrow')}</h2>
-            <p style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', fontSize: 'clamp(0.6rem,2vw,0.85rem)' }}>{t('home.system.title')}</p>
+      <section id="system" style={{ background: '#050508', padding: 'clamp(80px,12vw,150px) clamp(20px,5vw,60px)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div ref={systemReveal.ref} style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ marginBottom: 'clamp(48px,8vw,88px)', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+              <div style={{ width: '28px', height: '2px', background: '#06b6d4' }} />
+              <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: '#06b6d4', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.system.eyebrow')}</span>
+            </div>
+            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 0.9 }}>{t('home.system.title')}</h2>
           </div>
           <div className="features-grid">
             {FEATURES.map((f, i) => (
-              <div key={i} className="feature-card" style={{ background: '#050505', padding: 'clamp(28px,4vw,50px) clamp(20px,3vw,30px)', border: '1px solid rgba(255,255,255,0.05)', transition: '0.4s cubic-bezier(.16,1,.3,1)', position: 'relative', overflow: 'hidden', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(40px)', transitionDelay: `${i * 0.1}s`, transitionDuration: '0.7s' }}>
-                <div style={{ fontSize: 'clamp(1.8rem,4vw,3rem)', fontFamily: 'var(--fd)', color: 'rgba(255,255,255,0.05)', position: 'absolute', top: '10px', right: '16px', transition: 'color 0.4s' }}>{f.sym}</div>
-                <h3 style={{ fontSize: 'clamp(0.85rem,2vw,1.2rem)', letterSpacing: '0.1em', marginBottom: '16px', color: '#fff' }}>{f.title}</h3>
-                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.78rem,1.8vw,0.85rem)', lineHeight: 1.8 }}>{f.desc}</p>
+              <div key={i} className="feature-card" style={{ background: '#08080f', padding: 'clamp(28px,3.5vw,44px) clamp(20px,3vw,32px)', border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none', transition: '0.4s cubic-bezier(.16,1,.3,1)', position: 'relative', overflow: 'hidden', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(40px)', transitionDelay: `${i * 0.08}s`, transitionDuration: '0.7s' }}>
+                {/* Cyan top border */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: '#06b6d4', opacity: 0.7 }} />
+                {/* Number */}
+                <div style={{ fontSize: 'clamp(2rem,4vw,3rem)', fontFamily: 'var(--fd)', color: 'rgba(6,182,212,0.12)', marginBottom: '16px', lineHeight: 1, transition: 'color 0.4s' }}>{f.sym}</div>
+                <h3 style={{ fontSize: 'clamp(0.82rem,1.8vw,1rem)', letterSpacing: '0.1em', marginBottom: '14px', color: '#fff', fontWeight: 700 }}>{f.title}</h3>
+                <p style={{ color: 'rgba(255,255,255,0.38)', fontSize: 'clamp(0.78rem,1.6vw,0.85rem)', lineHeight: 1.85 }}>{f.desc}</p>
               </div>
             ))}
           </div>
@@ -475,15 +494,14 @@ export default function Landing() {
 
         /* ══ HERO BUTTONS ═════════════════════════════════════════ */
         .btn-primary-cta:hover {
-          background: #000 !important;
-          color: #fff !important;
-          border-color: rgba(255,255,255,0.5) !important;
+          background: #0891b2 !important;
+          color: #000 !important;
           transform: translateY(-2px);
-          box-shadow: 0 8px 32px rgba(255,255,255,0.1);
+          box-shadow: 0 8px 32px rgba(6,182,212,0.35) !important;
         }
         .btn-secondary-cta:hover {
-          border-color: rgba(255,255,255,0.7) !important;
-          background: rgba(255,255,255,0.06) !important;
+          border-color: #06b6d4 !important;
+          background: rgba(6,182,212,0.1) !important;
           transform: translateY(-2px);
         }
 
@@ -511,7 +529,9 @@ export default function Landing() {
         .info-card:hover h4 { color: rgba(255,255,255,0.7) !important; }
         .founder-img:hover  { transform: scale(1.04) !important; }
         .club-img:hover     { transform: scale(1.05) !important; }
-        .feature-card:hover { transform: translateY(-6px) !important; border-color: rgba(255,255,255,0.15) !important; }
+        .feature-card:hover { transform: translateY(-5px) !important; border-color: rgba(6,182,212,0.2) !important; box-shadow: 0 8px 32px rgba(6,182,212,0.06); }
+        .feature-card:hover > div:first-child { opacity: 1 !important; }
+        .feature-card:hover > div:nth-child(2) { color: rgba(6,182,212,0.35) !important; }
 
         /* ══ GRID LAYOUTS ═════════════════════════════════════════ */
         .founder-row {
@@ -534,7 +554,7 @@ export default function Landing() {
         .club-grid        { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: clamp(40px,6vw,100px); align-items: center; }
         .club-info-cards  { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px,3vw,30px); margin-top: clamp(24px,4vw,50px); }
         .club-images      { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(10px,2vw,20px); }
-        .features-grid    { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(12px,2vw,30px); }
+        .features-grid    { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(12px,2vw,24px); }
 
         /* ══ KEYFRAMES ════════════════════════════════════════════ */
         @keyframes slowZoom { from { transform: scale(1); } to { transform: scale(1.08); } }
@@ -545,7 +565,10 @@ export default function Landing() {
 
         /* ══ MOBILE ═══════════════════════════════════════════════ */
         @media (max-width: 768px) {
-          .cat-weight-grid { grid-template-columns: 1fr !important; }
+          .hero-content    { align-items: center !important; text-align: center; }
+          .hero-content h1 { font-size: clamp(2.8rem,10vw,4.5rem) !important; }
+          .hero-btns       { justify-content: center; }
+          .cats-two-col    { grid-template-columns: 1fr !important; }
           .founder-row { grid-template-columns: 1fr !important; min-height: unset; }
           .founder-row-reverse .founder-img-wrap { order: 1; }
           .founder-row-reverse .founder-text-wrap { order: 2; }
@@ -563,17 +586,7 @@ export default function Landing() {
         }
         @media (max-width: 480px) {
           .features-grid { grid-template-columns: 1fr !important; }
-        }
-
-        /* ─ Age category cards: tighter on very small phones ─ */
-        @media (max-width: 400px) {
-          .age-cat-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important; }
-        }
-
-        /* ─ Weight category grid: already 1-col at 768px ─ */
-        /* ─ Category section header: reduce font on mobile ─ */
-        @media (max-width: 480px) {
-          .cat-section-header { font-size: clamp(1.6rem, 8vw, 2.2rem) !important; }
+          .hero-content { padding: 0 16px !important; }
         }
       `}</style>
     </div>
