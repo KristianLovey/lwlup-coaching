@@ -223,16 +223,10 @@ export default function Landing() {
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '680px' }}>
 
             {/* Label */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
-              <div style={{ width: '28px', height: '2px', background: '#06b6d4' }} />
-              <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: '#06b6d4', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.hero.label')}</span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '36px' }}>
+              <div style={{ width: '28px', height: '2px', background: 'rgba(255,255,255,0.5)' }} />
+              <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.hero.label')}</span>
             </div>
-
-            {/* Headline */}
-            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3.2rem, 8vw, 7rem)', lineHeight: 0.88, marginBottom: '28px', letterSpacing: '-0.01em' }}>
-              <span style={{ color: '#fff', display: 'block' }}>{t('home.hero.line1')}</span>
-              <span style={{ color: '#06b6d4', display: 'block' }}>{t('home.hero.line2')}</span>
-            </h1>
 
             {/* Description */}
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 'clamp(0.85rem,2vw,1rem)', lineHeight: 1.8, marginBottom: '40px', maxWidth: '480px' }}>
@@ -242,23 +236,23 @@ export default function Landing() {
             {/* CTA gumbi */}
             <div style={{ display: 'flex', flexDirection: 'row', gap: '14px', width: '100%', maxWidth: '480px' }} className="hero-btns">
               <Link href="/survey" style={{ textDecoration: 'none', flex: 1 }}>
-                <button className="btn-primary-cta" style={{ width: '100%', padding: '18px 24px', background: '#06b6d4', color: '#000', border: 'none', fontSize: 'clamp(0.58rem, 1.6vw, 0.72rem)', fontWeight: 800, letterSpacing: '0.2em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const, transition: 'all 0.25s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#0891b2'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(6,182,212,0.35)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#06b6d4'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}>
+                <button className="btn-primary-cta" style={{ width: '100%', padding: '18px 24px', background: '#fff', color: '#000', border: 'none', fontSize: 'clamp(0.58rem, 1.6vw, 0.72rem)', fontWeight: 800, letterSpacing: '0.2em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const, transition: 'all 0.25s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; e.currentTarget.style.transform = 'translateY(0)' }}>
                   {t('home.hero.cta1')}
                 </button>
               </Link>
               <Link href="/training" style={{ textDecoration: 'none', flex: 1, display: 'flex', minHeight: '44px' }}>
-                <button className="btn-secondary-cta" style={{ width: '100%', padding: '16px 24px', background: 'transparent', color: '#06b6d4', border: '1px solid rgba(6,182,212,0.45)', fontSize: 'clamp(0.58rem, 1.6vw, 0.72rem)', fontWeight: 700, letterSpacing: '0.2em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const, transition: 'all 0.25s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(6,182,212,0.1)'; e.currentTarget.style.borderColor = '#06b6d4'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(6,182,212,0.45)'; e.currentTarget.style.transform = 'translateY(0)' }}>
+                <button className="btn-secondary-cta" style={{ width: '100%', padding: '16px 24px', background: 'rgba(255,255,255,0.03)', color: '#fff', border: '1px solid rgba(255,255,255,0.22)', fontSize: 'clamp(0.58rem, 1.6vw, 0.72rem)', fontWeight: 600, letterSpacing: '0.2em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const, transition: 'all 0.25s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.7)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.transform = 'translateY(0)' }}>
                   {t('home.hero.cta2')}
                 </button>
               </Link>
             </div>
 
             {/* Slide quote - subtle below CTAs */}
-            <div style={{ marginTop: '40px', paddingLeft: '14px', borderLeft: '2px solid rgba(6,182,212,0.3)' }}>
+            <div style={{ marginTop: '40px', paddingLeft: '14px', borderLeft: '2px solid rgba(255,255,255,0.12)' }}>
               <p style={{ fontSize: 'clamp(0.72rem,1.8vw,0.85rem)', color: 'rgba(255,255,255,0.32)', fontStyle: 'italic', lineHeight: 1.6, margin: 0, transition: 'all 0.8s' }}>
                 "{SLIDES[slide].quote}"
               </p>
@@ -302,8 +296,8 @@ export default function Landing() {
           {/* Header */}
           <div style={{ marginBottom: 'clamp(48px,7vw,88px)' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-              <div style={{ width: '28px', height: '2px', background: '#06b6d4' }} />
-              <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: '#06b6d4', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.cats.eyebrow')}</span>
+              <div style={{ width: '28px', height: '2px', background: 'rgba(255,255,255,0.4)' }} />
+              <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.cats.eyebrow')}</span>
             </div>
             <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 0.9, marginBottom: '20px' }}>
               {t('home.cats.title1')}<br /><span style={{ opacity: 0.22 }}>{t('home.cats.title2')}</span>
@@ -318,13 +312,13 @@ export default function Landing() {
 
             {/* Left: Dobne kategorije */}
             <div>
-              <div style={{ fontSize: '0.58rem', letterSpacing: '0.38em', color: '#06b6d4', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '24px' }}>{t('home.cats.age')}</div>
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.38em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '24px' }}>{t('home.cats.age')}</div>
               <div>
                 {AGE_CATS.map((cat, i) => (
                   <div key={i}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <div style={{ width: '6px', height: '6px', background: '#06b6d4', flexShrink: 0 }} />
+                        <div style={{ width: '6px', height: '6px', background: 'rgba(255,255,255,0.5)', flexShrink: 0 }} />
                         <span style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1rem,2.2vw,1.3rem)', letterSpacing: '0.04em', color: '#fff' }}>{t(cat.key)}</span>
                       </div>
                       <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.38)', letterSpacing: '0.1em', fontFamily: 'var(--fm)' }}>{cat.age} {t('home.cats.years')}</span>
@@ -337,14 +331,14 @@ export default function Landing() {
 
             {/* Right: Težinske kategorije */}
             <div>
-              <div style={{ fontSize: '0.58rem', letterSpacing: '0.38em', color: '#06b6d4', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '24px' }}>TEŽINSKE KATEGORIJE</div>
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.38em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '24px' }}>TEŽINSKE KATEGORIJE</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(16px,3vw,32px)' }}>
                 {[
                   { label: t('home.cats.men'),   cats: ['-59','-66','-74','-83','-93','-105','-120','+120'] },
                   { label: t('home.cats.women'), cats: ['-47','-52','-57','-63','-69','-76','-84','+84'] },
                 ].map(g => (
                   <div key={g.label}>
-                    <div style={{ fontSize: '0.56rem', letterSpacing: '0.35em', color: 'rgba(6,182,212,0.7)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '14px' }}>{g.label}</div>
+                    <div style={{ fontSize: '0.56rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '14px' }}>{g.label}</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
                       {g.cats.map((kg, i) => (
                         <div key={kg}>
@@ -363,7 +357,7 @@ export default function Landing() {
 
           {/* Footer note */}
           <div style={{ marginTop: 'clamp(32px,5vw,56px)', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '4px', height: '4px', background: '#06b6d4', flexShrink: 0, opacity: 0.6 }} />
+            <div style={{ width: '4px', height: '4px', background: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
             <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.22)', letterSpacing: '0.14em', fontFamily: 'var(--fm)' }}>
               {t('home.cats.note')}
             </span>
@@ -435,18 +429,18 @@ export default function Landing() {
         <div ref={systemReveal.ref} style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ marginBottom: 'clamp(48px,8vw,88px)', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-              <div style={{ width: '28px', height: '2px', background: '#06b6d4' }} />
-              <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: '#06b6d4', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.system.eyebrow')}</span>
+              <div style={{ width: '28px', height: '2px', background: 'rgba(255,255,255,0.4)' }} />
+              <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.system.eyebrow')}</span>
             </div>
             <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 0.9 }}>{t('home.system.title')}</h2>
           </div>
           <div className="features-grid">
             {FEATURES.map((f, i) => (
               <div key={i} className="feature-card" style={{ background: '#08080f', padding: 'clamp(28px,3.5vw,44px) clamp(20px,3vw,32px)', border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none', transition: '0.4s cubic-bezier(.16,1,.3,1)', position: 'relative', overflow: 'hidden', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(40px)', transitionDelay: `${i * 0.08}s`, transitionDuration: '0.7s' }}>
-                {/* Cyan top border */}
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: '#06b6d4', opacity: 0.7 }} />
+                {/* Top border */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'rgba(255,255,255,0.18)' }} />
                 {/* Number */}
-                <div style={{ fontSize: 'clamp(2rem,4vw,3rem)', fontFamily: 'var(--fd)', color: 'rgba(6,182,212,0.12)', marginBottom: '16px', lineHeight: 1, transition: 'color 0.4s' }}>{f.sym}</div>
+                <div style={{ fontSize: 'clamp(2rem,4vw,3rem)', fontFamily: 'var(--fd)', color: 'rgba(255,255,255,0.06)', marginBottom: '16px', lineHeight: 1, transition: 'color 0.4s' }}>{f.sym}</div>
                 <h3 style={{ fontSize: 'clamp(0.82rem,1.8vw,1rem)', letterSpacing: '0.1em', marginBottom: '14px', color: '#fff', fontWeight: 700 }}>{f.title}</h3>
                 <p style={{ color: 'rgba(255,255,255,0.38)', fontSize: 'clamp(0.78rem,1.6vw,0.85rem)', lineHeight: 1.85 }}>{f.desc}</p>
               </div>
@@ -494,14 +488,14 @@ export default function Landing() {
 
         /* ══ HERO BUTTONS ═════════════════════════════════════════ */
         .btn-primary-cta:hover {
-          background: #0891b2 !important;
-          color: #000 !important;
+          background: #000 !important;
+          color: #fff !important;
           transform: translateY(-2px);
-          box-shadow: 0 8px 32px rgba(6,182,212,0.35) !important;
+          box-shadow: 0 8px 32px rgba(255,255,255,0.1);
         }
         .btn-secondary-cta:hover {
-          border-color: #06b6d4 !important;
-          background: rgba(6,182,212,0.1) !important;
+          border-color: rgba(255,255,255,0.7) !important;
+          background: rgba(255,255,255,0.06) !important;
           transform: translateY(-2px);
         }
 
@@ -529,9 +523,9 @@ export default function Landing() {
         .info-card:hover h4 { color: rgba(255,255,255,0.7) !important; }
         .founder-img:hover  { transform: scale(1.04) !important; }
         .club-img:hover     { transform: scale(1.05) !important; }
-        .feature-card:hover { transform: translateY(-5px) !important; border-color: rgba(6,182,212,0.2) !important; box-shadow: 0 8px 32px rgba(6,182,212,0.06); }
+        .feature-card:hover { transform: translateY(-5px) !important; border-color: rgba(255,255,255,0.14) !important; box-shadow: 0 8px 32px rgba(255,255,255,0.04); }
         .feature-card:hover > div:first-child { opacity: 1 !important; }
-        .feature-card:hover > div:nth-child(2) { color: rgba(6,182,212,0.35) !important; }
+        .feature-card:hover > div:nth-child(2) { color: rgba(255,255,255,0.14) !important; }
 
         /* ══ GRID LAYOUTS ═════════════════════════════════════════ */
         .founder-row {

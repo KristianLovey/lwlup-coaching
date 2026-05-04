@@ -35,7 +35,7 @@ const translations = {
     'footer.stats.founded':       'Godina osnivanja',
 
     // ── Home ────────────────────────────────────────────────────────
-    'home.hero.label':            'LWL UP POWERLIFTING',
+    'home.hero.label':            'LWL UP YOUR GAME',
     'home.hero.line1':            'DIŽEMO TEŽE.',
     'home.hero.line2':            'ŽIVIMO INTENZIVNIJE.',
     'home.hero.desc':             'Sustav treninga koji pretvara ambiciju u rezultate. Individualni program, analiza tehnike i natjecateljski fokus — sve s jednim ciljem.',
@@ -277,7 +277,7 @@ const translations = {
     'footer.stats.founded':       'Year founded',
 
     // ── Home ────────────────────────────────────────────────────────
-    'home.hero.label':            'LWL UP POWERLIFTING',
+    'home.hero.label':            'LWL UP YOUR GAME',
     'home.hero.line1':            'WE LIFT HEAVIER.',
     'home.hero.line2':            'WE LIVE STRONGER.',
     'home.hero.desc':             'A training system that turns ambition into results. Individual program, technique analysis and competition focus — all towards one goal.',
