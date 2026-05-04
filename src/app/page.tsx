@@ -222,20 +222,14 @@ export default function Landing() {
         <div style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '0 clamp(20px,5vw,60px)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }} className="hero-content">
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '680px' }}>
 
-            {/* Label */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
-              <div style={{ width: '28px', height: '2px', background: 'rgba(255,255,255,0.5)' }} />
-              <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.hero.label')}</span>
-            </div>
-
             {/* Big headline */}
-            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4.5rem, 11vw, 10rem)', lineHeight: 0.88, marginBottom: '32px', letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4.5rem, 11vw, 10rem)', lineHeight: 0.88, marginBottom: '28px', letterSpacing: '-0.02em' }}>
               <span className="hero-outline" style={{ display: 'block' }}>LWL UP</span>
               <span style={{ display: 'block', color: '#fff' }}>YOUR GAME.</span>
             </h1>
 
             {/* Description */}
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(0.9rem,2vw,1.05rem)', lineHeight: 1.8, marginBottom: '40px', maxWidth: '480px' }}>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(0.9rem,2vw,1.05rem)', lineHeight: 1.8, marginBottom: '32px', maxWidth: '480px' }}>
               {t('home.hero.desc')}
             </p>
 
@@ -258,7 +252,7 @@ export default function Landing() {
             </div>
 
             {/* Slide quote - subtle below CTAs */}
-            <div style={{ marginTop: '40px', paddingLeft: '14px', borderLeft: '2px solid rgba(255,255,255,0.12)' }}>
+            <div style={{ marginTop: '32px', paddingLeft: '14px', borderLeft: '2px solid rgba(255,255,255,0.12)' }} className="hero-quote">
               <p style={{ fontSize: 'clamp(0.72rem,1.8vw,0.85rem)', color: 'rgba(255,255,255,0.32)', fontStyle: 'italic', lineHeight: 1.6, margin: 0, transition: 'all 0.8s' }}>
                 "{SLIDES[slide].quote}"
               </p>
@@ -572,9 +566,12 @@ export default function Landing() {
 
         /* ══ MOBILE ═══════════════════════════════════════════════ */
         @media (max-width: 768px) {
-          .hero-content    { align-items: center !important; text-align: center; }
-          .hero-content h1 { font-size: clamp(2.8rem,10vw,4.5rem) !important; }
-          .hero-btns       { justify-content: center; }
+          .hero-content    { align-items: center !important; text-align: center; padding-bottom: 80px !important; }
+          .hero-content h1 { font-size: clamp(3.2rem,12vw,5rem) !important; margin-bottom: 20px !important; }
+          .hero-content p  { font-size: 0.9rem !important; margin-bottom: 24px !important; }
+          .hero-btns       { justify-content: center; flex-direction: column !important; gap: 10px !important; }
+          .hero-btns a     { flex: unset !important; width: 100% !important; }
+          .hero-quote      { display: none; }
           .cats-two-col    { grid-template-columns: 1fr !important; }
           .founder-row { grid-template-columns: 1fr !important; min-height: unset; }
           .founder-row-reverse .founder-img-wrap { order: 1; }
@@ -593,7 +590,7 @@ export default function Landing() {
         }
         @media (max-width: 480px) {
           .features-grid { grid-template-columns: 1fr !important; }
-          .hero-content { padding: 0 16px !important; }
+          .hero-content { padding: 0 16px 80px !important; }
         }
       `}</style>
     </div>
