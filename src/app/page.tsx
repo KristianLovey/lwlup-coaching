@@ -223,13 +223,19 @@ export default function Landing() {
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '680px' }}>
 
             {/* Label */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '36px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
               <div style={{ width: '28px', height: '2px', background: 'rgba(255,255,255,0.5)' }} />
               <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.hero.label')}</span>
             </div>
 
+            {/* Big headline */}
+            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4.5rem, 11vw, 10rem)', lineHeight: 0.88, marginBottom: '32px', letterSpacing: '-0.02em' }}>
+              <span className="hero-outline" style={{ display: 'block' }}>LWL UP</span>
+              <span style={{ display: 'block', color: '#fff' }}>YOUR GAME.</span>
+            </h1>
+
             {/* Description */}
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 'clamp(0.85rem,2vw,1rem)', lineHeight: 1.8, marginBottom: '40px', maxWidth: '480px' }}>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(0.9rem,2vw,1.05rem)', lineHeight: 1.8, marginBottom: '40px', maxWidth: '480px' }}>
               {t('home.hero.desc')}
             </p>
 
@@ -296,13 +302,13 @@ export default function Landing() {
           {/* Header */}
           <div style={{ marginBottom: 'clamp(48px,7vw,88px)' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-              <div style={{ width: '28px', height: '2px', background: 'rgba(255,255,255,0.4)' }} />
-              <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.cats.eyebrow')}</span>
+              <div style={{ width: '28px', height: '2px', background: 'rgba(255,255,255,0.6)' }} />
+              <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.cats.eyebrow')}</span>
             </div>
             <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 0.9, marginBottom: '20px' }}>
-              {t('home.cats.title1')}<br /><span style={{ opacity: 0.22 }}>{t('home.cats.title2')}</span>
+              {t('home.cats.title1')}<br /><span style={{ opacity: 0.4 }}>{t('home.cats.title2')}</span>
             </h2>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.82rem,2vw,0.95rem)', maxWidth: '540px', lineHeight: 1.9, marginTop: '16px' }}>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(0.82rem,2vw,0.95rem)', maxWidth: '540px', lineHeight: 1.9, marginTop: '16px' }}>
               {t('home.cats.desc')}
             </p>
           </div>
@@ -312,18 +318,18 @@ export default function Landing() {
 
             {/* Left: Dobne kategorije */}
             <div>
-              <div style={{ fontSize: '0.58rem', letterSpacing: '0.38em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '24px' }}>{t('home.cats.age')}</div>
+              <div style={{ fontSize: '0.6rem', letterSpacing: '0.38em', color: 'rgba(255,255,255,0.65)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '20px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>{t('home.cats.age')}</div>
               <div>
                 {AGE_CATS.map((cat, i) => (
                   <div key={i}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 0' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <div style={{ width: '6px', height: '6px', background: 'rgba(255,255,255,0.5)', flexShrink: 0 }} />
+                        <div style={{ width: '7px', height: '7px', background: '#fff', flexShrink: 0, opacity: 0.75 }} />
                         <span style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1rem,2.2vw,1.3rem)', letterSpacing: '0.04em', color: '#fff' }}>{t(cat.key)}</span>
                       </div>
-                      <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.38)', letterSpacing: '0.1em', fontFamily: 'var(--fm)' }}>{cat.age} {t('home.cats.years')}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em', fontFamily: 'var(--fm)', fontWeight: 600 }}>{cat.age} {t('home.cats.years')}</span>
                     </div>
-                    {i < AGE_CATS.length - 1 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />}
+                    {i < AGE_CATS.length - 1 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)' }} />}
                   </div>
                 ))}
               </div>
@@ -331,21 +337,21 @@ export default function Landing() {
 
             {/* Right: Težinske kategorije */}
             <div>
-              <div style={{ fontSize: '0.58rem', letterSpacing: '0.38em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '24px' }}>TEŽINSKE KATEGORIJE</div>
+              <div style={{ fontSize: '0.6rem', letterSpacing: '0.38em', color: 'rgba(255,255,255,0.65)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '20px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>TEŽINSKE KATEGORIJE</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(16px,3vw,32px)' }}>
                 {[
                   { label: t('home.cats.men'),   cats: ['-59','-66','-74','-83','-93','-105','-120','+120'] },
                   { label: t('home.cats.women'), cats: ['-47','-52','-57','-63','-69','-76','-84','+84'] },
                 ].map(g => (
                   <div key={g.label}>
-                    <div style={{ fontSize: '0.56rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '14px' }}>{g.label}</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                    <div style={{ fontSize: '0.6rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '12px' }}>{g.label}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
                       {g.cats.map((kg, i) => (
                         <div key={kg}>
-                          <div style={{ padding: '9px 0', fontSize: 'clamp(0.78rem,1.8vw,0.9rem)', color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.04em' }}>
+                          <div style={{ padding: '9px 0', fontSize: 'clamp(0.82rem,1.8vw,0.95rem)', color: 'rgba(255,255,255,0.85)', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.04em' }}>
                             {kg} kg
                           </div>
-                          {i < g.cats.length - 1 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)' }} />}
+                          {i < g.cats.length - 1 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)' }} />}
                         </div>
                       ))}
                     </div>
@@ -356,9 +362,9 @@ export default function Landing() {
           </div>
 
           {/* Footer note */}
-          <div style={{ marginTop: 'clamp(32px,5vw,56px)', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '4px', height: '4px', background: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
-            <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.22)', letterSpacing: '0.14em', fontFamily: 'var(--fm)' }}>
+          <div style={{ marginTop: 'clamp(32px,5vw,56px)', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '4px', height: '4px', background: 'rgba(255,255,255,0.5)', flexShrink: 0 }} />
+            <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.14em', fontFamily: 'var(--fm)' }}>
               {t('home.cats.note')}
             </span>
           </div>
@@ -471,6 +477,13 @@ export default function Landing() {
       <Footer />
 
       <style>{`
+        /* ══ HERO OUTLINED TEXT ══════════════════════════════════ */
+        .hero-outline {
+          color: transparent;
+          -webkit-text-stroke: 2px #fff;
+          text-stroke: 2px #fff;
+        }
+
         /* ══ STAT CARDS — hover s osvjetljenjem ══════════════════ */
         .stat-card {
           transition: background 0.35s, transform 0.35s;
