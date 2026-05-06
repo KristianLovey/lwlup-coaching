@@ -15,7 +15,8 @@
       "mcp__claude_ai_Supabase__list_projects",
       "mcp__claude_ai_Supabase__apply_migration",
       "mcp__claude_ai_Supabase__execute_sql",
-      "Bash(curl -s http://localhost:3000 -o /dev/null -w \"%{http_code}\")"
+      "Bash(curl -s http://localhost:3000 -o /dev/null -w \"%{http_code}\")",
+      "Bash(grep -n \"style.*{.*\\\\`\\\\|<style\\\\|className.*mobile\\\\|media\\\\|@media\" /Users/kristianlovey/Documents/lwlup/src/app/training/training-hub.tsx)"
     ],
     "additionalDirectories": [
       "c:\\Users\\User\\OneDrive - fer.hr\\Desktop\\LiftAI\\lwlup-coaching\\public\\slike"

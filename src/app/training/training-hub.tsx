@@ -2254,7 +2254,7 @@ function NutritionTracker({ userId }: { userId: string }) {
       {tab === 'log' && (
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
           {/* Date + day type */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', alignItems: 'end' }}>
+          <div className="nutr-date-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', alignItems: 'end' }}>
             <CalcInput label="Datum" color={COLOR} type="date" value={logDate} onChange={setLogDate} max="2100-01-01" />
             <div>
               <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', fontFamily: 'var(--fm)', marginBottom: '8px', fontWeight: 600 }}>TIP DANA</div>
@@ -2579,6 +2579,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
           .hub-tools-grid  { grid-template-columns: 1fr !important; }
           .bl-input-row    { grid-template-columns: 1fr !important; }
           .supp-amount-row { grid-template-columns: 1fr !important; }
+          .nutr-date-row   { grid-template-columns: 1fr !important; }
         }
         @media (max-width: 560px) {
           .gl-lifts-grid  { grid-template-columns: 1fr !important; }
