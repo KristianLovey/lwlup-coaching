@@ -915,7 +915,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
           </div>
         </div>
       ))}
-      <style>{`.set-log-row input::placeholder { color: rgba(250,204,21,0.55); font-style: italic; }`}</style>
+      <style>{`.set-log-row input::placeholder { color: rgba(250,204,21,0.55); font-style: italic; font-size: 0.62rem; letter-spacing: 0.05em; }`}</style>
     </div>
   )
 }
@@ -1605,12 +1605,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
               {/* Giant W number — color based on completion */}
               <span className="week-w-num" style={{
                 fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,4.5vw,3.6rem)', fontWeight: 900, lineHeight: 1,
-                background: allDone
-                  ? 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)'
-                  : pct > 0
-                    ? 'linear-gradient(135deg, #818cf8 0%, #6366f1 100%)'
-                    : 'linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.1) 100%)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                color: allDone ? '#4ade80' : pct > 0 ? '#818cf8' : 'rgba(255,255,255,0.22)',
                 letterSpacing: '-0.05em', transition: 'all 0.4s',
               }}>
                 W{week.week_number}
