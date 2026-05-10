@@ -843,6 +843,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
         </div>
       </div>
 
+
       {logs.map((log, i) => (
         <div key={i} className="set-log-row" style={{ display: 'grid', gridTemplateColumns: SLR_GRID, alignItems: 'stretch', background: log.completed ? 'rgba(34,197,94,0.07)' : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.013)', borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.15s', minHeight: '52px' }}>
 
@@ -860,7 +861,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
               onChange={e => { setLocalVals(v => ({ ...v, [`${log.set_number}_weight_kg`]: e.target.value })); scheduleSet(log.set_number, 'weight_kg', e.target.value) }}
               onFocus={e => { focusedKey.current = `${log.set_number}_weight_kg`; e.target.style.borderBottomColor = 'rgba(129,140,248,0.8)' }}
               onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushSet(log.set_number, 'weight_kg', e.target.value) }}
-              placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : '—'}
+              placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : 'upiši'}
               style={{ ...inputStyle, color: '#c7d2fe' }}
             />
           </div>
@@ -873,7 +874,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
               onChange={e => { setLocalVals(v => ({ ...v, [`${log.set_number}_reps`]: e.target.value })); scheduleSet(log.set_number, 'reps', e.target.value) }}
               onFocus={e => { focusedKey.current = `${log.set_number}_reps`; e.target.style.borderBottomColor = 'rgba(255,255,255,0.6)' }}
               onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushSet(log.set_number, 'reps', e.target.value) }}
-              placeholder={we.planned_reps ?? '—'}
+              placeholder={we.planned_reps != null ? String(we.planned_reps) : 'upiši'}
               style={inputStyle}
             />
           </div>
@@ -891,7 +892,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
               onChange={e => { setLocalVals(v => ({ ...v, [`${log.set_number}_rpe`]: e.target.value })); scheduleSet(log.set_number, 'rpe', e.target.value) }}
               onFocus={e => { focusedKey.current = `${log.set_number}_rpe`; e.target.style.borderBottomColor = 'rgba(250,204,21,0.7)' }}
               onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushSet(log.set_number, 'rpe', e.target.value) }}
-              placeholder="—"
+              placeholder={targetRpe ? String(targetRpe) : 'upiši'}
               style={{ ...inputStyle, color: log.rpe && targetRpe ? (Number(log.rpe) - Number(targetRpe) > 1 ? '#f87171' : Number(log.rpe) - Number(targetRpe) > 0 ? '#facc15' : '#4ade80') : '#e0e0e0' }}
             />
           </div>
@@ -914,6 +915,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
           </div>
         </div>
       ))}
+      <style>{`.set-log-row input::placeholder { color: rgba(250,204,21,0.55); font-style: italic; }`}</style>
     </div>
   )
 }

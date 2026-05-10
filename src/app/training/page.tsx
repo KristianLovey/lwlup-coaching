@@ -54,27 +54,54 @@ export default function TrainingPage() {
     const init = async () => {
       setLoading(true)
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) { setError('Nisi prijavljen/a.'); setLoading(false); return }
-        setUserId(user.id)
+        // getSession reads from localStorage — no network round trip
+        const { data: { session } } = await supabase.auth.getSession()
+        const uid = session?.user?.id
+        if (!uid) { setError('Nisi prijavljen/a.'); setLoading(false); return }
+        setUserId(uid)
 
-        // Parallel fetch — profile, exercises, active block, all blocks
+        // Show stale cache immediately while fresh data loads in background
+        const CACHE_KEY = `lwl:training:${uid}`
+        try {
+          const raw = localStorage.getItem(CACHE_KEY)
+          if (raw) {
+            const c = JSON.parse(raw)
+            setBlock(c.block)
+            setExercises(c.exercises ?? [])
+            setAllBlocks(c.allBlocks ?? [])
+            setAthleteName(c.athleteName ?? '')
+            setIsAdmin(c.isAdmin ?? false)
+            setIsCoach(c.isCoach ?? false)
+            if (c.userRole) setUserRole(c.userRole)
+            setAvatarIcon(c.avatarIcon ?? 'barbell')
+            setLoading(false) // hide spinner, show stale data instantly
+          }
+        } catch { /* corrupt cache — ignore, fresh fetch below will fix */ }
+
+        // Parallel fetch — profile, exercises, active block (narrowed join), all blocks
         const [
           { data: profile },
           { data: exData },
           { data: rawBlock },
           { data: ab },
         ] = await Promise.all([
-          supabase.from('profiles').select('full_name, role, avatar_icon').eq('id', user.id).single(),
+          supabase.from('profiles').select('full_name, role, avatar_icon').eq('id', uid).single(),
           supabase.from('exercises').select('id, name, category, notes').order('category').order('name'),
-          supabase.from('blocks').select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))').eq('athlete_id', user.id).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle(),
-          supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', user.id).order('created_at', { ascending: false }),
+          supabase.from('blocks')
+            .select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(id, name, category, notes))))')
+            .eq('athlete_id', uid).eq('status', 'active')
+            .order('created_at', { ascending: false }).limit(1).maybeSingle(),
+          supabase.from('blocks').select('id, name, status, start_date, end_date')
+            .eq('athlete_id', uid).order('created_at', { ascending: false }),
         ])
 
         const role = profile?.role
-        setAthleteName(profile?.full_name ?? user.email?.split('@')[0] ?? 'Atleta')
-        setIsAdmin(role === 'admin' || role === 'trener')
-        setIsCoach(role === 'trener')
+        const athleteNameVal = profile?.full_name ?? session.user.email?.split('@')[0] ?? 'Atleta'
+        const isAdminVal = role === 'admin' || role === 'trener'
+        const isCoachVal = role === 'trener'
+        setAthleteName(athleteNameVal)
+        setIsAdmin(isAdminVal)
+        setIsCoach(isCoachVal)
         if (role === 'admin' || role === 'trener') setUserRole(role as 'admin' | 'trener')
         setAvatarIcon(profile?.avatar_icon ?? 'barbell')
         setExercises(exData ?? [])
@@ -83,7 +110,7 @@ export default function TrainingPage() {
         let blockData = rawBlock
         if (!blockData && role !== 'trener') {
           const today = new Date(); const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
-          const { data: nb } = await supabase.from('blocks').insert({ athlete_id: user.id, name: 'Moj program', start_date: today.toISOString().split('T')[0], end_date: endDate.toISOString().split('T')[0], status: 'active' }).select('*').single()
+          const { data: nb } = await supabase.from('blocks').insert({ athlete_id: uid, name: 'Moj program', start_date: today.toISOString().split('T')[0], end_date: endDate.toISOString().split('T')[0], status: 'active' }).select('*').single()
           blockData = { ...nb, weeks: [] }
         }
         if (blockData?.weeks) {
@@ -92,9 +119,25 @@ export default function TrainingPage() {
             w.workouts?.sort((a: Workout, b: Workout) => a.workout_date.localeCompare(b.workout_date))
             w.workouts?.forEach((wo: Workout) => wo.workout_exercises?.sort((a: WorkoutExercise, b: WorkoutExercise) => a.exercise_order - b.exercise_order))
           })
-          blockData = await injectSetProgress(blockData, user.id)
         }
+
+        // Show block immediately — before set_logs
         setBlock(blockData)
+        setLoading(false)
+
+        // Write cache (exclude set progress — it's ephemeral)
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({
+            block: blockData, exercises: exData, allBlocks: ab,
+            athleteName: athleteNameVal, isAdmin: isAdminVal, isCoach: isCoachVal,
+            userRole: isAdminVal ? role : undefined, avatarIcon: profile?.avatar_icon ?? 'barbell',
+          }))
+        } catch { /* storage quota exceeded — ignore */ }
+
+        // Inject set_logs progress in background (non-blocking)
+        if (blockData?.weeks) {
+          injectSetProgress(blockData, uid).then(injected => setBlock(injected))
+        }
       } catch { setError('Greška pri učitavanju.') } finally { setLoading(false) }
     }
     init()
