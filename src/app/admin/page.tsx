@@ -957,6 +957,61 @@ function AthletePanel({
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.filter(wo => wo.id !== workoutId) })) } : b)
   }, [])
 
+  const copyWorkout = useCallback(async (workoutId: string) => {
+    setSaving(true)
+    const srcWeek = block?.weeks?.find(w => w.workouts?.some(wo => wo.id === workoutId))
+    const src = srcWeek?.workouts?.find(wo => wo.id === workoutId)
+    if (!src || !srcWeek) { setSaving(false); return }
+    const lastDate = [...(srcWeek.workouts ?? [])].sort((a, b) => a.workout_date.localeCompare(b.workout_date)).at(-1)?.workout_date ?? src.workout_date
+    const d = new Date(lastDate); d.setDate(d.getDate() + 1)
+    const { data: nwo } = await supabase.from('workouts').insert({
+      week_id: srcWeek.id, athlete_id: athlete.id,
+      day_name: (src.day_name ?? 'Dan') + ' (kopija)',
+      workout_date: d.toISOString().split('T')[0],
+      completed: false, notes: src.notes,
+    }).select('*').single()
+    if (!nwo) { setSaving(false); return }
+    const exercises = (await Promise.all(
+      (src.workout_exercises ?? []).map(ex =>
+        supabase.from('workout_exercises').insert({
+          workout_id: nwo.id, exercise_id: ex.exercise_id,
+          exercise_order: ex.exercise_order,
+          planned_sets: ex.planned_sets, planned_reps: ex.planned_reps,
+          planned_weight_kg: ex.planned_weight_kg, planned_rpe: ex.planned_rpe,
+          planned_rest_seconds: ex.planned_rest_seconds, planned_tempo: ex.planned_tempo,
+          target_rpe: ex.target_rpe, coach_note: ex.coach_note,
+        }).select('*, exercise:exercises(*)').single().then(r => r.data)
+      )
+    )).filter(Boolean) as WorkoutExercise[]
+    const newWorkout = { ...nwo, workout_exercises: exercises } as Workout
+    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === srcWeek.id ? { ...w, workouts: [...(w.workouts ?? []), newWorkout].sort((a, b) => a.workout_date.localeCompare(b.workout_date)) } : w) } : b)
+    setSaving(false)
+  }, [block, athlete.id])
+
+  const moveWorkout = useCallback(async (workoutId: string, dir: 'up' | 'down') => {
+    const week = block?.weeks?.find(w => w.workouts?.some(wo => wo.id === workoutId))
+    if (!week) return
+    const sorted = [...(week.workouts ?? [])].sort((a, b) => a.workout_date.localeCompare(b.workout_date))
+    const idx = sorted.findIndex(w => w.id === workoutId)
+    const swapIdx = dir === 'up' ? idx - 1 : idx + 1
+    if (swapIdx < 0 || swapIdx >= sorted.length) return
+    const a = sorted[idx], b = sorted[swapIdx]
+    const dateA = a.workout_date, dateB = b.workout_date
+    await Promise.all([
+      supabase.from('workouts').update({ workout_date: dateB }).eq('id', a.id),
+      supabase.from('workouts').update({ workout_date: dateA }).eq('id', b.id),
+    ])
+    setBlock(prev => prev ? { ...prev, weeks: prev.weeks?.map(w => {
+      if (w.id !== week.id) return w
+      const updated = (w.workouts ?? []).map(wo => {
+        if (wo.id === a.id) return { ...wo, workout_date: dateB }
+        if (wo.id === b.id) return { ...wo, workout_date: dateA }
+        return wo
+      })
+      return { ...w, workouts: updated.sort((x, y) => x.workout_date.localeCompare(y.workout_date)) }
+    }) } : prev)
+  }, [block])
+
   const addExercise = useCallback(async (workoutId: string, ex: Exercise) => {
     setSaving(true)
     const workout = block?.weeks?.flatMap(w => w.workouts ?? []).find(w => w.id === workoutId)
@@ -1163,6 +1218,8 @@ function AthletePanel({
               onAddExercise={addExercise}
               onUpdateExercise={updateExercise}
               onDeleteExercise={deleteExercise}
+              onCopyWorkout={copyWorkout}
+              onMoveWorkout={moveWorkout}
             />
           ))}
           <button onClick={addWeek}

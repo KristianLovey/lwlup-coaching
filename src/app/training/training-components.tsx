@@ -6,7 +6,7 @@ import Image from 'next/image'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
   GripVertical, Loader2, LogOut,
-  User, Shield, X, Dumbbell, BarChart2, MessageSquare, Copy, CalendarDays,
+  User, Shield, X, Dumbbell, BarChart2, MessageSquare, Copy, CalendarDays, ArrowUp, ArrowDown,
   Flame, Zap, Rocket, Gauge, Activity, Trophy, Medal, Crown, Star, Award, Gem,
   Target, Crosshair, Sword, Compass, Mountain, Anchor, Skull, Sparkles, Brain,
   Timer, Ghost, Forklift, Drama, Cat, Bird, PawPrint, Clover, Spade,
@@ -958,7 +958,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
   const [expanded, setExpanded]     = useState(false)
   const [setsOpen, setSetsOpen]     = useState(false)
   const [showHistory, setShowHistory]   = useState(false)
-  const [historyLogs, setHistoryLogs]   = useState<any[]>([])
+  const [historyLogs, setHistoryLogs]   = useState<{ dayName: string; logs: any[] }[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
 
   const save = (field: keyof WorkoutExercise, val: string, isNum = false) =>
@@ -968,8 +968,6 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
     if (historyLoading) return
     setHistoryLoading(true)
     try {
-      // Find workout_exercise IDs for the same exercise in the previous week
-      // by joining through workouts → weeks filtered by week_number
       const targetWeek = weekNumber ? weekNumber - 1 : null
       if (!targetWeek || targetWeek < 1) {
         setHistoryLogs([])
@@ -977,10 +975,9 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
         return
       }
 
-      // Get workout_exercise IDs for the same exercise in previous week of same block
       const { data: weData } = await supabase
         .from('workout_exercises')
-        .select('id, workouts!inner(weeks!inner(week_number))')
+        .select('id, workouts!inner(day_name, weeks!inner(week_number))')
         .eq('exercise_id', we.exercise_id)
         .eq('workouts.weeks.week_number', targetWeek)
 
@@ -994,12 +991,19 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
 
       const { data } = await supabase
         .from('set_logs')
-        .select('set_number, weight_kg, reps, rpe, completed')
+        .select('workout_exercise_id, set_number, weight_kg, reps, rpe, completed')
         .eq('athlete_id', userId)
         .in('workout_exercise_id', weIds)
         .order('set_number')
 
-      setHistoryLogs(data ?? [])
+      const grouped: { dayName: string; logs: any[] }[] = []
+      for (const weRow of weData) {
+        const logsForThis = (data ?? []).filter((l: any) => l.workout_exercise_id === weRow.id)
+        if (logsForThis.length > 0) {
+          grouped.push({ dayName: (weRow as any).workouts?.day_name ?? 'Dan', logs: logsForThis })
+        }
+      }
+      setHistoryLogs(grouped)
     } catch (e) {
       console.error('loadHistory error:', e)
       setHistoryLogs([])
@@ -1166,17 +1170,28 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
           ) : historyLogs.length === 0 ? (
             <div style={{ fontSize: '0.7rem', color: '#333', fontFamily: 'var(--fm)' }}>Nema podataka za prošli tjedan.</div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr 1fr', gap: '0', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '6px', overflow: 'hidden' }}>
-              {['SET','KG','REPS','RPE'].map(h => (
-                <div key={h} style={{ padding: '5px 10px', background: 'rgba(0,0,0,0.3)', fontSize: '0.38rem', letterSpacing: '0.2em', color: '#444', fontWeight: 700, fontFamily: 'var(--fm)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</div>
-              ))}
-              {historyLogs.map((l: any, i: number) => (
-                [
-                  <div key={`s${i}`} style={{ padding: '7px 10px', fontSize: '0.72rem', color: '#6366f1', fontWeight: 800, fontFamily: 'var(--fd)', borderBottom: i < historyLogs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>S{l.set_number}</div>,
-                  <div key={`kg${i}`} style={{ padding: '7px 10px', fontSize: '0.78rem', color: '#c7d2fe', fontWeight: 700, borderBottom: i < historyLogs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>{l.weight_kg ?? '—'}</div>,
-                  <div key={`r${i}`} style={{ padding: '7px 10px', fontSize: '0.78rem', color: '#94a3b8', borderBottom: i < historyLogs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>{l.reps ?? '—'}</div>,
-                  <div key={`rpe${i}`} style={{ padding: '7px 10px', fontSize: '0.78rem', color: '#fbbf24', borderBottom: i < historyLogs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>{l.rpe ?? '—'}</div>,
-                ]
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {historyLogs.map((group, gi) => (
+                <div key={gi}>
+                  {historyLogs.length > 1 && (
+                    <div style={{ fontSize: '0.42rem', letterSpacing: '0.18em', color: '#6366f1', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '4px', textTransform: 'uppercase' as const }}>
+                      {group.dayName}
+                    </div>
+                  )}
+                  <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr 1fr', gap: '0', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '6px', overflow: 'hidden' }}>
+                    {['SET','KG','REPS','RPE'].map(h => (
+                      <div key={h} style={{ padding: '5px 10px', background: 'rgba(0,0,0,0.3)', fontSize: '0.38rem', letterSpacing: '0.2em', color: '#444', fontWeight: 700, fontFamily: 'var(--fm)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</div>
+                    ))}
+                    {group.logs.map((l: any, i: number) => (
+                      [
+                        <div key={`s${i}`} style={{ padding: '7px 10px', fontSize: '0.72rem', color: '#6366f1', fontWeight: 800, fontFamily: 'var(--fd)', borderBottom: i < group.logs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>S{l.set_number}</div>,
+                        <div key={`kg${i}`} style={{ padding: '7px 10px', fontSize: '0.78rem', color: '#c7d2fe', fontWeight: 700, borderBottom: i < group.logs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>{l.weight_kg ?? '—'}</div>,
+                        <div key={`r${i}`} style={{ padding: '7px 10px', fontSize: '0.78rem', color: '#94a3b8', borderBottom: i < group.logs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>{l.reps ?? '—'}</div>,
+                        <div key={`rpe${i}`} style={{ padding: '7px 10px', fontSize: '0.78rem', color: '#fbbf24', borderBottom: i < group.logs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>{l.rpe ?? '—'}</div>,
+                      ]
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
@@ -1244,13 +1259,16 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
 }
 
 // ─── WORKOUT CARD — editorial style ──────────────────────────────
-export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }: {
+export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onCopyWorkout, onMoveWorkout, isFirst, isLast }: {
   workout: Workout; exercises: Exercise[]; isAdmin: boolean; userId: string; weekNumber?: number
   onUpdateWorkout: (id: string, data: Partial<Workout>) => void
   onDeleteWorkout: (id: string) => void
   onAddExercise: (workoutId: string, ex: Exercise) => void
   onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void
   onDeleteExercise: (id: string) => void
+  onCopyWorkout?: () => void
+  onMoveWorkout?: (dir: 'up' | 'down') => void
+  isFirst?: boolean; isLast?: boolean
 }) {
   const ssKey = `workout-open-${workout.id}`
   const [open, setOpen] = useState(() => {
@@ -1412,7 +1430,34 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
                   <span>{workout.completed ? 'GOTOVO' : 'ODRADITI'}</span>
                 </div>
               )}
-              {/* Delete — admin only */}
+              {/* Copy/Move/Delete — admin only */}
+              {isAdmin && onMoveWorkout && !isFirst && (
+                <button onClick={e => { e.stopPropagation(); onMoveWorkout('up') }}
+                  title="Pomjeri gore"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
+                  <ArrowUp size={11} />
+                </button>
+              )}
+              {isAdmin && onMoveWorkout && !isLast && (
+                <button onClick={e => { e.stopPropagation(); onMoveWorkout('down') }}
+                  title="Pomjeri dolje"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
+                  <ArrowDown size={11} />
+                </button>
+              )}
+              {isAdmin && onCopyWorkout && (
+                <button onClick={e => { e.stopPropagation(); onCopyWorkout() }}
+                  title="Kopiraj dan"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
+                  <Copy size={11} />
+                </button>
+              )}
               {isAdmin && (
                 <button onClick={e => { e.stopPropagation(); onDeleteWorkout(workout.id) }} className="icon-btn-danger">
                   <Trash2 size={11} />
@@ -1533,13 +1578,15 @@ function WeekNotesModal({ notes, isAdmin, onSave, onClose }: {
   )
 }
 
-export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCopyWeek, onUpdateWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise }: {
+export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCopyWeek, onUpdateWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onCopyWorkout, onMoveWorkout }: {
   week: Week; exercises: Exercise[]; isAdmin: boolean; userId: string
   onDeleteWeek: (id: string) => void; onCopyWeek: (id: string) => void; onUpdateWeek: (id: string, data: Partial<Week>) => void
   onAddWorkout: (weekId: string) => void
   onUpdateWorkout: (id: string, data: Partial<Workout>) => void; onDeleteWorkout: (id: string) => void
   onAddExercise: (workoutId: string, ex: Exercise) => void
   onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void
+  onCopyWorkout?: (workoutId: string) => void
+  onMoveWorkout?: (workoutId: string, dir: 'up' | 'down') => void
 }) {
   const ssKey = `week-open-${week.id}`
   const [open, setOpen] = useState(() => {
@@ -1677,10 +1724,13 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
       {/* ── Workout cards ── */}
       {open && (
         <div style={{ padding: '22px 14px 14px', background: '#08080f' }}>
-          {week.workouts?.map(w => (
+          {week.workouts?.map((w, i, arr) => (
             <WorkoutCard key={w.id} workout={w} exercises={exercises} isAdmin={isAdmin} userId={userId} weekNumber={week.week_number}
               onUpdateWorkout={onUpdateWorkout} onDeleteWorkout={onDeleteWorkout}
-              onAddExercise={onAddExercise} onUpdateExercise={onUpdateExercise} onDeleteExercise={onDeleteExercise} />
+              onAddExercise={onAddExercise} onUpdateExercise={onUpdateExercise} onDeleteExercise={onDeleteExercise}
+              onCopyWorkout={onCopyWorkout ? () => onCopyWorkout(w.id) : undefined}
+              onMoveWorkout={onMoveWorkout ? (dir) => onMoveWorkout(w.id, dir) : undefined}
+              isFirst={i === 0} isLast={i === arr.length - 1} />
           ))}
           {isAdmin && (
             <button onClick={handleAddWorkout} className="add-btn">
