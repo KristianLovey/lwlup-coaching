@@ -924,25 +924,23 @@ function AthletePanel({
   const addWorkout = useCallback(async (weekId: string) => {
     if (addingWorkout.current) return
     addingWorkout.current = true
-    setSaving(true)
     const week = block?.weeks?.find(w => w.id === weekId)
-    if (!week) { setSaving(false); return }
+    if (!week) { addingWorkout.current = false; return }
     const nd = week.workouts?.length ?? 0
-    const d = new Date(week.start_date); d.setDate(d.getDate() + nd)
-    const { data: { session } } = await supabase.auth.getSession()
-    const res = await fetch('/api/admin/add-workout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-      body: JSON.stringify({
-        weekId, athleteId: athlete.id,
-        dayName: `Dan ${nd + 1}`,
-        workoutDate: d.toISOString().split('T')[0],
-      }),
-    })
-    const json = await res.json()
-    if (json.data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? { ...w, workouts: [...(w.workouts ?? []), { ...json.data, workout_exercises: [] }] } : w) } : b)
+    const lastDate = [...(week.workouts ?? [])].sort((a, b) => b.workout_date.localeCompare(a.workout_date))[0]?.workout_date ?? week.start_date
+    const d = new Date(lastDate + 'T12:00:00'); d.setDate(d.getDate() + (nd === 0 ? 0 : 1))
+    const workoutDate = d.toISOString().split('T')[0]
+    const { data, error } = await supabase.from('workouts').insert({
+      week_id: weekId, athlete_id: athlete.id,
+      day_name: `Dan ${nd + 1}`, workout_date: workoutDate, completed: false,
+    }).select('*').single()
+    if (!error && data) {
+      setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? {
+        ...w, workouts: [...(w.workouts ?? []), { ...data, workout_exercises: [] }]
+          .sort((a, b) => a.workout_date.localeCompare(b.workout_date))
+      } : w) } : b)
+    }
     addingWorkout.current = false
-    setSaving(false)
   }, [block, athlete.id])
 
   const updateWorkout = useCallback(async (workoutId: string, data: Partial<Workout>) => {
@@ -988,7 +986,7 @@ function AthletePanel({
     setSaving(false)
   }, [block, athlete.id])
 
-  const moveWorkout = useCallback(async (workoutId: string, dir: 'up' | 'down') => {
+  const moveWorkout = useCallback((workoutId: string, dir: 'up' | 'down') => {
     const week = block?.weeks?.find(w => w.workouts?.some(wo => wo.id === workoutId))
     if (!week) return
     const sorted = [...(week.workouts ?? [])].sort((a, b) => a.workout_date.localeCompare(b.workout_date))
@@ -997,10 +995,7 @@ function AthletePanel({
     if (swapIdx < 0 || swapIdx >= sorted.length) return
     const a = sorted[idx], b = sorted[swapIdx]
     const dateA = a.workout_date, dateB = b.workout_date
-    await Promise.all([
-      supabase.from('workouts').update({ workout_date: dateB }).eq('id', a.id),
-      supabase.from('workouts').update({ workout_date: dateA }).eq('id', b.id),
-    ])
+    // Optimistic update first
     setBlock(prev => prev ? { ...prev, weeks: prev.weeks?.map(w => {
       if (w.id !== week.id) return w
       const updated = (w.workouts ?? []).map(wo => {
@@ -1010,6 +1005,11 @@ function AthletePanel({
       })
       return { ...w, workouts: updated.sort((x, y) => x.workout_date.localeCompare(y.workout_date)) }
     }) } : prev)
+    // Persist in background
+    Promise.all([
+      supabase.from('workouts').update({ workout_date: dateB }).eq('id', a.id),
+      supabase.from('workouts').update({ workout_date: dateA }).eq('id', b.id),
+    ])
   }, [block])
 
   const addExercise = useCallback(async (workoutId: string, ex: Exercise) => {

@@ -1724,7 +1724,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
       {/* ── Workout cards ── */}
       {open && (
         <div style={{ padding: '22px 14px 14px', background: '#08080f' }}>
-          {week.workouts?.map((w, i, arr) => (
+          {[...(week.workouts ?? [])].sort((a, b) => a.workout_date.localeCompare(b.workout_date)).map((w, i, arr) => (
             <WorkoutCard key={w.id} workout={w} exercises={exercises} isAdmin={isAdmin} userId={userId} weekNumber={week.week_number}
               onUpdateWorkout={onUpdateWorkout} onDeleteWorkout={onDeleteWorkout}
               onAddExercise={onAddExercise} onUpdateExercise={onUpdateExercise} onDeleteExercise={onDeleteExercise}
