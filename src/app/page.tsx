@@ -223,7 +223,7 @@ export default function Landing() {
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '680px' }}>
 
             {/* Big headline */}
-            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4.5rem, 11vw, 10rem)', lineHeight: 0.88, marginBottom: '28px', letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4.5rem, 11vw, 10rem)', lineHeight: 0.88, marginBottom: '28px', letterSpacing: '-0.02em', marginTop: 'clamp(40px, 8vh, 80px)' }}>
               <span className="hero-outline" style={{ display: 'block' }}>LWL UP</span>
               <span style={{ display: 'block', color: '#fff' }}>YOUR GAME.</span>
             </h1>
@@ -264,9 +264,9 @@ export default function Landing() {
         </div>
 
         {/* Slideshow dots */}
-        <div style={{ position: 'absolute', bottom: '32px', display: 'flex', gap: '8px', zIndex: 3 }}>
+        <div style={{ position: 'absolute', bottom: '32px', right: 'clamp(20px,5vw,60px)', display: 'flex', gap: '8px', zIndex: 3 }}>
           {SLIDES.map((_, i) => (
-            <div key={i} onClick={() => goSlide(i)} style={{ cursor: 'pointer', width: i === slide ? 24 : 7, height: 3, background: i === slide ? '#fff' : 'rgba(255,255,255,0.2)', transition: 'all 0.6s' }} />
+            <div key={i} onClick={() => goSlide(i)} style={{ cursor: 'pointer', width: i === slide ? 24 : 7, height: 3, background: i === slide ? '#fff' : 'rgba(255,255,255,0.45)', transition: 'all 0.6s' }} />
           ))}
         </div>
       </section>

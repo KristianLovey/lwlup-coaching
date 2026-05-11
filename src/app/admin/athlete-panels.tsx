@@ -603,6 +603,8 @@ export function AthletePanel({
   const [showDupModal, setShowDupModal] = useState(false)
   const blockSelectorRef = useRef<HTMLDivElement>(null)
   const addingWorkout = useRef(false)
+  const blockRef = useRef(block)
+  useEffect(() => { blockRef.current = block }, [block])
 
   const initials = athlete.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
 
@@ -890,13 +892,13 @@ export function AthletePanel({
       day_name: `Dan ${nd + 1}`, workout_date: workoutDate, completed: false,
     }).select('*').single()
     if (!error && data) {
+      const wo = { ...data, workout_date: (data.workout_date ?? workoutDate).slice(0, 10), workout_exercises: [] }
       setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? {
-        ...w, workouts: [...(w.workouts ?? []), { ...data, workout_exercises: [] }]
-          .sort((a, b) => a.workout_date.localeCompare(b.workout_date))
+        ...w, workouts: [...(w.workouts ?? []), wo].sort((a, b) => (a.workout_date ?? '').localeCompare(b.workout_date ?? ''))
       } : w) } : b)
     }
     addingWorkout.current = false
-  }, [block, athlete.id])
+  }, [athlete.id])
 
   const updateWorkout = useCallback(async (workoutId: string, data: Partial<Workout>) => {
     const { completed: _c, ...forDb } = data as any
@@ -941,15 +943,16 @@ export function AthletePanel({
   }, [block, athlete.id])
 
   const moveWorkout = useCallback((workoutId: string, dir: 'up' | 'down') => {
-    const week = block?.weeks?.find(w => w.workouts?.some(wo => wo.id === workoutId))
+    const cur = blockRef.current
+    const week = cur?.weeks?.find(w => w.workouts?.some(wo => wo.id === workoutId))
     if (!week) return
-    const sorted = [...(week.workouts ?? [])].sort((a, b) => a.workout_date.localeCompare(b.workout_date))
+    const sorted = [...(week.workouts ?? [])].sort((a, b) => (a.workout_date ?? '').slice(0,10).localeCompare((b.workout_date ?? '').slice(0,10)))
     const idx = sorted.findIndex(w => w.id === workoutId)
     const swapIdx = dir === 'up' ? idx - 1 : idx + 1
-    if (swapIdx < 0 || swapIdx >= sorted.length) return
+    if (idx < 0 || swapIdx < 0 || swapIdx >= sorted.length) return
     const a = sorted[idx], b = sorted[swapIdx]
-    const dateA = a.workout_date, dateB = b.workout_date
-    // Optimistic update first
+    const dateA = (a.workout_date ?? '').slice(0,10), dateB = (b.workout_date ?? '').slice(0,10)
+    if (!dateA || !dateB || dateA === dateB) return
     setBlock(prev => prev ? { ...prev, weeks: prev.weeks?.map(w => {
       if (w.id !== week.id) return w
       const updated = (w.workouts ?? []).map(wo => {
@@ -957,14 +960,13 @@ export function AthletePanel({
         if (wo.id === b.id) return { ...wo, workout_date: dateA }
         return wo
       })
-      return { ...w, workouts: updated.sort((x, y) => x.workout_date.localeCompare(y.workout_date)) }
+      return { ...w, workouts: updated.sort((x, y) => (x.workout_date ?? '').localeCompare(y.workout_date ?? '')) }
     }) } : prev)
-    // Persist in background
     Promise.all([
       supabase.from('workouts').update({ workout_date: dateB }).eq('id', a.id),
       supabase.from('workouts').update({ workout_date: dateA }).eq('id', b.id),
     ])
-  }, [block])
+  }, [])
 
   const addExercise = useCallback(async (workoutId: string, ex: Exercise) => {
     setSaving(true)
