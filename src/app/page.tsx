@@ -208,7 +208,7 @@ export default function Landing() {
       <ScrollToTop />
 
       {/* ══ HERO ══════════════════════════════════════════════════ */}
-      <section style={{ position: 'relative', height: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <section style={{ position: 'relative', height: '100svh', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflow: 'hidden' }}>
         {SLIDES.map((s, i) => (
           <div key={i} style={{ position: 'absolute', inset: 0, opacity: i === slide ? 1 : 0, transition: 'opacity 1.5s ease-in-out', zIndex: 0 }}>
             <Image src={s.src} alt="" fill priority={i === 0} quality={50}
@@ -219,54 +219,55 @@ export default function Landing() {
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, transparent 0%, rgba(5,5,5,0.5) 100%)', zIndex: 1 }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 60%, #050505 100%)', zIndex: 1 }} />
 
-        <div style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '0 clamp(20px,5vw,60px)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }} className="hero-content">
+        {/* Main content — starts below navbar with breathing room */}
+        <div style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '0 clamp(20px,5vw,60px)', paddingTop: 'clamp(90px,16vh,160px)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }} className="hero-content">
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '680px' }}>
 
             {/* Big headline */}
-            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4.5rem, 11vw, 10rem)', lineHeight: 0.88, marginBottom: '28px', letterSpacing: '-0.02em', marginTop: 'clamp(40px, 8vh, 80px)' }}>
+            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4.2rem, 10vw, 9.5rem)', lineHeight: 0.88, marginBottom: '24px', marginTop: 0, letterSpacing: '-0.02em' }}>
               <span className="hero-outline" style={{ display: 'block' }}>LWL UP</span>
               <span style={{ display: 'block', color: '#fff' }}>YOUR GAME.</span>
             </h1>
 
             {/* Description */}
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(0.9rem,2vw,1.05rem)', lineHeight: 1.8, marginBottom: '32px', maxWidth: '480px' }}>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(0.88rem,1.8vw,1rem)', lineHeight: 1.8, marginBottom: '28px', maxWidth: '480px' }}>
               {t('home.hero.desc')}
             </p>
 
             {/* CTA gumbi */}
             <div style={{ display: 'flex', flexDirection: 'row', gap: '14px', width: '100%', maxWidth: '480px' }} className="hero-btns">
               <Link href="/survey" style={{ textDecoration: 'none', flex: 1 }}>
-                <button className="btn-primary-cta" style={{ width: '100%', padding: '18px 24px', background: '#fff', color: '#000', border: 'none', fontSize: 'clamp(0.58rem, 1.6vw, 0.72rem)', fontWeight: 800, letterSpacing: '0.2em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const, transition: 'all 0.25s' }}
+                <button className="btn-primary-cta" style={{ width: '100%', padding: '16px 24px', background: '#fff', color: '#000', border: 'none', fontSize: 'clamp(0.58rem, 1.6vw, 0.72rem)', fontWeight: 800, letterSpacing: '0.2em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const, transition: 'all 0.25s' }}
                   onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'translateY(-2px)' }}
                   onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; e.currentTarget.style.transform = 'translateY(0)' }}>
                   {t('home.hero.cta1')}
                 </button>
               </Link>
               <Link href="/training" style={{ textDecoration: 'none', flex: 1, display: 'flex', minHeight: '44px' }}>
-                <button className="btn-secondary-cta" style={{ width: '100%', padding: '16px 24px', background: 'rgba(255,255,255,0.03)', color: '#fff', border: '1px solid rgba(255,255,255,0.22)', fontSize: 'clamp(0.58rem, 1.6vw, 0.72rem)', fontWeight: 600, letterSpacing: '0.2em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const, transition: 'all 0.25s' }}
+                <button className="btn-secondary-cta" style={{ width: '100%', padding: '14px 24px', background: 'rgba(255,255,255,0.03)', color: '#fff', border: '1px solid rgba(255,255,255,0.22)', fontSize: 'clamp(0.58rem, 1.6vw, 0.72rem)', fontWeight: 600, letterSpacing: '0.2em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const, transition: 'all 0.25s' }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.7)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.transform = 'translateY(0)' }}>
                   {t('home.hero.cta2')}
                 </button>
               </Link>
             </div>
-
-            {/* Slide quote - subtle below CTAs */}
-            <div style={{ marginTop: '32px', paddingLeft: '14px', borderLeft: '2px solid rgba(255,255,255,0.12)' }} className="hero-quote">
-              <p style={{ fontSize: 'clamp(0.72rem,1.8vw,0.85rem)', color: 'rgba(255,255,255,0.32)', fontStyle: 'italic', lineHeight: 1.6, margin: 0, transition: 'all 0.8s' }}>
-                "{SLIDES[slide].quote}"
-              </p>
-              <p style={{ color: 'rgba(255,255,255,0.18)', fontSize: '0.6rem', letterSpacing: '0.32em', textTransform: 'uppercase' as const, marginTop: '6px', marginBottom: 0 }}>
-                — {SLIDES[slide].sub}
-              </p>
-            </div>
           </div>
         </div>
 
-        {/* Slideshow dots */}
-        <div style={{ position: 'absolute', bottom: '32px', right: 'clamp(20px,5vw,60px)', display: 'flex', gap: '8px', zIndex: 3 }}>
+        {/* Quote — bottom right, absolutely positioned */}
+        <div style={{ position: 'absolute', bottom: 'clamp(52px,8vh,80px)', right: 'clamp(20px,5vw,60px)', zIndex: 3, textAlign: 'right', maxWidth: 'clamp(220px,28vw,380px)', opacity: ready ? 1 : 0, transition: 'opacity 1.8s 0.5s' }}>
+          <p style={{ fontSize: 'clamp(0.65rem,1.3vw,0.8rem)', color: 'rgba(255,255,255,0.45)', fontStyle: 'italic', lineHeight: 1.6, margin: 0, transition: 'all 0.8s' }}>
+            &ldquo;{SLIDES[slide].quote}&rdquo;
+          </p>
+          <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: 'clamp(0.52rem,0.9vw,0.6rem)', letterSpacing: '0.28em', textTransform: 'uppercase' as const, marginTop: '6px', marginBottom: 0 }}>
+            — {SLIDES[slide].sub}
+          </p>
+        </div>
+
+        {/* Slideshow dots — bottom right, above quote */}
+        <div style={{ position: 'absolute', bottom: 'clamp(30px,5vh,40px)', right: 'clamp(20px,5vw,60px)', display: 'flex', gap: '8px', zIndex: 3 }}>
           {SLIDES.map((_, i) => (
-            <div key={i} onClick={() => goSlide(i)} style={{ cursor: 'pointer', width: i === slide ? 24 : 7, height: 3, background: i === slide ? '#fff' : 'rgba(255,255,255,0.45)', transition: 'all 0.6s' }} />
+            <div key={i} onClick={() => goSlide(i)} style={{ cursor: 'pointer', width: i === slide ? 24 : 7, height: 3, background: i === slide ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'all 0.6s' }} />
           ))}
         </div>
       </section>
@@ -566,12 +567,11 @@ export default function Landing() {
 
         /* ══ MOBILE ═══════════════════════════════════════════════ */
         @media (max-width: 768px) {
-          .hero-content    { align-items: center !important; text-align: center; padding-bottom: 80px !important; }
+          .hero-content    { align-items: center !important; text-align: center; padding-bottom: 120px !important; }
           .hero-content h1 { font-size: clamp(3.2rem,12vw,5rem) !important; margin-bottom: 20px !important; }
           .hero-content p  { font-size: 0.9rem !important; margin-bottom: 24px !important; }
           .hero-btns       { justify-content: center; flex-direction: column !important; gap: 10px !important; }
           .hero-btns a     { flex: unset !important; width: 100% !important; }
-          .hero-quote      { display: none; }
           .cats-two-col    { grid-template-columns: 1fr !important; }
           .founder-row { grid-template-columns: 1fr !important; min-height: unset; }
           .founder-row-reverse .founder-img-wrap { order: 1; }
@@ -590,7 +590,7 @@ export default function Landing() {
         }
         @media (max-width: 480px) {
           .features-grid { grid-template-columns: 1fr !important; }
-          .hero-content { padding: 0 16px 80px !important; }
+          .hero-content { padding: 0 16px 120px !important; padding-top: clamp(80px,14vh,120px) !important; }
         }
       `}</style>
     </div>
