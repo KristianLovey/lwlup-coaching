@@ -942,6 +942,37 @@ export function AthletePanel({
     setSaving(false)
   }, [block, athlete.id])
 
+  const copyWorkoutToWeek = useCallback(async (workoutId: string, targetWeekId: string) => {
+    setSaving(true)
+    const src = block?.weeks?.flatMap(w => w.workouts ?? []).find(wo => wo.id === workoutId)
+    const targetWeek = block?.weeks?.find(w => w.id === targetWeekId)
+    if (!src || !targetWeek) { setSaving(false); return }
+    const lastDate = [...(targetWeek.workouts ?? [])].sort((a, b) => a.workout_date.localeCompare(b.workout_date)).at(-1)?.workout_date ?? targetWeek.start_date
+    const d = new Date(lastDate + 'T12:00:00'); d.setDate(d.getDate() + 1)
+    const { data: nwo } = await supabase.from('workouts').insert({
+      week_id: targetWeekId, athlete_id: athlete.id,
+      day_name: src.day_name ?? 'Dan',
+      workout_date: d.toISOString().split('T')[0],
+      completed: false, notes: src.notes,
+    }).select('*').single()
+    if (!nwo) { setSaving(false); return }
+    const exercises = (await Promise.all(
+      (src.workout_exercises ?? []).map(ex =>
+        supabase.from('workout_exercises').insert({
+          workout_id: nwo.id, exercise_id: ex.exercise_id,
+          exercise_order: ex.exercise_order,
+          planned_sets: ex.planned_sets, planned_reps: ex.planned_reps,
+          planned_weight_kg: ex.planned_weight_kg, planned_rpe: ex.planned_rpe,
+          planned_rest_seconds: ex.planned_rest_seconds, planned_tempo: ex.planned_tempo,
+          target_rpe: ex.target_rpe, coach_note: ex.coach_note,
+        }).select('*, exercise:exercises(*)').single().then(r => r.data)
+      )
+    )).filter(Boolean) as WorkoutExercise[]
+    const newWorkout = { ...nwo, workout_date: (nwo.workout_date ?? '').slice(0, 10), workout_exercises: exercises } as Workout
+    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === targetWeekId ? { ...w, workouts: [...(w.workouts ?? []), newWorkout].sort((a, b) => a.workout_date.localeCompare(b.workout_date)) } : w) } : b)
+    setSaving(false)
+  }, [block, athlete.id])
+
   const moveWorkout = useCallback((workoutId: string, dir: 'up' | 'down') => {
     const cur = blockRef.current
     const week = cur?.weeks?.find(w => w.workouts?.some(wo => wo.id === workoutId))
@@ -1167,6 +1198,8 @@ export function AthletePanel({
               onDeleteExercise={deleteExercise}
               onCopyWorkout={copyWorkout}
               onMoveWorkout={moveWorkout}
+              allWeeks={block.weeks?.map(w => ({ id: w.id, week_number: w.week_number })) ?? []}
+              onCopyWorkoutToWeek={copyWorkoutToWeek}
             />
           ))}
           <button onClick={addWeek}

@@ -764,7 +764,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
 
     const filled = updated.filter(s => s.weight_kg || s.reps)
     if (filled.length > 0) {
-      const avgKg = filled.reduce((s, x) => s + (x.weight_kg ?? 0), 0) / filled.length
+      const avgKg = Math.round((filled.reduce((s, x) => s + (x.weight_kg ?? 0), 0) / filled.length) * 100) / 100
       const lastRpe = filled[filled.length - 1].rpe
       onAggregateUpdate({ actual_weight_kg: avgKg, actual_rpe: lastRpe })
     }
@@ -1259,7 +1259,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
 }
 
 // ─── WORKOUT CARD — editorial style ──────────────────────────────
-export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onCopyWorkout, onMoveWorkout, isFirst, isLast }: {
+export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onCopyWorkout, onMoveWorkout, isFirst, isLast, allWeeks, onCopyWorkoutToWeek }: {
   workout: Workout; exercises: Exercise[]; isAdmin: boolean; userId: string; weekNumber?: number
   onUpdateWorkout: (id: string, data: Partial<Workout>) => void
   onDeleteWorkout: (id: string) => void
@@ -1269,12 +1269,25 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
   onCopyWorkout?: () => void
   onMoveWorkout?: (dir: 'up' | 'down') => void
   isFirst?: boolean; isLast?: boolean
+  allWeeks?: { id: string; week_number: number }[]
+  onCopyWorkoutToWeek?: (targetWeekId: string) => void
 }) {
   const ssKey = `workout-open-${workout.id}`
   const [open, setOpen] = useState(() => {
     try { const v = sessionStorage.getItem(ssKey); return v === 'true' } catch { return false }
   })
   const [showPicker, setShowPicker] = useState(false)
+  const [showWeekPicker, setShowWeekPicker] = useState(false)
+  const weekPickerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showWeekPicker) return
+    const handler = (e: MouseEvent) => {
+      if (weekPickerRef.current && !weekPickerRef.current.contains(e.target as Node)) setShowWeekPicker(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showWeekPicker])
   const exCount = workout.workout_exercises?.length ?? 0
 
   // ── Local exercise order (for optimistic drag-reorder) ──
@@ -1451,12 +1464,37 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
               )}
               {isAdmin && onCopyWorkout && (
                 <button onClick={e => { e.stopPropagation(); onCopyWorkout() }}
-                  title="Kopiraj dan"
+                  title="Kopiraj dan (isti tjedan)"
                   style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
                   <Copy size={11} />
                 </button>
+              )}
+              {isAdmin && onCopyWorkoutToWeek && allWeeks && allWeeks.length > 0 && (
+                <div ref={weekPickerRef} style={{ position: 'relative' }}>
+                  <button onClick={e => { e.stopPropagation(); setShowWeekPicker(v => !v) }}
+                    title="Kopiraj dan u drugi tjedan"
+                    style={{ background: showWeekPicker ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.04)', border: `1px solid ${showWeekPicker ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.1)'}`, color: showWeekPicker ? '#a5b4fc' : 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                    onMouseEnter={e => { if (!showWeekPicker) { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' } }}
+                    onMouseLeave={e => { if (!showWeekPicker) { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' } }}>
+                    <CalendarDays size={11} />
+                  </button>
+                  {showWeekPicker && (
+                    <div style={{ position: 'absolute', right: 0, top: '110%', zIndex: 999, background: '#13131f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.7)', minWidth: '100px' }}>
+                      <div style={{ padding: '6px 10px 4px', fontSize: '0.55rem', fontFamily: 'var(--fm)', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.25)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>KOPIRAJ U</div>
+                      {allWeeks.map(w => (
+                        <button key={w.id}
+                          onClick={e => { e.stopPropagation(); onCopyWorkoutToWeek(w.id); setShowWeekPicker(false) }}
+                          style={{ display: 'block', width: '100%', padding: '7px 14px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', textAlign: 'left', fontSize: '0.72rem', fontFamily: 'var(--fm)', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.15)'; e.currentTarget.style.color = '#a5b4fc' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)' }}>
+                          W{w.week_number}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
               {isAdmin && (
                 <button onClick={e => { e.stopPropagation(); onDeleteWorkout(workout.id) }} className="icon-btn-danger">
@@ -1578,7 +1616,7 @@ function WeekNotesModal({ notes, isAdmin, onSave, onClose }: {
   )
 }
 
-export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCopyWeek, onUpdateWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onCopyWorkout, onMoveWorkout }: {
+export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCopyWeek, onUpdateWeek, onAddWorkout, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onCopyWorkout, onMoveWorkout, allWeeks, onCopyWorkoutToWeek }: {
   week: Week; exercises: Exercise[]; isAdmin: boolean; userId: string
   onDeleteWeek: (id: string) => void; onCopyWeek: (id: string) => void; onUpdateWeek: (id: string, data: Partial<Week>) => void
   onAddWorkout: (weekId: string) => void
@@ -1587,6 +1625,8 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
   onUpdateExercise: (id: string, data: Partial<WorkoutExercise>) => void; onDeleteExercise: (id: string) => void
   onCopyWorkout?: (workoutId: string) => void
   onMoveWorkout?: (workoutId: string, dir: 'up' | 'down') => void
+  allWeeks?: { id: string; week_number: number }[]
+  onCopyWorkoutToWeek?: (workoutId: string, targetWeekId: string) => void
 }) {
   const ssKey = `week-open-${week.id}`
   const [open, setOpen] = useState(() => {
@@ -1730,7 +1770,9 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
               onAddExercise={onAddExercise} onUpdateExercise={onUpdateExercise} onDeleteExercise={onDeleteExercise}
               onCopyWorkout={onCopyWorkout ? () => onCopyWorkout(w.id) : undefined}
               onMoveWorkout={onMoveWorkout ? (dir) => onMoveWorkout(w.id, dir) : undefined}
-              isFirst={i === 0} isLast={i === arr.length - 1} />
+              isFirst={i === 0} isLast={i === arr.length - 1}
+              allWeeks={allWeeks?.filter(aw => aw.id !== week.id)}
+              onCopyWorkoutToWeek={onCopyWorkoutToWeek ? (targetWeekId) => onCopyWorkoutToWeek(w.id, targetWeekId) : undefined} />
           ))}
           {isAdmin && (
             <button onClick={handleAddWorkout} className="add-btn">
