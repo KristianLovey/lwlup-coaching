@@ -129,11 +129,11 @@ function FounderRow({ founder, index }: { founder: FounderData; index: number })
           0{index + 1}
         </div>
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.3)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>{founder.role}</div>
+          <div style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.48)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>{founder.role}</div>
           <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.8rem, 3.5vw, 3.2rem)', lineHeight: 0.92, marginBottom: founder.nickname ? '8px' : '24px', letterSpacing: '-0.01em' }}>{founder.name}</h2>
-          {founder.nickname && <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', marginBottom: '24px', fontStyle: 'italic' }}>"{founder.nickname}"</div>}
+          {founder.nickname && <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.48)', letterSpacing: '0.15em', marginBottom: '24px', fontStyle: 'italic' }}>"{founder.nickname}"</div>}
           <div style={{ width: '36px', height: '2px', background: '#fff', marginBottom: '24px', opacity: 0.7 }} />
-          <p style={{ color: 'rgba(255,255,255,0.5)', lineHeight: 1.85, fontSize: '0.92rem', marginBottom: '28px', maxWidth: '460px' }}>{founder.bio}</p>
+          <p style={{ color: 'rgba(255,255,255,0.62)', lineHeight: 1.85, fontSize: '0.92rem', marginBottom: '28px', maxWidth: '460px' }}>{founder.bio}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {founder.achievements.map((item, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', color: 'rgba(255,255,255,0.7)' }}>
@@ -256,10 +256,10 @@ export default function Landing() {
 
         {/* Quote — bottom right, absolutely positioned */}
         <div style={{ position: 'absolute', bottom: 'clamp(52px,8vh,80px)', right: 'clamp(20px,5vw,60px)', zIndex: 3, textAlign: 'right', maxWidth: 'clamp(220px,28vw,380px)', opacity: ready ? 1 : 0, transition: 'opacity 1.8s 0.5s' }}>
-          <p style={{ fontSize: 'clamp(0.65rem,1.3vw,0.8rem)', color: 'rgba(255,255,255,0.45)', fontStyle: 'italic', lineHeight: 1.6, margin: 0, transition: 'all 0.8s' }}>
+          <p style={{ fontSize: 'clamp(0.65rem,1.3vw,0.8rem)', color: 'rgba(255,255,255,0.62)', fontStyle: 'italic', lineHeight: 1.6, margin: 0, transition: 'all 0.8s' }}>
             &ldquo;{SLIDES[slide].quote}&rdquo;
           </p>
-          <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: 'clamp(0.52rem,0.9vw,0.6rem)', letterSpacing: '0.28em', textTransform: 'uppercase' as const, marginTop: '6px', marginBottom: 0 }}>
+          <p style={{ color: 'rgba(255,255,255,0.48)', fontSize: 'clamp(0.52rem,0.9vw,0.6rem)', letterSpacing: '0.28em', textTransform: 'uppercase' as const, marginTop: '6px', marginBottom: 0 }}>
             — {SLIDES[slide].sub}
           </p>
         </div>
@@ -359,7 +359,7 @@ export default function Landing() {
           {/* Footer note */}
           <div style={{ marginTop: 'clamp(32px,5vw,56px)', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: '4px', height: '4px', background: 'rgba(255,255,255,0.5)', flexShrink: 0 }} />
-            <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.14em', fontFamily: 'var(--fm)' }}>
+            <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.52)', letterSpacing: '0.14em', fontFamily: 'var(--fm)' }}>
               {t('home.cats.note')}
             </span>
           </div>
@@ -382,7 +382,7 @@ export default function Landing() {
                 {([['home.about.community.title', 'home.about.community.desc'], ['home.about.expertise.title', 'home.about.expertise.desc']] as const).map(([tk, dk]) => (
                   <div key={tk} className="info-card" style={{ cursor: 'pointer', transition: '0.3s' }}>
                     <h3 style={{ color: '#fff', fontSize: 'clamp(0.95rem,2vw,1.1rem)', marginBottom: '8px', fontWeight: 700 }}>{t(tk)}</h3>
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(0.8rem,1.8vw,0.9rem)' }}>{t(dk)}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 'clamp(0.8rem,1.8vw,0.9rem)' }}>{t(dk)}</p>
                   </div>
                 ))}
               </div>
@@ -406,12 +406,12 @@ export default function Landing() {
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: 'clamp(60px,10vw,100px) clamp(20px,5vw,60px) clamp(40px,6vw,60px)' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.25)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>{t('home.founders.eyebrow')}</div>
+              <div style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.42)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>{t('home.founders.eyebrow')}</div>
               <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5.5rem)', lineHeight: 0.88, margin: 0, letterSpacing: '-0.0em' }}>
                 {t('home.founders.title')}
               </h2>
             </div>
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 'clamp(0.8rem,2vw,0.9rem)', lineHeight: 1.8, maxWidth: '380px', marginBottom: '8px' }}>
+            <p style={{ color: 'rgba(255,255,255,0.52)', fontSize: 'clamp(0.8rem,2vw,0.9rem)', lineHeight: 1.8, maxWidth: '380px', marginBottom: '8px' }}>
               {t('home.founders.desc')}
             </p>
           </div>
@@ -443,7 +443,7 @@ export default function Landing() {
                 {/* Number */}
                 <div style={{ fontSize: 'clamp(2rem,4vw,3rem)', fontFamily: 'var(--fd)', color: 'rgba(255,255,255,0.06)', marginBottom: '16px', lineHeight: 1, transition: 'color 0.4s' }}>{f.sym}</div>
                 <h3 style={{ fontSize: 'clamp(0.82rem,1.8vw,1rem)', letterSpacing: '0.1em', marginBottom: '14px', color: '#fff', fontWeight: 700 }}>{f.title}</h3>
-                <p style={{ color: 'rgba(255,255,255,0.38)', fontSize: 'clamp(0.78rem,1.6vw,0.85rem)', lineHeight: 1.85 }}>{f.desc}</p>
+                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 'clamp(0.78rem,1.6vw,0.85rem)', lineHeight: 1.85 }}>{f.desc}</p>
               </div>
             ))}
           </div>
