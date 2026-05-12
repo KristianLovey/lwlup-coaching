@@ -135,8 +135,8 @@ export default function TeamPage() {
 
   const filteredMembers = athletes.filter(m => {
     if (filter === 'ALL')   return true
-    if (filter === 'MEN')   return m.category.startsWith('M-')
-    if (filter === 'WOMEN') return m.category.startsWith('F-')
+    if (filter === 'MEN')   return m.category === 'M' || m.category.startsWith('M-')
+    if (filter === 'WOMEN') return m.category === 'F' || m.category.startsWith('F-')
     return true
   })
 
