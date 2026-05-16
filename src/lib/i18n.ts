@@ -107,7 +107,7 @@ const translations = {
     'team.filter.all':            'SVI',
     'team.filter.men':            'MUŠKARCI',
     'team.filter.women':          'ŽENE',
-    'team.stats.athletes':        'AKTIVNIH ATLETA',
+    'team.stats.athletes':        'AKTIVNIH NATJECATELJA',
     'team.stats.bestTotal':       'NAJVEĆI TOTAL',
     'team.stats.combined':        'KOMBINIRANI TOTAL',
     'team.stats.glp':             'NAJVIŠI GLP',
