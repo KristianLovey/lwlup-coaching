@@ -16,6 +16,31 @@ import type { Exercise, WorkoutExercise, Workout, Week, SetLog, Competition } fr
 
 const supabase = createClient()
 
+// ─── CONFIRM DIALOG ───────────────────────────────────────────────
+function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+      onClick={onCancel}>
+      <div style={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', padding: '28px 32px', maxWidth: '340px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}
+        onClick={e => e.stopPropagation()}>
+        <p style={{ margin: '0 0 24px', color: 'rgba(255,255,255,0.85)', fontSize: '0.92rem', lineHeight: 1.5, textAlign: 'center', fontFamily: 'var(--fm)' }}>{message}</p>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          <button onClick={onCancel} style={{ flex: 1, padding: '9px 0', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'var(--fm)', transition: 'all 0.15s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.6)' }}>
+            Odustani
+          </button>
+          <button onClick={onConfirm} style={{ flex: 1, padding: '9px 0', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.15)', color: 'rgba(239,68,68,0.9)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'var(--fm)', transition: 'all 0.15s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.3)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.15)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(239,68,68,0.9)' }}>
+            Obriši
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── AVATAR ICONS ─────────────────────────────────────────────────
 export const AVATARS: { id: string; label: string; icon: LucideIcon }[] = [
   { id: 'dumbbell',  label: 'Teg',       icon: Dumbbell  },
@@ -1278,6 +1303,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
   })
   const [showPicker, setShowPicker] = useState(false)
   const [showWeekPicker, setShowWeekPicker] = useState(false)
+  const [confirmDeleteWorkout, setConfirmDeleteWorkout] = useState(false)
   const weekPickerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -1497,9 +1523,16 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
                 </div>
               )}
               {isAdmin && (
-                <button onClick={e => { e.stopPropagation(); onDeleteWorkout(workout.id) }} className="icon-btn-danger">
+                <button onClick={e => { e.stopPropagation(); setConfirmDeleteWorkout(true) }} className="icon-btn-danger">
                   <Trash2 size={11} />
                 </button>
+              )}
+              {confirmDeleteWorkout && (
+                <ConfirmDialog
+                  message={`Jeste li sigurni da želite obrisati "${workout.day_name}"? Ova akcija je nepovratna.`}
+                  onConfirm={() => { setConfirmDeleteWorkout(false); onDeleteWorkout(workout.id) }}
+                  onCancel={() => setConfirmDeleteWorkout(false)}
+                />
               )}
               {/* Expand arrow */}
               <div style={{ color: open ? '#818cf8' : '#444', transition: 'transform 0.25s, color 0.2s', transform: open ? 'rotate(90deg)' : 'none' }}>
@@ -1633,6 +1666,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
     try { const v = sessionStorage.getItem(ssKey); return v === null ? true : v === 'true' } catch { return true }
   })
   const [showNotes, setShowNotes] = useState(false)
+  const [confirmDeleteWeek, setConfirmDeleteWeek] = useState(false)
   const addWorkoutLocked = useRef(false)
 
   const handleAddWorkout = () => {
@@ -1734,9 +1768,16 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
                   <Copy size={12} />
                 </button>
-                <button onClick={e => { e.stopPropagation(); onDeleteWeek(week.id) }} className="icon-btn-danger">
+                <button onClick={e => { e.stopPropagation(); setConfirmDeleteWeek(true) }} className="icon-btn-danger">
                   <Trash2 size={13} />
                 </button>
+                {confirmDeleteWeek && (
+                  <ConfirmDialog
+                    message={`Jeste li sigurni da želite obrisati Tjedan ${week.week_number}? Ova akcija je nepovratna.`}
+                    onConfirm={() => { setConfirmDeleteWeek(false); onDeleteWeek(week.id) }}
+                    onCancel={() => setConfirmDeleteWeek(false)}
+                  />
+                )}
               </>
             )}
           </div>
