@@ -1663,7 +1663,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
 }) {
   const ssKey = `week-open-${week.id}`
   const [open, setOpen] = useState(() => {
-    try { const v = sessionStorage.getItem(ssKey); return v === null ? true : v === 'true' } catch { return true }
+    try { const v = sessionStorage.getItem(ssKey); return v === null ? false : v === 'true' } catch { return false }
   })
   const [showNotes, setShowNotes] = useState(false)
   const [confirmDeleteWeek, setConfirmDeleteWeek] = useState(false)

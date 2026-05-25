@@ -218,6 +218,9 @@ body.nav-open .scroll-to-top-btn {
   .system-section { padding: 80px 20px !important; }
   .cta-final-button { padding: 20px 40px !important; font-size: 0.8rem !important; }
 
+  .age-cats-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  .weight-cats-grid { grid-template-columns: 1fr !important; }
+
   .footer-inner { flex-direction: column !important; gap: 40px !important; padding: 60px 20px !important; }
   .footer-nav-row { gap: 40px !important; }
   section { padding-left: 20px !important; padding-right: 20px !important; }
@@ -280,4 +283,6 @@ body.nav-open .scroll-to-top-btn {
 
   .club-img-grid > div { height: 160px !important; }
   .features-grid { grid-template-columns: 1fr !important; }
+
+  .age-cats-grid { grid-template-columns: repeat(2, 1fr) !important; }
 }

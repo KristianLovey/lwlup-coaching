@@ -295,7 +295,7 @@ export default function Landing() {
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
           {/* Header */}
-          <div style={{ marginBottom: 'clamp(48px,7vw,88px)' }}>
+          <div style={{ marginBottom: 'clamp(48px,7vw,80px)' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
               <div style={{ width: '28px', height: '2px', background: 'rgba(255,255,255,0.6)' }} />
               <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.cats.eyebrow')}</span>
@@ -308,58 +308,61 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* Two-column layout: Dobne | Težinske */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(32px,5vw,80px)' }} className="cats-two-col">
-
-            {/* Left: Dobne kategorije */}
-            <div>
-              <div style={{ fontSize: '0.6rem', letterSpacing: '0.38em', color: 'rgba(255,255,255,0.65)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '20px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>{t('home.cats.age')}</div>
-              <div>
-                {AGE_CATS.map((cat, i) => (
-                  <div key={i}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 0' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <div style={{ width: '7px', height: '7px', background: '#fff', flexShrink: 0, opacity: 0.75 }} />
-                        <span style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1rem,2.2vw,1.3rem)', letterSpacing: '0.04em', color: '#fff' }}>{t(cat.key)}</span>
-                      </div>
-                      <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em', fontFamily: 'var(--fm)', fontWeight: 600 }}>{cat.age} {t('home.cats.years')}</span>
-                    </div>
-                    {i < AGE_CATS.length - 1 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)' }} />}
-                  </div>
-                ))}
-              </div>
+          {/* Dobne kategorije — horizontal cards */}
+          <div style={{ marginBottom: 'clamp(48px,7vw,80px)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+              <span style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.cats.age')}</span>
+              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
             </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }} className="age-cats-grid">
+              {AGE_CATS.map((cat, i) => (
+                <div key={i} style={{ position: 'relative', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '4px', padding: '22px 20px', background: 'rgba(255,255,255,0.025)', overflow: 'hidden', transition: 'border-color 0.25s, background 0.25s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.22)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.09)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.025)' }}>
+                  <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '10px' }}>{String(i + 1).padStart(2, '0')}</div>
+                  <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1rem,2vw,1.25rem)', letterSpacing: '0.03em', color: '#fff', marginBottom: '8px' }}>{t(cat.key)}</div>
+                  <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.08em' }}>{cat.age} {t('home.cats.years')}</div>
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px', background: 'rgba(255,255,255,0.06)' }} />
+                </div>
+              ))}
+            </div>
+          </div>
 
-            {/* Right: Težinske kategorije */}
-            <div>
-              <div style={{ fontSize: '0.6rem', letterSpacing: '0.38em', color: 'rgba(255,255,255,0.65)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '20px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>TEŽINSKE KATEGORIJE</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(16px,3vw,32px)' }}>
-                {[
-                  { label: t('home.cats.men'),   cats: ['-59','-66','-74','-83','-93','-105','-120','+120'] },
-                  { label: t('home.cats.women'), cats: ['-47','-52','-57','-63','-69','-76','-84','+84'] },
-                ].map(g => (
-                  <div key={g.label}>
-                    <div style={{ fontSize: '0.6rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '12px' }}>{g.label}</div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      {g.cats.map((kg, i) => (
-                        <div key={kg}>
-                          <div style={{ padding: '9px 0', fontSize: 'clamp(0.82rem,1.8vw,0.95rem)', color: 'rgba(255,255,255,0.85)', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.04em' }}>
-                            {kg} kg
-                          </div>
-                          {i < g.cats.length - 1 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)' }} />}
-                        </div>
-                      ))}
-                    </div>
+          {/* Težinske kategorije — two panels side by side */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+              <span style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 700 }}>TEŽINSKE KATEGORIJE</span>
+              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }} className="weight-cats-grid">
+              {[
+                { label: t('home.cats.men'),   cats: ['-59','-66','-74','-83','-93','-105','-120','+120'] },
+                { label: t('home.cats.women'), cats: ['-47','-52','-57','-63','-69','-76','-84','+84'] },
+              ].map(g => (
+                <div key={g.label} style={{ border: '1px solid rgba(255,255,255,0.09)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ padding: '16px 24px', background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '5px', height: '5px', background: 'rgba(255,255,255,0.7)', flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.58rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{g.label}</span>
                   </div>
-                ))}
-              </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+                    {g.cats.map((kg, i) => (
+                      <div key={kg} style={{ padding: '18px 16px', borderRight: i % 4 !== 3 ? '1px solid rgba(255,255,255,0.06)' : 'none', borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.06)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)' }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}>
+                        <span style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(0.85rem,1.8vw,1.05rem)', color: 'rgba(255,255,255,0.9)', letterSpacing: '0.02em' }}>{kg}</span>
+                        <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--fm)', marginLeft: '3px', marginTop: '2px' }}>kg</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
           {/* Footer note */}
-          <div style={{ marginTop: 'clamp(32px,5vw,56px)', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '4px', height: '4px', background: 'rgba(255,255,255,0.5)', flexShrink: 0 }} />
-            <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.52)', letterSpacing: '0.14em', fontFamily: 'var(--fm)' }}>
+          <div style={{ marginTop: 'clamp(32px,5vw,48px)', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '4px', height: '4px', background: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
+            <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.14em', fontFamily: 'var(--fm)' }}>
               {t('home.cats.note')}
             </span>
           </div>
