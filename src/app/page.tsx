@@ -291,7 +291,7 @@ export default function Landing() {
 
 
       {/* ══ KATEGORIJE ═══════════════════════════════════════════ */}
-      <section id="kategorije" style={{ background: '#04040a', borderTop: '1px solid rgba(255,255,255,0.06)', padding: 'clamp(80px,12vw,140px) clamp(20px,5vw,60px)' }}>
+      <section id="kategorije" style={{ background: '#050505', borderTop: '1px solid rgba(255,255,255,0.06)', padding: 'clamp(80px,12vw,140px) clamp(20px,5vw,60px)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
           {/* Header */}
@@ -429,7 +429,7 @@ export default function Landing() {
       </section>
 
       {/* ══ SYSTEM ════════════════════════════════════════════════ */}
-      <section id="system" style={{ background: '#050508', padding: 'clamp(80px,12vw,150px) clamp(20px,5vw,60px)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <section id="system" style={{ background: '#050505', padding: 'clamp(80px,12vw,150px) clamp(20px,5vw,60px)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <div ref={systemReveal.ref} style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ marginBottom: 'clamp(48px,8vw,88px)', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
@@ -440,7 +440,7 @@ export default function Landing() {
           </div>
           <div className="features-grid">
             {FEATURES.map((f, i) => (
-              <div key={i} className="feature-card" style={{ background: '#08080f', padding: 'clamp(28px,3.5vw,44px) clamp(20px,3vw,32px)', border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none', transition: '0.4s cubic-bezier(.16,1,.3,1)', position: 'relative', overflow: 'hidden', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(40px)', transitionDelay: `${i * 0.08}s`, transitionDuration: '0.7s' }}>
+              <div key={i} className="feature-card" style={{ background: '#0a0a0a', padding: 'clamp(28px,3.5vw,44px) clamp(20px,3vw,32px)', border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none', transition: '0.4s cubic-bezier(.16,1,.3,1)', position: 'relative', overflow: 'hidden', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(40px)', transitionDelay: `${i * 0.08}s`, transitionDuration: '0.7s' }}>
                 {/* Top border */}
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'rgba(255,255,255,0.18)' }} />
                 {/* Number */}
