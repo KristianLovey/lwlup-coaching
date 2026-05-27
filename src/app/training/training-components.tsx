@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
-  GripVertical, Loader2, LogOut,
+  GripVertical, Loader2, LogOut, Lock,
   User, Shield, X, Dumbbell, BarChart2, MessageSquare, Copy, CalendarDays, ArrowUp, ArrowDown,
   Flame, Zap, Rocket, Gauge, Activity, Trophy, Medal, Crown, Star, Award, Gem,
   Target, Crosshair, Sword, Compass, Mountain, Anchor, Skull, Sparkles, Brain,
@@ -873,79 +873,95 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       </div>
 
 
-      {logs.map((log, i) => (
-        <div key={i} className="set-log-row" style={{ display: 'grid', gridTemplateColumns: SLR_GRID, alignItems: 'stretch', background: log.completed ? 'rgba(34,197,94,0.07)' : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.013)', borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.15s', minHeight: '52px' }}>
+      {logs.map((log, i) => {
+        const isLocked = !isAdmin && i > 0 && !logs[i - 1]?.completed
+        return (
+          <div key={i} style={{ position: 'relative', overflow: 'hidden' }}>
+            {/* Row content — blurred when locked */}
+            <div className="set-log-row" style={{ display: 'grid', gridTemplateColumns: SLR_GRID, alignItems: 'stretch', background: log.completed ? 'rgba(34,197,94,0.07)' : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.013)', borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.15s, filter 0.35s', minHeight: '52px', filter: isLocked ? 'blur(5px)' : 'none', pointerEvents: isLocked ? 'none' : 'auto', userSelect: isLocked ? 'none' : 'auto' }}>
 
-          {/* Set label */}
-          <div style={{ ...cellStyle, justifyContent: 'center', padding: '12px 8px', gap: '6px' }}>
-            <div style={{ width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0, background: log.completed ? '#22c55e' : 'rgba(255,255,255,0.15)', boxShadow: log.completed ? '0 0 5px rgba(34,197,94,0.5)' : 'none', transition: 'all 0.2s' }} />
-            <span style={{ fontSize: '0.68rem', fontWeight: 900, color: log.completed ? '#22c55e' : 'rgba(255,255,255,0.6)', fontFamily: 'var(--fd)', letterSpacing: '0.06em' }}>S{log.set_number}</span>
-          </div>
+              {/* Set label */}
+              <div style={{ ...cellStyle, justifyContent: 'center', padding: '12px 8px', gap: '6px' }}>
+                <div style={{ width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0, background: log.completed ? '#22c55e' : 'rgba(255,255,255,0.15)', boxShadow: log.completed ? '0 0 5px rgba(34,197,94,0.5)' : 'none', transition: 'all 0.2s' }} />
+                <span style={{ fontSize: '0.68rem', fontWeight: 900, color: log.completed ? '#22c55e' : 'rgba(255,255,255,0.6)', fontFamily: 'var(--fd)', letterSpacing: '0.06em' }}>S{log.set_number}</span>
+              </div>
 
-          {/* KG input */}
-          <div style={{ ...cellStyle, padding: '10px 12px', background: 'rgba(255,255,255,0.015)' }}>
-            <input
-              type="number" step="2.5"
-              value={localVals[`${log.set_number}_weight_kg`] ?? ''}
-              onChange={e => { setLocalVals(v => ({ ...v, [`${log.set_number}_weight_kg`]: e.target.value })); scheduleSet(log.set_number, 'weight_kg', e.target.value) }}
-              onFocus={e => { focusedKey.current = `${log.set_number}_weight_kg`; e.target.style.borderBottomColor = 'rgba(255,255,255,0.5)' }}
-              onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushSet(log.set_number, 'weight_kg', e.target.value) }}
-              placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : 'upiši'}
-              style={{ ...inputStyle, color: 'rgba(255,255,255,0.85)' }}
-            />
-          </div>
+              {/* KG input */}
+              <div style={{ ...cellStyle, padding: '10px 12px', background: 'rgba(255,255,255,0.015)' }}>
+                <input
+                  type="number" step="2.5"
+                  value={localVals[`${log.set_number}_weight_kg`] ?? ''}
+                  onChange={e => { setLocalVals(v => ({ ...v, [`${log.set_number}_weight_kg`]: e.target.value })); scheduleSet(log.set_number, 'weight_kg', e.target.value) }}
+                  onFocus={e => { focusedKey.current = `${log.set_number}_weight_kg`; e.target.style.borderBottomColor = 'rgba(255,255,255,0.5)' }}
+                  onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushSet(log.set_number, 'weight_kg', e.target.value) }}
+                  placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : 'upiši'}
+                  style={{ ...inputStyle, color: 'rgba(255,255,255,0.85)' }}
+                />
+              </div>
 
-          {/* REPS input */}
-          <div style={{ ...cellStyle, padding: '10px 12px' }}>
-            <input
-              type="text"
-              value={localVals[`${log.set_number}_reps`] ?? ''}
-              onChange={e => { setLocalVals(v => ({ ...v, [`${log.set_number}_reps`]: e.target.value })); scheduleSet(log.set_number, 'reps', e.target.value) }}
-              onFocus={e => { focusedKey.current = `${log.set_number}_reps`; e.target.style.borderBottomColor = 'rgba(255,255,255,0.6)' }}
-              onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushSet(log.set_number, 'reps', e.target.value) }}
-              placeholder={we.planned_reps != null ? String(we.planned_reps) : 'upiši'}
-              style={inputStyle}
-            />
-          </div>
+              {/* REPS input */}
+              <div style={{ ...cellStyle, padding: '10px 12px' }}>
+                <input
+                  type="text"
+                  value={localVals[`${log.set_number}_reps`] ?? ''}
+                  onChange={e => { setLocalVals(v => ({ ...v, [`${log.set_number}_reps`]: e.target.value })); scheduleSet(log.set_number, 'reps', e.target.value) }}
+                  onFocus={e => { focusedKey.current = `${log.set_number}_reps`; e.target.style.borderBottomColor = 'rgba(255,255,255,0.6)' }}
+                  onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushSet(log.set_number, 'reps', e.target.value) }}
+                  placeholder={we.planned_reps != null ? String(we.planned_reps) : 'upiši'}
+                  style={inputStyle}
+                />
+              </div>
 
-          {/* RPE input */}
-          <div className="slr-rpe" style={{ ...cellStyle, padding: '6px 10px', flexDirection: 'column', gap: '2px', alignItems: 'stretch', justifyContent: 'center' }}>
-            {targetRpe && (
-              <div style={{ fontSize: '0.44rem', color: 'rgba(250,204,21,0.5)', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.06em', textAlign: 'center', lineHeight: 1 }}>
-                @{targetRpe}
+              {/* RPE input */}
+              <div className="slr-rpe" style={{ ...cellStyle, padding: '6px 10px', flexDirection: 'column', gap: '2px', alignItems: 'stretch', justifyContent: 'center' }}>
+                {targetRpe && (
+                  <div style={{ fontSize: '0.44rem', color: 'rgba(250,204,21,0.5)', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.06em', textAlign: 'center', lineHeight: 1 }}>
+                    @{targetRpe}
+                  </div>
+                )}
+                <input
+                  type="number" step="0.5" min="1" max="10"
+                  value={localVals[`${log.set_number}_rpe`] ?? ''}
+                  onChange={e => { setLocalVals(v => ({ ...v, [`${log.set_number}_rpe`]: e.target.value })); scheduleSet(log.set_number, 'rpe', e.target.value) }}
+                  onFocus={e => { focusedKey.current = `${log.set_number}_rpe`; e.target.style.borderBottomColor = 'rgba(250,204,21,0.7)' }}
+                  onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushSet(log.set_number, 'rpe', e.target.value) }}
+                  placeholder={targetRpe ? String(targetRpe) : 'upiši'}
+                  style={{ ...inputStyle, color: log.rpe && targetRpe ? (Number(log.rpe) - Number(targetRpe) > 1 ? '#f87171' : Number(log.rpe) - Number(targetRpe) > 0 ? '#facc15' : '#4ade80') : '#e0e0e0' }}
+                />
+              </div>
+
+              {/* Admin: top set toggle ★ | Lifter: done toggle ✓ */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {isAdmin ? (
+                  <button onClick={() => toggleTopSet(log.set_number)}
+                    title={log.is_top_set ? 'Makni top set' : 'Označi kao top set'}
+                    style={{ background: log.is_top_set ? 'rgba(250,204,21,0.1)' : 'transparent', border: 'none', cursor: 'pointer', color: log.is_top_set ? '#facc15' : '#333', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', fontSize: '0.9rem' }}>
+                    {log.is_top_set ? '★' : '☆'}
+                  </button>
+                ) : (
+                  <button onClick={() => markSetDone(log.set_number)}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                    title={log.completed ? 'Poništi' : 'Odrađeno'}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', border: log.completed ? 'none' : '1.5px solid rgba(255,255,255,0.2)', background: log.completed ? '#22c55e' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', boxShadow: log.completed ? '0 0 10px rgba(34,197,94,0.4)' : 'none' }}>
+                      {log.completed && <Check size={12} color="#fff" strokeWidth={3} />}
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Lock overlay — shown when previous set not completed */}
+            {isLocked && (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(9,9,9,0.55)', animation: 'fadeIn 0.2s ease', pointerEvents: 'none' }}>
+                <Lock size={12} color="rgba(255,255,255,0.3)" strokeWidth={2} />
+                <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.22em', fontFamily: 'var(--fm)', fontWeight: 700 }}>
+                  ZAVRŠI PRETHODNI SET
+                </span>
               </div>
             )}
-            <input
-              type="number" step="0.5" min="1" max="10"
-              value={localVals[`${log.set_number}_rpe`] ?? ''}
-              onChange={e => { setLocalVals(v => ({ ...v, [`${log.set_number}_rpe`]: e.target.value })); scheduleSet(log.set_number, 'rpe', e.target.value) }}
-              onFocus={e => { focusedKey.current = `${log.set_number}_rpe`; e.target.style.borderBottomColor = 'rgba(250,204,21,0.7)' }}
-              onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushSet(log.set_number, 'rpe', e.target.value) }}
-              placeholder={targetRpe ? String(targetRpe) : 'upiši'}
-              style={{ ...inputStyle, color: log.rpe && targetRpe ? (Number(log.rpe) - Number(targetRpe) > 1 ? '#f87171' : Number(log.rpe) - Number(targetRpe) > 0 ? '#facc15' : '#4ade80') : '#e0e0e0' }}
-            />
           </div>
-
-          {/* Admin: top set toggle ★ | Lifter: done toggle ✓ */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {isAdmin ? (
-              <button onClick={() => toggleTopSet(log.set_number)}
-                title={log.is_top_set ? 'Makni top set' : 'Označi kao top set'}
-                style={{ background: log.is_top_set ? 'rgba(250,204,21,0.1)' : 'transparent', border: 'none', cursor: 'pointer', color: log.is_top_set ? '#facc15' : '#333', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', fontSize: '0.9rem' }}>
-                {log.is_top_set ? '★' : '☆'}
-              </button>
-            ) : (
-              <button onClick={() => markSetDone(log.set_number)}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
-                title={log.completed ? 'Poništi' : 'Odrađeno'}>
-                <div style={{ width: '22px', height: '22px', borderRadius: '50%', border: log.completed ? 'none' : '1.5px solid rgba(255,255,255,0.2)', background: log.completed ? '#22c55e' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', boxShadow: log.completed ? '0 0 10px rgba(34,197,94,0.4)' : 'none' }}>
-                  {log.completed && <Check size={12} color="#fff" strokeWidth={3} />}
-                </div>
-              </button>
-            )}
-          </div>
-        </div>
-      ))}
+        )
+      })}
       <style>{`.set-log-row input::placeholder { color: rgba(255,255,255,0.22); font-style: italic; font-size: 0.62rem; letter-spacing: 0.05em; }`}</style>
     </div>
   )

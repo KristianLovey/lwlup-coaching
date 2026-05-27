@@ -645,7 +645,8 @@ export default function TrainingPage() {
         <div className='page-content' style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px 80px' }}>
           {activeTab === 'hub' && <HubTab athleteName={athleteName} userId={userId ?? undefined} />}
           {activeTab === 'meet' && userId && <MeetDayTab userId={userId} isAdmin={isAdmin} />}
-          {activeTab === 'program' && !loading && block && (<>
+          {activeTab === 'program' && !loading && block && (
+            <div key={block.id} style={{ animation: 'panelSlideIn 0.38s cubic-bezier(0.16,1,0.3,1)' }}>
             {(block.weeks?.length ?? 0) === 0 && (
               <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.12)' }}>
                 <div style={{ fontFamily: 'var(--font-bg, var(--fm))', fontSize: '4rem', marginBottom: '14px', opacity: 0.3 }}>—</div>
@@ -663,14 +664,16 @@ export default function TrainingPage() {
                 <Plus size={13} /> DODAJ TJEDAN {block.weeks ? block.weeks.length + 1 : 1}
               </button>
             )}
-          </>)}
+            </div>
+          )}
         </div>
       </div>
 
       <style>{`
-        @keyframes fadeUp   { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:none } }
-        @keyframes dropDown { from { opacity:0; transform:translateY(-6px) scale(0.98) } to { opacity:1; transform:none } }
-        @keyframes spin     { to { transform:rotate(360deg) } }
+        @keyframes fadeUp        { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:none } }
+        @keyframes panelSlideIn  { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:translateY(0) } }
+        @keyframes dropDown      { from { opacity:0; transform:translateY(-6px) scale(0.98) } to { opacity:1; transform:none } }
+        @keyframes spin          { to { transform:rotate(360deg) } }
         @keyframes pulse-dot {
           0%,100% { box-shadow: 0 0 0 0 rgba(239,53,53,0.45); }
           70%      { box-shadow: 0 0 0 8px transparent; }
