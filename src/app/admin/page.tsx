@@ -937,7 +937,7 @@ function AthletePanel({
     const workoutDate = d.toISOString().split('T')[0]
     // Optimistic update — show immediately
     const tempId = `temp-${Date.now()}`
-    const tempWo = { id: tempId, week_id: weekId, athlete_id: athlete.id, day_name: dayName, workout_date: workoutDate, completed: false, workout_exercises: [] }
+    const tempWo: Workout = { id: tempId, week_id: weekId, athlete_id: athlete.id, day_name: dayName, workout_date: workoutDate, completed: false, notes: null, overall_rpe: null, duration_minutes: null, workout_exercises: [] }
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? {
       ...w, workouts: [...(w.workouts ?? []), tempWo].sort((a, b) => (a.workout_date ?? '').localeCompare(b.workout_date ?? ''))
     } : w) } : b)
