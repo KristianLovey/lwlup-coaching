@@ -924,20 +924,40 @@ function AthletePanel({
   const addWorkout = useCallback(async (weekId: string) => {
     if (addingWorkout.current) return
     addingWorkout.current = true
-    const week = block?.weeks?.find(w => w.id === weekId)
+    const week = blockRef.current?.weeks?.find(w => w.id === weekId)
     if (!week) { addingWorkout.current = false; return }
-    const nd = week.workouts?.length ?? 0
-    const lastDate = [...(week.workouts ?? [])].sort((a, b) => b.workout_date.localeCompare(a.workout_date))[0]?.workout_date ?? week.start_date
-    const d = new Date(lastDate + 'T12:00:00'); d.setDate(d.getDate() + (nd === 0 ? 0 : 1))
+    const workouts = week.workouts ?? []
+    // Find highest "Dan N" number so new day is always max+1
+    const existingNums = workouts
+      .map(wo => { const m = wo.day_name?.match(/Dan\s*(\d+)/i); return m ? parseInt(m[1]) : 0 })
+    const nextNum = existingNums.length > 0 ? Math.max(...existingNums) + 1 : 1
+    const dayName = `Dan ${nextNum}`
+    const lastDate = [...workouts].sort((a, b) => b.workout_date.localeCompare(a.workout_date))[0]?.workout_date ?? week.start_date
+    const d = new Date(lastDate + 'T12:00:00'); d.setDate(d.getDate() + (workouts.length === 0 ? 0 : 1))
     const workoutDate = d.toISOString().split('T')[0]
-    const { data, error } = await supabase.from('workouts').insert({
-      week_id: weekId, athlete_id: athlete.id,
-      day_name: `Dan ${nd + 1}`, workout_date: workoutDate, completed: false,
-    }).select('*').single()
-    if (!error && data) {
-      const wo = { ...data, workout_date: (data.workout_date ?? workoutDate).slice(0, 10), workout_exercises: [] }
+    // Optimistic update — show immediately
+    const tempId = `temp-${Date.now()}`
+    const tempWo = { id: tempId, week_id: weekId, athlete_id: athlete.id, day_name: dayName, workout_date: workoutDate, completed: false, workout_exercises: [] }
+    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? {
+      ...w, workouts: [...(w.workouts ?? []), tempWo].sort((a, b) => (a.workout_date ?? '').localeCompare(b.workout_date ?? ''))
+    } : w) } : b)
+    // Use service-role API to bypass RLS (admin inserting for another athlete)
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/admin/add-workout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ weekId, athleteId: athlete.id, dayName, workoutDate }),
+    })
+    const json = await res.json()
+    if (json.data) {
+      const wo = { ...json.data, workout_date: (json.data.workout_date ?? workoutDate).slice(0, 10), workout_exercises: [] }
       setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? {
-        ...w, workouts: [...(w.workouts ?? []), wo].sort((a, b) => (a.workout_date ?? '').localeCompare(b.workout_date ?? ''))
+        ...w, workouts: (w.workouts ?? []).map(wo2 => wo2.id === tempId ? wo : wo2)
+      } : w) } : b)
+    } else {
+      // Rollback on error
+      setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? {
+        ...w, workouts: (w.workouts ?? []).filter(wo2 => wo2.id !== tempId)
       } : w) } : b)
     }
     addingWorkout.current = false
@@ -1681,7 +1701,7 @@ export default function AdminPage() {
               />
             </div>
           ) : (
-            <div className="admin-outer" style={{ padding: '24px 16px 100px', maxWidth: '1300px', margin: '0 auto' }}>
+            <div className="admin-outer" style={{ padding: '24px 16px 100px', maxWidth: '1300px', margin: '0 auto', animation: 'panelSlideIn 0.32s cubic-bezier(0.16,1,0.3,1)' }}>
               <AthletePanel
                 athlete={selectedAthlete}
                 exercises={exercises}
@@ -2077,11 +2097,12 @@ export default function AdminPage() {
 
       <style>{`
         @keyframes fadeIn   { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes slideDown{ from { opacity: 0; transform: translateY(-10px) } to { opacity: 1; transform: translateY(0) } }
-        @keyframes slideUp  { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
-        @keyframes fadeUp   { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
-        @keyframes spin     { to { transform: rotate(360deg) } }
-        @keyframes dropDown { from { opacity: 0; transform: translateY(-8px) } to { opacity: 1; transform: none } }
+        @keyframes slideDown    { from { opacity: 0; transform: translateY(-10px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes slideUp      { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes fadeUp       { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes spin         { to { transform: rotate(360deg) } }
+        @keyframes dropDown     { from { opacity: 0; transform: translateY(-8px) } to { opacity: 1; transform: none } }
+        @keyframes panelSlideIn { from { opacity: 0; transform: translateY(18px) } to { opacity: 1; transform: translateY(0) } }
         @keyframes pingPulse {
           0%, 100% { transform: scale(1); opacity: 0.6; }
           50% { transform: scale(2.2); opacity: 0; }

@@ -441,7 +441,7 @@ export default function TrainingPage() {
 
           {/* ── TAB SWITCHER ── */}
           <div className="tab-switcher" style={{ display: 'flex', gap: '4px', marginBottom: '32px', padding: '5px', background: '#111111', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.08)', width: 'fit-content', overflowX: 'auto' as const }}>
-            {([['program','Program'],['hub','Hub & Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label]) => (
+            {([['program','Program'],['hub','Hub i Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label]) => (
               <button key={tab} onClick={() => setActiveTab(tab as 'program'|'hub'|'meet')}
                 style={{ padding: '9px 22px', background: activeTab === tab ? '#f0f0f0' : 'transparent', border: 'none', borderRadius: '999px', cursor: 'pointer', fontSize: '0.7rem', fontFamily: 'var(--fm)', fontWeight: activeTab === tab ? 700 : 500, color: activeTab === tab ? '#090909' : 'rgba(255,255,255,0.4)', transition: 'all 0.18s', whiteSpace: 'nowrap' as const, letterSpacing: '0.14em', textTransform: 'uppercase' as const }}>
                 {label}
@@ -761,7 +761,7 @@ export default function TrainingPage() {
         {navOpen && <div onClick={() => setNavOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: -1 }} />}
         {navOpen && (
           <div style={{ position: 'absolute', bottom: '64px', right: 0, background: 'rgba(10,10,10,0.97)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.7)', backdropFilter: 'blur(24px)', animation: 'fadeUp 0.18s cubic-bezier(0.16,1,0.3,1)', minWidth: '160px' }}>
-            {([['program','Program'],['hub','Hub & Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label]) => (
+            {([['program','Program'],['hub','Hub i Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label]) => (
               <button key={tab} onClick={() => { setActiveTab(tab as 'program'|'hub'|'meet'); setNavOpen(false) }}
                 style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '14px 18px', background: activeTab === tab ? 'rgba(239,53,53,0.09)' : 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)', color: activeTab === tab ? '#fca5a5' : 'rgba(255,255,255,0.7)', fontFamily: 'var(--fm)', fontSize: '0.78rem', fontWeight: activeTab === tab ? 700 : 400, letterSpacing: '0.06em', cursor: 'pointer', textAlign: 'left' as const, borderLeft: activeTab === tab ? '3px solid #ef3535' : '3px solid transparent' }}>
                 {label}

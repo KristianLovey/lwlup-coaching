@@ -193,7 +193,7 @@ export default function TrainerPage() {
               />
             </div>
           ) : (
-            <div className="admin-outer" style={{ padding: '24px 16px 100px', maxWidth: '1300px', margin: '0 auto' }}>
+            <div className="admin-outer" style={{ padding: '24px 16px 100px', maxWidth: '1300px', margin: '0 auto', animation: 'panelSlideIn 0.32s cubic-bezier(0.16,1,0.3,1)' }}>
               <AthletePanel
                 athlete={selectedAthlete}
                 exercises={exercises}
@@ -367,10 +367,11 @@ export default function TrainerPage() {
       </div>
 
       <style>{`
-        @keyframes fadeIn   { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes slideUp  { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
-        @keyframes fadeUp   { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
-        @keyframes spin     { to { transform: rotate(360deg) } }
+        @keyframes fadeIn       { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes slideUp      { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes fadeUp       { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes spin         { to { transform: rotate(360deg) } }
+        @keyframes panelSlideIn { from { opacity: 0; transform: translateY(18px) } to { opacity: 1; transform: translateY(0) } }
         div:hover .view-arrow { opacity: 1 !important; }
 
         .tnav-pill { display: flex; align-items: center; }
