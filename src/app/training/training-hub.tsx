@@ -1552,7 +1552,7 @@ function ProgressGraph({ userId }: { userId: string }) {
               <circle cx={p.x} cy={p.y} r={hov === i ? 5 : 2.5} fill={hov === i ? '#fff' : color} stroke={color} strokeWidth="1.5" />
               {hov === i && (
                 <foreignObject x={p.x - 60} y={p.y - 56} width="120" height="50" style={{ overflow: 'visible', pointerEvents: 'none' }}>
-                  <div style={{ background: '#0d0d16', border: `1px solid ${color}44`, borderRadius: '8px', padding: '7px 10px', textAlign: 'center', whiteSpace: 'nowrap' as const, fontFamily: 'var(--fm)' }}>
+                  <div style={{ background: '#111111', border: `1px solid ${color}44`, borderRadius: '8px', padding: '7px 10px', textAlign: 'center', whiteSpace: 'nowrap' as const, fontFamily: 'var(--fm)' }}>
                     <div style={{ fontSize: '1rem', fontWeight: 800, color, fontFamily: 'var(--fd)', lineHeight: 1 }}>{p.weight_kg}kg</div>
                     {p.actual_reps && <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>×{p.actual_reps} rep</div>}
                     <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.25)', marginTop: '1px' }}>{p.block_name} · W{p.week_number} · {p.date}</div>
@@ -2447,7 +2447,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
 
         {/* Inline expansion on mobile */}
         {isActive && isMobile && (
-          <div style={{ border: `1.5px solid ${c}44`, borderTop: 'none', borderRadius: '0 0 12px 12px', background: '#0d0d16', padding: '20px 16px', animation: 'fadeUp 0.2s ease' }}>
+          <div style={{ border: `1.5px solid ${c}44`, borderTop: 'none', borderRadius: '0 0 12px 12px', background: '#111111', padding: '20px 16px', animation: 'fadeUp 0.2s ease' }}>
             {renderToolContent(tool.id)}
           </div>
         )}
@@ -2513,7 +2513,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
       {showSettings && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '0', backdropFilter: 'blur(6px)', animation: 'fadeIn 0.15s' }}
           onClick={() => setShowSettings(false)}>
-          <div style={{ background: '#0d0d16', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: '520px', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' as const, boxShadow: '0 -20px 60px rgba(0,0,0,0.6)', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
+          <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: '520px', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' as const, boxShadow: '0 -20px 60px rgba(0,0,0,0.6)', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
             onClick={e => e.stopPropagation()}>
 
             {/* Header */}
@@ -2598,7 +2598,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
           onClick={e => { if (e.target === e.currentTarget) setActive(null) }}
           style={{ position: 'fixed', inset: 0, zIndex: 1010, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', animation: 'fadeIn 0.18s ease' }}>
           <div
-            style={{ width: '100%', maxWidth: '680px', maxHeight: '82vh', display: 'flex', flexDirection: 'column' as const, border: `1.5px solid ${activeTool.color}44`, borderRadius: '18px', overflow: 'hidden', boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px ${activeTool.color}18, 0 0 60px ${activeTool.color}10`, animation: 'panelIn 0.25s cubic-bezier(0.16,1,0.3,1)', background: '#0d0d16' }}>
+            style={{ width: '100%', maxWidth: '680px', maxHeight: '82vh', display: 'flex', flexDirection: 'column' as const, border: `1.5px solid ${activeTool.color}44`, borderRadius: '18px', overflow: 'hidden', boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px ${activeTool.color}18, 0 0 60px ${activeTool.color}10`, animation: 'panelIn 0.25s cubic-bezier(0.16,1,0.3,1)', background: '#111111' }}>
 
             {/* Modal header */}
             <div style={{ padding: '16px 20px', background: `${activeTool.color}14`, borderBottom: `1px solid ${activeTool.color}2a`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>

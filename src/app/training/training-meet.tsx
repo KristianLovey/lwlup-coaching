@@ -88,7 +88,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
   const [a2good, setA2good] = useState<boolean | null>(attempt?.attempt2_good ?? null)
   const [a3good, setA3good] = useState<boolean | null>(attempt?.attempt3_good ?? null)
   const [adminNotes, setAdminNotes] = useState(attempt?.admin_notes ?? '')
-  const [lifterNotes, setLifterNotes] = useState(attempt?.lifter_notes ?? '')
+  const [lifterNotes] = useState(attempt?.lifter_notes ?? '')
 
   const num = (v: string) => v ? parseFloat(v) : null
 
@@ -120,7 +120,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
   const best = goodLifts.length > 0 ? Math.max(...goodLifts) : null
 
   return (
-    <div style={{ border: `1.5px solid ${open ? meta.color + '55' : 'rgba(255,255,255,0.13)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'border-color 0.25s', boxShadow: open ? `0 4px 24px ${meta.color}18` : '0 2px 8px rgba(0,0,0,0.35)', background: '#0f0f18' }}>
+    <div style={{ border: `1.5px solid ${open ? meta.color + '55' : 'rgba(255,255,255,0.13)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'border-color 0.25s', boxShadow: open ? `0 4px 24px ${meta.color}18` : '0 2px 8px rgba(0,0,0,0.35)', background: '#111111' }}>
 
       {/* Header */}
       <div onClick={() => setOpen(o => !o)}
@@ -150,7 +150,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
 
       {/* Body */}
       {open && (
-        <div style={{ padding: '20px', background: '#0f0f18', display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
+        <div style={{ padding: '20px', background: '#111111', display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
 
           {/* Warmups — admin fills, lifter reads */}
           <div>
@@ -380,7 +380,7 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
         <div ref={compPickerRef} style={{ position: 'relative' }}>
           <button
             onClick={() => setShowCompPicker(o => !o)}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 14px', background: currentComp ? 'rgba(107,140,255,0.06)' : 'rgba(255,255,255,0.03)', border: `1.5px solid ${currentComp ? 'rgba(107,140,255,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '11px', cursor: 'pointer', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.88rem', fontWeight: 500, transition: 'all 0.15s', textAlign: 'left' as const }}>
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 14px', background: currentComp ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)', border: `1.5px solid ${currentComp ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '11px', cursor: 'pointer', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.88rem', fontWeight: 500, transition: 'all 0.15s', textAlign: 'left' as const }}>
             {/* Dot indicator */}
             {currentComp && compsWithData.has(currentComp.id) && (
               <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#4ade80', flexShrink: 0, boxShadow: '0 0 6px #4ade80aa' }} />
@@ -407,7 +407,7 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
                 return (
                   <button key={c.id}
                     onClick={() => { setSelectedComp(c.id); setShowCompPicker(false) }}
-                    style={{ width: '100%', padding: '11px 16px', background: isActive ? 'rgba(107,140,255,0.1)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' as const, display: 'flex', alignItems: 'center', gap: '10px', transition: 'background 0.1s', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                    style={{ width: '100%', padding: '11px 16px', background: isActive ? 'rgba(255,255,255,0.07)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' as const, display: 'flex', alignItems: 'center', gap: '10px', transition: 'background 0.1s', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
                     onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
                     onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}>
                     {/* Saved indicator dot */}
@@ -416,7 +416,7 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
                       <div style={{ fontSize: '0.84rem', fontWeight: isActive ? 600 : 400, color: isActive ? '#f0f0f5' : 'rgba(255,255,255,0.7)', fontFamily: 'var(--fm)' }}>{c.name}</div>
                       <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', marginTop: '1px' }}>{c.date}{c.location ? ` · ${c.location}` : ''}</div>
                     </div>
-                    {isActive && <Check size={12} color="#6b8cff" />}
+                    {isActive && <Check size={12} color="#f0f0f0" />}
                   </button>
                 )
               })}
@@ -436,7 +436,7 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
               </div>
             </div>
           ))}
-          <div style={{ padding: '14px 16px', background: '#0f0f18', border: '1.5px solid rgba(255,255,255,0.13)', borderRadius: '12px', textAlign: 'center' as const }}>
+          <div style={{ padding: '14px 16px', background: '#111111', border: '1.5px solid rgba(255,255,255,0.13)', borderRadius: '12px', textAlign: 'center' as const }}>
             <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '4px' }}>TOTAL</div>
             <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: total ? '#f0f0f5' : 'rgba(255,255,255,0.2)', lineHeight: 1 }}>
               {total ?? '—'}
@@ -468,7 +468,7 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
 
       {/* Lifter notes */}
       {selectedComp && (
-        <div style={{ marginTop: '20px', padding: '16px 20px', background: '#0f0f18', border: '1px solid rgba(255,255,255,0.13)', borderRadius: '12px' }}>
+        <div style={{ marginTop: '20px', padding: '16px 20px', background: '#111111', border: '1px solid rgba(255,255,255,0.13)', borderRadius: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
             <div style={{ height: '1px', width: '16px', background: 'rgba(255,255,255,0.12)' }} />
             <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>MOJE BILJEŠKE S NATJECANJA</span>

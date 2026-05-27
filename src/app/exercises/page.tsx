@@ -20,16 +20,14 @@ interface Exercise {
 // ── Glass styles ───────────────────────────────────────────────────
 // With blur — for containers (search, stats, modals). Max ~3–4 per screen.
 const glass: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.03)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
+  background: '#111111',
   border: '1px solid rgba(255,255,255,0.09)',
   borderRadius: '14px',
   boxShadow: '0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)',
 }
 // No blur — for repeated grid cards (50+ items). Same look, no compositing cost.
 const glassCard: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.04)',
+  background: '#111111',
   border: '1px solid rgba(255,255,255,0.09)',
   borderRadius: '14px',
   boxShadow: '0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)',
@@ -192,10 +190,10 @@ function ExModal({ ex, onClose }: { ex: Exercise; onClose: () => void }) {
   }, [])
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(16px,4vw,40px)', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(18px)', animation: 'fadeIn 0.2s ease' }}
+    <div style={{ position: 'fixed', inset: 0, zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(16px,4vw,40px)', background: 'rgba(0,0,0,0.88)', animation: 'fadeIn 0.2s ease' }}
       onClick={onClose}>
       <div onClick={e => e.stopPropagation()}
-        style={{ width: '100%', maxWidth: '680px', maxHeight: '88vh', overflowY: 'auto', background: '#09090e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04), 0 0 60px ${color}18`, animation: 'slideUp 0.3s cubic-bezier(0.16,1,0.3,1)', position: 'relative' }}>
+        style={{ width: '100%', maxWidth: '680px', maxHeight: '88vh', overflowY: 'auto', background: '#111111', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04), 0 0 60px ${color}18`, animation: 'slideUp 0.3s cubic-bezier(0.16,1,0.3,1)', position: 'relative' }}>
 
         {/* Top accent — sticky at top of scrollable modal */}
         <div style={{ height: '3px', background: `linear-gradient(90deg, ${color}, ${color}55, transparent)`, boxShadow: `0 0 16px ${color}44`, flexShrink: 0 }} />
@@ -215,9 +213,9 @@ function ExModal({ ex, onClose }: { ex: Exercise; onClose: () => void }) {
               </h2>
             </div>
             <button onClick={onClose}
-              style={{ background: '#111118', border: '1px solid rgba(255,255,255,0.12)', color: '#888', width: '36px', height: '36px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}
+              style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.12)', color: '#888', width: '36px', height: '36px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.background = '#1e1e26'; e.currentTarget.style.color = '#fff' }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#111118'; e.currentTarget.style.color = '#888' }}>
+              onMouseLeave={e => { e.currentTarget.style.background = '#1a1a1a'; e.currentTarget.style.color = '#888' }}>
               <X size={15} />
             </button>
           </div>
@@ -331,7 +329,7 @@ export default function ExerciseLibraryPage() {
   const heroCount = exercises.length
 
   return (
-    <div style={{ background: '#04040a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
+    <div style={{ background: '#090909', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
 
       {/* ── Atmospheric bg ── */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.3,
@@ -342,14 +340,14 @@ export default function ExerciseLibraryPage() {
         backgroundSize: '72px 72px',
         maskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 70%)' }} />
       <div style={{ position: 'fixed', top: '-25vh', left: '-15vw', width: '80vw', height: '80vh', zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 40% 40%, rgba(79,70,229,0.13) 0%, rgba(59,130,246,0.06) 40%, transparent 70%)',
+        background: 'radial-gradient(ellipse at 40% 40%, rgba(255,255,255,0.03) 0%, transparent 70%)',
         filter: 'blur(70px)' }} />
       <div style={{ position: 'fixed', bottom: '-20vh', right: '-10vw', width: '65vw', height: '65vh', zIndex: 0, pointerEvents: 'none',
         background: 'radial-gradient(ellipse at 60% 60%, rgba(34,197,94,0.08) 0%, rgba(5,150,105,0.04) 45%, transparent 70%)',
         filter: 'blur(80px)' }} />
       <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, height: '1px', zIndex: 0, pointerEvents: 'none',
-        background: 'linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.35) 30%, rgba(139,92,246,0.45) 50%, rgba(99,102,241,0.35) 70%, transparent 100%)',
-        boxShadow: '0 0 40px 8px rgba(99,102,241,0.08)' }} />
+        background: 'linear-gradient(90deg, transparent 0%, rgba(239,53,53,0.35) 30%, rgba(239,53,53,0.45) 50%, rgba(239,53,53,0.35) 70%, transparent 100%)',
+        boxShadow: '0 0 40px 8px rgba(239,53,53,0.08)' }} />
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
         background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.6) 100%)' }} />
 
@@ -402,9 +400,9 @@ export default function ExerciseLibraryPage() {
                 style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#e0e0e0', fontSize: '0.92rem', fontFamily: 'var(--fm)', padding: '14px 0' }} />
               {searchQuery && (
                 <button onClick={() => setSearchQuery('')}
-                  style={{ background: '#1c1c24', border: '1px solid rgba(255,255,255,0.1)', color: '#888', width: '26px', height: '26px', borderRadius: '5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#252530'; e.currentTarget.style.color = '#fff' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#1c1c24'; e.currentTarget.style.color = '#888' }}>
+                  style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#888', width: '26px', height: '26px', borderRadius: '5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#222222'; e.currentTarget.style.color = '#fff' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#1a1a1a'; e.currentTarget.style.color = '#888' }}>
                   <X size={11} />
                 </button>
               )}
@@ -417,7 +415,7 @@ export default function ExerciseLibraryPage() {
         </div>
 
         {/* ── Category filter bar ── */}
-        <div ref={filterBarRef} className="ex-filter-bar" style={{ opacity: ready ? 1 : 0, transition: 'opacity 0.6s ease 0.3s', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(6,6,10,0.92)', backdropFilter: 'blur(16px)', position: 'sticky', top: '56px', zIndex: 150, overflow: 'auto' }}>
+        <div ref={filterBarRef} className="ex-filter-bar" style={{ opacity: ready ? 1 : 0, transition: 'opacity 0.6s ease 0.3s', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#0e0e0e', position: 'sticky', top: '56px', zIndex: 150, overflow: 'auto' }}>
           <div className="ex-top-filters" style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 clamp(16px,4vw,48px)', display: 'flex', alignItems: 'stretch', gap: '0', minWidth: 'max-content' }}>
 
             {TOP_FILTERS.map((tf, i) => {
@@ -551,7 +549,7 @@ export default function ExerciseLibraryPage() {
         return (
           <div
             ref={dropdownRef}
-            style={{ position: 'fixed', top: `${dropdownPos.top}px`, left: `${Math.min(dropdownPos.left, window.innerWidth - 236)}px`, minWidth: '220px', maxWidth: 'calc(100vw - 16px)', background: '#09090e', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: '10px', boxShadow: `0 24px 64px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05), 0 -2px 0 ${tf.color}66`, overflow: 'hidden', animation: 'dropDown 0.18s ease', zIndex: 99999, pointerEvents: 'all' }}>
+            style={{ position: 'fixed', top: `${dropdownPos.top}px`, left: `${Math.min(dropdownPos.left, window.innerWidth - 236)}px`, minWidth: '220px', maxWidth: 'calc(100vw - 16px)', background: '#111111', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: '10px', boxShadow: `0 24px 64px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05), 0 -2px 0 ${tf.color}66`, overflow: 'hidden', animation: 'dropDown 0.18s ease', zIndex: 99999, pointerEvents: 'all' }}>
             {/* All in group */}
             <button onClick={() => { setSubCat(null); setTopFilter(openDropdown!); setOpenDropdown(null) }}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', background: !subCat ? `${tf.color}15` : 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', textAlign: 'left', transition: 'background 0.12s' }}

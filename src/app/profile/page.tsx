@@ -68,9 +68,7 @@ type MuscleEntry = { group: string; sets: number; tonnage: number; color: string
 
 // ─── GLASS STYLE ──────────────────────────────────────────────────
 const glass: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.03)',
-  backdropFilter: 'blur(24px)',
-  WebkitBackdropFilter: 'blur(24px)',
+  background: '#111111',
   border: '1px solid rgba(255,255,255,0.08)',
   borderRadius: '20px',
   boxShadow: '0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
@@ -176,9 +174,9 @@ function ProgressChart({ data, color, label }: {
             position: 'absolute', bottom: `${(1-(p.y/H))*100+2}%`,
             left: alignRight ? 'auto' : `calc(${leftPct}% - 55px)`,
             right: alignRight ? `calc(${100-leftPct}% - 55px)` : 'auto',
-            background: 'rgba(8,8,16,0.97)', border: `1px solid ${color}33`,
+            background: '#111111', border: `1px solid ${color}33`,
             borderRadius: '12px', padding: '10px 16px', pointerEvents: 'none', zIndex: 10,
-            backdropFilter: 'blur(20px)', boxShadow: `0 8px 32px rgba(0,0,0,0.6)`, whiteSpace: 'nowrap',
+            boxShadow: `0 8px 32px rgba(0,0,0,0.6)`, whiteSpace: 'nowrap',
           }}>
             <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 800, color, lineHeight: 1, display: 'flex', alignItems: 'baseline', gap: '4px' }}>
               {p.value}<span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', marginLeft: '2px' }}>kg</span>
@@ -200,7 +198,7 @@ function MuscleDonut({ data, view }: { data: MuscleEntry[]; view: 'percent' | 't
 
   if (total === 0) return (
     <div style={{ height: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', fontFamily: 'var(--fm)' }}>
-      <div style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.25em', color: '#818cf8' }}>NEMA PODATAKA</div>
+      <div style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)' }}>NEMA PODATAKA</div>
       <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.2)' }}>Logiraj setove u treningu da se prikaže</div>
     </div>
   )
@@ -298,9 +296,9 @@ function AvatarPicker({ current, onSelect, onClose }: {
   current: string; onSelect: (id: string) => void; onClose: () => void
 }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', backdropFilter: 'blur(8px)', animation: 'fadeIn 0.15s' }}
+    <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', animation: 'fadeIn 0.15s' }}
       onClick={onClose}>
-      <div style={{ background: 'rgba(10,10,18,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', padding: '28px', maxWidth: '480px', width: '100%', boxShadow: '0 32px 80px rgba(0,0,0,0.8)', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
+      <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', padding: '28px', maxWidth: '480px', width: '100%', boxShadow: '0 32px 80px rgba(0,0,0,0.8)', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div style={{ fontSize: '0.6rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--fm)', fontWeight: 700 }}>ODABERI AVATAR</div>
@@ -314,9 +312,9 @@ function AvatarPicker({ current, onSelect, onClose }: {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
           {AVATARS.map(av => (
             <button key={av.id} onClick={() => { onSelect(av.id); onClose() }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px 8px', background: current === av.id ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.02)', border: `1px solid ${current === av.id ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.15s', color: current === av.id ? '#a5b4fc' : 'rgba(255,255,255,0.5)' }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px 8px', background: current === av.id ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.02)', border: `1px solid ${current === av.id ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.15s', color: current === av.id ? '#fff' : 'rgba(255,255,255,0.5)' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff' }}
-              onMouseLeave={e => { e.currentTarget.style.background = current === av.id ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.02)'; e.currentTarget.style.color = current === av.id ? '#a5b4fc' : 'rgba(255,255,255,0.5)' }}>
+              onMouseLeave={e => { e.currentTarget.style.background = current === av.id ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.02)'; e.currentTarget.style.color = current === av.id ? '#fff' : 'rgba(255,255,255,0.5)' }}>
               <AvatarSvg iconId={av.id} size={36} />
               <div style={{ fontSize: '0.52rem', letterSpacing: '0.1em', fontFamily: 'var(--fm)' }}>{av.label}</div>
             </button>
@@ -496,7 +494,7 @@ export default function ProfilePage() {
   , [leaderboard, isCoach, assignedLifterIds, completions])
 
   if (loading) return (
-    <div style={{ background: '#04040a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>
+    <div style={{ background: '#090909', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>
       <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
       <span style={{ fontSize: '0.75rem', letterSpacing: '0.25em' }}>UČITAVANJE...</span>
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
@@ -517,14 +515,14 @@ export default function ProfilePage() {
   ]
 
   return (
-    <div style={{ background: '#04040a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
+    <div style={{ background: '#090909', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
 
       {/* ── BACKGROUND ── */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.3, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E")`, backgroundSize: '200px 200px' }} />
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px)', backgroundSize: '72px 72px', maskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 70%)' }} />
-      <div style={{ position: 'fixed', top: '-25vh', left: '-15vw', width: '80vw', height: '80vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at 40% 40%, rgba(79,70,229,0.13) 0%, rgba(59,130,246,0.06) 40%, transparent 70%)', filter: 'blur(70px)' }} />
+      <div style={{ position: 'fixed', top: '-25vh', left: '-15vw', width: '80vw', height: '80vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at 40% 40%, rgba(255,255,255,0.03) 0%, transparent 70%)', filter: 'blur(70px)' }} />
       <div style={{ position: 'fixed', bottom: '-20vh', right: '-10vw', width: '65vw', height: '65vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at 60% 60%, rgba(16,185,129,0.09) 0%, rgba(5,150,105,0.04) 45%, transparent 70%)', filter: 'blur(80px)' }} />
-      <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, height: '1px', zIndex: 0, pointerEvents: 'none', background: 'linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.35) 30%, rgba(139,92,246,0.45) 50%, rgba(99,102,241,0.35) 70%, transparent 100%)', boxShadow: '0 0 40px 8px rgba(99,102,241,0.08)' }} />
+      <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, height: '1px', zIndex: 0, pointerEvents: 'none', background: 'linear-gradient(90deg, transparent 0%, rgba(239,53,53,0.35) 30%, rgba(239,53,53,0.45) 50%, rgba(239,53,53,0.35) 70%, transparent 100%)', boxShadow: '0 0 40px 8px rgba(239,53,53,0.08)' }} />
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.6) 100%)' }} />
 
       <AppNav
@@ -546,14 +544,14 @@ export default function ProfilePage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1, minWidth: '240px' }}>
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 {/* glow ring */}
-                <div style={{ position: 'absolute', inset: '-10px', borderRadius: '50%', background: 'radial-gradient(closest-side, rgba(99,102,241,0.45), rgba(167,139,250,0.18), transparent 70%)', filter: 'blur(12px)', pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', inset: '-10px', borderRadius: '50%', background: 'radial-gradient(closest-side, rgba(255,255,255,0.12), rgba(255,255,255,0.04), transparent 70%)', filter: 'blur(12px)', pointerEvents: 'none' }} />
                 <button onClick={() => setShowAvatarPicker(true)}
                   style={{ position: 'relative', width: '84px', height: '84px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.25s', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; e.currentTarget.style.transform = 'scale(1.05)' }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.transform = 'none' }}>
                   <AvatarSvg iconId={currentAvatar} size={46} color="rgba(255,255,255,0.92)" />
                 </button>
-                <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '26px', height: '26px', borderRadius: '50%', background: '#6366f1', border: '2px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 12px rgba(99,102,241,0.5)' }}
+                <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '26px', height: '26px', borderRadius: '50%', background: '#ef3535', border: '2px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 12px rgba(239,53,53,0.5)' }}
                   onClick={() => setShowAvatarPicker(true)}>
                   <Pencil size={11} color="#fff" />
                 </div>
@@ -591,7 +589,7 @@ export default function ProfilePage() {
                 ))}
               </div>
               <button onClick={() => setEditingORM(v => !v)}
-                style={{ width: '40px', height: '40px', borderRadius: '50%', background: editingORM ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.04)', border: `1px solid ${editingORM ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.1)'}`, color: editingORM ? '#a5b4fc' : 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', flexShrink: 0 }}
+                style={{ width: '40px', height: '40px', borderRadius: '50%', background: editingORM ? 'rgba(239,53,53,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${editingORM ? 'rgba(239,53,53,0.4)' : 'rgba(255,255,255,0.1)'}`, color: editingORM ? '#ef3535' : 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', flexShrink: 0 }}
                 onMouseEnter={e => { if (!editingORM) { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff' } }}
                 onMouseLeave={e => { if (!editingORM) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' } }}>
                 <Pencil size={14} />
@@ -880,7 +878,7 @@ export default function ProfilePage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: '0.88rem', fontWeight: 600, color: isMe ? '#fff' : '#e0e0e0', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                           {e.full_name}
-                          {isMe && <span style={{ fontSize: '0.48rem', letterSpacing: '0.18em', color: '#6b8cff', border: '1px solid rgba(107,140,255,0.35)', padding: '2px 7px', borderRadius: '5px' }}>TI</span>}
+                          {isMe && <span style={{ fontSize: '0.48rem', letterSpacing: '0.18em', color: '#ef3535', border: '1px solid rgba(239,53,53,0.35)', padding: '2px 7px', borderRadius: '5px' }}>TI</span>}
                         </div>
                         <div style={{ height: '5px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
                           <div style={{ height: '100%', width: `${e.compPct}%`, background: pctColor, borderRadius: '3px', transition: 'width 0.8s cubic-bezier(0.16,1,0.3,1)', boxShadow: `0 0 8px ${pctColor}60` }} />

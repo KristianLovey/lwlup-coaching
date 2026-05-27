@@ -2,7 +2,7 @@
 
 :root {
   --fm: var(--font-sg), 'Space Grotesk', sans-serif;
-  --fd: var(--font-sg), 'Space Grotesk', sans-serif;
+  --fd: var(--font-bg), 'Bricolage Grotesque', sans-serif;
 
   /* ── Global text opacity scale ─────────────────────────────────
      Koristimo ove varijable umjesto hardcoded rgba vrijednosti

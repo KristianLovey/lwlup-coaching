@@ -17,15 +17,13 @@ const supabase = createClient()
 
 // ── Glass styles ────────────────────────────────────────────────────
 const glass: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.03)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
+  background: '#111111',
   border: '1px solid rgba(255,255,255,0.08)',
   borderRadius: '14px',
   boxShadow: '0 4px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
 }
 const glassCard: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.04)',
+  background: '#111111',
   border: '1px solid rgba(255,255,255,0.08)',
   borderRadius: '14px',
   boxShadow: '0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)',
@@ -145,8 +143,8 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
 
   const FM = 'var(--fm)', FD = 'var(--fd)'
 
-  const Section = ({ title, open, onToggle, children, accent = '#6366f1' }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode; accent?: string }) => (
-    <div style={{ background: '#0d0d18', border: `1px solid rgba(255,255,255,0.07)`, borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
+  const Section = ({ title, open, onToggle, children, accent = 'rgba(255,255,255,0.4)' }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode; accent?: string }) => (
+    <div style={{ background: '#111111', border: `1px solid rgba(255,255,255,0.07)`, borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
       <button onClick={onToggle} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', color: '#fff' }}>
         <span style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: accent, fontFamily: FM, fontWeight: 700 }}>{title}</span>
         <ChevronDown size={14} color={accent} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
@@ -199,7 +197,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const hasWb      = (d: string) => wbLogs.some((l: any) => String(l.log_date).slice(0, 10) === d)
 
   const FreqGrid = () => (
-    <div style={{ background: '#0d0d18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px 16px', marginBottom: '12px' }}>
+    <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px 16px', marginBottom: '12px' }}>
       <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontFamily: FM, marginBottom: '12px', fontWeight: 700 }}>FREKVENCIJA LOGIRANJA</div>
       {/* Header — days */}
       <div style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', gap: '2px', marginBottom: '6px' }}>
@@ -213,11 +211,11 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
       </div>
       {/* Rows */}
       {[
-        { label: 'BW',      check: hasBw,    color: '#a78bfa' },
+        { label: 'BW',      check: hasBw,    color: 'rgba(255,255,255,0.6)' },
         { label: 'Voda',    check: hasWater,  color: '#38bdf8' },
         { label: 'Kcal',    check: hasCal,    color: '#f59e0b' },
         { label: 'Trening', check: hasWo,     color: '#4ade80' },
-        { label: 'WB',      check: hasWb,     color: '#8b5cf6' },
+        { label: 'WB',      check: hasWb,     color: 'rgba(255,255,255,0.45)' },
       ].map(row => (
         <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', gap: '2px', marginBottom: '4px', alignItems: 'center' }}>
           <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM }}>{row.label}</div>
@@ -246,7 +244,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
-        <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(99,102,241,0.35),rgba(139,92,246,0.15))', border: '2px solid rgba(99,102,241,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 900, color: '#c7d2fe', fontFamily: FM, flexShrink: 0 }}>{initials}</div>
+        <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '2px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 900, color: '#fff', fontFamily: FM, flexShrink: 0 }}>{initials}</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#f0f0ff', fontFamily: FD, lineHeight: 1 }}>{athlete.full_name}</div>
           <div style={{ fontSize: '0.55rem', color: athlete.role === 'trener' ? '#fbbf24' : '#4ade80', letterSpacing: '0.2em', marginTop: '4px', fontFamily: FM }}>{(athlete.role ?? 'lifter').toUpperCase()}</div>
@@ -257,7 +255,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
       <div style={{ display: 'flex', gap: '2px', marginBottom: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '3px' }}>
         {([['opcenito','OPĆENITO'],['detaljno','DETALJNO'],['trening','UREĐIVANJE TRENINGA']] as const).map(([id, label]) => (
           <button key={id} onClick={() => id === 'trening' ? onGoTraining() : setTab(id as 'opcenito'|'detaljno')}
-            style={{ flex: 1, padding: '8px 6px', background: tab === id ? 'rgba(99,102,241,0.18)' : 'transparent', border: tab === id ? '1px solid rgba(99,102,241,0.4)' : '1px solid transparent', borderRadius: '7px', cursor: 'pointer', fontSize: '0.55rem', fontFamily: FM, fontWeight: tab === id ? 700 : 400, color: tab === id ? '#a5b4fc' : 'rgba(255,255,255,0.35)', transition: 'all 0.15s', letterSpacing: '0.04em', whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            style={{ flex: 1, padding: '8px 6px', background: tab === id ? 'rgba(255,255,255,0.1)' : 'transparent', border: tab === id ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent', borderRadius: '7px', cursor: 'pointer', fontSize: '0.55rem', fontFamily: FM, fontWeight: tab === id ? 700 : 400, color: tab === id ? '#fff' : 'rgba(255,255,255,0.35)', transition: 'all 0.15s', letterSpacing: '0.04em', whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {label}
           </button>
         ))}
@@ -272,11 +270,11 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
           {/* Quick stats — row 1 */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '8px' }}>
             {[
-              { label: 'BW',       val: todayBw !== '—' ? `${todayBw}kg` : '—',    color: '#a78bfa' },
+              { label: 'BW',       val: todayBw !== '—' ? `${todayBw}kg` : '—',    color: 'rgba(255,255,255,0.85)' },
               { label: 'KALORIJE', val: todayCal !== '—' ? `${todayCal}` : '—',    color: '#f59e0b' },
               { label: 'VODA',     val: todayWater !== '—' ? `${todayWater}L` : '—', color: '#38bdf8' },
             ].map(s => (
-              <div key={s.label} style={{ background: '#0d0d18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '12px 10px', textAlign: 'center' }}>
+              <div key={s.label} style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '12px 10px', textAlign: 'center' }}>
                 <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px', fontFamily: FM }}>{s.label}</div>
                 <div style={{ fontSize: '1.1rem', fontWeight: 900, color: s.color, fontFamily: FD }}>{s.val}</div>
               </div>
@@ -289,7 +287,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
               { label: 'STRES',  val: todayStress !== '—' ? `${todayStress}/10` : '—', color: (todayStress !== '—' && Number(todayStress) > 7) ? '#f87171' : (todayStress !== '—' && Number(todayStress) > 4) ? '#f59e0b' : '#4ade80' },
               { label: 'SUPLEM.', val: todaySuppsCount > 0 ? `${todaySuppsCount}×` : '—', color: '#10b981' },
             ].map(s => (
-              <div key={s.label} style={{ background: '#0d0d18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
+              <div key={s.label} style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
                 <div style={{ fontSize: '0.44rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.25)', marginBottom: '5px', fontFamily: FM }}>{s.label}</div>
                 <div style={{ fontSize: '1rem', fontWeight: 900, color: s.color, fontFamily: FD }}>{s.val}</div>
               </div>
@@ -304,11 +302,11 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
             <div style={{ fontSize: '0.45rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginBottom: '8px' }}>ESTIMATED 1RM (top set)</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
               {[
-                { label: 'SQ', val: e1rms.sq, color: '#a78bfa' },
+                { label: 'SQ', val: e1rms.sq, color: '#6b8cff' },
                 { label: 'BP', val: e1rms.bp, color: '#f472b6' },
                 { label: 'DL', val: e1rms.dl, color: '#fb923c' },
               ].map(s => (
-                <div key={s.label} style={{ background: '#0d0d18', border: `1px solid ${s.val ? s.color + '30' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', padding: '14px 10px', textAlign: 'center' }}>
+                <div key={s.label} style={{ background: '#111111', border: `1px solid ${s.val ? s.color + '30' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', padding: '14px 10px', textAlign: 'center' }}>
                   <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px', fontFamily: FM }}>{s.label}</div>
                   <div style={{ fontSize: '1.4rem', fontWeight: 900, color: s.val ? s.color : 'rgba(255,255,255,0.15)', fontFamily: FD }}>{s.val ?? '—'}</div>
                   {s.val && <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginTop: '2px' }}>kg e1RM</div>}
@@ -385,7 +383,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
             return (
               <>
                 {/* Calendar card */}
-                <div style={{ background: '#0d0d18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px', marginBottom: '12px' }}>
+                <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px', marginBottom: '12px' }}>
                   {/* Month nav */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                     <button onClick={() => setCalViewDate(({ y, m }) => m === 0 ? { y: y-1, m: 11 } : { y, m: m-1 })}
@@ -422,8 +420,8 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                       return (
                         <button key={ci} onClick={() => setSelectedDay(isSelected ? null : dateStr)}
                           style={{
-                            background: isSelected ? 'rgba(99,102,241,0.2)' : 'transparent',
-                            border: isSelected ? '1px solid rgba(99,102,241,0.5)' : isToday ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent',
+                            background: isSelected ? 'rgba(255,255,255,0.1)' : 'transparent',
+                            border: isSelected ? '1px solid rgba(255,255,255,0.3)' : isToday ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent',
                             borderRadius: '7px', cursor: 'pointer', padding: '4px 2px',
                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
                             transition: 'all 0.15s',
@@ -431,10 +429,10 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                           <span style={{ fontSize: '0.7rem', fontWeight: isToday ? 800 : 500, color: isToday ? '#fff' : 'rgba(255,255,255,0.6)', fontFamily: FM, lineHeight: 1 }}>{dayNum}</span>
                           <div style={{ display: 'flex', gap: '2px', flexWrap: 'wrap', justifyContent: 'center', minHeight: '7px' }}>
                             {hasWoCompleted && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#4ade80', flexShrink: 0 }} />}
-                            {hasBwD    && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#a78bfa', flexShrink: 0 }} />}
+                            {hasBwD    && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'rgba(255,255,255,0.55)', flexShrink: 0 }} />}
                             {hasCalD   && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />}
                             {hasWaterD && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#38bdf8', flexShrink: 0 }} />}
-                            {hasWbD    && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#8b5cf6', flexShrink: 0 }} />}
+                            {hasWbD    && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'rgba(255,255,255,0.35)', flexShrink: 0 }} />}
                           </div>
                         </button>
                       )
@@ -445,10 +443,10 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                   <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
                     {[
                       { color: '#4ade80', label: 'Trening' },
-                      { color: '#a78bfa', label: 'BW' },
+                      { color: 'rgba(255,255,255,0.55)', label: 'BW' },
                       { color: '#f59e0b', label: 'Kal' },
                       { color: '#38bdf8', label: 'Voda' },
-                      { color: '#8b5cf6', label: 'WB' },
+                      { color: 'rgba(255,255,255,0.35)', label: 'WB' },
                     ].map(l => (
                       <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: l.color }} />
@@ -460,12 +458,12 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
 
                 {/* Day detail panel */}
                 {selectedDay && (
-                  <div style={{ background: '#0d0d18', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '12px', padding: '14px', marginBottom: '12px', animation: 'fadeUp 0.2s ease' }}>
+                  <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '14px', marginBottom: '12px', animation: 'fadeUp 0.2s ease' }}>
                     {/* Header row */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '0.55rem', color: '#818cf8', fontFamily: FM, fontWeight: 700, letterSpacing: '0.2em' }}>{selectedDay}</span>
+                      <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.5)', fontFamily: FM, fontWeight: 700, letterSpacing: '0.2em' }}>{selectedDay}</span>
                       <div style={{ display: 'flex', gap: '6px' }}>
-                        {selBw && <span style={{ fontSize: '0.62rem', color: '#c4b5fd', fontFamily: FM, fontWeight: 700 }}>{selBw.weight_kg}kg</span>}
+                        {selBw && <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.85)', fontFamily: FM, fontWeight: 700 }}>{selBw.weight_kg}kg</span>}
                         {selCal && <span style={{ fontSize: '0.62rem', color: '#fbbf24', fontFamily: FM, fontWeight: 700 }}>{selCal.calories}kcal</span>}
                         {selWater != null && selWater > 0 && <span style={{ fontSize: '0.62rem', color: '#7dd3fc', fontFamily: FM, fontWeight: 700 }}>{(selWater/1000).toFixed(1)}L</span>}
                       </div>
@@ -493,7 +491,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                             // No logged sets — show plan only
                             return exercises.map((we: any) => (
                               <div key={we.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                                <span style={{ fontSize: '0.7rem', color: '#c7d2fe', fontFamily: FM, fontWeight: 700, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{we.exercise?.name ?? '—'}</span>
+                                <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.9)', fontFamily: FM, fontWeight: 700, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{we.exercise?.name ?? '—'}</span>
                                 <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, flexShrink: 0 }}>{we.planned_sets}×{we.planned_reps}{we.planned_weight_kg ? ` · ${we.planned_weight_kg}kg` : ''}</span>
                                 {we.actual_note && <span title={we.actual_note} style={{ fontSize: '0.8rem', cursor: 'default', flexShrink: 0 }}>💬</span>}
                               </div>
@@ -522,7 +520,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                                       <React.Fragment key={we.id}>
                                         <tr style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                                           <td style={{ padding: '7px 8px 7px 0', verticalAlign: 'middle' as const }}>
-                                            <span style={{ fontSize: '0.7rem', color: hasLogged ? '#c7d2fe' : 'rgba(255,255,255,0.35)', fontFamily: FM, fontWeight: 700, whiteSpace: 'nowrap' as const, display: 'block', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{we.exercise?.name ?? '—'}</span>
+                                            <span style={{ fontSize: '0.7rem', color: hasLogged ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)', fontFamily: FM, fontWeight: 700, whiteSpace: 'nowrap' as const, display: 'block', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{we.exercise?.name ?? '—'}</span>
                                             {!hasLogged && (
                                               <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM }}>{we.planned_sets}×{we.planned_reps}{we.planned_weight_kg ? ` · ${we.planned_weight_kg}kg` : ''}</span>
                                             )}
@@ -549,7 +547,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                                         {we.actual_note && (
                                           <tr>
                                             <td colSpan={maxSets + 2} style={{ padding: '2px 0 8px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', background: 'rgba(99,102,241,0.07)', borderRadius: '6px', padding: '5px 8px' }}>
+                                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', padding: '5px 8px' }}>
                                                 <span style={{ fontSize: '0.65rem', flexShrink: 0, marginTop: '1px' }}>💬</span>
                                                 <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, lineHeight: 1.4 }}>{we.actual_note}</span>
                                               </div>
@@ -570,7 +568,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
                     {/* Wellbeing */}
                     {selWb && (
                       <div style={{ marginTop: selWo?.completed ? '12px' : '0', paddingTop: selWo?.completed ? '12px' : '0', borderTop: selWo?.completed ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-                        <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: '#a78bfa', fontFamily: FM, fontWeight: 700, marginBottom: '8px' }}>WELLBEING</div>
+                        <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.5)', fontFamily: FM, fontWeight: 700, marginBottom: '8px' }}>WELLBEING</div>
                         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                           {selWb.sleep_hours != null && (
                             <div style={{ background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.2)', borderRadius: '8px', padding: '6px 10px', textAlign: 'center' as const }}>
@@ -1094,7 +1092,7 @@ function AthletePanel({
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}>
           <ChevronLeft size={13} /> NAZAD
         </button>
-        <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(139,92,246,0.1))', border: '1.5px solid rgba(99,102,241,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: '#c7d2fe', fontFamily: 'var(--fm)', flexShrink: 0 }}>{initials}</div>
+        <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fm)', flexShrink: 0 }}>{initials}</div>
         <div>
           <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#f0f0ff', fontFamily: 'var(--fd)', lineHeight: 1, letterSpacing: '-0.02em' }}>{athlete.full_name}</div>
           <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', marginTop: '4px' }}>
@@ -1109,7 +1107,7 @@ function AthletePanel({
               { val: totalWorkouts, label: 'TRENINGA' },
               { val: `${pct}%`, label: 'NAPREDAK' },
             ].map((s, i) => (
-              <div key={i} style={{ padding: '10px 18px', background: '#08080e', textAlign: 'center' }}>
+              <div key={i} style={{ padding: '10px 18px', background: '#111111', textAlign: 'center' }}>
                 <div style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', fontWeight: 800, color: '#f0f0ff', lineHeight: 1 }}>{s.val}</div>
                 <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.2em', marginTop: '3px' }}>{s.label}</div>
               </div>
@@ -1195,7 +1193,7 @@ function AthletePanel({
 
         {/* Block dropdown */}
         {showBlockSelector && allBlocks.length > 0 && (
-          <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, background: '#09090e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', maxHeight: '280px', overflowY: 'auto', animation: 'dropDown 0.18s ease' }}>
+          <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, background: '#111111', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', maxHeight: '280px', overflowY: 'auto', animation: 'dropDown 0.18s ease' }}>
             {allBlocks.map(b => (
               <button key={b.id} onClick={() => switchBlock(b.id)}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: b.id === block?.id ? '#111113' : 'transparent', border: 'none', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.07)', textAlign: 'left', transition: 'background 0.12s' }}
@@ -1224,7 +1222,7 @@ function AthletePanel({
           <div style={{ fontFamily: 'var(--fd)', fontSize: '3rem', opacity: 0.1, marginBottom: '12px', color: '#fff' }}>—</div>
           <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '24px', fontFamily: 'var(--fm)' }}>NEMA AKTIVNOG BLOKA</div>
           <button onClick={createBlock}
-            style={{ padding: '12px 28px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.4)', color: '#a5b4fc', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '8px' }}>
+            style={{ padding: '12px 28px', background: 'rgba(239,53,53,0.15)', border: '1px solid rgba(239,53,53,0.4)', color: '#ef3535', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '8px' }}>
             + KREIRAJ PRVI BLOK
           </button>
         </div>
@@ -1258,9 +1256,9 @@ function AthletePanel({
             />
           ))}
           <button onClick={addWeek}
-            style={{ width: '100%', padding: '14px', background: 'transparent', border: '1px dashed rgba(99,102,241,0.25)', color: 'rgba(165,180,252,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '0.68rem', letterSpacing: '0.3em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', borderRadius: '8px' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0.6)'; e.currentTarget.style.color = '#a5b4fc' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0.25)'; e.currentTarget.style.color = 'rgba(165,180,252,0.5)' }}>
+            style={{ width: '100%', padding: '14px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '0.68rem', letterSpacing: '0.3em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', borderRadius: '8px' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'; e.currentTarget.style.color = '#fff' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)' }}>
             <Plus size={13} /> DODAJ TJEDAN {(block.weeks?.length ?? 0) + 1}
           </button>
         </>
@@ -1268,9 +1266,9 @@ function AthletePanel({
 
       {/* Duplicate to another athlete modal */}
       {showDupModal && block && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
           onClick={() => setShowDupModal(false)}>
-          <div style={{ width: '100%', maxWidth: '460px', background: '#0d0d16', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', padding: '28px', animation: 'slideUp 0.25s ease' }}
+          <div style={{ width: '100%', maxWidth: '460px', background: '#111111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', padding: '28px', animation: 'slideUp 0.25s ease' }}
             onClick={e => e.stopPropagation()}>
             <div style={{ fontSize: '0.55rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.25)', marginBottom: '6px', fontFamily: 'var(--fm)' }}>DUPLICIRAJ BLOK</div>
             <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)', marginBottom: '24px' }}>{block.name}</div>
@@ -1284,7 +1282,7 @@ function AthletePanel({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
                 {allAthletes.filter(a => a.id !== athlete.id).map(a => (
                   <button key={a.id} onClick={() => setDuplicateTarget(a.id)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: duplicateTarget === a.id ? 'rgba(99,102,241,0.1)' : 'transparent', border: `1px solid ${duplicateTarget === a.id ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '8px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: duplicateTarget === a.id ? 'rgba(255,255,255,0.07)' : 'transparent', border: `1px solid ${duplicateTarget === a.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '8px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
                     <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 800, color: '#fff', flexShrink: 0 }}>
                       {a.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase()}
                     </div>
@@ -1292,7 +1290,7 @@ function AthletePanel({
                       <div style={{ fontSize: '0.82rem', color: '#fff', fontWeight: 600, fontFamily: 'var(--fm)' }}>{a.full_name}</div>
                       <div style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>{a.role}</div>
                     </div>
-                    {duplicateTarget === a.id && <Check size={12} color="#818cf8" />}
+                    {duplicateTarget === a.id && <Check size={12} color="rgba(255,255,255,0.7)" />}
                   </button>
                 ))}
               </div>
@@ -1303,7 +1301,7 @@ function AthletePanel({
                 ODUSTANI
               </button>
               <button onClick={duplicateBlockTo} disabled={!duplicateTarget || !duplicateName || saving}
-                style={{ flex: 1, padding: '10px', background: duplicateTarget && duplicateName ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', border: `1px solid ${duplicateTarget && duplicateName ? 'rgba(99,102,241,0.5)' : 'transparent'}`, color: duplicateTarget && duplicateName ? '#a5b4fc' : 'rgba(255,255,255,0.2)', cursor: duplicateTarget && duplicateName ? 'pointer' : 'not-allowed', fontSize: '0.68rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '8px', transition: 'all 0.2s' }}>
+                style={{ flex: 1, padding: '10px', background: duplicateTarget && duplicateName ? '#ef3535' : 'rgba(255,255,255,0.05)', border: `1px solid ${duplicateTarget && duplicateName ? '#ef3535' : 'transparent'}`, color: duplicateTarget && duplicateName ? '#fff' : 'rgba(255,255,255,0.2)', cursor: duplicateTarget && duplicateName ? 'pointer' : 'not-allowed', fontSize: '0.68rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '8px', transition: 'all 0.2s' }}>
                 {saving ? 'DUPLICIRA...' : 'DUPLICIRAJ'}
               </button>
             </div>
@@ -1314,12 +1312,12 @@ function AthletePanel({
       <style>{`
         @keyframes dropDown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:none } }
         @keyframes slideUp  { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:none } }
-        .add-btn { display:flex; align-items:center; gap:6px; width:100%; padding:10px 14px; background:transparent; border:1px dashed rgba(99,102,241,0.2); color:rgba(165,180,252,0.5); cursor:pointer; font-size:0.65rem; letter-spacing:0.2em; font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:7px; justify-content:center; margin-top:6px; }
-        .add-btn:hover { border-color:rgba(99,102,241,0.5); color:#a5b4fc; background:rgba(99,102,241,0.05); }
+        .add-btn { display:flex; align-items:center; gap:6px; width:100%; padding:10px 14px; background:transparent; border:1px dashed rgba(255,255,255,0.15); color:rgba(255,255,255,0.3); cursor:pointer; font-size:0.65rem; letter-spacing:0.2em; font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:7px; justify-content:center; margin-top:6px; }
+        .add-btn:hover { border-color:rgba(255,255,255,0.4); color:#fff; background:rgba(255,255,255,0.04); }
         .icon-btn-danger { background:transparent; border:none; cursor:pointer; color:rgba(255,255,255,0.2); padding:6px; display:flex; align-items:center; justify-content:center; border-radius:6px; transition:all 0.15s; }
         .icon-btn-danger:hover { color:#ef4444; background:rgba(239,68,68,0.08); }
         .cat-btn { padding:4px 12px; font-size:0.62rem; letter-spacing:0.1em; font-weight:700; cursor:pointer; font-family:var(--fm); background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.08); border-radius:6px; transition:all 0.15s; }
-        .cat-btn-active, .cat-btn:hover { background:rgba(99,102,241,0.15); color:#a5b4fc; border-color:rgba(99,102,241,0.4); }
+        .cat-btn-active, .cat-btn:hover { background:rgba(255,255,255,0.08); color:#fff; border-color:rgba(255,255,255,0.2); }
         @keyframes fadeUp { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
         @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
         @keyframes spin { to { transform:rotate(360deg) } }
@@ -1610,7 +1608,7 @@ export default function AdminPage() {
   const lifters = athletes // svi korisnici mogu primati obavijesti
 
   if (loading) return (
-    <div style={{ background: '#08080a', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', fontFamily: 'var(--fm)' }}>
+    <div style={{ background: '#090909', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', fontFamily: 'var(--fm)' }}>
       <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} />
       <span style={{ fontSize: '0.8rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)' }}>UČITAVANJE ADMIN PANELA...</span>
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
@@ -1618,7 +1616,7 @@ export default function AdminPage() {
   )
 
   if (error) return (
-    <div style={{ background: '#08080a', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px', fontFamily: 'var(--fm)', padding: '40px' }}>
+    <div style={{ background: '#090909', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px', fontFamily: 'var(--fm)', padding: '40px' }}>
       <AlertCircle size={32} color="#ff4444" />
       <div style={{ fontSize: '0.9rem', color: '#ff7070', textAlign: 'center', maxWidth: '520px', lineHeight: 1.7 }}>{error}</div>
       <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
@@ -1635,7 +1633,7 @@ export default function AdminPage() {
   )
 
   return (
-    <div style={{ background: '#04040a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', position: 'relative' }}>
+    <div style={{ background: '#090909', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', position: 'relative' }}>
 
       {/* ── BACKGROUND ── */}
       {/* Noise */}
@@ -1653,7 +1651,7 @@ export default function AdminPage() {
         filter: 'blur(70px)', transform: 'rotate(10deg)' }} />
       {/* Aurora — bottom left, indigo */}
       <div style={{ position: 'fixed', bottom: '-20vh', left: '-10vw', width: '65vw', height: '65vh', zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 40% 60%, rgba(79,70,229,0.1) 0%, rgba(99,102,241,0.05) 45%, transparent 70%)',
+        background: 'radial-gradient(ellipse at 40% 60%, rgba(255,255,255,0.03) 0%, transparent 70%)',
         filter: 'blur(80px)' }} />
       {/* Top beam */}
       <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, height: '1px', zIndex: 0, pointerEvents: 'none',
@@ -1900,7 +1898,7 @@ export default function AdminPage() {
                       <select
                         value={assignments[lifter.id] ?? ''}
                         onChange={e => assignLifterToCoach(lifter.id, e.target.value || null)}
-                        style={{ background: '#0f0f14', border: '1px solid rgba(255,255,255,0.12)', color: assignments[lifter.id] ? '#fff' : 'rgba(255,255,255,0.35)', padding: '6px 12px', fontSize: '0.78rem', fontFamily: 'var(--fm)', borderRadius: '6px', outline: 'none', cursor: 'pointer', minWidth: '180px' }}>
+                        style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.12)', color: assignments[lifter.id] ? '#fff' : 'rgba(255,255,255,0.35)', padding: '6px 12px', fontSize: '0.78rem', fontFamily: 'var(--fm)', borderRadius: '6px', outline: 'none', cursor: 'pointer', minWidth: '180px' }}>
                         <option value="">— Bez trenera —</option>
                         {coaches.map(c => (
                           <option key={c.id} value={c.id}>{c.full_name}</option>
@@ -1926,7 +1924,7 @@ export default function AdminPage() {
                       <select
                         value={a.role}
                         onChange={e => updateRole(a.id, e.target.value)}
-                        style={{ background: '#0f0f14', border: `1px solid ${a.role === 'trener' ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.12)'}`, color: a.role === 'trener' ? '#fbbf24' : '#fff', padding: '6px 12px', fontSize: '0.78rem', fontFamily: 'var(--fm)', borderRadius: '6px', outline: 'none', cursor: 'pointer' }}>
+                        style={{ background: '#111111', border: `1px solid ${a.role === 'trener' ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.12)'}`, color: a.role === 'trener' ? '#fbbf24' : '#fff', padding: '6px 12px', fontSize: '0.78rem', fontFamily: 'var(--fm)', borderRadius: '6px', outline: 'none', cursor: 'pointer' }}>
                         <option value="lifter">Lifter</option>
                         <option value="trener">Trener</option>
                       </select>
@@ -1981,7 +1979,7 @@ export default function AdminPage() {
                         {/* Avatar circle */}
                         <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(255,255,255,0.14) 0%,rgba(255,255,255,0.04) 100%)', border: '1.5px solid rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fm)', margin: '0 auto 10px', position: 'relative' }}>
                           {initials}
-                          {(activeBlock || athlete.role === 'admin') && <div style={{ position: 'absolute', bottom: '1px', right: '1px', width: '9px', height: '9px', borderRadius: '50%', background: athlete.role === 'admin' ? '#ef4444' : '#4ade80', border: '2px solid #09090e', boxShadow: athlete.role === 'admin' ? '0 0 6px #ef4444' : '0 0 6px #4ade80' }} />}
+                          {(activeBlock || athlete.role === 'admin') && <div style={{ position: 'absolute', bottom: '1px', right: '1px', width: '9px', height: '9px', borderRadius: '50%', background: athlete.role === 'admin' ? '#ef4444' : '#4ade80', border: '2px solid #111111', boxShadow: athlete.role === 'admin' ? '0 0 6px #ef4444' : '0 0 6px #4ade80' }} />}
                         </div>
 
                         {/* Name */}
@@ -1994,11 +1992,11 @@ export default function AdminPage() {
 
                         {/* Micro stats — flush to card edges */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: 'rgba(255,255,255,0.07)', margin: '0 -14px' }}>
-                          <div style={{ padding: '8px 4px', background: 'rgba(6,6,16,0.92)', textAlign: 'center' }}>
+                          <div style={{ padding: '8px 4px', background: '#111111', textAlign: 'center' }}>
                             <div style={{ fontSize: '1rem', fontWeight: 900, color: '#fff', fontFamily: 'var(--fd)' }}>{blockCount}</div>
                             <div style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.14em', marginTop: '2px' }}>BLOKOVA</div>
                           </div>
-                          <div style={{ padding: '8px 4px', background: 'rgba(6,6,16,0.92)', textAlign: 'center' }}>
+                          <div style={{ padding: '8px 4px', background: '#111111', textAlign: 'center' }}>
                             <div style={{ fontSize: '1rem', fontWeight: 900, color: noteCount > 0 ? '#facc15' : '#fff', fontFamily: 'var(--fd)' }}>{noteCount}</div>
                             <div style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.14em', marginTop: '2px' }}>BILJEŠKI</div>
                           </div>
@@ -2010,7 +2008,7 @@ export default function AdminPage() {
                             <select
                               value={athlete.role}
                               onChange={e => { e.stopPropagation(); updateRole(athlete.id, e.target.value) }}
-                              style={{ flex: 1, background: '#0d0d10', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', padding: '5px 8px', fontSize: '0.6rem', fontFamily: 'var(--fm)', cursor: 'pointer', outline: 'none' }}
+                              style={{ flex: 1, background: '#111111', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', padding: '5px 8px', fontSize: '0.6rem', fontFamily: 'var(--fm)', cursor: 'pointer', outline: 'none' }}
                               onClick={e => e.stopPropagation()}
                             >
                               <option value="lifter">lifter</option>
@@ -2046,7 +2044,7 @@ export default function AdminPage() {
       {/* Add Lifter Modal */}
       {showAddLifter && (
         <div onClick={() => setShowAddLifter(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#0e0e10', border: '1px solid rgba(255,255,255,0.1)', padding: '36px', width: '100%', maxWidth: '420px', animation: 'slideUp 0.25s ease' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.1)', padding: '36px', width: '100%', maxWidth: '420px', animation: 'slideUp 0.25s ease' }}>
             <div style={{ fontSize: '0.6rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.3)', marginBottom: '24px', fontFamily: 'var(--fm)', fontWeight: 700 }}>DODAJ NOVOG LIFTERA</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Space_Grotesk } from 'next/font/google'
+import { Space_Grotesk, Bricolage_Grotesque } from 'next/font/google'
 import './globals.css'
 import { LanguageProvider } from '@/context/LanguageContext'
 
@@ -8,6 +8,13 @@ const spaceGrotesk = Space_Grotesk({
   weight: ['300', '400', '700'],
   display: 'swap',
   variable: '--font-sg',
+})
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-bg',
 })
 
 export const metadata: Metadata = {
@@ -33,7 +40,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="hr" className={spaceGrotesk.variable}>
+    <html lang="hr" className={`${spaceGrotesk.variable} ${bricolage.variable}`}>
       <head>
         {/* dns-prefetch only for Supabase */}
         <link rel="dns-prefetch" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" />

@@ -11,15 +11,13 @@ const supabase = createClient()
 
 // ── Glass styles ────────────────────────────────────────────────────
 const glass: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.03)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
+  background: '#111111',
   border: '1px solid rgba(255,255,255,0.08)',
   borderRadius: '14px',
   boxShadow: '0 4px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
 }
 const glassCard: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.04)',
+  background: '#111111',
   border: '1px solid rgba(255,255,255,0.08)',
   borderRadius: '14px',
   boxShadow: '0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)',
@@ -134,7 +132,7 @@ export default function TrainerPage() {
   const activeBlocks = athletes.reduce((s, a) => s + ((a.blocks as Block[])?.filter(b => b.status === 'active').length ?? 0), 0)
 
   if (loading) return (
-    <div style={{ background: '#08080a', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', fontFamily: 'var(--fm)' }}>
+    <div style={{ background: '#090909', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', fontFamily: 'var(--fm)' }}>
       <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} />
       <span style={{ fontSize: '0.8rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)' }}>UČITAVANJE TRENER PROFILA...</span>
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
@@ -142,7 +140,7 @@ export default function TrainerPage() {
   )
 
   if (error) return (
-    <div style={{ background: '#08080a', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px', fontFamily: 'var(--fm)', padding: '40px' }}>
+    <div style={{ background: '#090909', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px', fontFamily: 'var(--fm)', padding: '40px' }}>
       <AlertCircle size={32} color="#ff4444" />
       <div style={{ fontSize: '0.9rem', color: '#ff7070', textAlign: 'center', maxWidth: '520px', lineHeight: 1.7 }}>{error}</div>
       <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
@@ -156,7 +154,7 @@ export default function TrainerPage() {
   )
 
   return (
-    <div style={{ background: '#04040a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', position: 'relative' }}>
+    <div style={{ background: '#090909', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', position: 'relative' }}>
 
       {/* ── BACKGROUND ── */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.35,
@@ -166,16 +164,16 @@ export default function TrainerPage() {
         backgroundImage: 'linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px)',
         backgroundSize: '72px 72px',
         maskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 72%)' }} />
-      {/* Aurora — amber tint (trainer feel) */}
+      {/* Aurora — subtle white */}
       <div style={{ position: 'fixed', top: '-20vh', right: '-15vw', width: '70vw', height: '70vh', zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 60% 40%, rgba(251,191,36,0.08) 0%, rgba(245,158,11,0.04) 40%, transparent 70%)',
+        background: 'radial-gradient(ellipse at 60% 40%, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 40%, transparent 70%)',
         filter: 'blur(70px)', transform: 'rotate(10deg)' }} />
       <div style={{ position: 'fixed', bottom: '-20vh', left: '-10vw', width: '65vw', height: '65vh', zIndex: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 40% 60%, rgba(79,70,229,0.1) 0%, rgba(99,102,241,0.05) 45%, transparent 70%)',
+        background: 'radial-gradient(ellipse at 40% 60%, rgba(255,255,255,0.03) 0%, transparent 70%)',
         filter: 'blur(80px)' }} />
       <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, height: '1px', zIndex: 0, pointerEvents: 'none',
-        background: 'linear-gradient(90deg, transparent 0%, rgba(251,191,36,0.25) 30%, rgba(245,158,11,0.35) 50%, rgba(251,191,36,0.25) 70%, transparent 100%)',
-        boxShadow: '0 0 40px 8px rgba(251,191,36,0.06)' }} />
+        background: 'linear-gradient(90deg, transparent 0%, rgba(239,53,53,0.25) 30%, rgba(239,53,53,0.35) 50%, rgba(239,53,53,0.25) 70%, transparent 100%)',
+        boxShadow: '0 0 40px 8px rgba(239,53,53,0.06)' }} />
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
         background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.65) 100%)' }} />
 
@@ -259,7 +257,7 @@ export default function TrainerPage() {
                         <div style={{ fontSize: '0.55rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>PRIMATELJI ({notifSelected.length}/{athletes.length})</div>
                         <button
                           onClick={() => setNotifSelected(notifSelected.length === athletes.length ? [] : athletes.map(a => a.id))}
-                          style={{ background: notifSelected.length === athletes.length ? 'rgba(251,191,36,0.12)' : 'transparent', border: `1px solid ${notifSelected.length === athletes.length ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.12)'}`, color: notifSelected.length === athletes.length ? '#fbbf24' : 'rgba(255,255,255,0.4)', padding: '4px 14px', cursor: 'pointer', fontSize: '0.58rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '5px', transition: 'all 0.15s' }}>
+                          style={{ background: notifSelected.length === athletes.length ? 'rgba(239,53,53,0.12)' : 'transparent', border: `1px solid ${notifSelected.length === athletes.length ? 'rgba(239,53,53,0.35)' : 'rgba(255,255,255,0.12)'}`, color: notifSelected.length === athletes.length ? '#ef3535' : 'rgba(255,255,255,0.4)', padding: '4px 14px', cursor: 'pointer', fontSize: '0.58rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '5px', transition: 'all 0.15s' }}>
                           SVI MOJI LIFTERI
                         </button>
                       </div>
@@ -269,11 +267,11 @@ export default function TrainerPage() {
                           const initials = a.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
                           return (
                             <button key={a.id} onClick={() => setNotifSelected(sel ? notifSelected.filter(id => id !== a.id) : [...notifSelected, a.id])}
-                              style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: sel ? 'rgba(251,191,36,0.06)' : 'transparent', border: `1px solid ${sel ? 'rgba(251,191,36,0.25)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '7px', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left' as const }}>
+                              style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: sel ? 'rgba(239,53,53,0.06)' : 'transparent', border: `1px solid ${sel ? 'rgba(239,53,53,0.25)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '7px', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left' as const }}>
                               <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.62rem', fontWeight: 800, color: '#fff', flexShrink: 0, fontFamily: 'var(--fm)' }}>{initials}</div>
                               <span style={{ fontSize: '0.85rem', fontWeight: 600, color: sel ? '#fff' : 'rgba(255,255,255,0.6)', fontFamily: 'var(--fm)', flex: 1 }}>{a.full_name}</span>
                               <span style={{ fontSize: '0.45rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{(a.role ?? 'lifter').toUpperCase()}</span>
-                              {sel && <Check size={13} color="#fbbf24" />}
+                              {sel && <Check size={13} color="#ef3535" />}
                             </button>
                           )
                         })}
@@ -294,7 +292,7 @@ export default function TrainerPage() {
                           setNotifSelected([])
                           setNotifSending(false)
                         }}
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', background: notifMsg.trim() && notifSelected.length > 0 && !notifSending ? '#fbbf24' : 'rgba(255,255,255,0.06)', border: 'none', color: notifMsg.trim() && notifSelected.length > 0 && !notifSending ? '#000' : 'rgba(255,255,255,0.2)', cursor: notifMsg.trim() && notifSelected.length > 0 && !notifSending ? 'pointer' : 'not-allowed', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '7px', transition: 'all 0.2s' }}>
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', background: notifMsg.trim() && notifSelected.length > 0 && !notifSending ? '#ef3535' : 'rgba(255,255,255,0.06)', border: 'none', color: notifMsg.trim() && notifSelected.length > 0 && !notifSending ? '#fff' : 'rgba(255,255,255,0.2)', cursor: notifMsg.trim() && notifSelected.length > 0 && !notifSending ? 'pointer' : 'not-allowed', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '7px', transition: 'all 0.2s' }}>
                         {notifSending ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <Send size={13} />}
                         POŠALJI OBAVIJEST {notifSelected.length > 0 && `(${notifSelected.length})`}
                       </button>
@@ -347,7 +345,7 @@ export default function TrainerPage() {
                           </div>
 
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1px', background: 'rgba(255,255,255,0.07)', margin: '0 -14px' }}>
-                            <div style={{ padding: '8px 4px', background: 'rgba(6,6,16,0.92)', textAlign: 'center' }}>
+                            <div style={{ padding: '8px 4px', background: '#0e0e0e', textAlign: 'center' }}>
                               <div style={{ fontSize: '1rem', fontWeight: 900, color: '#fff', fontFamily: 'var(--fd)' }}>{blockCount}</div>
                               <div style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.14em', marginTop: '2px' }}>BLOKOVA</div>
                             </div>

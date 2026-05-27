@@ -1,8 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import Link from 'next/link'
-import { Loader2, Plus, Check, FolderOpen, ChevronDown, X, Copy, Menu } from 'lucide-react'
+import { Loader2, Plus, Check, FolderOpen, ChevronDown, X, Menu } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { Block, BlockSummary, Week, Exercise, WorkoutExercise, Workout } from './types'
 import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-components'
@@ -27,8 +26,8 @@ export default function TrainingPage() {
   const [avatarIcon, setAvatarIcon] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'program' | 'hub' | 'meet'>('program')
-  const [activeTool, setActiveTool] = useState<string | null>(null)
   const [navOpen, setNavOpen] = useState(false)
+  const [heroOpen, setHeroOpen] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('training:activeTab') as 'program' | 'hub' | 'meet' | null
@@ -40,7 +39,6 @@ export default function TrainingPage() {
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
 
-  // Close block selector on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (blockSelectorRef.current && !blockSelectorRef.current.contains(e.target as Node))
@@ -54,13 +52,11 @@ export default function TrainingPage() {
     const init = async () => {
       setLoading(true)
       try {
-        // getSession reads from localStorage — no network round trip
         const { data: { session } } = await supabase.auth.getSession()
         const uid = session?.user?.id
         if (!uid) { setError('Nisi prijavljen/a.'); setLoading(false); return }
         setUserId(uid)
 
-        // Show stale cache immediately while fresh data loads in background
         const CACHE_KEY = `lwl:training:${uid}`
         try {
           const raw = localStorage.getItem(CACHE_KEY)
@@ -74,11 +70,10 @@ export default function TrainingPage() {
             setIsCoach(c.isCoach ?? false)
             if (c.userRole) setUserRole(c.userRole)
             setAvatarIcon(c.avatarIcon ?? 'barbell')
-            setLoading(false) // hide spinner, show stale data instantly
+            setLoading(false)
           }
-        } catch { /* corrupt cache — ignore, fresh fetch below will fix */ }
+        } catch { /* corrupt cache */ }
 
-        // Parallel fetch — profile, exercises, active block (narrowed join), all blocks
         const [
           { data: profile },
           { data: exData },
@@ -121,20 +116,17 @@ export default function TrainingPage() {
           })
         }
 
-        // Show block immediately — before set_logs
         setBlock(blockData)
         setLoading(false)
 
-        // Write cache (exclude set progress — it's ephemeral)
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify({
             block: blockData, exercises: exData, allBlocks: ab,
             athleteName: athleteNameVal, isAdmin: isAdminVal, isCoach: isCoachVal,
             userRole: isAdminVal ? role : undefined, avatarIcon: profile?.avatar_icon ?? 'barbell',
           }))
-        } catch { /* storage quota exceeded — ignore */ }
+        } catch { /* storage quota */ }
 
-        // Inject set_logs progress in background (non-blocking)
         if (blockData?.weeks) {
           injectSetProgress(blockData, uid).then(injected => setBlock(injected))
         }
@@ -143,7 +135,6 @@ export default function TrainingPage() {
     init()
   }, [])
 
-  // Realtime: sync admin edits to exercise fields instantly (no refresh needed)
   useEffect(() => {
     if (!userId) return
     const channel = supabase
@@ -174,7 +165,6 @@ export default function TrainingPage() {
 
   const effectiveAthleteId = userId
 
-  // Inject _completedSets/_totalSets into block weeks from set_logs
   const injectSetProgress = async (blockData: Block, uid: string) => {
     const allWeIds = (blockData.weeks ?? []).flatMap((w: Week) =>
       (w.workouts ?? []).flatMap((wo: Workout) => (wo.workout_exercises ?? []).map((we: WorkoutExercise) => we.id))
@@ -216,7 +206,6 @@ export default function TrainingPage() {
 
   const addBlock = async (name: string) => {
     if (!userId) return; setSaving(true)
-    // Deactivate current block before creating new one
     if (block) {
       await supabase.from('blocks').update({ status: 'planned' }).eq('id', block.id)
       setAllBlocks(bs => bs.map(b => b.id === block.id ? { ...b, status: 'planned' } : b))
@@ -229,12 +218,10 @@ export default function TrainingPage() {
 
   const switchBlock = async (blockId: string) => {
     setLoading(true)
-    // Deactivate the current block
     if (block && block.id !== blockId) {
       await supabase.from('blocks').update({ status: 'planned' }).eq('id', block.id)
       setAllBlocks(bs => bs.map(b => b.id === block.id ? { ...b, status: 'planned' } : b))
     }
-    // Activate the new block
     await supabase.from('blocks').update({ status: 'active' }).eq('id', blockId)
     setAllBlocks(bs => bs.map(b => b.id === blockId ? { ...b, status: 'active' } : b))
 
@@ -349,6 +336,7 @@ export default function TrainingPage() {
     await switchBlock(nb.id)
     setSaving(false)
   }
+
   const deleteBlock = async () => {
     if (!block) return
     if (!confirm(`Briši blok "${block.name}"? Ova radnja je nepovratna i briše sve tjedne i treninge.`)) return
@@ -370,7 +358,6 @@ export default function TrainingPage() {
   }, [])
   const addWorkout = useCallback(async (weekId: string) => {
     if (!userId) return; setSaving(true)
-    // Read current week from state synchronously via updater (no side-effects)
     let week: Week | undefined
     setBlock(b => { week = b?.weeks?.find(w => w.id === weekId); return b })
     if (!week) { setSaving(false); return }
@@ -413,7 +400,6 @@ export default function TrainingPage() {
       ? data
       : Object.fromEntries(Object.entries(data).filter(([k]) => LIFTER_FIELDS.includes(k as keyof WorkoutExercise)))
     if (Object.keys(filtered).length === 0) return
-    // Strip runtime-only fields before sending to DB
     const forDb = Object.fromEntries(Object.entries(filtered).filter(([k]) => !RUNTIME_ONLY.includes(k)))
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.map(we => we.id === weId ? { ...we, ...filtered } : we) })) })) } : b)
     if (Object.keys(forDb).length > 0) await supabase.from('workout_exercises').update(forDb).eq('id', weId)
@@ -441,579 +427,349 @@ export default function TrainingPage() {
   }, [block])
 
   return (
-    <div style={{ background: '#04040a', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
+    <div style={{ background: '#090909', color: '#f0f0f0', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
 
-      {/* ── BACKGROUND ── */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.3, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E")`, backgroundSize: '200px 200px' }} />
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px)', backgroundSize: '72px 72px', maskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 70%)' }} />
-      <div style={{ position: 'fixed', top: '-25vh', left: '-15vw', width: '80vw', height: '80vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at 40% 40%, rgba(79,70,229,0.13) 0%, rgba(59,130,246,0.06) 40%, transparent 70%)', filter: 'blur(70px)' }} />
-      <div style={{ position: 'fixed', bottom: '-20vh', right: '-10vw', width: '65vw', height: '65vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at 60% 60%, rgba(16,185,129,0.09) 0%, rgba(5,150,105,0.04) 45%, transparent 70%)', filter: 'blur(80px)' }} />
-      <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, height: '1px', zIndex: 0, pointerEvents: 'none', background: 'linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.35) 30%, rgba(139,92,246,0.45) 50%, rgba(99,102,241,0.35) 70%, transparent 100%)', boxShadow: '0 0 40px 8px rgba(99,102,241,0.08)' }} />
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.6) 100%)' }} />
+      {/* ── GRAIN ── */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.22, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E")`, backgroundSize: '200px 200px' }} />
+      <div style={{ position: 'fixed', top: '-20vh', right: '-10vw', width: '55vw', height: '55vh', zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at 70% 30%, rgba(239,53,53,0.05) 0%, transparent 70%)', filter: 'blur(60px)' }} />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.45) 100%)' }} />
 
       <AppNav athleteName={athleteName} isAdmin={isAdmin} role={userRole} onLogout={handleLogout} avatarIcon={avatarIcon} userId={userId ?? undefined} />
 
-      {/* ─── HEADER ──────────────────────────────────────────────── */}
-      <div style={{ paddingTop: '56px', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
-        {/* Header glow strip at top */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '260px', zIndex: 0, pointerEvents: 'none',
-          background: 'linear-gradient(180deg, rgba(99,102,241,0.13) 0%, rgba(99,102,241,0.04) 50%, transparent 100%)' }} />
+      <div style={{ paddingTop: '56px', position: 'relative', zIndex: 1 }}>
+        <div className='page-header' style={{ maxWidth: '1200px', margin: '0 auto', padding: '28px 32px 0', position: 'relative', zIndex: 1 }}>
 
-        <div className='page-header' style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 32px 0', position: 'relative', zIndex: 1 }}>
-
-          {/* Tab switcher */}
-          <div className="tab-switcher" style={{ display: 'flex', gap: '3px', marginBottom: '28px', animation: 'fadeUp 0.4s ease', padding: '3px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', width: 'fit-content', overflowX: 'auto' as const }}>
-            {([['program','Program'],['hub','Hub & Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label])=>(
-              <button key={tab} onClick={()=>setActiveTab(tab as 'program'|'hub'|'meet')}
-                className={`tab-btn${activeTab===tab ? ' tab-btn-active' : ''}`}
-                style={{ padding:'8px 22px', background: activeTab===tab ? 'rgba(99,102,241,0.18)' : 'transparent', border: activeTab===tab ? '1px solid rgba(99,102,241,0.4)' : '1px solid transparent', borderRadius: '8px', cursor:'pointer', fontSize:'0.75rem', fontFamily:'var(--fm)', fontWeight: activeTab===tab ? 700 : 400, color: activeTab===tab ? '#a5b4fc' : 'rgba(255,255,255,0.4)', transition:'all 0.18s', whiteSpace:'nowrap' as const, letterSpacing: activeTab===tab ? '0.04em' : '0.02em', textTransform: 'uppercase' as const, boxShadow: activeTab===tab ? '0 0 20px rgba(99,102,241,0.15), inset 0 1px 0 rgba(255,255,255,0.08)' : 'none' }}>
+          {/* ── TAB SWITCHER ── */}
+          <div className="tab-switcher" style={{ display: 'flex', gap: '4px', marginBottom: '32px', padding: '5px', background: '#111111', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.08)', width: 'fit-content', overflowX: 'auto' as const }}>
+            {([['program','Program'],['hub','Hub & Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label]) => (
+              <button key={tab} onClick={() => setActiveTab(tab as 'program'|'hub'|'meet')}
+                style={{ padding: '9px 22px', background: activeTab === tab ? '#f0f0f0' : 'transparent', border: 'none', borderRadius: '999px', cursor: 'pointer', fontSize: '0.7rem', fontFamily: 'var(--fm)', fontWeight: activeTab === tab ? 700 : 500, color: activeTab === tab ? '#090909' : 'rgba(255,255,255,0.4)', transition: 'all 0.18s', whiteSpace: 'nowrap' as const, letterSpacing: '0.14em', textTransform: 'uppercase' as const }}>
                 {label}
               </button>
             ))}
           </div>
 
-          {/* Page title row — only in program tab */}
-          {activeTab === 'program' && <div className="page-title-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '28px', gap: '20px', flexWrap: 'wrap', animation: 'fadeUp 0.5s ease 0.05s both' }}>
-            <div>
-              <div className="athlete-name-label" style={{ fontSize: '0.6rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.38)', marginBottom: '12px', fontFamily: 'var(--fm)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px', textTransform: 'uppercase' }}>
-                <span style={{ display: 'inline-block', width: '22px', height: '1px', background: 'linear-gradient(90deg, rgba(99,102,241,0.8), transparent)' }} />
-                {loading ? '...' : athleteName}
-              </div>
-            </div>
+          {/* ── PROGRAM TAB ── */}
+          {activeTab === 'program' && (<>
 
-            {/* Stats row */}
-            {!loading && block && (
-              <div className="stats-row" style={{ display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07)' }}>
-                {[
-                  { val: block.weeks?.length ?? 0, label: 'TJEDANA' },
-                  { val: totalWorkouts, label: 'TRENINGA' },
-                  { val: totalSets > 0 ? `${doneSets}/${totalSets}` : `${completedWorkouts}/${totalWorkouts}`, label: 'SERIJA', accent: doneSets > 0 },
-                  { val: `${pct}%`, label: 'NAPREDAK', accent: pct > 50 },
-                ].map((s, i) => (
-                  <div key={i} style={{ flex: 1, padding: '14px 20px', background: 'rgba(255,255,255,0.02)', textAlign: 'center', minWidth: '80px', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
-                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1.7rem', fontWeight: 800, lineHeight: 1, color: s.accent ? '#4ade80' : '#f0f0f8', letterSpacing: '-0.02em' }}>{s.val}</div>
-                    <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', marginTop: '6px', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.18em' }}>{s.label}</div>
-                  </div>
-                ))}
+            {/* Loading */}
+            {loading && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '100px 0', color: 'rgba(255,255,255,0.2)' }}>
+                <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                <span style={{ fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>UČITAVANJE...</span>
               </div>
             )}
-          </div>}
 
-          {/* Block selector bar — only in program tab */}
-          {activeTab === 'program' && <>
-          {!loading && block && (
-            <div style={{ position: 'relative', marginBottom: '24px' }} ref={blockSelectorRef}>
-              <div className="block-bar" style={{ display: 'flex', alignItems: 'stretch', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)', borderTop: '1px solid rgba(255,255,255,0.14)' }}>
+            {/* Error */}
+            {error && (
+              <div style={{ padding: '14px 18px', background: 'rgba(239,53,53,0.06)', border: '1px solid rgba(239,53,53,0.18)', color: '#ff8080', fontSize: '0.84rem', borderRadius: '10px', marginBottom: '24px' }}>{error}</div>
+            )}
 
-                {/* Block switcher */}
-                <button onClick={() => setShowBlockSelector(!showBlockSelector)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', background: showBlockSelector ? '#111113' : 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', flex: 1, textAlign: 'left', transition: 'background 0.15s' }}
-                  onMouseEnter={e => { if (!showBlockSelector) e.currentTarget.style.background = '#111113' }}
-                  onMouseLeave={e => { if (!showBlockSelector) e.currentTarget.style.background = 'transparent' }}>
-                  <FolderOpen size={14} color="#555" />
-                  <div>
-                    <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: '#888', marginBottom: '2px' }}>AKTIVNI BLOK</div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e0e0e0' }}>{block.name}</div>
-                  </div>
-                  <ChevronDown size={12} color="#444" style={{ marginLeft: 'auto', transform: showBlockSelector ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                </button>
-
-                {/* Name edit */}
-                <div className="block-bar-name" style={{ padding: '12px 16px', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '8px', minWidth: '160px' }}>
-                  <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: '#888', flexShrink: 0 }}>NAZIV</div>
-                  <EditableField value={block.name} placeholder="Naziv programa"
-                    onSave={async v => {
-                      await supabase.from('blocks').update({ name: v }).eq('id', block.id)
-                      setBlock(b => b ? { ...b, name: v } : b)
-                      setAllBlocks(bs => bs.map(b2 => b2.id === block.id ? { ...b2, name: v } : b2) as BlockSummary[])
-                    }} />
+            {/* No block */}
+            {!loading && !block && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: '14px' }}>
+                <div style={{ fontFamily: 'var(--font-bg, var(--fm))', fontSize: '3.5rem', opacity: 0.1, lineHeight: 1 }}>—</div>
+                <div style={{ fontSize: '0.68rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700 }}>NEMA AKTIVNOG PROGRAMA</div>
+                <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.22)', fontFamily: 'var(--fm)', textAlign: 'center', maxWidth: '300px', lineHeight: 1.6 }}>
+                  Tvoj trener još nije kreirao program. Javi se treneru za više informacija.
                 </div>
-
-                {/* New block / Copy block */}
-                {canEdit && (
-                  <>
-                    <button onClick={async () => { const n = prompt('Naziv novog bloka:'); if (n?.trim()) await addBlock(n.trim()) }}
-                      className="action-btn" style={{ padding: '0 16px', borderRadius: 0 }}>
-                      <Plus size={12} /> NOVI BLOK
-                    </button>
-                    <button onClick={copyBlock}
-                      className="action-btn" style={{ padding: '0 16px', borderRadius: 0 }}>
-                      <Copy size={12} /> KOPIRAJ BLOK
-                    </button>
-                    <button onClick={deleteBlock}
-                      className="action-btn" style={{ padding: '0 16px', borderRadius: 0, color: 'rgba(239,68,68,0.6)' }}
-                      onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(239,68,68,0.6)'}>
-                      BRIŠI BLOK
-                    </button>
-                  </>
-                )}
-
-                {saving && (
-                  <div style={{ padding: '0 14px', display: 'flex', alignItems: 'center', borderLeft: '1px solid rgba(255,255,255,0.09)' }}>
-                    <Loader2 size={13} color="#555" style={{ animation: 'spin 1s linear infinite' }} />
-                  </div>
-                )}
               </div>
+            )}
 
-              {/* Block dropdown — solid, no transparency */}
-              {showBlockSelector && (
-                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, background: '#09090e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', boxShadow: '0 24px 64px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)', maxHeight: '280px', overflowY: 'auto', animation: 'dropDown 0.18s ease' }}>
-                  {allBlocks.map((b: BlockSummary) => (
-                    <button key={b.id} onClick={() => switchBlock(b.id)}
-                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: b.id === block.id ? '#111113' : 'transparent', border: 'none', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.07)', textAlign: 'left', transition: 'background 0.12s' }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#111113'}
-                      onMouseLeave={e => e.currentTarget.style.background = b.id === block.id ? '#111113' : 'transparent'}>
-                      <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.status === 'active' ? '#22c55e' : b.status === 'completed' ? '#60a5fa' : '#333', flexShrink: 0 }} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.84rem', fontWeight: 500, color: '#e0e0e0' }}>{b.name}</div>
-                        <div style={{ fontSize: '0.56rem', color: '#444', marginTop: '1px' }}>{b.start_date} — {b.end_date}</div>
+            {!loading && block && (<>
+
+              {/* ── HERO TOGGLE BUTTON ── */}
+              <button
+                onClick={() => setHeroOpen(v => !v)}
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 18px 8px 14px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', cursor: 'pointer', marginBottom: heroOpen ? '20px' : '28px', transition: 'all 0.2s', width: 'fit-content' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.2)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.06)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.03)' }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef3535', boxShadow: '0 0 8px rgba(239,53,53,0.5)', flexShrink: 0, display: 'inline-block' }} />
+                <span style={{ fontFamily: 'var(--fm)', fontSize: '0.66rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' as const }}>
+                  {athleteName.toUpperCase()} · {pct}% · {block.name}
+                </span>
+                <ChevronDown size={12} color="rgba(255,255,255,0.25)" style={{ marginLeft: '4px', transform: heroOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }} />
+              </button>
+
+              {/* ── HERO SECTION (collapsible) ── */}
+              {heroOpen && (
+                <div style={{ animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1)' }}>
+
+                  {/* Row 1: Name card + Stats grid */}
+                  <div className="hero-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '12px', marginBottom: '12px' }}>
+
+                    {/* Name card */}
+                    <div style={{ padding: '36px 36px 28px', borderRadius: '24px', background: '#111111', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '200px', position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', right: '-40px', bottom: '-40px', width: '180px', height: '180px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,53,53,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+                      <div style={{ fontSize: '0.56rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ display: 'inline-block', width: '20px', height: '1.5px', background: '#ef3535', borderRadius: '2px', flexShrink: 0 }} />
+                        SPORTAŠ · AKTIVAN
                       </div>
-                      {b.id === block.id && <Check size={12} color="#22c55e" />}
-                    </button>
-                  ))}
+                      <h1 style={{ fontFamily: 'var(--font-bg, var(--fm))', fontWeight: 800, fontSize: 'clamp(40px, 4.5vw, 72px)', lineHeight: 0.9, letterSpacing: '-0.04em', margin: '20px 0 0', color: '#f0f0f0' }}>
+                        {athleteName.split(' ')[0] || athleteName}
+                        {athleteName.split(' ').length > 1 && (
+                          <span style={{ display: 'block', color: 'rgba(255,255,255,0.28)', fontWeight: 500 }}>
+                            {athleteName.split(' ').slice(1).join(' ')}
+                          </span>
+                        )}
+                      </h1>
+                      <div style={{ fontSize: '0.56rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.22)', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '10px', marginTop: '18px' }}>
+                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef3535', flexShrink: 0, animation: 'pulse-dot 2s infinite' }} />
+                        POWERLIFTER
+                      </div>
+                    </div>
+
+                    {/* Stats 4-col grid */}
+                    <div className="stats-4col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', borderRadius: '24px', overflow: 'hidden', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      {[
+                        { num: block.weeks?.length ?? 0, sub: '', label: 'TJEDANA', delta: 'u bloku' },
+                        { num: completedWorkouts, sub: `/${totalWorkouts}`, label: 'TRENINGA', delta: `${totalWorkouts - completedWorkouts} preostalo` },
+                        { num: doneSets, sub: `/${totalSets}`, label: 'SERIJA', delta: `${pct}% complete` },
+                        { num: pct, sub: '%', label: 'NAPREDAK', delta: pct >= 75 ? 'odlično' : pct >= 50 ? 'on track' : 'u tijeku' },
+                      ].map((s, i) => (
+                        <div key={i}
+                          className="stats-item"
+                          style={{ background: '#111111', padding: '28px 20px 26px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '190px', transition: 'background 0.2s', cursor: 'default' }}
+                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#181818'}
+                          onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = '#111111'}>
+                          <div>
+                            <div style={{ fontFamily: 'var(--font-bg, var(--fm))', fontWeight: 700, fontSize: 'clamp(30px, 3vw, 52px)', lineHeight: 0.95, letterSpacing: '-0.04em', color: '#f0f0f0', fontVariantNumeric: 'tabular-nums' }}>
+                              {s.num}<span style={{ fontSize: '0.42em', color: 'rgba(255,255,255,0.28)', fontWeight: 500 }}>{s.sub}</span>
+                            </div>
+                            <div style={{ fontFamily: 'var(--fm)', fontSize: '0.68rem', color: '#ef3535', marginTop: '8px', letterSpacing: '0.02em' }}>↗ {s.delta}</div>
+                          </div>
+                          <div style={{ fontFamily: 'var(--fm)', fontSize: '0.54rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase' as const }}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Row 2: Block card + Competition countdown */}
+                  <div className="hero-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '12px', marginBottom: '28px' }}>
+
+                    {/* Block card */}
+                    <div style={{ position: 'relative' }} ref={blockSelectorRef}>
+                      <button
+                        onClick={() => setShowBlockSelector(!showBlockSelector)}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '22px 24px', borderRadius: '20px', background: '#111111', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left' as const }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)' }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.08)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
+                          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <FolderOpen size={16} color="rgba(255,255,255,0.3)" />
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: '0.46rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.22)', fontFamily: 'var(--fm)', marginBottom: '3px', textTransform: 'uppercase' as const }}>AKTIVNI BLOK</div>
+                            <div style={{ fontSize: '1rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--font-bg, var(--fm))', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{block.name}</div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                          <span style={{ fontSize: '0.48rem', fontFamily: 'var(--fm)', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.18)' }}>{block.weeks?.length ?? 0} TJ.</span>
+                          <ChevronDown size={14} color="rgba(255,255,255,0.18)" style={{ transform: showBlockSelector ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                        </div>
+                      </button>
+
+                      {/* Block name editor */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 24px 0' }}>
+                        <span style={{ fontSize: '0.43rem', color: 'rgba(255,255,255,0.15)', fontFamily: 'var(--fm)', letterSpacing: '0.2em', flexShrink: 0 }}>NAZIV:</span>
+                        <EditableField value={block.name} placeholder="Naziv programa"
+                          onSave={async v => {
+                            await supabase.from('blocks').update({ name: v }).eq('id', block.id)
+                            setBlock(b => b ? { ...b, name: v } : b)
+                            setAllBlocks(bs => bs.map(b2 => b2.id === block.id ? { ...b2, name: v } : b2) as BlockSummary[])
+                          }} />
+                        {saving && <Loader2 size={11} color="#444" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />}
+                      </div>
+
+                      {/* Block dropdown */}
+                      {showBlockSelector && (
+                        <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 100, background: '#0e0e0e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', overflow: 'hidden', animation: 'dropDown 0.18s ease', maxHeight: '260px', overflowY: 'auto' }}>
+                          {allBlocks.map((b: BlockSummary, i: number) => (
+                            <button key={b.id} onClick={() => switchBlock(b.id)}
+                              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '13px 18px', background: b.id === block.id ? 'rgba(255,255,255,0.05)' : 'transparent', border: 'none', borderBottom: i < allBlocks.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', cursor: 'pointer', textAlign: 'left' as const, transition: 'background 0.12s' }}
+                              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'}
+                              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = b.id === block.id ? 'rgba(255,255,255,0.05)' : 'transparent'}>
+                              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.status === 'active' ? '#ef3535' : 'rgba(255,255,255,0.18)', flexShrink: 0 }} />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '0.84rem', fontWeight: 500, color: '#e0e0e0', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{b.name}</div>
+                                <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', marginTop: '1px' }}>{b.start_date} — {b.end_date}</div>
+                              </div>
+                              {b.id === block.id && <Check size={12} color="#ef3535" />}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Competition countdown */}
+                    <div>{userId && <CompetitionBanner userId={userId} />}</div>
+                  </div>
                 </div>
               )}
-            </div>
-          )}
-          </>}
-        </div>
 
-        {/* ─── CONTENT ─────────────────────────────────────────── */}
-        <div className='page-content' style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px 80px' }}>
-          {/* Hub tab */}
-          {activeTab === 'hub' && <HubTab athleteName={athleteName} userId={userId ?? undefined} />}
-          {/* Meet day tab */}
-          {activeTab === 'meet' && userId && <MeetDayTab userId={userId} isAdmin={isAdmin} />}
-          {activeTab === 'program' && <>
-          {loading && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '80px 0', color: '#444' }}>
-              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
-              <span style={{ fontSize: '0.78rem', letterSpacing: '0.2em' }}>UČITAVANJE...</span>
-            </div>
-          )}
-          {error && (
-            <div style={{ padding: '16px 20px', background: 'linear-gradient(135deg, #1a0808, #120608)', border: '1px solid rgba(239,68,68,0.2)', color: '#ff7070', fontSize: '0.84rem', borderRadius: '10px', marginBottom: '24px', boxShadow: '0 4px 20px rgba(239,68,68,0.08)' }}>{error}</div>
-          )}
-          {!loading && !block && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: '16px' }}>
-              <div style={{ fontFamily: 'var(--fd)', fontSize: '3.5rem', opacity: 0.12, lineHeight: 1 }}>—</div>
-              <div style={{ fontSize: '0.72rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700 }}>NEMA AKTIVNOG PROGRAMA</div>
-              <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', textAlign: 'center', maxWidth: '320px', lineHeight: 1.6 }}>
-                Tvoj trener još nije kreirao program. Javi se treneru za više informacija.
-              </div>
-            </div>
-          )}
-          {!loading && block && (
-            <>
-              {/* Competition countdown banner */}
-              {userId && <CompetitionBanner userId={userId} />}
-
-              {/* Admin/trener info banner */}
+              {/* ── ADMIN/TRENER BANNER ── */}
               {(isAdmin || isCoach) && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 16px', marginBottom: '20px', background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.18)', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '0.62rem', color: 'rgba(252,165,165,0.7)', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.05em' }}>
-                    Gledaš trening kao lifter. Za uređivanje programa idi na
-                  </span>
-                  <a href="/admin" style={{ fontSize: '0.62rem', color: '#f87171', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.08em', textDecoration: 'none', borderBottom: '1px solid rgba(248,113,113,0.4)', paddingBottom: '1px' }}>
-                    ADMIN PANEL →
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '11px 16px', marginBottom: '20px', background: '#111111', border: '1px solid rgba(255,255,255,0.08)', borderLeft: '3px solid #ef3535', borderRadius: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef3535', flexShrink: 0, boxShadow: '0 0 6px rgba(239,53,53,0.5)' }} />
+                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 500 }}>
+                      {isCoach
+                        ? 'Pregledavaš trening kao lifter — uređivanje programa u trener panelu'
+                        : 'Pregledavaš trening kao lifter — uređivanje programa u admin panelu'}
+                    </span>
+                  </div>
+                  <a
+                    href={isCoach ? '/trainer' : '/admin'}
+                    style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', fontSize: '0.58rem', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.1em', color: '#f0f0f0', textDecoration: 'none', transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.25)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.12)' }}>
+                    {isCoach ? 'TRENER PANEL' : 'ADMIN PANEL'} →
                   </a>
                 </div>
               )}
 
-              {(block.weeks?.length ?? 0) === 0 && (
-                <div style={{ textAlign: 'center', padding: '80px 0', color: '#333' }}>
-                  <div style={{ fontFamily: 'var(--fd)', fontSize: '4rem', marginBottom: '14px', opacity: 0.3 }}>—</div>
-                  <div style={{ fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '28px' }}>PROGRAM JE PRAZAN</div>
-                </div>
-              )}
-              {block.weeks?.map(week => (
-                <WeekPanel key={week.id} week={week} exercises={exercises} isAdmin={canEdit} userId={userId ?? ''}
-                  onDeleteWeek={deleteWeek} onCopyWeek={copyWeek} onUpdateWeek={updateWeek} onAddWorkout={addWorkout}
-                  onUpdateWorkout={updateWorkout} onDeleteWorkout={deleteWorkout}
-                  onAddExercise={addExercise} onUpdateExercise={updateExercise} onDeleteExercise={deleteExercise} />
-              ))}
-              {canEdit && (
-                <button onClick={addWeek} className="add-week-btn">
-                  <Plus size={13} /> DODAJ TJEDAN {block.weeks ? block.weeks.length + 1 : 1}
-                </button>
-              )}
-            </>
-          )}
-          </>}
+              {/* ── SECTION HEADER ── */}
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '18px', padding: '0 2px' }}>
+                <h2 style={{ fontFamily: 'var(--font-bg, var(--fm))', fontWeight: 600, fontSize: '1.05rem', letterSpacing: '-0.01em', color: '#f0f0f0', margin: 0 }}>Trening program</h2>
+                <span style={{ fontFamily: 'var(--fm)', fontSize: '0.56rem', color: 'rgba(255,255,255,0.22)', letterSpacing: '0.14em', textTransform: 'uppercase' as const }}>
+                  {block.weeks?.length ?? 0} tjedana · {totalSets} serija
+                </span>
+              </div>
+
+            </>)}
+          </>)}
+
+        </div>
+
+        {/* ─── WEEK LIST ─────────────────────────────────────────── */}
+        <div className='page-content' style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px 80px' }}>
+          {activeTab === 'hub' && <HubTab athleteName={athleteName} userId={userId ?? undefined} />}
+          {activeTab === 'meet' && userId && <MeetDayTab userId={userId} isAdmin={isAdmin} />}
+          {activeTab === 'program' && !loading && block && (<>
+            {(block.weeks?.length ?? 0) === 0 && (
+              <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.12)' }}>
+                <div style={{ fontFamily: 'var(--font-bg, var(--fm))', fontSize: '4rem', marginBottom: '14px', opacity: 0.3 }}>—</div>
+                <div style={{ fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>PROGRAM JE PRAZAN</div>
+              </div>
+            )}
+            {block.weeks?.map(week => (
+              <WeekPanel key={week.id} week={week} exercises={exercises} isAdmin={canEdit} userId={userId ?? ''}
+                onDeleteWeek={deleteWeek} onCopyWeek={copyWeek} onUpdateWeek={updateWeek} onAddWorkout={addWorkout}
+                onUpdateWorkout={updateWorkout} onDeleteWorkout={deleteWorkout}
+                onAddExercise={addExercise} onUpdateExercise={updateExercise} onDeleteExercise={deleteExercise} />
+            ))}
+            {canEdit && (
+              <button onClick={addWeek} className="add-week-btn">
+                <Plus size={13} /> DODAJ TJEDAN {block.weeks ? block.weeks.length + 1 : 1}
+              </button>
+            )}
+          </>)}
         </div>
       </div>
 
       <style>{`
-        /* ── Keyframes ── */
-        @keyframes fadeIn   { from { opacity:0 } to { opacity:1 } }
-        @keyframes fadeUp   { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:none } }
-        @keyframes slideUp  { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:none } }
-        @keyframes dropDown { from { opacity:0; transform:translateY(-8px) } to { opacity:1; transform:none } }
+        @keyframes fadeUp   { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:none } }
+        @keyframes dropDown { from { opacity:0; transform:translateY(-6px) scale(0.98) } to { opacity:1; transform:none } }
         @keyframes spin     { to { transform:rotate(360deg) } }
-
-        /* ── Nav menu items ── */
-        .nav-menu-item {
-          width:100%; display:flex; align-items:center; gap:10px;
-          padding:9px 10px; background:transparent; border:none;
-          cursor:pointer; color:#999; font-size:0.82rem;
-          font-family:var(--fm); transition:all 0.15s; text-align:left;
-          border-radius:6px;
+        @keyframes pulse-dot {
+          0%,100% { box-shadow: 0 0 0 0 rgba(239,53,53,0.45); }
+          70%      { box-shadow: 0 0 0 8px transparent; }
         }
+
+        .nav-menu-item { width:100%; display:flex; align-items:center; gap:10px; padding:9px 10px; background:transparent; border:none; cursor:pointer; color:#999; font-size:0.82rem; font-family:var(--fm); transition:all 0.15s; text-align:left; border-radius:6px; }
         .nav-menu-item:hover { background:#161618; color:#e0e0e0; }
         .nav-menu-admin:hover { color:#ef4444 !important; }
         .nav-menu-logout { color:#666; }
         .nav-menu-logout:hover { background:#1a0a0a !important; color:#ff7070 !important; }
 
-        /* ── Category buttons in picker ── */
-        .cat-btn {
-          padding:4px 12px; font-size:0.62rem; letter-spacing:0.12em;
-          font-weight:600; cursor:pointer; transition:all 0.15s;
-          font-family:var(--fm); background:transparent;
-          color:#555; border:1px solid rgba(255,255,255,0.1); border-radius:5px;
-        }
+        .cat-btn { padding:4px 12px; font-size:0.62rem; letter-spacing:0.12em; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:var(--fm); background:transparent; color:#555; border:1px solid rgba(255,255,255,0.1); border-radius:5px; }
         .cat-btn:hover { border-color:rgba(255,255,255,0.3); color:#aaa; }
         .cat-btn-active { background:#e0e0e0 !important; color:#000 !important; border-color:#e0e0e0 !important; }
 
-        /* ── Icon danger button ── */
-        .icon-btn-danger {
-          background:transparent; border:none; cursor:pointer;
-          color:#555; padding:4px; display:flex; align-items:center;
-          justify-content:center; transition:color 0.15s; border-radius:4px;
-        }
+        .icon-btn-danger { background:transparent; border:none; cursor:pointer; color:#555; padding:4px; display:flex; align-items:center; justify-content:center; transition:color 0.15s; border-radius:4px; }
         .icon-btn-danger:hover { color:#ef4444; background:#1a0a0a; }
+        .icon-btn { width:28px; height:28px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03); display:grid; place-items:center; color:rgba(255,255,255,0.4); cursor:pointer; transition:all 0.2s; }
+        .icon-btn:hover { border-color:rgba(255,255,255,0.2); color:#fff; background:rgba(255,255,255,0.07); }
 
-        /* ── Done badge ── */
-        .done-badge {
-          display:flex; align-items:center; gap:6px;
-          padding:6px 12px; border:1px solid rgba(255,255,255,0.12);
-          cursor:pointer; transition:all 0.2s; border-radius:6px;
-          background:rgba(255,255,255,0.04);
-        }
+        .done-badge { display:flex; align-items:center; gap:6px; padding:6px 12px; border:1px solid rgba(255,255,255,0.12); cursor:pointer; transition:all 0.2s; border-radius:6px; background:rgba(255,255,255,0.04); }
         .done-badge span { font-size:0.54rem; letter-spacing:0.2em; color:rgba(255,255,255,0.45); font-family:var(--fm); font-weight:800; }
         .done-badge:hover { border-color:rgba(255,255,255,0.28); background:rgba(255,255,255,0.07); }
-        .done-badge-active { border-color:rgba(34,197,94,0.45) !important; background:rgba(34,197,94,0.1) !important; box-shadow:0 0 18px rgba(34,197,94,0.15) !important; }
+        .done-badge-active { border-color:rgba(34,197,94,0.45) !important; background:rgba(34,197,94,0.1) !important; }
         .done-badge-active span { color:#4ade80 !important; }
 
-        /* ── Add buttons ── */
-        .add-btn {
-          width:100%; padding:10px; background:rgba(99,102,241,0.04);
-          border:1px dashed rgba(99,102,241,0.2); color:rgba(129,140,248,0.5); cursor:pointer;
-          display:flex; align-items:center; justify-content:center;
-          gap:7px; font-size:0.6rem; letter-spacing:0.22em;
-          font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:6px;
-        }
-        .add-btn:hover { border-color:rgba(99,102,241,0.55); color:#818cf8; background:rgba(99,102,241,0.09); }
+        .add-btn { width:100%; padding:10px; background:rgba(255,255,255,0.02); border:1px dashed rgba(255,255,255,0.1); color:rgba(255,255,255,0.28); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; font-size:0.6rem; letter-spacing:0.22em; font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:6px; }
+        .add-btn:hover { border-color:rgba(255,255,255,0.25); color:rgba(255,255,255,0.65); background:rgba(255,255,255,0.05); }
 
-        .add-week-btn {
-          width:100%; padding:18px; background:rgba(99,102,241,0.03);
-          border:1px dashed rgba(99,102,241,0.18); color:rgba(129,140,248,0.4); cursor:pointer;
-          display:flex; align-items:center; justify-content:center;
-          gap:10px; font-size:0.66rem; letter-spacing:0.3em;
-          font-family:var(--fm); font-weight:800; transition:all 0.2s;
-          border-radius:8px; margin-top:8px;
-        }
-        .add-week-btn:hover { border-color:rgba(99,102,241,0.5); color:#818cf8; background:rgba(99,102,241,0.08); }
+        .add-week-btn { width:100%; padding:18px; background:rgba(255,255,255,0.02); border:1px dashed rgba(255,255,255,0.08); color:rgba(255,255,255,0.22); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-size:0.62rem; letter-spacing:0.3em; font-family:var(--fm); font-weight:800; transition:all 0.2s; border-radius:10px; margin-top:8px; }
+        .add-week-btn:hover { border-color:rgba(255,255,255,0.22); color:rgba(255,255,255,0.65); background:rgba(255,255,255,0.05); }
 
-        /* ── Action btn ── */
-        .action-btn {
-          display:flex; align-items:center; gap:7px;
-          background:transparent; border:none; border-left:1px solid rgba(255,255,255,0.08);
-          color:#555; cursor:pointer; font-size:0.58rem; letter-spacing:0.2em;
-          font-family:var(--fm); font-weight:800; transition:all 0.15s; white-space:nowrap;
-        }
-        .action-btn:hover { color:#c7d2fe; background:rgba(99,102,241,0.08); }
+        .action-btn { display:flex; align-items:center; gap:7px; background:transparent; border:none; color:#555; cursor:pointer; font-size:0.58rem; letter-spacing:0.2em; font-family:var(--fm); font-weight:800; transition:all 0.15s; white-space:nowrap; padding:0 16px; }
+        .action-btn:hover { color:#e0e0e0; }
 
-        /* ── Workout card hover ── */
-        .workout-card:hover {
-          border-color: rgba(99,102,241,0.3) !important;
-          box-shadow: 0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.1) !important;
-        }
+        .workout-card:hover { border-color:rgba(255,255,255,0.14) !important; }
+        .ex-row-wrap { border-left:2px solid rgba(255,255,255,0.05); }
+        .ex-row-main:hover { background:#0e0e0e; }
 
-        /* ── Exercise row table ── */
-        /* ── Base resets ── */
-        .ex-row-wrap { border-bottom: none; }
-        .ex-row-main { transition: background 0.12s; }
-        .ex-row-main:hover { background: #0e0e18; }
+        .tab-switcher { scrollbar-width:none; }
+        .tab-switcher::-webkit-scrollbar { display:none; }
 
-        /* ── Week panel hover ── */
-        div[class=""] div:hover > div[style*="borderRadius: \'12px\'"] {
-          border-color: rgba(255,255,255,0.1);
-        }
+        .tnav-pill { display:flex; align-items:center; }
+        @media (max-width:640px) { .tnav-status { display:none !important; } }
+        @media (max-width:520px)  { .tnav-name  { display:none !important; } }
 
-        /* ── Stat pills glow on hover ── */
-        div[style*="minWidth: \'72px\'"] {
-          transition: box-shadow 0.2s, transform 0.2s;
-        }
-        div[style*="minWidth: \'72px\'"]:hover {
-          box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(56,100,255,0.08), inset 0 1px 0 rgba(255,255,255,0.08) !important;
-          transform: translateY(-1px);
-        }
+        @keyframes popIn    { from { opacity:0; transform:scale(0.96) translateY(4px) } to { opacity:1; transform:none } }
+        @keyframes panelIn  { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
+        @keyframes pingPulse { 0%,100% { transform:scale(1); opacity:0.5 } 50% { transform:scale(2.4); opacity:0 } }
 
-        /* ── Completed stripe glow ── */
-        .workout-card .completed-stripe-active {
-          box-shadow: 0 0 12px rgba(34,197,94,0.4);
-        }
-
-        /* ── Done badge active glow ── */
-        .done-badge-active {
-          box-shadow: 0 0 16px rgba(34,197,94,0.15) !important;
-        }
-
-        /* ── Buttons ── */
-        .add-week-btn:hover {
-          border-color: rgba(255,255,255,0.15) !important;
-          color: #ddd !important;
-          background: rgba(255,255,255,0.05) !important;
-        }
-        .add-btn, .action-btn {
-          font-size: 0.65rem !important;
-          letter-spacing: 0.06em !important;
-        }
-
-        /* ── Nav menu items — Apple style ── */
-        .nav-menu-item {
-          width: 100%; display: flex; align-items: center; gap: 10px;
-          padding: 8px 12px; background: transparent; border: none;
-          color: rgba(255,255,255,0.7); font-size: 0.82rem; font-family: var(--fm);
-          font-weight: 450; cursor: pointer; border-radius: 9px;
-          transition: background 0.15s, color 0.15s; text-align: left; letter-spacing: 0.01em;
-        }
-        .nav-menu-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
-        .nav-menu-admin:hover { background: rgba(239,68,68,0.08) !important; }
-        .nav-menu-logout { color: rgba(255,80,80,0.7) !important; }
-        .nav-menu-logout:hover { background: rgba(255,60,60,0.08) !important; color: #ff6060 !important; }
-
-        /* ── Nav pills ── */
-        .tnav-pill { display: flex; align-items: center; }
-
-        /* ── Status pill hide on small screens ── */
-        @media (max-width: 640px) { .tnav-status { display: none !important; } }
-        @media (max-width: 520px) { .tnav-name { display: none !important; } }
-
-        /* ── Animations ── */
-        @keyframes popIn {
-          from { opacity: 0; transform: scale(0.96) translateY(4px); }
-          to   { opacity: 1; transform: none; }
-        }
-        @keyframes panelIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: none; }
-        }
-        @keyframes pingPulse {
-          0%, 100% { transform: scale(1); opacity: 0.5; }
-          50% { transform: scale(2.4); opacity: 0; }
-        }
-        @keyframes dropDown {
-          from { opacity: 0; transform: translateY(-6px) scale(0.98); }
-          to   { opacity: 1; transform: none; }
-        }
-
-        /* ── Nav responsive ── */
-        @media (max-width: 680px) {
-          .tnav-links a { padding: 6px 10px !important; font-size: 0.7rem !important; }
-        }
-        @media (max-width: 480px) {
-          .tnav-links { display: none !important; }
-        }
-
-        /* ══ MOBILE ══════════════════════════════════════════════ */
-
-        /* ─ Header + content padding ─ */
-        @media (max-width: 768px) {
+        @media (max-width:768px) {
           .page-header  { padding: 14px 16px 0 !important; }
           .page-content { padding: 0 16px 100px !important; }
+          .tab-switcher { display:none !important; }
+        }
+        @media (max-width:760px) {
+          .hero-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width:540px) {
+          .stats-4col { grid-template-columns: repeat(2,1fr) !important; border-radius:16px !important; }
+          .stats-item { min-height:130px !important; padding:18px 16px 16px !important; }
+        }
+        @media (max-width:640px) {
+          .page-header { padding: 20px 16px 0 !important; }
         }
 
-        /* ─ Hide decorative background images on mobile ─ */
-        @media (max-width: 768px) {
-          .bg-decorative { display: none !important; }
-        }
-
-        /* ─ Tab switcher → hide on mobile (replaced by FAB popup) ─ */
-        @media (max-width: 768px) {
-          .tab-switcher { display: none !important; }
-        }
-
-        /* ─ Block selector bar: stack vertically on mobile ─ */
-        @media (max-width: 640px) {
-          .block-bar { flex-direction: column !important; border-radius: 14px !important; }
-          .block-bar > * { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.07) !important; width: 100% !important; min-width: 0 !important; padding: 14px 16px !important; box-sizing: border-box !important; }
-          .block-bar > *:last-child { border-bottom: none !important; }
-          .action-btn { padding: 14px 16px !important; font-size: 0.68rem !important; letter-spacing: 0.1em !important; justify-content: flex-start !important; min-height: 48px !important; border-left: none !important; }
-        }
-
-        /* ─ Title row + header: compact on mobile ─ */
-        @media (max-width: 640px) {
-          .page-header { padding: 22px 16px 0 !important; }
-          .page-title-row { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; margin-bottom: 12px !important; }
-          .page-title-h1 { font-size: 1.7rem !important; margin-bottom: 0 !important; }
-          .athlete-name-label { display: none !important; }
-        }
-
-        /* ─ Stats: compact single row on mobile ─ */
-        @media (max-width: 640px) {
-          .stats-row { width: 100% !important; }
-          .stats-row > div { padding: 10px 8px !important; min-width: 0 !important; }
-          .stats-row > div > div:first-child { font-size: 1.2rem !important; }
-          .stats-row > div > div:last-child { font-size: 0.42rem !important; margin-top: 4px !important; }
-        }
-
-        /* ─ Block bar: only show switcher on mobile ─ */
-        @media (max-width: 640px) {
-          .block-bar-name { display: none !important; }
-          .block-bar .action-btn { display: none !important; }
-          /* Remove divider since only the switcher button is visible */
-          .block-bar > * { border-bottom: none !important; }
-        }
-
-        /* ─ Week header: compact on mobile ─ */
-        @media (max-width: 640px) {
-          .week-w-num { font-size: 1.8rem !important; }
-          .week-header-top { padding: 12px 16px 0 !important; }
-          .week-date-range { display: none !important; }
-        }
-
-        /* ─ Day grid: scroll horizontally on mobile ─ */
-        @media (max-width: 640px) {
-          .day-grid { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
-          .day-grid > div { min-width: 100px !important; }
-        }
-
-        /* ─ Workout card header: stack on very small ─ */
-        @media (max-width: 500px) {
-          .workout-header-inner { flex-wrap: wrap !important; gap: 8px !important; padding: 12px 14px !important; }
-          .workout-controls { width: 100% !important; justify-content: flex-end !important; }
-        }
-
-        /* ─ Exercise rows: teal left accent — signals exercise level in hierarchy ─ */
-        .ex-row-wrap { border-left: 2px solid rgba(20,184,166,0.18); }
-        .ex-row-main:hover ~ * .ex-row-wrap, .ex-row-wrap:hover { border-left-color: rgba(20,184,166,0.35); }
-
-        /* ─ Block bar: bigger touch target for switcher ─ */
-        @media (max-width: 640px) {
-          .block-bar > button:first-child { min-height: 56px !important; }
-        }
-
-        /* ─ Competition banner: better mobile layout ─ */
-        @media (max-width: 500px) {
-          .comp-days-pill { min-width: 70px !important; padding: 0 16px !important; }
-          .comp-days-num { font-size: 1.6rem !important; }
-        }
-
-        /* ─ Hide default number input spinners (use custom StepInput instead) ─ */
         input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        input[type=number] { -moz-appearance: textfield; }
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+        input[type=number] { -moz-appearance:textfield; }
 
-        /* ─ Set log (lifter, 5 cols: 52px 1fr 1fr 88px 48px): tighten on mobile ─ */
-        @media (max-width: 480px) {
-          .set-log-header, .set-log-row {
-            grid-template-columns: 44px 1fr 1fr 64px 36px !important;
-          }
+        @media (max-width:480px) { .set-log-header, .set-log-row { grid-template-columns:44px 1fr 1fr 64px 36px !important; } }
+        @media (max-width:360px) {
+          .set-log-header > *:nth-child(3), .set-log-row > *:nth-child(3) { display:none !important; }
+          .set-log-header, .set-log-row { grid-template-columns:44px 1fr 64px 36px !important; }
         }
-        @media (max-width: 360px) {
-          /* Hide REPS col on very small screens, keep KG */
-          .set-log-header > *:nth-child(3),
-          .set-log-row    > *:nth-child(3) { display: none !important; }
-          .set-log-header, .set-log-row    { grid-template-columns: 44px 1fr 64px 36px !important; }
-        }
+        @media (max-width:480px) { .ex-table-footer { flex-direction:column !important; gap:8px !important; } }
+        @media (max-width:480px) { .nav-home-text { display:none !important; } }
+        @media (max-width:480px) { .profile-dropdown { width:min(220px,calc(100vw - 32px)) !important; right:0 !important; } }
+        @media (max-width:480px) { .gl-lifts-grid { grid-template-columns:1fr !important; } }
+        @media (max-width:400px) { .hub-tools-grid { grid-template-columns:1fr !important; } }
 
-        /* ─ Table footer: stack on mobile ─ */
-        @media (max-width: 480px) {
-          .ex-table-footer { flex-direction: column !important; gap: 8px !important; }
-          .ex-table-footer > * { border-left: none !important; padding-left: 0 !important; }
-        }
-
-        /* ─ Navbar: hide "POČETNA" text on small screens ─ */
-        @media (max-width: 480px) {
-          .nav-home-text { display: none !important; }
-          .nav-center-label { font-size: 0.6rem !important; letter-spacing: 0.15em !important; }
-        }
-
-        /* ─ Profile dropdown: right-aligned on mobile ─ */
-        @media (max-width: 480px) {
-          .profile-dropdown { width: min(220px, calc(100vw - 32px)) !important; right: 0 !important; }
-          .tnav-right { margin-left: auto; }
-        }
-
-        /* ─ Title heading: smaller on mobile ─ */
-        @media (max-width: 480px) {
-          .page-title { font-size: 1.8rem !important; }
-        }
-
-        /* ─ GL calc: 3 lift inputs stack on small mobile ─ */
-        @media (max-width: 480px) {
-          .gl-lifts-grid { grid-template-columns: 1fr !important; }
-          .gl-total-grid { grid-template-columns: repeat(2,1fr) !important; }
-        }
-
-        /* ─ Hub tool grid: 1 col on very small ─ */
-        @media (max-width: 400px) {
-          .hub-tools-grid { grid-template-columns: 1fr !important; }
-        }
-
-        /* ─ Smooth tab transition ─ */
-        .tab-content { animation: fadeUp 0.25s cubic-bezier(0.16,1,0.3,1); }
-
-        /* ─ Card border glow on touch (active) ─ */
-        .workout-card:active { border-color: #2a2a3a !important; }
-        .bt-card:active { background: #0d0d0e !important; }
-
-        /* ─ FAB nav: only show on mobile ─ */
-        .fab-nav { display: none; }
-        @media (max-width: 768px) {
-          .fab-nav { display: block; }
-        }
+        .fab-nav { display:none; }
+        @media (max-width:768px) { .fab-nav { display:block; } }
       `}</style>
 
-      {/* Floating nav button — mobile only */}
+      {/* ── MOBILE FAB NAV ── */}
       <div className="fab-nav" style={{ position: 'fixed', bottom: '24px', right: '20px', zIndex: 1000 }}>
-        {/* Backdrop */}
+        {navOpen && <div onClick={() => setNavOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: -1 }} />}
         {navOpen && (
-          <div onClick={() => setNavOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: -1 }} />
-        )}
-
-        {/* Pop-up menu */}
-        {navOpen && (
-          <div style={{
-            position: 'absolute', bottom: '64px', right: 0,
-            background: 'rgba(12,12,18,0.97)', border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '16px', overflow: 'hidden',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
-            backdropFilter: 'blur(24px)',
-            animation: 'fadeUp 0.18s cubic-bezier(0.16,1,0.3,1)',
-            minWidth: '160px',
-          }}>
+          <div style={{ position: 'absolute', bottom: '64px', right: 0, background: 'rgba(10,10,10,0.97)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.7)', backdropFilter: 'blur(24px)', animation: 'fadeUp 0.18s cubic-bezier(0.16,1,0.3,1)', minWidth: '160px' }}>
             {([['program','Program'],['hub','Hub & Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label]) => (
               <button key={tab} onClick={() => { setActiveTab(tab as 'program'|'hub'|'meet'); setNavOpen(false) }}
-                style={{
-                  display: 'flex', alignItems: 'center',
-                  width: '100%', padding: '14px 18px',
-                  background: activeTab === tab ? 'rgba(99,102,241,0.15)' : 'transparent',
-                  border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  color: activeTab === tab ? '#a5b4fc' : 'rgba(255,255,255,0.7)',
-                  fontFamily: 'var(--fm)', fontSize: '0.78rem', fontWeight: activeTab === tab ? 700 : 400,
-                  letterSpacing: '0.06em', cursor: 'pointer', textAlign: 'left',
-                  borderLeft: activeTab === tab ? '3px solid #818cf8' : '3px solid transparent',
-                }}>
+                style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '14px 18px', background: activeTab === tab ? 'rgba(239,53,53,0.09)' : 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)', color: activeTab === tab ? '#fca5a5' : 'rgba(255,255,255,0.7)', fontFamily: 'var(--fm)', fontSize: '0.78rem', fontWeight: activeTab === tab ? 700 : 400, letterSpacing: '0.06em', cursor: 'pointer', textAlign: 'left' as const, borderLeft: activeTab === tab ? '3px solid #ef3535' : '3px solid transparent' }}>
                 {label}
               </button>
             ))}
           </div>
         )}
-
-        {/* FAB button */}
-        <button onClick={() => setNavOpen(v => !v)} style={{
-          width: '54px', height: '54px', borderRadius: '50%',
-          background: navOpen ? 'rgba(99,102,241,0.9)' : 'rgba(30,30,45,0.95)',
-          border: '1px solid rgba(255,255,255,0.15)',
-          boxShadow: navOpen ? '0 4px 24px rgba(99,102,241,0.5)' : '0 4px 24px rgba(0,0,0,0.6)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', transition: 'all 0.2s',
-          backdropFilter: 'blur(16px)',
-          fontSize: '1.3rem',
-        }}>
+        <button onClick={() => setNavOpen(v => !v)} style={{ width: '54px', height: '54px', borderRadius: '50%', background: navOpen ? 'rgba(239,53,53,0.9)' : 'rgba(18,18,18,0.95)', border: '1px solid rgba(255,255,255,0.15)', boxShadow: navOpen ? '0 4px 24px rgba(239,53,53,0.4)' : '0 4px 24px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', backdropFilter: 'blur(16px)' }}>
           {navOpen ? <X size={20} color="#fff" /> : <Menu size={20} color="rgba(255,255,255,0.85)" />}
         </button>
       </div>

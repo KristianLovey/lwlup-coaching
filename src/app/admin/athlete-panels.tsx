@@ -881,18 +881,27 @@ export function AthletePanel({
   const addWorkout = useCallback(async (weekId: string) => {
     if (addingWorkout.current) return
     addingWorkout.current = true
-    const week = block?.weeks?.find(w => w.id === weekId)
+    const week = blockRef.current?.weeks?.find(w => w.id === weekId)
     if (!week) { addingWorkout.current = false; return }
-    const nd = week.workouts?.length ?? 0
-    const lastDate = [...(week.workouts ?? [])].sort((a, b) => b.workout_date.localeCompare(a.workout_date))[0]?.workout_date ?? week.start_date
-    const d = new Date(lastDate + 'T12:00:00'); d.setDate(d.getDate() + (nd === 0 ? 0 : 1))
+    const workouts = week.workouts ?? []
+    // Find the highest existing "Dan N" number so new day is always max+1
+    const existingNums = workouts
+      .map(wo => { const m = wo.day_name?.match(/Dan\s*(\d+)/i); return m ? parseInt(m[1]) : 0 })
+    const nextNum = existingNums.length > 0 ? Math.max(...existingNums) + 1 : 1
+    const dayName = `Dan ${nextNum}`
+    const lastDate = [...workouts].sort((a, b) => b.workout_date.localeCompare(a.workout_date))[0]?.workout_date ?? week.start_date
+    const d = new Date(lastDate + 'T12:00:00'); d.setDate(d.getDate() + (workouts.length === 0 ? 0 : 1))
     const workoutDate = d.toISOString().split('T')[0]
-    const { data, error } = await supabase.from('workouts').insert({
-      week_id: weekId, athlete_id: athlete.id,
-      day_name: `Dan ${nd + 1}`, workout_date: workoutDate, completed: false,
-    }).select('*').single()
-    if (!error && data) {
-      const wo = { ...data, workout_date: (data.workout_date ?? workoutDate).slice(0, 10), workout_exercises: [] }
+    // Use service-role API so trainers (with RLS) can insert workouts for their athletes
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/admin/add-workout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ weekId, athleteId: athlete.id, dayName, workoutDate }),
+    })
+    const json = await res.json()
+    if (json.data) {
+      const wo = { ...json.data, workout_date: (json.data.workout_date ?? workoutDate).slice(0, 10), workout_exercises: [] }
       setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === weekId ? {
         ...w, workouts: [...(w.workouts ?? []), wo].sort((a, b) => (a.workout_date ?? '').localeCompare(b.workout_date ?? ''))
       } : w) } : b)
