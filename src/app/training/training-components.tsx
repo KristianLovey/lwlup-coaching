@@ -804,6 +804,8 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   const markSetDone = async (setNum: number) => {
     const s = logs.find(l => l.set_number === setNum)
     if (!s) return
+    // When marking as done, require weight and reps to be filled
+    if (!s.completed && (!s.weight_kg || !s.reps)) return
     const nowDone = !s.completed
     const newLogs = logs.map(l => l.set_number === setNum ? { ...l, completed: nowDone } : l)
     setLogs(newLogs)
@@ -874,7 +876,10 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
 
 
       {logs.map((log, i) => {
-        const isLocked = !isAdmin && i > 0 && !logs[i - 1]?.completed
+        const prevLog = logs[i - 1]
+        const prevComplete = prevLog?.completed && prevLog?.weight_kg && prevLog?.reps
+        const isLocked = !isAdmin && i > 0 && !prevComplete
+        const canComplete = !isAdmin && !log.completed && (!log.weight_kg || !log.reps)
         return (
           <div key={i} style={{ position: 'relative', overflow: 'hidden' }}>
             {/* Row content — blurred when locked */}
@@ -940,9 +945,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                   </button>
                 ) : (
                   <button onClick={() => markSetDone(log.set_number)}
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
-                    title={log.completed ? 'Poništi' : 'Odrađeno'}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', border: log.completed ? 'none' : '1.5px solid rgba(255,255,255,0.2)', background: log.completed ? '#22c55e' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', boxShadow: log.completed ? '0 0 10px rgba(34,197,94,0.4)' : 'none' }}>
+                    style={{ background: 'transparent', border: 'none', cursor: canComplete ? 'not-allowed' : 'pointer', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                    title={log.completed ? 'Poništi' : canComplete ? 'Unesi kg i reps' : 'Odrađeno'}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', border: log.completed ? 'none' : `1.5px solid ${canComplete ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.2)'}`, background: log.completed ? '#22c55e' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', boxShadow: log.completed ? '0 0 10px rgba(34,197,94,0.4)' : 'none', opacity: canComplete ? 0.3 : 1 }}>
                       {log.completed && <Check size={12} color="#fff" strokeWidth={3} />}
                     </div>
                   </button>

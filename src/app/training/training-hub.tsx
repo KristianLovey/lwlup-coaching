@@ -5,6 +5,12 @@ import { createClient } from '@/lib/supabase/client'
 
 const supabase = createClient()
 
+async function notifyTrainer(lifterId: string, message: string) {
+  const { data } = await supabase.from('coach_assignments').select('coach_id').eq('lifter_id', lifterId).single()
+  if (!data?.coach_id) return
+  await supabase.from('notifications').insert({ recipient_id: data.coach_id, sender_id: lifterId, message, read: false })
+}
+
 // ─── SHARED UI ───────────────────────────────────────────────────
 // ─── SHARED: Input component ────────────────────────────────────
 export function CalcInput({ label, value, onChange, color = '#6b8cff', type = 'number', step = '1', min = '0', max = '9999', placeholder = '' }: {
@@ -692,7 +698,10 @@ function WaterLog({ userId }: { userId: string }) {
     const { data } = await supabase.from('water_logs')
       .insert({ user_id: userId, log_date: today, amount_ml: ml })
       .select('*').single()
-    if (data) setEntries(prev => [data as WaterEntry, ...prev])
+    if (data) {
+      setEntries(prev => [data as WaterEntry, ...prev])
+      notifyTrainer(userId, `💧 ${ml} ml vode — dnevni unos (${today})`)
+    }
   }
 
   const removeEntry = async (id: string) => {
@@ -994,7 +1003,12 @@ function WellbeingTracker({ userId }: { userId: string }) {
   const addSupp = async () => {
     if (!suppDraft.name.trim()) return
     const { data } = await supabase.from('supplement_logs').insert({ user_id: userId, log_date: today, name: suppDraft.name.trim(), amount: parseFloat(suppDraft.amount)||null, unit: suppDraft.unit }).select('*').single()
-    if (data) { setSuppLogs(prev => [data as SupplementLog, ...prev]); setSuppDraft({ name: '', amount: '', unit: 'g' }) }
+    if (data) {
+      setSuppLogs(prev => [data as SupplementLog, ...prev]); setSuppDraft({ name: '', amount: '', unit: 'g' })
+      const s = data as SupplementLog
+      const amountStr = s.amount ? ` ${s.amount}${s.unit}` : ''
+      notifyTrainer(userId, `💊 ${s.name}${amountStr} — suplement (${today})`)
+    }
   }
 
   const removeSupp = async (id: string) => { await supabase.from('supplement_logs').delete().eq('id', id); setSuppLogs(prev => prev.filter(s => s.id !== id)) }
@@ -1963,7 +1977,10 @@ function WeightTracker({ userId }: { userId: string }) {
       weight_kg: parseFloat(kg), date, source: 'manual', notes: 'Tjelesna težina',
     }).select('id, date, weight_kg, is_weight_baseline').single()
     if (error) console.error('pr_logs insert error:', error.message)
-    if (data) setEntries(prev => [data as WeightEntry, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
+    if (data) {
+      setEntries(prev => [data as WeightEntry, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
+      notifyTrainer(userId, `📊 ${parseFloat(kg)} kg — tjelesna kilaza (${date})`)
+    }
     setKg(''); setSaving(false)
   }
 
@@ -2121,6 +2138,12 @@ function NutritionTracker({ userId }: { userId: string }) {
           ? prev.map(l => l.date === logDate ? upserted as NutritionLog : l)
           : [upserted as NutritionLog, ...prev]
       })
+      const kcal = (upserted as NutritionLog).calories
+      const bw   = (upserted as NutritionLog).body_weight
+      const parts: string[] = []
+      if (kcal) parts.push(`${kcal} kcal`)
+      if (bw)   parts.push(`${bw} kg`)
+      if (parts.length) notifyTrainer(userId, `🍽️ ${parts.join(' · ')} — prehrana (${logDate})`)
     }
     setSaving(false)
   }
