@@ -83,8 +83,9 @@ export function AvatarSvg({ iconId, size = 32, color = 'currentColor' }: { iconI
 }
 
 
-// ─── NAVBAR ───────────────────────────────────────────────────────
-export function TrainingNav({ athleteName, isAdmin, onLogout, avatarIcon }: {
+// ─── LEGACY NAV (unused — kept for TS to not error if imported elsewhere) ───
+// @ts-ignore
+function _TrainingNavDeprecated({ athleteName, isAdmin, onLogout, avatarIcon }: {
   athleteName: string; isAdmin: boolean; onLogout: () => void; avatarIcon?: string
 }) {
   const [profileOpen, setProfileOpen] = useState(false)
