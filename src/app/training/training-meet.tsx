@@ -367,10 +367,6 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
       bestByLift[lift] = goods.length ? Math.max(...goods) : null
     }
   }
-  const total = Object.values(bestByLift).every(v => v !== null)
-    ? Object.values(bestByLift).reduce((s, v) => s! + v!, 0)
-    : null
-
   const LIFT_ORDER: Lift[] = ['squat', 'bench', 'deadlift']
   const hasAnyLocalBest = LIFT_ORDER.some(l => localBests[l] !== null)
   const localTotal = LIFT_ORDER.every(l => localBests[l] !== null)
@@ -438,26 +434,6 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
         </div>
       </div>
 
-      {/* Total summary */}
-      {(bestByLift.squat || bestByLift.bench || bestByLift.deadlift) && (
-        <div className="meet-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px', marginBottom: '24px', animation: 'popIn 0.35s ease' }}>
-          {(['squat','bench','deadlift'] as Lift[]).map(lift => (
-            <div key={lift} style={{ padding: '14px 16px', background: `${LIFT_META[lift].color}0a`, border: `1.5px solid ${LIFT_META[lift].color}22`, borderRadius: '12px', textAlign: 'center' as const }}>
-              <div style={{ fontSize: '0.52rem', color: LIFT_META[lift].color, letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '4px' }}>{LIFT_META[lift].short}</div>
-              <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: bestByLift[lift] ? LIFT_META[lift].color : 'rgba(255,255,255,0.2)', lineHeight: 1 }}>
-                {bestByLift[lift] ? `${bestByLift[lift]}` : '—'}
-              </div>
-            </div>
-          ))}
-          <div style={{ padding: '14px 16px', background: '#111111', border: '1.5px solid rgba(255,255,255,0.13)', borderRadius: '12px', textAlign: 'center' as const }}>
-            <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '4px' }}>TOTAL</div>
-            <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: total ? '#f0f0f5' : 'rgba(255,255,255,0.2)', lineHeight: 1 }}>
-              {total ?? '—'}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Lift cards — shown only when a competition is selected */}
       {selectedComp ? (
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '12px' }}>
@@ -480,31 +456,24 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
         </div>
       )}
 
-      {/* Total strip — shown below cards when any actual is entered */}
+      {/* Summary grid — shown below cards as soon as any lift is marked green */}
       {selectedComp && hasAnyLocalBest && (
-        <div style={{ marginTop: '16px', padding: '18px 20px', background: '#111111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', animation: 'popIn 0.3s ease' }}>
-          <div style={{ fontSize: '0.48rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '14px' }}>UKUPNI REZULTAT</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' as const }}>
-            {LIFT_ORDER.map((lift, idx) => (
-              <div key={lift} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.46rem', color: LIFT_META[lift].color, letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700 }}>{LIFT_META[lift].short}</span>
-                  <span style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', fontWeight: 800, color: localBests[lift] ? LIFT_META[lift].color : 'rgba(255,255,255,0.18)', lineHeight: 1, letterSpacing: '-0.03em' }}>
-                    {localBests[lift] ?? '—'}
-                  </span>
-                  {localBests[lift] && <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>kg</span>}
-                </div>
-                {idx < 2 && <span style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.15)', fontFamily: 'var(--fd)', marginBottom: '2px' }}>+</span>}
+        <div className="meet-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px', marginTop: '16px', animation: 'popIn 0.35s ease' }}>
+          {LIFT_ORDER.map(lift => (
+            <div key={lift} style={{ padding: '14px 16px', background: localBests[lift] ? `${LIFT_META[lift].color}0a` : 'rgba(255,255,255,0.02)', border: `1.5px solid ${localBests[lift] ? LIFT_META[lift].color + '33' : 'rgba(255,255,255,0.08)'}`, borderRadius: '12px', textAlign: 'center' as const, transition: 'all 0.3s' }}>
+              <div style={{ fontSize: '0.52rem', color: localBests[lift] ? LIFT_META[lift].color : 'rgba(255,255,255,0.2)', letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '4px' }}>{LIFT_META[lift].short}</div>
+              <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: localBests[lift] ? LIFT_META[lift].color : 'rgba(255,255,255,0.15)', lineHeight: 1 }}>
+                {localBests[lift] ?? '—'}
               </div>
-            ))}
-            <span style={{ fontSize: '1.4rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fd)', marginBottom: '2px', marginLeft: '4px' }}>=</span>
-            <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', marginLeft: '4px' }}>
-              <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700 }}>TOTAL</span>
-              <span style={{ fontFamily: 'var(--fd)', fontSize: '2.2rem', fontWeight: 800, color: localTotal ? '#f0f0f5' : 'rgba(255,255,255,0.18)', lineHeight: 1, letterSpacing: '-0.03em' }}>
-                {localTotal ?? '—'}
-              </span>
-              {localTotal && <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)' }}>kg</span>}
+              {localBests[lift] && <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginTop: '3px' }}>kg</div>}
             </div>
+          ))}
+          <div style={{ padding: '14px 16px', background: localTotal ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)', border: `1.5px solid ${localTotal ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '12px', textAlign: 'center' as const, transition: 'all 0.3s' }}>
+            <div style={{ fontSize: '0.52rem', color: localTotal ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)', letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '4px' }}>TOTAL</div>
+            <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: localTotal ? '#f0f0f5' : 'rgba(255,255,255,0.15)', lineHeight: 1 }}>
+              {localTotal ?? '—'}
+            </div>
+            {localTotal && <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginTop: '3px' }}>kg</div>}
           </div>
         </div>
       )}
