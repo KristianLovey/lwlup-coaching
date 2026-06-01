@@ -804,7 +804,6 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   const markSetDone = async (setNum: number) => {
     const s = logs.find(l => l.set_number === setNum)
     if (!s) return
-    // When marking as done, require weight and reps to be filled
     if (!s.completed && (!s.weight_kg || !s.reps)) return
     const nowDone = !s.completed
     const newLogs = logs.map(l => l.set_number === setNum ? { ...l, completed: nowDone } : l)
@@ -878,7 +877,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       {logs.map((log, i) => {
         const prevLog = logs[i - 1]
         const prevComplete = prevLog?.completed && prevLog?.weight_kg && prevLog?.reps
-        const isLocked = !isAdmin && i > 0 && !prevComplete
+        const isLocked = !isAdmin && i > 0 && !log.is_top_set && !prevComplete
         const canComplete = !isAdmin && !log.completed && (!log.weight_kg || !log.reps)
         return (
           <div key={i} style={{ position: 'relative', overflow: 'hidden' }}>
@@ -886,9 +885,12 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
             <div className="set-log-row" style={{ display: 'grid', gridTemplateColumns: SLR_GRID, alignItems: 'stretch', background: log.completed ? 'rgba(34,197,94,0.07)' : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.013)', borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.15s, filter 0.35s', minHeight: '52px', filter: isLocked ? 'blur(5px)' : 'none', pointerEvents: isLocked ? 'none' : 'auto', userSelect: isLocked ? 'none' : 'auto' }}>
 
               {/* Set label */}
-              <div style={{ ...cellStyle, justifyContent: 'center', padding: '12px 8px', gap: '6px' }}>
+              <div style={{ ...cellStyle, justifyContent: 'center', padding: '12px 8px', gap: '6px', flexDirection: 'column' as const }}>
                 <div style={{ width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0, background: log.completed ? '#22c55e' : 'rgba(255,255,255,0.15)', boxShadow: log.completed ? '0 0 5px rgba(34,197,94,0.5)' : 'none', transition: 'all 0.2s' }} />
                 <span style={{ fontSize: '0.68rem', fontWeight: 900, color: log.completed ? '#22c55e' : 'rgba(255,255,255,0.6)', fontFamily: 'var(--fd)', letterSpacing: '0.06em' }}>S{log.set_number}</span>
+                {!isAdmin && log.is_top_set && (
+                  <span style={{ fontSize: '0.5rem', color: '#facc15', fontFamily: 'var(--fm)', lineHeight: 1 }} title="Top set">★</span>
+                )}
               </div>
 
               {/* KG input */}
@@ -945,6 +947,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                   </button>
                 ) : (
                   <button onClick={() => markSetDone(log.set_number)}
+                    disabled={canComplete}
                     style={{ background: 'transparent', border: 'none', cursor: canComplete ? 'not-allowed' : 'pointer', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
                     title={log.completed ? 'Poništi' : canComplete ? 'Unesi kg i reps' : 'Odrađeno'}>
                     <div style={{ width: '22px', height: '22px', borderRadius: '50%', border: log.completed ? 'none' : `1.5px solid ${canComplete ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.2)'}`, background: log.completed ? '#22c55e' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', boxShadow: log.completed ? '0 0 10px rgba(34,197,94,0.4)' : 'none', opacity: canComplete ? 0.3 : 1 }}>

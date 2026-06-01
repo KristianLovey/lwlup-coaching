@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Check, ChevronDown, Loader2, Trash2 } from 'lucide-react'
 import type { MeetAttempt, Competition } from './types'
@@ -49,13 +49,14 @@ function MeetInput({ label, value, onChange, color, disabled = false, placeholde
 }
 
 // ─── LIFT CARD ────────────────────────────────────────────────────
-function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
+function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBestChange }: {
   lift: Lift
   attempt: MeetAttempt | null
   isAdmin: boolean
   athleteId: string
   onUpdate: (data: Partial<MeetAttempt> & { lift: Lift; athlete_id: string }) => Promise<MeetAttempt>
   onDelete: (id: string) => void
+  onBestChange: (lift: Lift, best: number | null) => void
 }) {
   const meta = LIFT_META[lift]
   const [open, setOpen] = useState(false)
@@ -118,6 +119,8 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
     a3good && a3act ? parseFloat(a3act) : null,
   ].filter(Boolean) as number[]
   const best = goodLifts.length > 0 ? Math.max(...goodLifts) : null
+
+  useEffect(() => { onBestChange(lift, best) }, [best, lift, onBestChange])
 
   return (
     <div style={{ border: `1.5px solid ${open ? meta.color + '55' : 'rgba(255,255,255,0.13)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'border-color 0.25s', boxShadow: open ? `0 4px 24px ${meta.color}18` : '0 2px 8px rgba(0,0,0,0.35)', background: '#111111' }}>
@@ -215,7 +218,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
                   </div>
                   {/* Actual column — lifter fills on meet day */}
                   <div className="meet-actual" style={{ gridColumn: isAdmin ? '3 / 4' : '2 / 3' }}>
-                    <MeetInput label="Podignuto" value={row.act} onChange={row.setAct} color={row.good === true ? '#4ade80' : row.good === false ? '#f87171' : 'rgba(255,255,255,0.5)'} placeholder="kg" disabled={isAdmin} />
+                    <MeetInput label="Podignuto" value={row.act} onChange={row.setAct} color={row.good === true ? '#4ade80' : row.good === false ? '#f87171' : 'rgba(255,255,255,0.5)'} placeholder="kg" />
                   </div>
                   {/* Good/No lift toggle */}
                   <div className="meet-toggle" style={{ display: 'flex', flexDirection: 'column' as const, gap: '4px' }}>
@@ -255,13 +258,11 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete }: {
             )}
           </div>
 
-          {/* Save button — admin only for structure, lifter can save actuals */}
-          {isAdmin && (
-            <button onClick={save} disabled={saving}
-              style={{ padding: '11px 24px', background: saving ? 'rgba(255,255,255,0.06)' : '#fff', border: 'none', color: saving ? '#666' : '#000', borderRadius: '9px', cursor: saving ? 'not-allowed' : 'pointer', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', fontFamily: 'var(--fm)', transition: 'all 0.2s', alignSelf: 'flex-start' as const }}>
-              {saving ? 'Snimanje...' : 'Spremi plan'}
-            </button>
-          )}
+          {/* Save button — all users can save */}
+          <button onClick={save} disabled={saving}
+            style={{ padding: '11px 24px', background: saving ? 'rgba(255,255,255,0.06)' : '#fff', border: 'none', color: saving ? '#666' : '#000', borderRadius: '9px', cursor: saving ? 'not-allowed' : 'pointer', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', fontFamily: 'var(--fm)', transition: 'all 0.2s', alignSelf: 'flex-start' as const }}>
+            {saving ? 'Snimanje...' : isAdmin ? 'Spremi plan' : 'Spremi rezultate'}
+          </button>
         </div>
       )}
     </div>
@@ -279,6 +280,12 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
 
   // For admin — which athlete to view
   const [athleteId] = useState(userId)
+
+  // Real-time bests from LiftCard local state (updates as user types, before save)
+  const [localBests, setLocalBests] = useState<Record<Lift, number | null>>({ squat: null, bench: null, deadlift: null })
+  const handleBestChange = useCallback((lift: Lift, best: number | null) => {
+    setLocalBests(prev => ({ ...prev, [lift]: best }))
+  }, [])
 
   useEffect(() => {
     const load = async () => {
@@ -362,6 +369,12 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
   }
   const total = Object.values(bestByLift).every(v => v !== null)
     ? Object.values(bestByLift).reduce((s, v) => s! + v!, 0)
+    : null
+
+  const LIFT_ORDER: Lift[] = ['squat', 'bench', 'deadlift']
+  const hasAnyLocalBest = LIFT_ORDER.some(l => localBests[l] !== null)
+  const localTotal = LIFT_ORDER.every(l => localBests[l] !== null)
+    ? LIFT_ORDER.reduce((s, l) => s + (localBests[l] ?? 0), 0)
     : null
 
   if (loading) return (
@@ -457,12 +470,42 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
               athleteId={athleteId}
               onUpdate={upsertAttempt}
               onDelete={deleteAttempt}
+              onBestChange={handleBestChange}
             />
           ))}
         </div>
       ) : (
         <div style={{ padding: '40px 20px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>
           Odaberi natjecanje za prikaz planova
+        </div>
+      )}
+
+      {/* Total strip — shown below cards when any actual is entered */}
+      {selectedComp && hasAnyLocalBest && (
+        <div style={{ marginTop: '16px', padding: '18px 20px', background: '#111111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', animation: 'popIn 0.3s ease' }}>
+          <div style={{ fontSize: '0.48rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '14px' }}>UKUPNI REZULTAT</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' as const }}>
+            {LIFT_ORDER.map((lift, idx) => (
+              <div key={lift} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.46rem', color: LIFT_META[lift].color, letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700 }}>{LIFT_META[lift].short}</span>
+                  <span style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', fontWeight: 800, color: localBests[lift] ? LIFT_META[lift].color : 'rgba(255,255,255,0.18)', lineHeight: 1, letterSpacing: '-0.03em' }}>
+                    {localBests[lift] ?? '—'}
+                  </span>
+                  {localBests[lift] && <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>kg</span>}
+                </div>
+                {idx < 2 && <span style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.15)', fontFamily: 'var(--fd)', marginBottom: '2px' }}>+</span>}
+              </div>
+            ))}
+            <span style={{ fontSize: '1.4rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fd)', marginBottom: '2px', marginLeft: '4px' }}>=</span>
+            <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', marginLeft: '4px' }}>
+              <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700 }}>TOTAL</span>
+              <span style={{ fontFamily: 'var(--fd)', fontSize: '2.2rem', fontWeight: 800, color: localTotal ? '#f0f0f5' : 'rgba(255,255,255,0.18)', lineHeight: 1, letterSpacing: '-0.03em' }}>
+                {localTotal ?? '—'}
+              </span>
+              {localTotal && <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)' }}>kg</span>}
+            </div>
+          </div>
         </div>
       )}
 
