@@ -367,6 +367,97 @@ export function WaterCutCalc() {
           )}
         </div>
       )}
+
+      {/* ── Low Gut Food Guide ───────────────────────────────── */}
+      <div style={{ marginTop: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+          <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.07)' }} />
+          <span style={{ fontSize: '0.52rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700 }}>LOW GUT FOOD GUIDE</span>
+          <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.07)' }} />
+        </div>
+
+        {/* Intro */}
+        <div style={{ padding: '16px 20px', background: 'rgba(96,165,250,0.06)', border: '1.5px solid rgba(96,165,250,0.15)', borderRadius: '12px', marginBottom: '16px', borderLeft: '3px solid rgba(96,165,250,0.5)' }}>
+          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#93c5fd', marginBottom: '8px', letterSpacing: '0.01em' }}>Što je gut cut i zašto?</div>
+          <div style={{ fontSize: '0.73rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.75 }}>
+            Gut cut je redukcija tjelesne mase eliminacijom hrane bogate vlaknima i vode iz probavnog sustava. Za razliku od watercut-a koji uklanja vodu iz tkiva, gut cut smanjuje sadržaj crijeva — tipično 0.5–1.5 kg u 24–48 sati. Kombinira se s watercut-om kad je potrebno skinuti više od 3% tjelesne mase.<br />
+            <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Ključno pravilo:</strong> jedi niskovjlaknastu hranu, izbjegavaj sve što fermentira ili zadržava vodu u crijevima.
+          </div>
+        </div>
+
+        {/* Two-column grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+
+          {/* EAT */}
+          <div style={{ background: 'rgba(34,197,94,0.04)', border: '1.5px solid rgba(34,197,94,0.18)', borderRadius: '12px', overflow: 'hidden' }}>
+            <div style={{ padding: '10px 16px', background: 'rgba(34,197,94,0.1)', borderBottom: '1px solid rgba(34,197,94,0.15)', display: 'flex', alignItems: 'center', gap: '7px' }}>
+              <span style={{ fontSize: '0.88rem' }}>✓</span>
+              <span style={{ fontSize: '0.58rem', letterSpacing: '0.18em', color: '#4ade80', fontFamily: 'var(--fm)', fontWeight: 700 }}>DOZVOLJENO</span>
+            </div>
+            <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column' as const, gap: '6px' }}>
+              {[
+                'Kikiriki maslac (bez soli)',
+                'Orašasti plodovi',
+                'Crna čokolada',
+                'Jednostavni ugljikohidrati',
+                'Jaja',
+                'Masno meso',
+                'Jogurt',
+                'Proteinski shake',
+                'Sladoled',
+                'Bijeli kruh',
+                'Bijela riža',
+                'Med',
+                'Slatkiši',
+                'Sokovi',
+                'Carbs s malo vlakana',
+              ].map(item => (
+                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#4ade80', flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.65)', fontFamily: 'var(--fm)', lineHeight: 1.4 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* AVOID */}
+          <div style={{ background: 'rgba(248,113,113,0.04)', border: '1.5px solid rgba(248,113,113,0.18)', borderRadius: '12px', overflow: 'hidden' }}>
+            <div style={{ padding: '10px 16px', background: 'rgba(248,113,113,0.1)', borderBottom: '1px solid rgba(248,113,113,0.15)', display: 'flex', alignItems: 'center', gap: '7px' }}>
+              <span style={{ fontSize: '0.88rem' }}>✗</span>
+              <span style={{ fontSize: '0.58rem', letterSpacing: '0.18em', color: '#f87171', fontFamily: 'var(--fm)', fontWeight: 700 }}>IZBJEGAVAJ</span>
+            </div>
+            <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column' as const, gap: '6px' }}>
+              {[
+                'Sve povrće',
+                'Sve voće',
+                'Protein bar (visoka vlakna)',
+                'Bilo koji oblik vlakana',
+                'Složeni ugljikohidrati',
+                'Škrobno povrće',
+                'Krumpir',
+                'Slatki krumpir',
+                'Grah i mahunarke',
+                'Zobene pahuljice',
+                'Carbs s visokim vlaknima',
+                'Muesli',
+              ].map(item => (
+                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#f87171', flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.65)', fontFamily: 'var(--fm)', lineHeight: 1.4 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer tip */}
+        <div style={{ marginTop: '12px', padding: '11px 16px', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: '10px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+          <span style={{ fontSize: '0.9rem', flexShrink: 0, marginTop: '1px' }}>⚡</span>
+          <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.65, fontFamily: 'var(--fm)' }}>
+            <strong style={{ color: '#fbbf24' }}>Timing:</strong> počni s gut cut protokolom 48–72h prije vage. Ne gladuj — jedi normalne kalorije, samo mijenjaj izvore. Nastavi s watercut planom gore.
+          </span>
+        </div>
+      </div>
     </div>
   )
 }

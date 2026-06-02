@@ -8,6 +8,24 @@ const supabase = createClient()
 
 // ─── TYPES ────────────────────────────────────────────────────────
 type Lift = 'squat' | 'bench' | 'deadlift'
+type AthleteOption = { id: string; full_name: string }
+type Competitor    = { id: string; name: string; bw: string; sex: 'male' | 'female'; sq: string; bp: string; dl: string }
+
+// ─── GL POINTS ────────────────────────────────────────────────────
+function calcGLP(total: number, bw: number, sex: 'male' | 'female'): number {
+  if (!total || !bw) return 0
+  const P = sex === 'male'
+    ? { a: 1199.72839, b: 1025.18162, c: 0.00921 }
+    : { a: 610.32796,  b: 1045.59282, c: 0.03048 }
+  const denom = P.a - P.b * Math.exp(-P.c * bw)
+  return denom > 0 ? Math.round((total * 100 / denom) * 100) / 100 : 0
+}
+function glpColor(gl: number) {
+  return gl >= 115 ? '#ff4444' : gl >= 100 ? '#c0a060' : gl >= 90 ? '#8888ff' : gl >= 80 ? '#44cc88' : gl >= 70 ? '#aaaaaa' : '#6b8cff'
+}
+function glpLabel(gl: number) {
+  return gl >= 115 ? 'Monster' : gl >= 100 ? 'Elite' : gl >= 90 ? 'Prof.' : gl >= 80 ? 'Adv.' : gl >= 70 ? 'Inter.' : gl > 0 ? 'Beg.' : '—'
+}
 
 const LIFT_META: Record<Lift, { label: string; color: string; short: string }> = {
   squat:    { label: 'Čučanj',        color: '#6b8cff', short: 'SQ' },
@@ -278,14 +296,36 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
   const [showCompPicker, setShowCompPicker] = useState(false)
   const compPickerRef = useRef<HTMLDivElement>(null)
 
-  // For admin — which athlete to view
-  const [athleteId] = useState(userId)
+  // For admin — which athlete to view (dynamic selector)
+  const [athleteId, setAthleteId]   = useState(userId)
+  const [athletes, setAthletes]     = useState<AthleteOption[]>([])
+  const [lifterProfile, setLifterProfile] = useState<{ bw: number | null; sex: 'male' | 'female' }>({ bw: null, sex: 'male' })
+
+  // VS Konkurencija
+  const [showVS, setShowVS]         = useState(false)
+  const [competitors, setCompetitors] = useState<Competitor[]>([])
+  const [compDraft, setCompDraft]   = useState<Competitor>({ id: '', name: '', bw: '', sex: 'male', sq: '', bp: '', dl: '' })
 
   // Real-time bests from LiftCard local state (updates as user types, before save)
   const [localBests, setLocalBests] = useState<Record<Lift, number | null>>({ squat: null, bench: null, deadlift: null })
   const handleBestChange = useCallback((lift: Lift, best: number | null) => {
     setLocalBests(prev => ({ ...prev, [lift]: best }))
   }, [])
+
+  // Load athlete list (admin only) and lifter profile
+  useEffect(() => {
+    if (isAdmin) {
+      supabase.from('profiles').select('id, full_name').order('full_name')
+        .then(({ data }) => setAthletes((data ?? []) as AthleteOption[]))
+    }
+  }, [isAdmin])
+
+  useEffect(() => {
+    supabase.from('profiles').select('body_weight, sex').eq('id', athleteId).single()
+      .then(({ data }) => {
+        if (data) setLifterProfile({ bw: data.body_weight ?? null, sex: (data.sex ?? 'male') as 'male' | 'female' })
+      })
+  }, [athleteId])
 
   useEffect(() => {
     const load = async () => {
@@ -383,6 +423,22 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
   return (
     <div style={{ animation: 'fadeUp 0.3s ease' }}>
 
+      {/* Athlete selector — admin only */}
+      {isAdmin && athletes.length > 0 && (
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '8px' }}>ODABERI LIFTERA</div>
+          <select
+            value={athleteId}
+            onChange={e => { setAthleteId(e.target.value); setAttempts([]); setLocalBests({ squat: null, bench: null, deadlift: null }) }}
+            style={{ width: '100%', padding: '11px 14px', background: '#111111', border: '1.5px solid rgba(255,255,255,0.18)', borderRadius: '11px', color: '#f0f0f5', fontFamily: 'var(--fm)', fontSize: '0.88rem', outline: 'none', cursor: 'pointer', appearance: 'none' as const }}>
+            <option value={userId}> — Moj profil —</option>
+            {athletes.filter(a => a.id !== userId).map(a => (
+              <option key={a.id} value={a.id}>{a.full_name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Competition selector */}
       <div style={{ marginBottom: '24px' }}>
         <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '8px' }}>NATJECANJE</div>
@@ -475,6 +531,154 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
             </div>
             {localTotal && <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginTop: '3px' }}>kg</div>}
           </div>
+        </div>
+      )}
+
+      {/* ── VS KONKURENCIJA ─────────────────────────────────── */}
+      {selectedComp && (
+        <div style={{ marginTop: '16px' }}>
+          <button
+            onClick={() => setShowVS(v => !v)}
+            style={{ width: '100%', padding: '12px 18px', background: showVS ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)', border: `1.5px solid ${showVS ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--fm)', transition: 'all 0.2s' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '0.9rem' }}>⚔️</span>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: showVS ? '#f0f0f5' : 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>VS KONKURENCIJA</span>
+              {competitors.length > 0 && <span style={{ fontSize: '0.52rem', background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', padding: '2px 8px', borderRadius: '10px', fontFamily: 'var(--fm)' }}>{competitors.length}</span>}
+            </div>
+            <span style={{ color: 'rgba(255,255,255,0.3)', transform: showVS ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block', fontSize: '0.8rem' }}>↓</span>
+          </button>
+
+          {showVS && (() => {
+            const lifterSQ   = localBests.squat ?? 0
+            const lifterBP   = localBests.bench ?? 0
+            const lifterDL   = localBests.deadlift ?? 0
+            const lifterTot  = lifterSQ && lifterBP && lifterDL ? lifterSQ + lifterBP + lifterDL : 0
+            const lifterGLP  = calcGLP(lifterTot, lifterProfile.bw ?? 0, lifterProfile.sex)
+            const lifterName = athletes.find(a => a.id === athleteId)?.full_name ?? 'Moj lifter'
+
+            const compRows = competitors.map(c => {
+              const sq = parseFloat(c.sq) || 0, bp = parseFloat(c.bp) || 0, dl = parseFloat(c.dl) || 0
+              const tot = sq && bp && dl ? sq + bp + dl : 0
+              const glp = calcGLP(tot, parseFloat(c.bw) || 0, c.sex)
+              return { ...c, sq, bp, dl, tot, glp }
+            })
+
+            const allRows = [
+              { id: '__lifter__', name: lifterName, sq: lifterSQ, bp: lifterBP, dl: lifterDL, tot: lifterTot, glp: lifterGLP, isLifter: true },
+              ...compRows.map(r => ({ ...r, isLifter: false })),
+            ].sort((a, b) => (b.glp || b.tot) - (a.glp || a.tot))
+
+            return (
+              <div style={{ marginTop: '10px', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: '14px', overflow: 'hidden', animation: 'fadeUp 0.25s ease' }}>
+
+                {/* Leaderboard */}
+                {allRows.length > 0 && (
+                  <div>
+                    {/* Header */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '22px 1fr 52px 52px 52px 64px 64px', gap: '4px', padding: '8px 14px', background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.07)', alignItems: 'center' }}>
+                      {['#','IME','SQ','BP','DL','TOTAL','GLP'].map(h => (
+                        <span key={h} style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700, textAlign: h === '#' || h === 'IME' ? 'left' as const : 'center' as const }}>{h}</span>
+                      ))}
+                    </div>
+                    {allRows.map((row, idx) => {
+                      const gc = row.glp > 0 ? glpColor(row.glp) : 'rgba(255,255,255,0.2)'
+                      return (
+                        <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '22px 1fr 52px 52px 52px 64px 64px', gap: '4px', padding: '10px 14px', background: row.isLifter ? 'rgba(107,140,255,0.06)' : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)', borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'center', borderLeft: row.isLifter ? '3px solid #6b8cff' : '3px solid transparent' }}>
+                          <span style={{ fontSize: '0.65rem', fontWeight: 800, color: idx === 0 ? '#facc15' : 'rgba(255,255,255,0.25)', fontFamily: 'var(--fd)' }}>{idx + 1}</span>
+                          <span style={{ fontSize: '0.72rem', fontWeight: row.isLifter ? 700 : 500, color: row.isLifter ? '#a5b4fc' : '#e0e0e0', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{row.name}</span>
+                          {(['sq','bp','dl'] as const).map(k => (
+                            <span key={k} style={{ fontSize: '0.78rem', fontWeight: 600, color: row[k] ? LIFT_META[k === 'sq' ? 'squat' : k === 'bp' ? 'bench' : 'deadlift'].color : 'rgba(255,255,255,0.18)', fontFamily: 'var(--fd)', textAlign: 'center' as const }}>{row[k] || '—'}</span>
+                          ))}
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: row.tot ? '#f0f0f5' : 'rgba(255,255,255,0.18)', fontFamily: 'var(--fd)', textAlign: 'center' as const }}>{row.tot || '—'}</span>
+                          <div style={{ textAlign: 'center' as const }}>
+                            {row.glp > 0 ? (
+                              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: gc, fontFamily: 'var(--fd)', background: `${gc}14`, padding: '2px 6px', borderRadius: '6px', border: `1px solid ${gc}28` }}>{row.glp}</span>
+                            ) : <span style={{ color: 'rgba(255,255,255,0.18)', fontSize: '0.7rem' }}>—</span>}
+                          </div>
+                          {!row.isLifter && (
+                            <button onClick={() => setCompetitors(prev => prev.filter(c => c.id !== row.id))}
+                              style={{ display: 'none' }} />
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Add competitor form */}
+                <div style={{ padding: '14px 16px', background: 'rgba(255,255,255,0.02)', borderTop: allRows.length > 1 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
+                  <div style={{ fontSize: '0.52rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '10px' }}>DODAJ NATJECATELJA</div>
+
+                  {/* Name + BW + sex */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: '8px', marginBottom: '8px' }}>
+                    <input
+                      placeholder="Ime i prezime"
+                      value={compDraft.name}
+                      onChange={e => setCompDraft(d => ({ ...d, name: e.target.value }))}
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#e0e0e0', padding: '8px 12px', fontSize: '0.82rem', fontFamily: 'var(--fm)', outline: 'none', boxSizing: 'border-box' as const }}
+                    />
+                    <input
+                      type="number" placeholder="BW kg" value={compDraft.bw}
+                      onChange={e => setCompDraft(d => ({ ...d, bw: e.target.value }))}
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#e0e0e0', padding: '8px 10px', fontSize: '0.82rem', fontFamily: 'var(--fm)', outline: 'none', boxSizing: 'border-box' as const }}
+                    />
+                  </div>
+
+                  {/* Sex toggle */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px' }}>
+                    {(['male','female'] as const).map(s => (
+                      <button key={s} onClick={() => setCompDraft(d => ({ ...d, sex: s }))}
+                        style={{ padding: '7px', borderRadius: '7px', border: `1px solid ${compDraft.sex === s ? 'rgba(107,140,255,0.4)' : 'rgba(255,255,255,0.1)'}`, background: compDraft.sex === s ? 'rgba(107,140,255,0.1)' : 'transparent', color: compDraft.sex === s ? '#8ba8ff' : 'rgba(255,255,255,0.4)', fontSize: '0.68rem', fontFamily: 'var(--fm)', cursor: 'pointer', transition: 'all 0.15s' }}>
+                        {s === 'male' ? '♂ Muški' : '♀ Ženski'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* SQ / BP / DL */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '10px' }}>
+                    {([['sq','SQ','#6b8cff'],['bp','BP','#f59e0b'],['dl','DL','#22c55e']] as const).map(([k, label, color]) => (
+                      <div key={k}>
+                        <div style={{ fontSize: '0.46rem', color, letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '4px' }}>{label} (kg)</div>
+                        <input
+                          type="number" step="0.5" placeholder="best"
+                          value={compDraft[k]}
+                          onChange={e => setCompDraft(d => ({ ...d, [k]: e.target.value }))}
+                          style={{ width: '100%', background: `${color}08`, border: `1px solid ${color}25`, borderRadius: '7px', color: '#e0e0e0', padding: '7px 10px', fontSize: '0.85rem', fontFamily: 'var(--fm)', outline: 'none', boxSizing: 'border-box' as const }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (!compDraft.name.trim()) return
+                      setCompetitors(prev => [...prev, { ...compDraft, id: Date.now().toString() }])
+                      setCompDraft({ id: '', name: '', bw: '', sex: 'male', sq: '', bp: '', dl: '' })
+                    }}
+                    style={{ width: '100%', padding: '9px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '8px', color: '#f0f0f5', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', fontFamily: 'var(--fm)', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    <Plus size={13} /> DODAJ
+                  </button>
+
+                  {/* Remove buttons inline with rows above via delete icons */}
+                  {competitors.length > 0 && (
+                    <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column' as const, gap: '4px' }}>
+                      {competitors.map(c => (
+                        <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
+                          <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)' }}>{c.name}</span>
+                          <button onClick={() => setCompetitors(prev => prev.filter(x => x.id !== c.id))}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,100,100,0.5)', display: 'flex', alignItems: 'center', padding: '2px' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#f87171'}
+                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,100,100,0.5)'}>
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
         </div>
       )}
 
