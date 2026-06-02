@@ -67,7 +67,7 @@ function MeetInput({ label, value, onChange, color, disabled = false, placeholde
 }
 
 // ─── LIFT CARD ────────────────────────────────────────────────────
-function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBestChange }: {
+function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBestChange, saveSignal }: {
   lift: Lift
   attempt: MeetAttempt | null
   isAdmin: boolean
@@ -75,6 +75,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
   onUpdate: (data: Partial<MeetAttempt> & { lift: Lift; athlete_id: string }) => Promise<MeetAttempt>
   onDelete: (id: string) => void
   onBestChange: (lift: Lift, best: number | null) => void
+  saveSignal: number
 }) {
   const meta = LIFT_META[lift]
   const [open, setOpen] = useState(false)
@@ -139,6 +140,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
   const best = goodLifts.length > 0 ? Math.max(...goodLifts) : null
 
   useEffect(() => { onBestChange(lift, best) }, [best, lift, onBestChange])
+  useEffect(() => { if (saveSignal > 0) save() }, [saveSignal])
 
   return (
     <div style={{ border: `1.5px solid ${open ? meta.color + '55' : 'rgba(255,255,255,0.13)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'border-color 0.25s', boxShadow: open ? `0 4px 24px ${meta.color}18` : '0 2px 8px rgba(0,0,0,0.35)', background: '#111111' }}>
@@ -276,11 +278,12 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
             )}
           </div>
 
-          {/* Save button — all users can save */}
-          <button onClick={save} disabled={saving}
-            style={{ padding: '11px 24px', background: saving ? 'rgba(255,255,255,0.06)' : '#fff', border: 'none', color: saving ? '#666' : '#000', borderRadius: '9px', cursor: saving ? 'not-allowed' : 'pointer', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', fontFamily: 'var(--fm)', transition: 'all 0.2s', alignSelf: 'flex-start' as const }}>
-            {saving ? 'Snimanje...' : isAdmin ? 'Spremi plan' : 'Spremi rezultate'}
-          </button>
+          {saving && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0' }}>
+              <Loader2 size={12} style={{ animation: 'spin 1s linear infinite', color: '#555' }} />
+              <span style={{ fontSize: '0.6rem', color: '#555', fontFamily: 'var(--fm)', letterSpacing: '0.12em' }}>SNIMANJE...</span>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -305,6 +308,12 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
   const [showVS, setShowVS]         = useState(false)
   const [competitors, setCompetitors] = useState<Competitor[]>([])
   const [compDraft, setCompDraft]   = useState<Competitor>({ id: '', name: '', bw: '', sex: 'male', sq: '', bp: '', dl: '' })
+  const [lifterBwEdit, setLifterBwEdit] = useState('')
+  const [savingBw, setSavingBw]     = useState(false)
+
+  // Single save signal for all LiftCards
+  const [saveSignal, setSaveSignal] = useState(0)
+  const [globalSaving, setGlobalSaving] = useState(false)
 
   // Real-time bests from LiftCard local state (updates as user types, before save)
   const [localBests, setLocalBests] = useState<Record<Lift, number | null>>({ squat: null, bench: null, deadlift: null })
@@ -323,9 +332,40 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
   useEffect(() => {
     supabase.from('profiles').select('body_weight, sex').eq('id', athleteId).single()
       .then(({ data }) => {
-        if (data) setLifterProfile({ bw: data.body_weight ?? null, sex: (data.sex ?? 'male') as 'male' | 'female' })
+        if (data) {
+          setLifterProfile({ bw: data.body_weight ?? null, sex: (data.sex ?? 'male') as 'male' | 'female' })
+          setLifterBwEdit(data.body_weight?.toString() ?? '')
+        }
       })
   }, [athleteId])
+
+  // Persist competitors in localStorage per competition
+  useEffect(() => {
+    if (!selectedComp) return
+    const stored = localStorage.getItem(`meet_comp_${selectedComp}_${athleteId}`)
+    if (stored) { try { setCompetitors(JSON.parse(stored)) } catch { setCompetitors([]) } }
+    else setCompetitors([])
+  }, [selectedComp, athleteId])
+
+  const persistCompetitors = (list: Competitor[]) => {
+    setCompetitors(list)
+    if (selectedComp) localStorage.setItem(`meet_comp_${selectedComp}_${athleteId}`, JSON.stringify(list))
+  }
+
+  const saveLifterBw = async () => {
+    const parsed = parseFloat(lifterBwEdit)
+    if (!parsed) return
+    setSavingBw(true)
+    await supabase.from('profiles').update({ body_weight: parsed }).eq('id', athleteId)
+    setLifterProfile(prev => ({ ...prev, bw: parsed }))
+    setSavingBw(false)
+  }
+
+  const saveAll = async () => {
+    setGlobalSaving(true)
+    setSaveSignal(s => s + 1)
+    setTimeout(() => setGlobalSaving(false), 1500)
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -503,8 +543,14 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
               onUpdate={upsertAttempt}
               onDelete={deleteAttempt}
               onBestChange={handleBestChange}
+              saveSignal={saveSignal}
             />
           ))}
+          {/* Single save button for all three lifts */}
+          <button onClick={saveAll} disabled={globalSaving}
+            style={{ marginTop: '4px', padding: '13px', background: globalSaving ? 'rgba(255,255,255,0.06)' : '#fff', border: 'none', color: globalSaving ? '#666' : '#000', borderRadius: '11px', cursor: globalSaving ? 'not-allowed' : 'pointer', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', fontFamily: 'var(--fm)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            {globalSaving ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> SNIMANJE...</> : '💾  SPREMI SVE'}
+          </button>
         </div>
       ) : (
         <div style={{ padding: '40px 20px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>
@@ -553,7 +599,8 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
             const lifterBP   = localBests.bench ?? 0
             const lifterDL   = localBests.deadlift ?? 0
             const lifterTot  = lifterSQ && lifterBP && lifterDL ? lifterSQ + lifterBP + lifterDL : 0
-            const lifterGLP  = calcGLP(lifterTot, lifterProfile.bw ?? 0, lifterProfile.sex)
+            const activeBw   = parseFloat(lifterBwEdit) || lifterProfile.bw || 0
+            const lifterGLP  = calcGLP(lifterTot, activeBw, lifterProfile.sex)
             const lifterName = athletes.find(a => a.id === athleteId)?.full_name ?? 'Moj lifter'
 
             const compRows = competitors.map(c => {
@@ -570,6 +617,28 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
 
             return (
               <div style={{ marginTop: '10px', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: '14px', overflow: 'hidden', animation: 'fadeUp 0.25s ease' }}>
+
+                {/* Lifter BW + sex row */}
+                <div style={{ padding: '12px 16px', background: 'rgba(107,140,255,0.06)', borderBottom: '1px solid rgba(107,140,255,0.15)', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' as const }}>
+                  <span style={{ fontSize: '0.52rem', letterSpacing: '0.12em', color: '#a5b4fc', fontFamily: 'var(--fm)', fontWeight: 700, flexShrink: 0 }}>LIFTER BW</span>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flex: 1, minWidth: '160px' }}>
+                    <input type="number" step="0.1" placeholder="kg" value={lifterBwEdit}
+                      onChange={e => setLifterBwEdit(e.target.value)}
+                      onBlur={saveLifterBw}
+                      onKeyDown={e => { if (e.key === 'Enter') { saveLifterBw(); (e.target as HTMLInputElement).blur() } }}
+                      style={{ width: '80px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(107,140,255,0.3)', borderRadius: '7px', color: '#f0f0f5', padding: '6px 10px', fontSize: '0.85rem', fontFamily: 'var(--fm)', outline: 'none' }} />
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      {(['male','female'] as const).map(s => (
+                        <button key={s} onClick={async () => { setLifterProfile(p => ({ ...p, sex: s })); await supabase.from('profiles').update({ sex: s }).eq('id', athleteId) }}
+                          style={{ padding: '5px 9px', borderRadius: '6px', border: `1px solid ${lifterProfile.sex === s ? 'rgba(107,140,255,0.4)' : 'rgba(255,255,255,0.1)'}`, background: lifterProfile.sex === s ? 'rgba(107,140,255,0.12)' : 'transparent', color: lifterProfile.sex === s ? '#a5b4fc' : 'rgba(255,255,255,0.35)', fontSize: '0.62rem', fontFamily: 'var(--fm)', cursor: 'pointer', transition: 'all 0.15s' }}>
+                          {s === 'male' ? '♂' : '♀'}
+                        </button>
+                      ))}
+                    </div>
+                    {savingBw && <Loader2 size={11} style={{ animation: 'spin 1s linear infinite', color: '#555' }} />}
+                    {activeBw > 0 && lifterTot > 0 && <span style={{ fontSize: '0.7rem', color: glpColor(lifterGLP), fontFamily: 'var(--fd)', fontWeight: 700 }}>GLP {lifterGLP}</span>}
+                  </div>
+                </div>
 
                 {/* Leaderboard */}
                 {allRows.length > 0 && (
@@ -652,7 +721,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
                   <button
                     onClick={() => {
                       if (!compDraft.name.trim()) return
-                      setCompetitors(prev => [...prev, { ...compDraft, id: Date.now().toString() }])
+                      persistCompetitors([...competitors, { ...compDraft, id: Date.now().toString() }])
                       setCompDraft({ id: '', name: '', bw: '', sex: 'male', sq: '', bp: '', dl: '' })
                     }}
                     style={{ width: '100%', padding: '9px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '8px', color: '#f0f0f5', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', fontFamily: 'var(--fm)', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
@@ -665,7 +734,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
                       {competitors.map(c => (
                         <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
                           <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)' }}>{c.name}</span>
-                          <button onClick={() => setCompetitors(prev => prev.filter(x => x.id !== c.id))}
+                          <button onClick={() => persistCompetitors(competitors.filter(x => x.id !== c.id))}
                             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,100,100,0.5)', display: 'flex', alignItems: 'center', padding: '2px' }}
                             onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#f87171'}
                             onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,100,100,0.5)'}>
