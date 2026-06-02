@@ -288,7 +288,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
 }
 
 // ─── MEET DAY TAB ─────────────────────────────────────────────────
-export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
+export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { userId: string; isAdmin: boolean; showAthleteSelector?: boolean }) {
   const [attempts, setAttempts]         = useState<MeetAttempt[]>([])
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [selectedComp, setSelectedComp] = useState<string | null>(null)
@@ -314,11 +314,11 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
 
   // Load athlete list (admin only) and lifter profile
   useEffect(() => {
-    if (isAdmin) {
+    if (showAthleteSelector) {
       supabase.from('profiles').select('id, full_name').order('full_name')
         .then(({ data }) => setAthletes((data ?? []) as AthleteOption[]))
     }
-  }, [isAdmin])
+  }, [showAthleteSelector])
 
   useEffect(() => {
     supabase.from('profiles').select('body_weight, sex').eq('id', athleteId).single()
@@ -423,8 +423,8 @@ export function MeetDayTab({ userId, isAdmin }: { userId: string; isAdmin: boole
   return (
     <div style={{ animation: 'fadeUp 0.3s ease' }}>
 
-      {/* Athlete selector — admin only */}
-      {isAdmin && athletes.length > 0 && (
+      {/* Athlete selector — only in admin/trainer panel, not on athlete's own training page */}
+      {showAthleteSelector && athletes.length > 0 && (
         <div style={{ marginBottom: '20px' }}>
           <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '8px' }}>ODABERI LIFTERA</div>
           <select

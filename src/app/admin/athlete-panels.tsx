@@ -580,7 +580,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
           })()}
         </>
       ) : tab === 'meetday' ? (
-        <MeetDayTab userId={athlete.id} isAdmin={true} />
+        <MeetDayTab userId={athlete.id} isAdmin={true} showAthleteSelector={true} />
       ) : null}
     </div>
   )

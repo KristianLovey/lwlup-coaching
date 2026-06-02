@@ -440,10 +440,10 @@ export default function TrainingPage() {
         <div className='page-header' style={{ maxWidth: '1200px', margin: '0 auto', padding: '28px 32px 0', position: 'relative', zIndex: 1 }}>
 
           {/* ── TAB SWITCHER ── */}
-          <div className="tab-switcher" style={{ display: 'flex', gap: '4px', marginBottom: '32px', padding: '5px', background: '#111111', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.08)', width: 'fit-content', overflowX: 'auto' as const }}>
+          <div className="tab-switcher" style={{ display: 'flex', gap: '4px', marginBottom: '32px', padding: '5px', background: '#1e1e1e', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.18)', width: 'fit-content', overflowX: 'auto' as const }}>
             {([['program','Program'],['hub','Hub i Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label]) => (
               <button key={tab} onClick={() => setActiveTab(tab as 'program'|'hub'|'meet')}
-                style={{ padding: '9px 22px', background: activeTab === tab ? '#f0f0f0' : 'transparent', border: 'none', borderRadius: '999px', cursor: 'pointer', fontSize: '0.7rem', fontFamily: 'var(--fm)', fontWeight: activeTab === tab ? 700 : 500, color: activeTab === tab ? '#090909' : 'rgba(255,255,255,0.4)', transition: 'all 0.18s', whiteSpace: 'nowrap' as const, letterSpacing: '0.14em', textTransform: 'uppercase' as const }}>
+                style={{ padding: '9px 22px', background: activeTab === tab ? '#f0f0f0' : 'transparent', border: 'none', borderRadius: '999px', cursor: 'pointer', fontSize: '0.7rem', fontFamily: 'var(--fm)', fontWeight: activeTab === tab ? 700 : 500, color: activeTab === tab ? '#090909' : 'rgba(255,255,255,0.65)', transition: 'all 0.18s', whiteSpace: 'nowrap' as const, letterSpacing: '0.14em', textTransform: 'uppercase' as const }}>
                 {label}
               </button>
             ))}
@@ -481,11 +481,11 @@ export default function TrainingPage() {
               {/* ── HERO TOGGLE BUTTON ── */}
               <button
                 onClick={() => setHeroOpen(v => !v)}
-                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 18px 8px 14px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', cursor: 'pointer', marginBottom: heroOpen ? '20px' : '28px', transition: 'all 0.2s', width: 'fit-content' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.2)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.06)' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.03)' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 18px 8px 14px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.07)', cursor: 'pointer', marginBottom: heroOpen ? '20px' : '28px', transition: 'all 0.2s', width: 'fit-content' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.35)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.12)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.22)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)' }}>
                 <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef3535', boxShadow: '0 0 8px rgba(239,53,53,0.5)', flexShrink: 0, display: 'inline-block' }} />
-                <span style={{ fontFamily: 'var(--fm)', fontSize: '0.66rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' as const }}>
+                <span style={{ fontFamily: 'var(--fm)', fontSize: '0.66rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase' as const }}>
                   {athleteName.toUpperCase()} · {pct}% · {block.name}
                 </span>
                 <ChevronDown size={12} color="rgba(255,255,255,0.25)" style={{ marginLeft: '4px', transform: heroOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }} />
@@ -609,10 +609,10 @@ export default function TrainingPage() {
 
               {/* ── ADMIN/TRENER BANNER ── */}
               {(isAdmin || isCoach) && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '11px 16px', marginBottom: '20px', background: '#111111', border: '1px solid rgba(255,255,255,0.08)', borderLeft: '3px solid #ef3535', borderRadius: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '11px 16px', marginBottom: '20px', background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.18)', borderLeft: '3px solid #ef3535', borderRadius: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef3535', flexShrink: 0, boxShadow: '0 0 6px rgba(239,53,53,0.5)' }} />
-                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 500 }}>
+                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--fm)', fontWeight: 500 }}>
                       {isCoach
                         ? 'Pregledavaš trening kao lifter — uređivanje programa u trener panelu'
                         : 'Pregledavaš trening kao lifter — uređivanje programa u admin panelu'}
