@@ -2460,7 +2460,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
         <div style={{ padding: '12px 16px', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: '10px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
           <span style={{ fontSize: '0.9rem', flexShrink: 0 }}>⚡</span>
           <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.65, fontFamily: 'var(--fm)' }}>
-            <strong style={{ color: '#fbbf24' }}>Timing:</strong> počni s gut cut protokolom 48–72h prije vage. Ne gladuj — jedi normalne kalorije, samo mijenjaj izvore. Kombiniraj s Water Cut protokolom za maksimalan efekt.
+            <strong style={{ color: '#fbbf24' }}>Timing:</strong> počni s gut cut protokolom 48–72h prije vage. Nemoj gladovati, jedi normalne kalorije, samo mijenjaj izvore. Kombiniraj s Water Cut protokolom za maksimalni efekt.
           </span>
         </div>
       </div>
