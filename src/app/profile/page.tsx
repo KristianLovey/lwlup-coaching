@@ -949,9 +949,14 @@ function AddPrForm({ prLift, prReps, onAdd }: {
   const submit = async () => {
     if (!weight || !date) return
     setSaving(true)
-    await onAdd(prLift, prReps, Number(weight), date)
-    setWeight('')
-    setSaving(false)
+    try {
+      await onAdd(prLift, prReps, Number(weight), date)
+      setWeight('')
+    } catch (e) {
+      console.error('PR submit error:', e)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (

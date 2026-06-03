@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Search, X, ChevronRight } from 'lucide-react'
 import { AppNav } from '../training/training-components'
 import { useLanguage } from '@/context/LanguageContext'
+import { PageError, PageSkeleton } from '@/components/PageError'
 
 const supabase = createClient()
 
@@ -271,6 +272,7 @@ export default function ExerciseLibraryPage() {
   const [searchQuery, setSearchQuery]       = useState('')
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
   const [ready, setReady]                   = useState(false)
+  const [fetchError, setFetchError]         = useState(false)
   const [topFilter, setTopFilter]           = useState('ALL')
   const [openDropdown, setOpenDropdown]     = useState<string | null>(null)
   const [dropdownPos, setDropdownPos]       = useState<{top: number; left: number}>({top: 0, left: 0})
@@ -279,11 +281,17 @@ export default function ExerciseLibraryPage() {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [navUser, setNavUser] = useState({ name: '', isAdmin: false, role: undefined as 'admin' | 'trener' | undefined, avatarIcon: '' })
 
-  useEffect(() => {
-    supabase.from('exercises').select('*').order('name').then(({ data }) => {
+  const loadExercises = () => {
+    setFetchError(false)
+    supabase.from('exercises').select('*').order('name').then(({ data, error }) => {
+      if (error) { setFetchError(true); setReady(true); return }
       setExercises(data ?? [])
       setTimeout(() => setReady(true), 60)
     })
+  }
+
+  useEffect(() => {
+    loadExercises()
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
       supabase.from('profiles').select('full_name, role, avatar_icon').eq('id', user.id).single()
@@ -516,8 +524,16 @@ export default function ExerciseLibraryPage() {
             </div>
           )}
 
+          {/* Error state */}
+          {fetchError && (
+            <PageError message="Greška pri učitavanju vježbi. Provjeri konekciju i pokušaj ponovo." onRetry={loadExercises} />
+          )}
+
+          {/* Loading skeleton */}
+          {!ready && !fetchError && <PageSkeleton rows={6} />}
+
           {/* Empty state */}
-          {filtered.length === 0 && (
+          {ready && !fetchError && filtered.length === 0 && (
             <div style={{ textAlign: 'center', padding: '80px 0', animation: 'fadeIn 0.3s ease' }}>
               <div style={{ fontFamily: 'var(--fd)', fontSize: '3.5rem', color: 'rgba(255,255,255,0.05)', marginBottom: '16px' }}>—</div>
               <div style={{ fontSize: '0.78rem', color: '#444', letterSpacing: '0.2em' }}>{t('ex.noResults')} "{searchQuery}"</div>
@@ -531,11 +547,13 @@ export default function ExerciseLibraryPage() {
           )}
 
           {/* Cards grid */}
-          <div className="ex-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(240px,25vw,320px), 1fr))', gap: 'clamp(10px,2vw,16px)' }}>
-            {filtered.map((ex, i) => (
-              <ExCard key={ex.id} ex={ex} index={i} onClick={() => setSelectedExercise(ex)} />
-            ))}
-          </div>
+          {ready && !fetchError && (
+            <div className="ex-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(240px,25vw,320px), 1fr))', gap: 'clamp(10px,2vw,16px)' }}>
+              {filtered.map((ex, i) => (
+                <ExCard key={ex.id} ex={ex} index={i} onClick={() => setSelectedExercise(ex)} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

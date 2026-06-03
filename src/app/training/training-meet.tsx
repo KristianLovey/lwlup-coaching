@@ -10,6 +10,7 @@ const supabase = createClient()
 type Lift = 'squat' | 'bench' | 'deadlift'
 type AthleteOption = { id: string; full_name: string }
 type Competitor    = { id: string; name: string; bw: string; sex: 'male' | 'female'; sq: string; bp: string; dl: string }
+type DBCompetitor  = { id: string; competition_id: string; athlete_id: string; name: string; bw_kg: number | null; sex: string; sq_best: number | null; bp_best: number | null; dl_best: number | null }
 
 // ─── GL POINTS ────────────────────────────────────────────────────
 function calcGLP(total: number, bw: number, sex: 'male' | 'female'): number {
@@ -308,6 +309,8 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
   const [showVS, setShowVS]         = useState(false)
   const [competitors, setCompetitors] = useState<Competitor[]>([])
   const [compDraft, setCompDraft]   = useState<Competitor>({ id: '', name: '', bw: '', sex: 'male', sq: '', bp: '', dl: '' })
+  const [editingId, setEditingId]   = useState<string | null>(null)
+  const [editDraft, setEditDraft]   = useState<Competitor>({ id: '', name: '', bw: '', sex: 'male', sq: '', bp: '', dl: '' })
   const [lifterBwEdit, setLifterBwEdit] = useState('')
   const [savingBw, setSavingBw]     = useState(false)
 
@@ -339,17 +342,47 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
       })
   }, [athleteId])
 
-  // Persist competitors in localStorage per competition
+  // Load competitors from DB when competition or athlete changes
   useEffect(() => {
-    if (!selectedComp) return
-    const stored = localStorage.getItem(`meet_comp_${selectedComp}_${athleteId}`)
-    if (stored) { try { setCompetitors(JSON.parse(stored)) } catch { setCompetitors([]) } }
-    else setCompetitors([])
+    if (!selectedComp) { setCompetitors([]); return }
+    supabase.from('meet_competitors')
+      .select('*').eq('competition_id', selectedComp).eq('athlete_id', athleteId).order('created_at')
+      .then(({ data }) => {
+        const rows = (data ?? []) as DBCompetitor[]
+        setCompetitors(rows.map(r => ({
+          id: r.id, name: r.name,
+          bw: r.bw_kg?.toString() ?? '', sex: r.sex as 'male' | 'female',
+          sq: r.sq_best?.toString() ?? '', bp: r.bp_best?.toString() ?? '', dl: r.dl_best?.toString() ?? '',
+        })))
+      })
   }, [selectedComp, athleteId])
 
-  const persistCompetitors = (list: Competitor[]) => {
-    setCompetitors(list)
-    if (selectedComp) localStorage.setItem(`meet_comp_${selectedComp}_${athleteId}`, JSON.stringify(list))
+  const dbAddCompetitor = async (draft: Competitor) => {
+    if (!selectedComp) return
+    const { data } = await supabase.from('meet_competitors').insert({
+      competition_id: selectedComp, athlete_id: athleteId,
+      name: draft.name, bw_kg: parseFloat(draft.bw) || null, sex: draft.sex,
+      sq_best: parseFloat(draft.sq) || null, bp_best: parseFloat(draft.bp) || null, dl_best: parseFloat(draft.dl) || null,
+    }).select('*').single()
+    if (data) {
+      const r = data as DBCompetitor
+      setCompetitors(prev => [...prev, { id: r.id, name: r.name, bw: r.bw_kg?.toString() ?? '', sex: r.sex as 'male' | 'female', sq: r.sq_best?.toString() ?? '', bp: r.bp_best?.toString() ?? '', dl: r.dl_best?.toString() ?? '' }])
+    }
+  }
+
+  const dbUpdateCompetitor = async (c: Competitor) => {
+    await supabase.from('meet_competitors').update({
+      name: c.name, bw_kg: parseFloat(c.bw) || null, sex: c.sex,
+      sq_best: parseFloat(c.sq) || null, bp_best: parseFloat(c.bp) || null, dl_best: parseFloat(c.dl) || null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', c.id)
+    setCompetitors(prev => prev.map(x => x.id === c.id ? c : x))
+    setEditingId(null)
+  }
+
+  const dbDeleteCompetitor = async (id: string) => {
+    await supabase.from('meet_competitors').delete().eq('id', id)
+    setCompetitors(prev => prev.filter(x => x.id !== id))
   }
 
   const saveLifterBw = async () => {
@@ -651,22 +684,69 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
                     </div>
                     {allRows.map((row, idx) => {
                       const gc = row.glp > 0 ? glpColor(row.glp) : 'rgba(255,255,255,0.2)'
+                      const isEditing = !row.isLifter && editingId === row.id
                       return (
-                        <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '22px 1fr 52px 52px 52px 64px 64px', gap: '4px', padding: '10px 14px', background: row.isLifter ? 'rgba(107,140,255,0.06)' : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)', borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'center', borderLeft: row.isLifter ? '3px solid #6b8cff' : '3px solid transparent' }}>
-                          <span style={{ fontSize: '0.65rem', fontWeight: 800, color: idx === 0 ? '#facc15' : 'rgba(255,255,255,0.25)', fontFamily: 'var(--fd)' }}>{idx + 1}</span>
-                          <span style={{ fontSize: '0.72rem', fontWeight: row.isLifter ? 700 : 500, color: row.isLifter ? '#a5b4fc' : '#e0e0e0', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{row.name}</span>
-                          {(['sq','bp','dl'] as const).map(k => (
-                            <span key={k} style={{ fontSize: '0.78rem', fontWeight: 600, color: row[k] ? LIFT_META[k === 'sq' ? 'squat' : k === 'bp' ? 'bench' : 'deadlift'].color : 'rgba(255,255,255,0.18)', fontFamily: 'var(--fd)', textAlign: 'center' as const }}>{row[k] || '—'}</span>
-                          ))}
-                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: row.tot ? '#f0f0f5' : 'rgba(255,255,255,0.18)', fontFamily: 'var(--fd)', textAlign: 'center' as const }}>{row.tot || '—'}</span>
-                          <div style={{ textAlign: 'center' as const }}>
-                            {row.glp > 0 ? (
-                              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: gc, fontFamily: 'var(--fd)', background: `${gc}14`, padding: '2px 6px', borderRadius: '6px', border: `1px solid ${gc}28` }}>{row.glp}</span>
-                            ) : <span style={{ color: 'rgba(255,255,255,0.18)', fontSize: '0.7rem' }}>—</span>}
-                          </div>
-                          {!row.isLifter && (
-                            <button onClick={() => setCompetitors(prev => prev.filter(c => c.id !== row.id))}
-                              style={{ display: 'none' }} />
+                        <div key={row.id}>
+                          {/* Normal row */}
+                          {!isEditing && (
+                            <div style={{ display: 'grid', gridTemplateColumns: '22px 1fr 52px 52px 52px 60px 56px 32px', gap: '4px', padding: '10px 14px', background: row.isLifter ? 'rgba(107,140,255,0.06)' : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)', borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'center', borderLeft: row.isLifter ? '3px solid #6b8cff' : '3px solid transparent' }}>
+                              <span style={{ fontSize: '0.65rem', fontWeight: 800, color: idx === 0 ? '#facc15' : 'rgba(255,255,255,0.25)', fontFamily: 'var(--fd)' }}>{idx + 1}</span>
+                              <span style={{ fontSize: '0.72rem', fontWeight: row.isLifter ? 700 : 500, color: row.isLifter ? '#a5b4fc' : '#e0e0e0', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{row.name}</span>
+                              {(['sq','bp','dl'] as const).map(k => (
+                                <span key={k} style={{ fontSize: '0.78rem', fontWeight: 600, color: row[k] ? LIFT_META[k === 'sq' ? 'squat' : k === 'bp' ? 'bench' : 'deadlift'].color : 'rgba(255,255,255,0.18)', fontFamily: 'var(--fd)', textAlign: 'center' as const }}>{row[k] || '—'}</span>
+                              ))}
+                              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: row.tot ? '#f0f0f5' : 'rgba(255,255,255,0.18)', fontFamily: 'var(--fd)', textAlign: 'center' as const }}>{row.tot || '—'}</span>
+                              <div style={{ textAlign: 'center' as const }}>
+                                {row.glp > 0 ? (
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: gc, fontFamily: 'var(--fd)', background: `${gc}14`, padding: '2px 5px', borderRadius: '5px', border: `1px solid ${gc}28` }}>{row.glp}</span>
+                                ) : <span style={{ color: 'rgba(255,255,255,0.18)', fontSize: '0.7rem' }}>—</span>}
+                              </div>
+                              {/* Edit / delete — admin only */}
+                              {!row.isLifter && showAthleteSelector && (
+                                <div style={{ display: 'flex', gap: '3px', justifyContent: 'center' }}>
+                                  <button onClick={() => { setEditingId(row.id); setEditDraft(competitors.find(c => c.id === row.id)!) }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: '2px', display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
+                                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#facc15'}
+                                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.3)'}>
+                                    ✏️
+                                  </button>
+                                  <button onClick={() => dbDeleteCompetitor(row.id)}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '2px', display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
+                                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#f87171'}
+                                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.2)'}>
+                                    <Trash2 size={11} />
+                                  </button>
+                                </div>
+                              )}
+                              {!row.isLifter && !showAthleteSelector && <div />}
+                            </div>
+                          )}
+                          {/* Inline edit row */}
+                          {isEditing && (
+                            <div style={{ padding: '10px 14px', background: 'rgba(250,204,21,0.04)', borderBottom: '1px solid rgba(250,204,21,0.15)', borderLeft: '3px solid #facc15' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 70px', gap: '6px', marginBottom: '6px' }}>
+                                <input value={editDraft.name} onChange={e => setEditDraft(d => ({ ...d, name: e.target.value }))} placeholder="Ime" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: '#f0f0f5', padding: '5px 9px', fontSize: '0.8rem', fontFamily: 'var(--fm)', outline: 'none' }} />
+                                <input type="number" value={editDraft.bw} onChange={e => setEditDraft(d => ({ ...d, bw: e.target.value }))} placeholder="BW" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: '#f0f0f5', padding: '5px 9px', fontSize: '0.8rem', fontFamily: 'var(--fm)', outline: 'none' }} />
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '6px' }}>
+                                {([['sq','SQ','#6b8cff'],['bp','BP','#f59e0b'],['dl','DL','#22c55e']] as const).map(([k, label, color]) => (
+                                  <div key={k}>
+                                    <div style={{ fontSize: '0.44rem', color, letterSpacing: '0.1em', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '3px' }}>{label}</div>
+                                    <input type="number" step="0.5" value={editDraft[k]} onChange={e => setEditDraft(d => ({ ...d, [k]: e.target.value }))} style={{ width: '100%', background: `${color}08`, border: `1px solid ${color}25`, borderRadius: '6px', color: '#e0e0e0', padding: '5px 8px', fontSize: '0.82rem', fontFamily: 'var(--fm)', outline: 'none', boxSizing: 'border-box' as const }} />
+                                  </div>
+                                ))}
+                              </div>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                {(['male','female'] as const).map(s => (
+                                  <button key={s} onClick={() => setEditDraft(d => ({ ...d, sex: s }))}
+                                    style={{ padding: '4px 10px', borderRadius: '6px', border: `1px solid ${editDraft.sex === s ? 'rgba(107,140,255,0.4)' : 'rgba(255,255,255,0.1)'}`, background: editDraft.sex === s ? 'rgba(107,140,255,0.1)' : 'transparent', color: editDraft.sex === s ? '#a5b4fc' : 'rgba(255,255,255,0.4)', fontSize: '0.62rem', fontFamily: 'var(--fm)', cursor: 'pointer' }}>
+                                    {s === 'male' ? '♂' : '♀'}
+                                  </button>
+                                ))}
+                                <button onClick={() => dbUpdateCompetitor(editDraft)} style={{ marginLeft: 'auto', padding: '4px 14px', background: '#fff', border: 'none', borderRadius: '6px', color: '#000', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.06em', fontFamily: 'var(--fm)', cursor: 'pointer' }}>SPREMI</button>
+                                <button onClick={() => setEditingId(null)} style={{ padding: '4px 10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'rgba(255,255,255,0.5)', fontSize: '0.62rem', fontFamily: 'var(--fm)', cursor: 'pointer' }}>Odustani</button>
+                              </div>
+                            </div>
                           )}
                         </div>
                       )
@@ -674,77 +754,46 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
                   </div>
                 )}
 
-                {/* Add competitor form */}
-                <div style={{ padding: '14px 16px', background: 'rgba(255,255,255,0.02)', borderTop: allRows.length > 1 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
-                  <div style={{ fontSize: '0.52rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '10px' }}>DODAJ NATJECATELJA</div>
+                {/* Add competitor form — admin/trainer only */}
+                {showAthleteSelector && (
+                  <div style={{ padding: '14px 16px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                    <div style={{ fontSize: '0.52rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '10px' }}>DODAJ NATJECATELJA</div>
 
-                  {/* Name + BW + sex */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: '8px', marginBottom: '8px' }}>
-                    <input
-                      placeholder="Ime i prezime"
-                      value={compDraft.name}
-                      onChange={e => setCompDraft(d => ({ ...d, name: e.target.value }))}
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#e0e0e0', padding: '8px 12px', fontSize: '0.82rem', fontFamily: 'var(--fm)', outline: 'none', boxSizing: 'border-box' as const }}
-                    />
-                    <input
-                      type="number" placeholder="BW kg" value={compDraft.bw}
-                      onChange={e => setCompDraft(d => ({ ...d, bw: e.target.value }))}
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#e0e0e0', padding: '8px 10px', fontSize: '0.82rem', fontFamily: 'var(--fm)', outline: 'none', boxSizing: 'border-box' as const }}
-                    />
-                  </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: '8px', marginBottom: '8px' }}>
+                      <input placeholder="Ime i prezime" value={compDraft.name} onChange={e => setCompDraft(d => ({ ...d, name: e.target.value }))}
+                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#e0e0e0', padding: '8px 12px', fontSize: '0.82rem', fontFamily: 'var(--fm)', outline: 'none', boxSizing: 'border-box' as const }} />
+                      <input type="number" placeholder="BW kg" value={compDraft.bw} onChange={e => setCompDraft(d => ({ ...d, bw: e.target.value }))}
+                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#e0e0e0', padding: '8px 10px', fontSize: '0.82rem', fontFamily: 'var(--fm)', outline: 'none', boxSizing: 'border-box' as const }} />
+                    </div>
 
-                  {/* Sex toggle */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px' }}>
-                    {(['male','female'] as const).map(s => (
-                      <button key={s} onClick={() => setCompDraft(d => ({ ...d, sex: s }))}
-                        style={{ padding: '7px', borderRadius: '7px', border: `1px solid ${compDraft.sex === s ? 'rgba(107,140,255,0.4)' : 'rgba(255,255,255,0.1)'}`, background: compDraft.sex === s ? 'rgba(107,140,255,0.1)' : 'transparent', color: compDraft.sex === s ? '#8ba8ff' : 'rgba(255,255,255,0.4)', fontSize: '0.68rem', fontFamily: 'var(--fm)', cursor: 'pointer', transition: 'all 0.15s' }}>
-                        {s === 'male' ? '♂ Muški' : '♀ Ženski'}
-                      </button>
-                    ))}
-                  </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px' }}>
+                      {(['male','female'] as const).map(s => (
+                        <button key={s} onClick={() => setCompDraft(d => ({ ...d, sex: s }))}
+                          style={{ padding: '7px', borderRadius: '7px', border: `1px solid ${compDraft.sex === s ? 'rgba(107,140,255,0.4)' : 'rgba(255,255,255,0.1)'}`, background: compDraft.sex === s ? 'rgba(107,140,255,0.1)' : 'transparent', color: compDraft.sex === s ? '#8ba8ff' : 'rgba(255,255,255,0.4)', fontSize: '0.68rem', fontFamily: 'var(--fm)', cursor: 'pointer', transition: 'all 0.15s' }}>
+                          {s === 'male' ? '♂ Muški' : '♀ Ženski'}
+                        </button>
+                      ))}
+                    </div>
 
-                  {/* SQ / BP / DL */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '10px' }}>
-                    {([['sq','SQ','#6b8cff'],['bp','BP','#f59e0b'],['dl','DL','#22c55e']] as const).map(([k, label, color]) => (
-                      <div key={k}>
-                        <div style={{ fontSize: '0.46rem', color, letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '4px' }}>{label} (kg)</div>
-                        <input
-                          type="number" step="0.5" placeholder="best"
-                          value={compDraft[k]}
-                          onChange={e => setCompDraft(d => ({ ...d, [k]: e.target.value }))}
-                          style={{ width: '100%', background: `${color}08`, border: `1px solid ${color}25`, borderRadius: '7px', color: '#e0e0e0', padding: '7px 10px', fontSize: '0.85rem', fontFamily: 'var(--fm)', outline: 'none', boxSizing: 'border-box' as const }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      if (!compDraft.name.trim()) return
-                      persistCompetitors([...competitors, { ...compDraft, id: Date.now().toString() }])
-                      setCompDraft({ id: '', name: '', bw: '', sex: 'male', sq: '', bp: '', dl: '' })
-                    }}
-                    style={{ width: '100%', padding: '9px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '8px', color: '#f0f0f5', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', fontFamily: 'var(--fm)', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                    <Plus size={13} /> DODAJ
-                  </button>
-
-                  {/* Remove buttons inline with rows above via delete icons */}
-                  {competitors.length > 0 && (
-                    <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column' as const, gap: '4px' }}>
-                      {competitors.map(c => (
-                        <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
-                          <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)' }}>{c.name}</span>
-                          <button onClick={() => persistCompetitors(competitors.filter(x => x.id !== c.id))}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,100,100,0.5)', display: 'flex', alignItems: 'center', padding: '2px' }}
-                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#f87171'}
-                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,100,100,0.5)'}>
-                            <Trash2 size={11} />
-                          </button>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '10px' }}>
+                      {([['sq','SQ','#6b8cff'],['bp','BP','#f59e0b'],['dl','DL','#22c55e']] as const).map(([k, label, color]) => (
+                        <div key={k}>
+                          <div style={{ fontSize: '0.46rem', color, letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '4px' }}>{label} (kg)</div>
+                          <input type="number" step="0.5" placeholder="best" value={compDraft[k]} onChange={e => setCompDraft(d => ({ ...d, [k]: e.target.value }))}
+                            style={{ width: '100%', background: `${color}08`, border: `1px solid ${color}25`, borderRadius: '7px', color: '#e0e0e0', padding: '7px 10px', fontSize: '0.85rem', fontFamily: 'var(--fm)', outline: 'none', boxSizing: 'border-box' as const }} />
                         </div>
                       ))}
                     </div>
-                  )}
-                </div>
+
+                    <button onClick={async () => {
+                      if (!compDraft.name.trim()) return
+                      await dbAddCompetitor(compDraft)
+                      setCompDraft({ id: '', name: '', bw: '', sex: 'male', sq: '', bp: '', dl: '' })
+                    }} style={{ width: '100%', padding: '9px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '8px', color: '#f0f0f5', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', fontFamily: 'var(--fm)', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      <Plus size={13} /> DODAJ
+                    </button>
+                  </div>
+                )}
               </div>
             )
           })()}

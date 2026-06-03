@@ -1,3 +1,6 @@
+// Uncomment after: npm install @sentry/nextjs
+// const { withSentryConfig } = require('@sentry/nextjs')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   allowedDevOrigins: ['http://10.206.1.175:3000'],
@@ -44,5 +47,15 @@ const nextConfig = {
     ]
   },
 }
+
+// After installing Sentry, replace the line above with:
+// module.exports = withSentryConfig(nextConfig, {
+//   org: 'lwlup',
+//   project: 'lwlup-coaching',
+//   silent: true,
+//   widenClientFileUpload: true,
+//   hideSourceMaps: true,
+//   disableLogger: true,
+// })
 
 module.exports = nextConfig

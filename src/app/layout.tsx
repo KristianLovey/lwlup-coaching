@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Space_Grotesk, Bricolage_Grotesque } from 'next/font/google'
 import './globals.css'
 import { LanguageProvider } from '@/context/LanguageContext'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -56,7 +57,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={spaceGrotesk.className}>
-        <LanguageProvider>{children}</LanguageProvider>
+        <LanguageProvider>
+          <ErrorBoundary label="App">{children}</ErrorBoundary>
+        </LanguageProvider>
       </body>
     </html>
   )
