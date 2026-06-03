@@ -349,7 +349,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
           </Section>
         </>
       ) : tab === 'meetday' ? (
-        <MeetDayTab userId={athlete.id} isAdmin={true} showAthleteSelector={false} />
+        <MeetDayTab userId={athlete.id} isAdmin={true} showAthleteSelector={true} />
       ) : (
         <>
           {/* DETALJNO — calendar + day detail */}
