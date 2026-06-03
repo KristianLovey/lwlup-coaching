@@ -1,4 +1,4 @@
-// Uncomment after: npm install @sentry/nextjs
+// TODO Sentry: npm install @sentry/nextjs, pa dodaj DSN u .env.local i odkomentiraj
 // const { withSentryConfig } = require('@sentry/nextjs')
 
 /** @type {import('next').NextConfig} */
