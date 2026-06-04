@@ -7,6 +7,7 @@ import type { Block, BlockSummary, Week, Exercise, WorkoutExercise, Workout } fr
 import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-components'
 import { HubTab } from './training-hub'
 import { MeetDayTab } from './training-meet'
+import { cacheSet, meetKeys } from '@/lib/meetCache'
 
 const supabase = createClient()
 
@@ -56,6 +57,17 @@ export default function TrainingPage() {
         const uid = session?.user?.id
         if (!uid) { setError('Nisi prijavljen/a.'); setLoading(false); return }
         setUserId(uid)
+
+        // Prefetch Meet Day data in background so the tab opens instantly
+        Promise.all([
+          supabase.from('competitions').select('id,name,date,location,status').order('date', { ascending: false }),
+          supabase.from('meet_attempts').select('*').eq('athlete_id', uid).order('created_at', { ascending: false }),
+          supabase.from('profiles').select('body_weight, sex').eq('id', uid).single(),
+        ]).then(([comps, atts, prof]) => {
+          if (comps.data)  cacheSet(meetKeys.competitions(),  comps.data, 5 * 60_000)
+          if (atts.data)   cacheSet(meetKeys.attempts(uid),   atts.data,  30_000)
+          if (prof.data)   cacheSet(meetKeys.profile(uid),    prof.data,  2 * 60_000)
+        })
 
         const CACHE_KEY = `lwl:training:${uid}`
         try {

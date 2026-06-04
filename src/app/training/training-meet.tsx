@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Check, ChevronDown, Loader2, Trash2 } from 'lucide-react'
 import type { MeetAttempt, Competition } from './types'
+import { cacheGet, cacheSet, cacheInvalidate, meetKeys } from '@/lib/meetCache'
 
 const supabase = createClient()
 
@@ -425,6 +426,26 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
 
   useEffect(() => {
     const load = async () => {
+      // Serve from cache instantly if available — avoids blank loading screen on tab switch
+      const cachedComps = cacheGet<Competition[]>(meetKeys.competitions())
+      const cachedAtts  = cacheGet<MeetAttempt[]>(meetKeys.attempts(athleteId))
+      if (cachedComps && cachedAtts) {
+        setCompetitions(cachedComps)
+        setAttempts(cachedAtts)
+        const latestId = cachedAtts[0]?.competition_id
+        if (latestId) setSelectedComp(latestId)
+        else if (cachedComps.length > 0) setSelectedComp(cachedComps[0].id)
+        setLoading(false)
+        // Refresh in background — update cache silently
+        Promise.all([
+          supabase.from('competitions').select('id,name,date,location,status').order('date', { ascending: false }),
+          supabase.from('meet_attempts').select('*').eq('athlete_id', athleteId).order('created_at', { ascending: false }),
+        ]).then(([c, a]) => {
+          if (c.data) { cacheSet(meetKeys.competitions(), c.data as Competition[], 5 * 60_000); setCompetitions(c.data as Competition[]) }
+          if (a.data) { cacheSet(meetKeys.attempts(athleteId), a.data as MeetAttempt[], 30_000); setAttempts(a.data as MeetAttempt[]) }
+        })
+        return
+      }
       setLoading(true)
       const [{ data: comps }, { data: atts }] = await Promise.all([
         supabase.from('competitions').select('id,name,date,location,status').order('date', { ascending: false }),
@@ -432,15 +453,13 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
       ])
       const compList = (comps ?? []) as Competition[]
       const attList  = (atts ?? []) as MeetAttempt[]
+      cacheSet(meetKeys.competitions(), compList, 5 * 60_000)
+      cacheSet(meetKeys.attempts(athleteId), attList, 30_000)
       setCompetitions(compList)
       setAttempts(attList)
-      // Auto-select comp that has most recent attempts, or latest comp
       const latestCompId = attList[0]?.competition_id
-      if (latestCompId) {
-        setSelectedComp(latestCompId)
-      } else if (compList.length > 0) {
-        setSelectedComp(compList[0].id)
-      }
+      if (latestCompId) setSelectedComp(latestCompId)
+      else if (compList.length > 0) setSelectedComp(compList[0].id)
       setLoading(false)
     }
     load()
@@ -482,12 +501,14 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
       result = row as MeetAttempt
       setAttempts(prev => [result, ...prev])
     }
+    cacheInvalidate(meetKeys.attempts(athleteId))
     return result
   }
 
   const deleteAttempt = async (id: string) => {
     await supabase.from('meet_attempts').delete().eq('id', id)
     setAttempts(prev => prev.filter(a => a.id !== id))
+    cacheInvalidate(meetKeys.attempts(athleteId))
   }
 
   // Total from good lifts
