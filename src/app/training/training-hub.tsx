@@ -2437,6 +2437,7 @@ function MeetChecklist({ userId }: { userId?: string }) {
     if (!userId) return
     supabase.from('meet_checklist')
       .upsert({ user_id: userId, checked_items: next, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+      .then(({ error }) => { if (error) console.error('checklist save error:', error.message) })
   }
 
   const toggleSection = (title: string) =>
@@ -2447,6 +2448,7 @@ function MeetChecklist({ userId }: { userId?: string }) {
     if (!userId) return
     supabase.from('meet_checklist')
       .upsert({ user_id: userId, checked_items: {}, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+      .then(({ error }) => { if (error) console.error('checklist reset error:', error.message) })
   }
 
   const totalItems = CHECKLIST_SECTIONS.reduce((s, sec) => s + sec.items.length, 0)
