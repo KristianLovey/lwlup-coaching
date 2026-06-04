@@ -858,6 +858,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
           <span style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
             KG{we.planned_weight_kg ? ` · ${we.planned_weight_kg}` : ''}
           </span>
+          {we.planned_weight_kg && (
+            <span style={{ fontSize: '0.36rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', letterSpacing: '0.08em', marginLeft: '3px', fontStyle: 'italic' }}>avg.</span>
+          )}
         </div>
         <div style={{ ...cellStyle, padding: '6px 0' }}>
           <span style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.38)', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
