@@ -2419,18 +2419,24 @@ const CHECKLIST_SECTIONS = [
   },
 ]
 
-function MeetChecklist() {
-  const [checked, setChecked] = useState<Record<string, boolean>>(() => {
-    try { return JSON.parse(localStorage.getItem('meet-checklist') ?? '{}') } catch { return {} }
-  })
+function MeetChecklist({ userId }: { userId?: string }) {
+  const [checked, setChecked] = useState<Record<string, boolean>>({})
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(CHECKLIST_SECTIONS.map(s => [s.title, true]))
   )
 
+  useEffect(() => {
+    if (!userId) return
+    supabase.from('meet_checklist').select('checked_items').eq('user_id', userId).single()
+      .then(({ data }) => { if (data?.checked_items) setChecked(data.checked_items as Record<string, boolean>) })
+  }, [userId])
+
   const toggle = (key: string) => {
     const next = { ...checked, [key]: !checked[key] }
     setChecked(next)
-    try { localStorage.setItem('meet-checklist', JSON.stringify(next)) } catch {}
+    if (!userId) return
+    supabase.from('meet_checklist')
+      .upsert({ user_id: userId, checked_items: next, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
   }
 
   const toggleSection = (title: string) =>
@@ -2438,7 +2444,9 @@ function MeetChecklist() {
 
   const reset = () => {
     setChecked({})
-    try { localStorage.removeItem('meet-checklist') } catch {}
+    if (!userId) return
+    supabase.from('meet_checklist')
+      .upsert({ user_id: userId, checked_items: {}, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
   }
 
   const totalItems = CHECKLIST_SECTIONS.reduce((s, sec) => s + sec.items.length, 0)
@@ -2586,7 +2594,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
     if (toolId === 'hydration') return userId ? <WaterLog userId={userId} /> : <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za log vode.</div>
     if (toolId === 'nutrition') return userId ? <NutritionTracker userId={userId} /> : <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje prehrane.</div>
     if (toolId === 'wellbeing') return userId ? <WellbeingTracker userId={userId} /> : <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje wellbeinga.</div>
-    if (toolId === 'meet-checklist') return <MeetChecklist />
+    if (toolId === 'meet-checklist') return <MeetChecklist userId={userId} />
     if (toolId === 'guide-gut') return (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
         {/* Intro */}
