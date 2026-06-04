@@ -24,9 +24,6 @@ function calcGLP(total: number, bw: number, sex: 'male' | 'female'): number {
 function glpColor(gl: number) {
   return gl >= 115 ? '#ff4444' : gl >= 100 ? '#c0a060' : gl >= 90 ? '#8888ff' : gl >= 80 ? '#44cc88' : gl >= 70 ? '#aaaaaa' : '#6b8cff'
 }
-function glpLabel(gl: number) {
-  return gl >= 115 ? 'Monster' : gl >= 100 ? 'Elite' : gl >= 90 ? 'Prof.' : gl >= 80 ? 'Adv.' : gl >= 70 ? 'Inter.' : gl > 0 ? 'Beg.' : '—'
-}
 
 const LIFT_META: Record<Lift, { label: string; color: string; short: string }> = {
   squat:    { label: 'Čučanj',        color: '#6b8cff', short: 'SQ' },
@@ -314,34 +311,30 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
   const [lifterBwEdit, setLifterBwEdit] = useState('')
   const [savingBw, setSavingBw]     = useState(false)
 
-  // Competition schedule times (localStorage per comp+athlete)
-  const scheduleKey = `meet-schedule:${athleteId}:${selectedComp ?? ''}`
-  const [vaganje, setVaganje]         = useState('')
-  const [timeComp, setTimeComp]       = useState('')
+  // Competition schedule times (DB per comp+athlete)
+  const [vaganje, setVaganje]           = useState('')
+  const [timeComp, setTimeComp]         = useState('')
   const [zagrijavanje, setZagrijavanje] = useState('')
 
-  // Load/save schedule times when competition changes
   useEffect(() => {
-    if (!selectedComp) return
-    try {
-      const raw = localStorage.getItem(`meet-schedule:${athleteId}:${selectedComp}`)
-      if (raw) {
-        const s = JSON.parse(raw)
-        setVaganje(s.vaganje ?? '')
-        setTimeComp(s.timeComp ?? '')
-        setZagrijavanje(s.zagrijavanje ?? '')
-      } else {
-        setVaganje(''); setTimeComp(''); setZagrijavanje('')
-      }
-    } catch { setVaganje(''); setTimeComp(''); setZagrijavanje('') }
+    if (!selectedComp) { setVaganje(''); setTimeComp(''); setZagrijavanje(''); return }
+    supabase.from('meet_schedule')
+      .select('vaganje, time_comp, zagrijavanje')
+      .eq('athlete_id', athleteId).eq('competition_id', selectedComp).single()
+      .then(({ data }) => {
+        setVaganje(data?.vaganje ?? '')
+        setTimeComp(data?.time_comp ?? '')
+        setZagrijavanje(data?.zagrijavanje ?? '')
+      })
   }, [selectedComp, athleteId])
 
-  const saveSchedule = (field: string, value: string) => {
-    try {
-      const key = `meet-schedule:${athleteId}:${selectedComp}`
-      const existing = JSON.parse(localStorage.getItem(key) ?? '{}')
-      localStorage.setItem(key, JSON.stringify({ ...existing, [field]: value }))
-    } catch {}
+  const saveSchedule = async (field: string, value: string) => {
+    if (!selectedComp) return
+    const col = field === 'timeComp' ? 'time_comp' : field
+    await supabase.from('meet_schedule').upsert(
+      { athlete_id: athleteId, competition_id: selectedComp, [col]: value, updated_at: new Date().toISOString() },
+      { onConflict: 'athlete_id,competition_id' }
+    )
   }
 
   // Single save signal for all LiftCards
