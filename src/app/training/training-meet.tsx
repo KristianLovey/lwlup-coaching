@@ -314,6 +314,36 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
   const [lifterBwEdit, setLifterBwEdit] = useState('')
   const [savingBw, setSavingBw]     = useState(false)
 
+  // Competition schedule times (localStorage per comp+athlete)
+  const scheduleKey = `meet-schedule:${athleteId}:${selectedComp ?? ''}`
+  const [vaganje, setVaganje]         = useState('')
+  const [timeComp, setTimeComp]       = useState('')
+  const [zagrijavanje, setZagrijavanje] = useState('')
+
+  // Load/save schedule times when competition changes
+  useEffect(() => {
+    if (!selectedComp) return
+    try {
+      const raw = localStorage.getItem(`meet-schedule:${athleteId}:${selectedComp}`)
+      if (raw) {
+        const s = JSON.parse(raw)
+        setVaganje(s.vaganje ?? '')
+        setTimeComp(s.timeComp ?? '')
+        setZagrijavanje(s.zagrijavanje ?? '')
+      } else {
+        setVaganje(''); setTimeComp(''); setZagrijavanje('')
+      }
+    } catch { setVaganje(''); setTimeComp(''); setZagrijavanje('') }
+  }, [selectedComp, athleteId])
+
+  const saveSchedule = (field: string, value: string) => {
+    try {
+      const key = `meet-schedule:${athleteId}:${selectedComp}`
+      const existing = JSON.parse(localStorage.getItem(key) ?? '{}')
+      localStorage.setItem(key, JSON.stringify({ ...existing, [field]: value }))
+    } catch {}
+  }
+
   // Single save signal for all LiftCards
   const [saveSignal, setSaveSignal] = useState(0)
   const [globalSaving, setGlobalSaving] = useState(false)
@@ -482,9 +512,6 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
   }
   const LIFT_ORDER: Lift[] = ['squat', 'bench', 'deadlift']
   const hasAnyLocalBest = LIFT_ORDER.some(l => localBests[l] !== null)
-  const localTotal = LIFT_ORDER.every(l => localBests[l] !== null)
-    ? LIFT_ORDER.reduce((s, l) => s + (localBests[l] ?? 0), 0)
-    : null
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '60px', color: '#555' }}>
@@ -563,6 +590,31 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
         </div>
       </div>
 
+      {/* ── RASPORED DANA ─────────────────────────────── */}
+      {selectedComp && (
+        <div style={{ marginBottom: '20px', padding: '14px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
+          <div style={{ fontSize: '0.52rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '12px' }}>RASPORED DANA</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px' }}>
+            {([
+              { label: 'Vaganje', value: vaganje, set: setVaganje, key: 'vaganje', color: '#f59e0b' },
+              { label: 'Zagrijavanje', value: zagrijavanje, set: setZagrijavanje, key: 'zagrijavanje', color: '#6b8cff' },
+              { label: 'Natjecanje', value: timeComp, set: setTimeComp, key: 'timeComp', color: '#ef3535' },
+            ] as const).map(({ label, value, set, key, color }) => (
+              <div key={key}>
+                <div style={{ fontSize: '0.5rem', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '5px' }}>{label.toUpperCase()}</div>
+                <input
+                  type="time" value={value}
+                  onChange={e => { set(e.target.value); saveSchedule(key, e.target.value) }}
+                  style={{ width: '100%', background: value ? `${color}0c` : 'rgba(255,255,255,0.03)', border: `1.5px solid ${value ? color + '44' : 'rgba(255,255,255,0.1)'}`, borderRadius: '8px', color: value ? color : 'rgba(255,255,255,0.3)', padding: '8px 10px', fontFamily: 'var(--fm)', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' as const, transition: 'all 0.2s', cursor: 'pointer' }}
+                  onFocus={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.background = `${color}12` }}
+                  onBlur={e => { e.currentTarget.style.borderColor = value ? `${color}44` : 'rgba(255,255,255,0.1)'; e.currentTarget.style.background = value ? `${color}0c` : 'rgba(255,255,255,0.03)' }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Lift cards — shown only when a competition is selected */}
       {selectedComp ? (
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '12px' }}>
@@ -591,25 +643,31 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
         </div>
       )}
 
-      {/* Summary grid — shown below cards as soon as any lift is marked green */}
-      {selectedComp && hasAnyLocalBest && (
+      {/* Summary grid — shown when any lift has a saved good lift (DB) or is locally typed */}
+      {selectedComp && (hasAnyLocalBest || LIFT_ORDER.some(l => bestByLift[l] !== null)) && (
         <div className="meet-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px', marginTop: '16px', animation: 'popIn 0.35s ease' }}>
-          {LIFT_ORDER.map(lift => (
-            <div key={lift} style={{ padding: '14px 16px', background: localBests[lift] ? `${LIFT_META[lift].color}0a` : 'rgba(255,255,255,0.02)', border: `1.5px solid ${localBests[lift] ? LIFT_META[lift].color + '33' : 'rgba(255,255,255,0.08)'}`, borderRadius: '12px', textAlign: 'center' as const, transition: 'all 0.3s' }}>
-              <div style={{ fontSize: '0.52rem', color: localBests[lift] ? LIFT_META[lift].color : 'rgba(255,255,255,0.2)', letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '4px' }}>{LIFT_META[lift].short}</div>
-              <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: localBests[lift] ? LIFT_META[lift].color : 'rgba(255,255,255,0.15)', lineHeight: 1 }}>
-                {localBests[lift] ?? '—'}
+          {LIFT_ORDER.map(lift => {
+            const val = localBests[lift] ?? bestByLift[lift]
+            return (
+              <div key={lift} style={{ padding: '14px 16px', background: val ? `${LIFT_META[lift].color}0a` : 'rgba(255,255,255,0.02)', border: `1.5px solid ${val ? LIFT_META[lift].color + '33' : 'rgba(255,255,255,0.08)'}`, borderRadius: '12px', textAlign: 'center' as const, transition: 'all 0.3s' }}>
+                <div style={{ fontSize: '0.52rem', color: val ? LIFT_META[lift].color : 'rgba(255,255,255,0.2)', letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '4px' }}>{LIFT_META[lift].short}</div>
+                <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: val ? LIFT_META[lift].color : 'rgba(255,255,255,0.15)', lineHeight: 1 }}>{val ?? '—'}</div>
+                {val && <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginTop: '3px' }}>kg</div>}
               </div>
-              {localBests[lift] && <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginTop: '3px' }}>kg</div>}
-            </div>
-          ))}
-          <div style={{ padding: '14px 16px', background: localTotal ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)', border: `1.5px solid ${localTotal ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '12px', textAlign: 'center' as const, transition: 'all 0.3s' }}>
-            <div style={{ fontSize: '0.52rem', color: localTotal ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)', letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '4px' }}>TOTAL</div>
-            <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: localTotal ? '#f0f0f5' : 'rgba(255,255,255,0.15)', lineHeight: 1 }}>
-              {localTotal ?? '—'}
-            </div>
-            {localTotal && <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginTop: '3px' }}>kg</div>}
-          </div>
+            )
+          })}
+          {(() => {
+            const displayTotal = LIFT_ORDER.every(l => (localBests[l] ?? bestByLift[l]) !== null)
+              ? LIFT_ORDER.reduce((s, l) => s + ((localBests[l] ?? bestByLift[l]) ?? 0), 0)
+              : null
+            return (
+              <div style={{ padding: '14px 16px', background: displayTotal ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)', border: `1.5px solid ${displayTotal ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '12px', textAlign: 'center' as const, transition: 'all 0.3s' }}>
+                <div style={{ fontSize: '0.52rem', color: displayTotal ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)', letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '4px' }}>TOTAL</div>
+                <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: displayTotal ? '#f0f0f5' : 'rgba(255,255,255,0.15)', lineHeight: 1 }}>{displayTotal ?? '—'}</div>
+                {displayTotal && <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginTop: '3px' }}>kg</div>}
+              </div>
+            )
+          })()}
         </div>
       )}
 

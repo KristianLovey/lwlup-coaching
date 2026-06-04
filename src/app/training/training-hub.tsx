@@ -1362,6 +1362,7 @@ const HUB_TOOLS = [
   { id:'gl',         label:'GL Points',           sub:'IPF Goodlift formula',             color:'#60a5fa', badge:'CALC',  group:'calc'  },
   { id:'watercut',   label:'Water Cut',           sub:'Plan hidratacije i rezanja',       color:'#60a5fa', badge:'CALC',  group:'calc'  },
   { id:'barloader',  label:'Bar Loader',          sub:'Vizualni prikaz utega na šipci',   color:'#60a5fa', badge:'CALC',  group:'calc'  },
+  { id:'meet-checklist', label:'Meet Checklist',    sub:'Lista opreme i pripreme za natjecanje', color:'#34d399', badge:'GUIDE', group:'guide' },
   { id:'guide-gut',  label:'Gut Cut Guide',       sub:'Low fibre protokol za rezanje',    color:'#34d399', badge:'GUIDE', group:'guide' },
   { id:'guide-wc',   label:'Water Cut Guide',     sub:'Protokol dehidracije',             color:'#34d399', badge:'GUIDE', group:'guide', upcoming: true },
   { id:'guide-rpe',  label:'RPE Guide',           sub:'Kako koristiti RPE',               color:'#34d399', badge:'GUIDE', group:'guide', upcoming: true },
@@ -2354,6 +2355,178 @@ function NutritionTracker({ userId }: { userId: string }) {
   )
 }
 
+// ─── MEET CHECKLIST ──────────────────────────────────────────────
+const CHECKLIST_SECTIONS = [
+  {
+    title: 'NATJECATELJSKA OPREMA',
+    color: '#f59e0b',
+    items: [
+      { label: 'Donje rublje', note: '' },
+      { label: 'Sportski grudnjak', note: '' },
+      { label: 'Deadlift čarape', note: 'Visine do koljena (obavezna oprema)' },
+      { label: 'Squat/bench čarape', note: 'Normalne visine' },
+      { label: 'Singlet (triko)', note: 'Obavezna oprema' },
+      { label: 'Belt', note: 'Ako imaš i koristiš' },
+      { label: 'Wrist wraps (steznici za ruke)', note: 'Ako imaš i koristiš' },
+      { label: 'Knee sleeves', note: 'Ako imaš i koristiš' },
+      { label: 'Tenisice za deadlift', note: 'Ako koristiš drugačije nego za čučanj' },
+      { label: 'Tenisice za čučanj', note: 'Ako koristiš drugačije nego za deadlift' },
+      { label: 'Tenisice za bench', note: 'Ako koristiš drugačije nego za čučanj i deadlift' },
+      { label: 'Pamučna majica kratkih rukava', note: 'Obavezna oprema' },
+    ],
+  },
+  {
+    title: 'HRANA',
+    color: '#22c55e',
+    items: [
+      { label: 'Obrok nakon vaganja', note: '50–100g (nekuhane) riže dobro posoljene, rižini krekeri i marmelada' },
+      { label: 'High-density carbs', note: 'Sušeno voće, gumeni bomboni...' },
+      { label: 'Slani snackovi', note: 'Slani pereci, slani štapići, čips...' },
+      { label: 'Općenito ugljikohidrati', note: 'Keksi, banane, grickalice...' },
+      { label: 'Sol', note: 'Sol je jako bitan faktor kod natjecanja pogotovo ako radiš water cut' },
+    ],
+  },
+  {
+    title: 'TEKUĆINA & SUPLEMENTACIJA',
+    color: '#38bdf8',
+    items: [
+      { label: 'Bočica za vodu', note: 'Za miješanje elektrolita ili ulijevanje tekućine' },
+      { label: 'Shaker', note: 'Za pre-workout (ako ćeš ga koristiti)' },
+      { label: 'Tekućina s elektrolitima', note: 'Gatorade, Powerade' },
+      { label: 'Voda', note: 'Ponesi više nego što misliš da ti treba' },
+      { label: 'Kofein / pre-workout', note: 'Zapamti, nemoj se predozirati' },
+      { label: 'Melem za usne', note: 'Za svaki slučaj, za suhe usne' },
+      { label: 'Ibuprofen / Lupocet', note: 'Za svaki slučaj' },
+      { label: 'Melatonin', note: 'Za svaki slučaj, za bolji san noć prije natjecanja' },
+      { label: 'Lordiar', note: 'Za svaki slučaj, protiv proljeva' },
+    ],
+  },
+  {
+    title: 'RAZNO',
+    color: '#a78bfa',
+    items: [
+      { label: 'Magnezij u prahu (kreda) / liquid chalk', note: 'Ponesi onu na koju si navikao/la. Dobro je ponijeti dodatno u slučaju da ih nema ili se brzo potroši na natjecanju' },
+      { label: 'Baby puder', note: 'Nemoj zaboraviti. Običan je dobar, nije bitno kakav je.' },
+      { label: 'Amonijak', note: 'Ako ga koristiš' },
+      { label: 'Zavoji za palac', note: 'Ako koristiš hook grip i koristiš zavoje' },
+      { label: 'Flasteri', note: 'Za svaki slučaj' },
+      { label: 'Slušalice', note: 'NAPUNJENE' },
+      { label: 'Mobitel', note: 'Preuzmi svoje pjesme u slučaju da je internetska veza na mjestu loša' },
+      { label: 'Punjač za mobitel', note: 'Bit će to dug dan' },
+      { label: 'Prijenosna baterija', note: 'Bit će to dug dan' },
+      { label: 'Pribor za jelo', note: 'Vilica, žlica, nož, za hranu' },
+    ],
+  },
+]
+
+function MeetChecklist() {
+  const [checked, setChecked] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem('meet-checklist') ?? '{}') } catch { return {} }
+  })
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(CHECKLIST_SECTIONS.map(s => [s.title, true]))
+  )
+
+  const toggle = (key: string) => {
+    const next = { ...checked, [key]: !checked[key] }
+    setChecked(next)
+    try { localStorage.setItem('meet-checklist', JSON.stringify(next)) } catch {}
+  }
+
+  const toggleSection = (title: string) =>
+    setOpenSections(s => ({ ...s, [title]: !s[title] }))
+
+  const reset = () => {
+    setChecked({})
+    try { localStorage.removeItem('meet-checklist') } catch {}
+  }
+
+  const totalItems = CHECKLIST_SECTIONS.reduce((s, sec) => s + sec.items.length, 0)
+  const checkedCount = Object.values(checked).filter(Boolean).length
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '16px', fontFamily: 'var(--fm)' }}>
+
+      {/* Header progress */}
+      <div style={{ padding: '16px 20px', background: 'rgba(52,211,153,0.06)', border: '1.5px solid rgba(52,211,153,0.18)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+        <div>
+          <div style={{ fontSize: '0.58rem', letterSpacing: '0.16em', color: 'rgba(52,211,153,0.8)', fontWeight: 700, marginBottom: '6px' }}>PAKIRANJE ZA NATJECANJE</div>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>
+            Korisno je spakirane više nego što ti treba za gotovo sve. Ako si u nedoumici, ponesi.
+          </div>
+        </div>
+        <div style={{ textAlign: 'center' as const, flexShrink: 0 }}>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '2rem', fontWeight: 800, color: checkedCount === totalItems ? '#4ade80' : '#34d399', lineHeight: 1 }}>{checkedCount}</div>
+          <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>/ {totalItems}</div>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ height: '4px', background: 'rgba(255,255,255,0.07)', borderRadius: '2px', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${totalItems > 0 ? (checkedCount / totalItems) * 100 : 0}%`, background: 'linear-gradient(90deg, #34d399, #4ade80)', borderRadius: '2px', transition: 'width 0.4s cubic-bezier(0.16,1,0.3,1)' }} />
+      </div>
+
+      {/* Sections */}
+      {CHECKLIST_SECTIONS.map(sec => {
+        const secChecked = sec.items.filter(item => checked[`${sec.title}::${item.label}`]).length
+        const isOpen = openSections[sec.title] !== false
+        return (
+          <div key={sec.title} style={{ border: `1.5px solid ${sec.color}22`, borderRadius: '12px', overflow: 'hidden' }}>
+            {/* Section header */}
+            <button onClick={() => toggleSection(sec.title)}
+              style={{ width: '100%', padding: '12px 16px', background: `${sec.color}0c`, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left' as const, transition: 'background 0.15s' }}
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = `${sec.color}14`}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = `${sec.color}0c`}>
+              <span style={{ fontSize: '0.56rem', letterSpacing: '0.18em', color: sec.color, fontWeight: 700, flex: 1 }}>{sec.title}</span>
+              <span style={{ fontSize: '0.6rem', color: secChecked === sec.items.length ? '#4ade80' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--fd)', fontWeight: 700 }}>
+                {secChecked}/{sec.items.length}
+              </span>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>
+                <path d="M2 4l4 4 4-4" stroke={sec.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+
+            {/* Items */}
+            {isOpen && (
+              <div style={{ padding: '6px 0' }}>
+                {sec.items.map(item => {
+                  const key = `${sec.title}::${item.label}`
+                  const isDone = !!checked[key]
+                  return (
+                    <div key={key}
+                      onClick={() => toggle(key)}
+                      style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '10px 16px', cursor: 'pointer', transition: 'background 0.1s', background: isDone ? 'rgba(74,222,128,0.04)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = isDone ? 'rgba(74,222,128,0.07)' : 'rgba(255,255,255,0.03)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = isDone ? 'rgba(74,222,128,0.04)' : 'transparent'}>
+                      <div style={{ width: '18px', height: '18px', borderRadius: '5px', border: `1.5px solid ${isDone ? '#4ade80' : 'rgba(255,255,255,0.18)'}`, background: isDone ? 'rgba(74,222,128,0.15)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px', transition: 'all 0.15s' }}>
+                        {isDone && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="#4ade80" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.78rem', fontWeight: isDone ? 500 : 600, color: isDone ? 'rgba(255,255,255,0.35)' : '#e0e0e0', textDecoration: isDone ? 'line-through' : 'none', transition: 'all 0.15s', lineHeight: 1.4 }}>{item.label}</div>
+                        {item.note && <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.3)', marginTop: '2px', lineHeight: 1.5 }}>{item.note}</div>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )
+      })}
+
+      {/* Reset */}
+      {checkedCount > 0 && (
+        <button onClick={reset}
+          style={{ alignSelf: 'flex-end' as const, padding: '6px 14px', background: 'transparent', border: '1px solid rgba(248,113,113,0.2)', borderRadius: '7px', color: 'rgba(248,113,113,0.6)', cursor: 'pointer', fontSize: '0.58rem', fontFamily: 'var(--fm)', letterSpacing: '0.1em', fontWeight: 600, transition: 'all 0.15s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(248,113,113,0.07)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(248,113,113,0.4)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(248,113,113,0.2)' }}>
+          RESETIRAJ LISTU
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function HubTab({ athleteName, userId }: { athleteName: string; userId?: string }) {
   const [active, setActive] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -2413,6 +2586,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
     if (toolId === 'hydration') return userId ? <WaterLog userId={userId} /> : <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za log vode.</div>
     if (toolId === 'nutrition') return userId ? <NutritionTracker userId={userId} /> : <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje prehrane.</div>
     if (toolId === 'wellbeing') return userId ? <WellbeingTracker userId={userId} /> : <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', padding: '20px 0', textAlign: 'center' as const }}>Prijavi se za praćenje wellbeinga.</div>
+    if (toolId === 'meet-checklist') return <MeetChecklist />
     if (toolId === 'guide-gut') return (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
         {/* Intro */}
@@ -2432,7 +2606,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
               <span style={{ fontSize: '0.58rem', letterSpacing: '0.18em', color: '#4ade80', fontFamily: 'var(--fm)', fontWeight: 700 }}>DOZVOLJENO</span>
             </div>
             <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column' as const, gap: '7px' }}>
-              {['Kikiriki maslac (bez soli)','Orašasti plodovi','Crna čokolada','Jednostavni ugljikohidrati','Jaja','Masno meso','Jogurt','Proteinski shake','Sladoled','Bijeli kruh','Bijela riža','Med','Slatkiši','Sokovi','Carbs s malo vlakana'].map(item => (
+              {['Kikiriki maslac (bez soli)','Orašasti plodovi','Crna čokolada','Jednostavni ugljikohidrati','Jaja','Nemasno meso (lean)','Bijela riba','Jogurt','Proteinski shake','Sladoled','Bijeli kruh','Bijela riža','Med','Slatkiši','Sokovi','Carbs s malo vlakana'].map(item => (
                 <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#4ade80', flexShrink: 0 }} />
                   <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.65)', fontFamily: 'var(--fm)', lineHeight: 1.4 }}>{item}</span>
