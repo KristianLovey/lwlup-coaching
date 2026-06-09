@@ -73,7 +73,7 @@ const translations = {
     'home.f3.title':              'PRILAGODBA TRENINGA',
     'home.f3.desc':               'Tvoj život nije linearan, a tako nije ni trening. Radimo prilagodbe ovisno o tvom oporavku, stresu i snazi.',
     'home.f4.title':              'PRAĆENJE PODATAKA',
-    'home.f4.desc':               'SVi tvoji podaci spremaju se i analiziraju u jedinstvenom lwl up sustavu treninga. Vizualiziraj napredak kroz grafikone i prati svaki set i ponavljanje.',
+    'home.f4.desc':               'Svi tvoji podaci spremaju se i analiziraju u jedinstvenom lwl up sustavu treninga. Vizualiziraj napredak kroz grafikone i prati svaki set i ponavljanje.',
     'home.f5.title':              'ZAJEDNICA',
     'home.f5.desc':               'Okruži se lifterima koji dijele istu strast. Unutar LWL UP-a, rast je kolektivan — pobjeđujemo i gubimo zajedno.',
     'home.f6.title':              'NATJECATELJSKI FOKUS',
