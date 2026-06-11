@@ -619,8 +619,8 @@ export default function TrainingPage() {
                   </div>
 
                   {/* ── PRIORITY TABLE ── */}
-                  {userId && (
-                    <LiftPriorityView athleteId={userId} />
+                  {userId && block && (
+                    <LiftPriorityView athleteId={userId} blockId={block.id} />
                   )}
 
                 </div>
