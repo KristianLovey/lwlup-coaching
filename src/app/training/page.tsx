@@ -7,6 +7,7 @@ import type { Block, BlockSummary, Week, Exercise, WorkoutExercise, Workout } fr
 import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-components'
 import { HubTab } from './training-hub'
 import { MeetDayTab } from './training-meet'
+import { LiftPriorityView } from './training-priority'
 import { cacheSet, meetKeys } from '@/lib/meetCache'
 
 const supabase = createClient()
@@ -616,6 +617,12 @@ export default function TrainingPage() {
                     {/* Competition countdown */}
                     <div>{userId && <CompetitionBanner userId={userId} />}</div>
                   </div>
+
+                  {/* ── PRIORITY TABLE ── */}
+                  {userId && (
+                    <LiftPriorityView athleteId={userId} />
+                  )}
+
                 </div>
               )}
 
