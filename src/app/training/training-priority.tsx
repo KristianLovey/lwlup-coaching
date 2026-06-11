@@ -125,12 +125,12 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
 
       {/* Table */}
       <div style={{ overflowX: 'auto' as const }}>
-        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '3px', minWidth: '320px' }}>
+        <table className="pa-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '3px', minWidth: '320px' }}>
           <thead>
             <tr>
               <th style={{ width: '32px', padding: '4px 0' }} />
               {DAYS.map(d => (
-                <th key={d.key} style={{ padding: '4px 2px', fontSize: '0.42rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.28)', fontFamily: FM, fontWeight: 700, textAlign: 'center' as const }}>
+                <th key={d.key} className="pa-day-th" style={{ padding: '4px 2px', fontSize: '0.42rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.28)', fontFamily: FM, fontWeight: 700, textAlign: 'center' as const }}>
                   {d.label}
                 </th>
               ))}
@@ -141,8 +141,8 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
               <tr key={lift.key}>
                 <td style={{ padding: '2px 8px 2px 0', verticalAlign: 'middle' as const }}>
                   <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1px' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 900, color: lift.color, fontFamily: FM, lineHeight: 1 }}>{lift.abbr}</span>
-                    <span style={{ fontSize: '0.36rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.18)', fontFamily: FM }}>{lift.label}</span>
+                    <span className="pa-lift-abbr" style={{ fontSize: '0.85rem', fontWeight: 900, color: lift.color, fontFamily: FM, lineHeight: 1 }}>{lift.abbr}</span>
+                    <span className="pa-lift-name" style={{ fontSize: '0.36rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.18)', fontFamily: FM }}>{lift.label}</span>
                   </div>
                 </td>
                 {DAYS.map(day => {
@@ -153,6 +153,7 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
                       <button
                         onClick={() => cycle(lift.key, day.key)}
                         title={m.label}
+                        className="pa-cell"
                         style={{
                           width: '100%', minWidth: '34px', height: '38px',
                           background: m.bg,
@@ -163,11 +164,11 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
                         }}
                         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.75' }}
                         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '1' }}>
-                        <span style={{ fontSize: pri === 'none' ? '0.65rem' : '0.6rem', fontWeight: 900, color: m.color, fontFamily: FM, lineHeight: 1 }}>
+                        <span className="pa-roman" style={{ fontSize: pri === 'none' ? '0.65rem' : '0.6rem', fontWeight: 900, color: m.color, fontFamily: FM, lineHeight: 1 }}>
                           {m.roman}
                         </span>
                         {pri !== 'none' && (
-                          <span style={{ fontSize: '0.3rem', letterSpacing: '0.06em', color: m.color, opacity: 0.65, fontFamily: FM }}>
+                          <span className="pa-sublabel" style={{ fontSize: '0.3rem', letterSpacing: '0.06em', color: m.color, opacity: 0.65, fontFamily: FM }}>
                             {m.label.slice(0, 4)}
                           </span>
                         )}
@@ -181,7 +182,18 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
         </table>
       </div>
 
-      <style>{`@keyframes panelSlideIn { from { opacity:0; transform:translateY(14px) } to { opacity:1; transform:translateY(0) } }`}</style>
+      <style>{`
+        @keyframes panelSlideIn { from { opacity:0; transform:translateY(14px) } to { opacity:1; transform:translateY(0) } }
+        @media (min-width: 768px) {
+          .pa-table      { border-spacing: 6px !important; }
+          .pa-day-th     { font-size: 0.58rem !important; padding: 6px 4px !important; }
+          .pa-cell       { height: 60px !important; min-width: 56px !important; border-radius: 10px !important; }
+          .pa-roman      { font-size: 0.88rem !important; }
+          .pa-sublabel   { font-size: 0.44rem !important; }
+          .pa-lift-abbr  { font-size: 1.2rem !important; }
+          .pa-lift-name  { font-size: 0.46rem !important; }
+        }
+      `}</style>
     </div>
   )
 }

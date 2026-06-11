@@ -222,7 +222,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
   )
 
   return (
-    <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto', paddingBottom: '60px' }}>
+    <div style={{ padding: '24px 32px', maxWidth: '1100px', margin: '0 auto', paddingBottom: '60px' }}>
 
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: FM, padding: '0 0 16px', marginBottom: '4px' }}>
         <ChevronLeft size={13} /> NATRAG

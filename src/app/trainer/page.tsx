@@ -185,7 +185,7 @@ export default function TrainerPage() {
         {selectedAthlete ? (
           /* ─── ATHLETE VIEW ─── */
           trainerView === 'overview' ? (
-            <div style={{ padding: '16px 16px 80px', maxWidth: '640px', margin: '0 auto' }}>
+            <div style={{ padding: '16px 32px 80px', maxWidth: '1200px', margin: '0 auto' }}>
               <AthleteOverview
                 athlete={selectedAthlete}
                 onBack={() => { setSelectedAthlete(null); setTrainerView('overview') }}
