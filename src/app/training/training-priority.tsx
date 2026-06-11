@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
 
@@ -189,103 +189,186 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
 // ── LIFTER READ-ONLY VIEW ──────────────────────────────────────────────
 export function LiftPriorityView({ athleteId }: { athleteId: string }) {
   const [config, setConfig] = useState<PriorityConfig | null>(null)
+  const [dismissed, setDismissed] = useState(false)
+  const [holding, setHolding] = useState(false)
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => { loadConfig(athleteId).then(setConfig) }, [athleteId])
+  useEffect(() => () => { if (holdTimerRef.current) clearTimeout(holdTimerRef.current) }, [])
+
+  const startHold = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault()
+    setHolding(true)
+    holdTimerRef.current = setTimeout(() => {
+      setHolding(false)
+      setDismissed(true)
+    }, 700)
+  }, [])
+
+  const cancelHold = useCallback(() => {
+    if (holdTimerRef.current) { clearTimeout(holdTimerRef.current); holdTimerRef.current = null }
+    setHolding(false)
+  }, [])
 
   if (!config) return null
-
   const hasAny = LIFTS.some(l => DAYS.some(d => config[l.key][d.key] !== 'none'))
-  if (!hasAny) return null
+  if (!hasAny || dismissed) return null
 
   const usedPriorities = PRIORITY_ORDER.filter(p => p !== 'none' && LIFTS.some(l => DAYS.some(d => config[l.key][d.key] === p)))
 
   return (
-    <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '22px 24px', marginBottom: '12px' }}>
+    <div
+      className="priority-view-card"
+      onMouseDown={startHold}
+      onMouseUp={cancelHold}
+      onMouseLeave={cancelHold}
+      onTouchStart={startHold}
+      onTouchEnd={cancelHold}
+      onTouchCancel={cancelHold}
+      style={{
+        background: '#111111',
+        border: holding ? '1px solid rgba(239,53,53,0.45)' : '1px solid rgba(255,255,255,0.07)',
+        borderRadius: '20px',
+        padding: '22px 24px',
+        marginBottom: '12px',
+        cursor: 'default',
+        transition: 'border-color 0.2s',
+        position: 'relative' as const,
+        userSelect: 'none' as const,
+        WebkitUserSelect: 'none' as const,
+        overflow: 'hidden',
+      }}>
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '18px', gap: '12px' }}>
-        <div>
-          <div style={{ fontSize: '0.44rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.22)', fontFamily: FM, marginBottom: '4px' }}>RASPORED PRIORITETA</div>
-          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e0e0e0', fontFamily: FM, letterSpacing: '-0.01em' }}>Tjedni plan liftova</div>
-        </div>
-        {/* Active days badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-          {(() => {
-            const activeDays = DAYS.filter(d => LIFTS.some(l => config[l.key][d.key] !== 'none'))
-            return activeDays.map(d => (
-              <div key={d.key} style={{ padding: '3px 7px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '5px', fontSize: '0.42rem', color: 'rgba(255,255,255,0.4)', fontFamily: FM, letterSpacing: '0.1em' }}>
-                {d.label}
-              </div>
-            ))
-          })()}
-        </div>
-      </div>
+      {/* Hold progress overlay */}
+      {holding && (
+        <div style={{
+          position: 'absolute' as const, inset: 0, borderRadius: '20px',
+          background: 'rgba(239,53,53,0.07)',
+          pointerEvents: 'none',
+          animation: 'pvHoldFill 0.7s linear forwards',
+          zIndex: 0,
+        }} />
+      )}
 
-      {/* Table */}
-      <div style={{ overflowX: 'auto' as const }}>
-        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '3px', minWidth: '300px' }}>
-          <thead>
-            <tr>
-              <th style={{ width: '42px', padding: '4px 0' }} />
-              {DAYS.map(d => (
-                <th key={d.key} style={{ padding: '4px 2px', fontSize: '0.43rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.25)', fontFamily: FM, fontWeight: 700, textAlign: 'center' as const }}>
-                  {d.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {LIFTS.map(lift => (
-              <tr key={lift.key}>
-                <td style={{ padding: '2px 8px 2px 0', verticalAlign: 'middle' as const }}>
-                  <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1px' }}>
-                    <span style={{ fontSize: '0.95rem', fontWeight: 900, color: lift.color, fontFamily: FM, lineHeight: 1 }}>{lift.abbr}</span>
-                    <span style={{ fontSize: '0.36rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.18)', fontFamily: FM }}>{lift.label}</span>
-                  </div>
-                </td>
-                {DAYS.map(day => {
-                  const pri = config[lift.key][day.key]
-                  const m = PRIORITY_META[pri]
-                  return (
-                    <td key={day.key} style={{ padding: '2px' }}>
-                      <div style={{
-                        minWidth: '34px', height: '42px',
-                        background: m.bg,
-                        border: `1px solid ${m.border}`,
-                        borderRadius: '8px',
-                        display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: '2px',
-                      }}>
-                        <span style={{ fontSize: pri === 'none' ? '0.6rem' : '0.58rem', fontWeight: 900, color: m.color, fontFamily: FM, lineHeight: 1 }}>
-                          {m.roman}
-                        </span>
-                        {pri !== 'none' && (
-                          <span style={{ fontSize: '0.3rem', letterSpacing: '0.06em', color: m.color, opacity: 0.65, fontFamily: FM, textTransform: 'uppercase' as const }}>
-                            {m.label.slice(0, 4)}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Legend — only show priorities that are actually used */}
-      {usedPriorities.length > 0 && (
-        <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' as const, marginTop: '14px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          {usedPriorities.map(p => {
-            const m = PRIORITY_META[p]
-            return (
-              <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: m.bg, border: `1px solid ${m.border}`, borderRadius: '5px' }}>
-                <span style={{ fontSize: '0.52rem', fontWeight: 900, color: m.color, fontFamily: FM }}>{m.roman}</span>
-                <span style={{ fontSize: '0.4rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', fontFamily: FM }}>{m.label}</span>
-              </div>
-            )
-          })}
+      {/* "Releasing" label when holding */}
+      {holding && (
+        <div style={{
+          position: 'absolute' as const, top: '12px', right: '16px',
+          fontSize: '0.46rem', letterSpacing: '0.18em', color: 'rgba(239,53,53,0.75)',
+          fontFamily: FM, fontWeight: 700, zIndex: 2,
+          animation: 'pvFadeIn 0.15s ease',
+        }}>
+          UKLONI...
         </div>
       )}
+
+      <div style={{ position: 'relative' as const, zIndex: 1 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '18px', gap: '12px' }}>
+          <div>
+            <div style={{ fontSize: '0.44rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.22)', fontFamily: FM, marginBottom: '4px' }}>RASPORED PRIORITETA</div>
+            <div className="pv-title" style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e0e0e0', fontFamily: FM, letterSpacing: '-0.01em' }}>Tjedni plan liftova</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+            {DAYS.filter(d => LIFTS.some(l => config[l.key][d.key] !== 'none')).map(d => (
+              <div key={d.key} className="pv-day-badge" style={{ padding: '3px 7px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '5px', fontSize: '0.42rem', color: 'rgba(255,255,255,0.4)', fontFamily: FM, letterSpacing: '0.1em' }}>
+                {d.label}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Table */}
+        <div style={{ overflowX: 'auto' as const }}>
+          <table className="pv-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '3px', minWidth: '300px' }}>
+            <thead>
+              <tr>
+                <th style={{ width: '42px', padding: '4px 0' }} />
+                {DAYS.map(d => (
+                  <th key={d.key} className="pv-day-th" style={{ padding: '4px 2px', fontSize: '0.43rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.25)', fontFamily: FM, fontWeight: 700, textAlign: 'center' as const }}>
+                    {d.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {LIFTS.map(lift => (
+                <tr key={lift.key}>
+                  <td style={{ padding: '2px 8px 2px 0', verticalAlign: 'middle' as const }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1px' }}>
+                      <span className="pv-lift-abbr" style={{ fontSize: '0.95rem', fontWeight: 900, color: lift.color, fontFamily: FM, lineHeight: 1 }}>{lift.abbr}</span>
+                      <span className="pv-lift-name" style={{ fontSize: '0.36rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.18)', fontFamily: FM }}>{lift.label}</span>
+                    </div>
+                  </td>
+                  {DAYS.map(day => {
+                    const pri = config[lift.key][day.key]
+                    const m = PRIORITY_META[pri]
+                    return (
+                      <td key={day.key} style={{ padding: '2px' }}>
+                        <div className="pv-cell" style={{
+                          minWidth: '34px', height: '42px',
+                          background: m.bg, border: `1px solid ${m.border}`, borderRadius: '8px',
+                          display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: '2px',
+                        }}>
+                          <span className="pv-roman" style={{ fontSize: pri === 'none' ? '0.6rem' : '0.6rem', fontWeight: 900, color: m.color, fontFamily: FM, lineHeight: 1 }}>
+                            {m.roman}
+                          </span>
+                          {pri !== 'none' && (
+                            <span className="pv-sublabel" style={{ fontSize: '0.3rem', letterSpacing: '0.06em', color: m.color, opacity: 0.65, fontFamily: FM, textTransform: 'uppercase' as const }}>
+                              {m.label.slice(0, 4)}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Legend */}
+        {usedPriorities.length > 0 && (
+          <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' as const, marginTop: '14px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            {usedPriorities.map(p => {
+              const m = PRIORITY_META[p]
+              return (
+                <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: m.bg, border: `1px solid ${m.border}`, borderRadius: '5px' }}>
+                  <span style={{ fontSize: '0.52rem', fontWeight: 900, color: m.color, fontFamily: FM }}>{m.roman}</span>
+                  <span style={{ fontSize: '0.4rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', fontFamily: FM }}>{m.label}</span>
+                </div>
+              )
+            })}
+            <div style={{ marginLeft: 'auto', fontSize: '0.38rem', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.1)', fontFamily: FM, alignSelf: 'center' }}>
+              DRŽI ZA UKLANJANJE
+            </div>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes pvHoldFill {
+          from { opacity: 0 }
+          to   { opacity: 1 }
+        }
+        @keyframes pvFadeIn {
+          from { opacity: 0; transform: translateY(-4px) }
+          to   { opacity: 1; transform: translateY(0) }
+        }
+        @media (min-width: 768px) {
+          .priority-view-card { padding: 28px 32px !important; }
+          .pv-title            { font-size: 1.05rem !important; }
+          .pv-day-badge        { font-size: 0.5rem !important; padding: 4px 10px !important; }
+          .pv-table            { border-spacing: 5px !important; }
+          .pv-day-th           { font-size: 0.56rem !important; padding: 6px 4px !important; }
+          .pv-cell             { height: 58px !important; min-width: 54px !important; border-radius: 10px !important; gap: 3px !important; }
+          .pv-roman            { font-size: 0.85rem !important; }
+          .pv-sublabel         { font-size: 0.42rem !important; }
+          .pv-lift-abbr        { font-size: 1.25rem !important; }
+          .pv-lift-name        { font-size: 0.46rem !important; }
+        }
+      `}</style>
     </div>
   )
 }
