@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { CompetitionsManager } from './competitions-manager'
 import { MeetDayTab } from '../training/training-meet'
+import { LiftPriorityAdmin } from '../training/training-priority'
 import { AppNav, WeekPanel, EditableField } from '../training/training-components'
 import type { Block, Week, Workout, WorkoutExercise, Exercise, BlockSummary } from '../training/types'
 
@@ -54,7 +55,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   athlete: AthleteProfile; onBack: () => void; onGoTraining: () => void
 }) {
   const initials = athlete.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
-  const [tab, setTab] = useState<'opcenito' | 'detaljno' | 'meetday'>('opcenito')
+  const [tab, setTab] = useState<'opcenito' | 'detaljno' | 'meetday' | 'prioriteti'>('opcenito')
   const [bwLogs, setBwLogs] = useState<any[]>([])
   const [nutLogs, setNutLogs] = useState<any[]>([])
   const [waterLogs, setWaterLogs] = useState<any[]>([])
@@ -236,7 +237,7 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
   )
 
   return (
-    <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto', paddingBottom: '60px' }}>
+    <div style={{ padding: '16px 0', maxWidth: '100%', margin: '0 auto', paddingBottom: '60px' }}>
 
       {/* Back */}
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: FM, padding: '0 0 16px', marginBottom: '4px' }}>
@@ -253,9 +254,9 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '2px', marginBottom: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '3px' }}>
-        {([['opcenito','OPĆENITO'],['detaljno','DETALJNO'],['meetday','MEET DAY'],['trening','UREĐIVANJE TRENINGA']] as const).map(([id, label]) => (
-          <button key={id} onClick={() => id === 'trening' ? onGoTraining() : setTab(id as 'opcenito'|'detaljno'|'meetday')}
+      <div style={{ display: 'flex', gap: '2px', marginBottom: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '3px', overflowX: 'auto' as const }}>
+        {([['opcenito','OPĆENITO'],['detaljno','DETALJNO'],['meetday','MEET DAY'],['prioriteti','PRIORITETI'],['trening','UREĐIVANJE TRENINGA']] as const).map(([id, label]) => (
+          <button key={id} onClick={() => id === 'trening' ? onGoTraining() : setTab(id as 'opcenito'|'detaljno'|'meetday'|'prioriteti')}
             style={{ flex: 1, padding: '8px 6px', background: tab === id ? 'rgba(255,255,255,0.1)' : 'transparent', border: tab === id ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent', borderRadius: '7px', cursor: 'pointer', fontSize: '0.55rem', fontFamily: FM, fontWeight: tab === id ? 700 : 400, color: tab === id ? '#fff' : 'rgba(255,255,255,0.35)', transition: 'all 0.15s', letterSpacing: '0.04em', whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {label}
           </button>
@@ -350,6 +351,8 @@ function AthleteOverview({ athlete, onBack, onGoTraining }: {
         </>
       ) : tab === 'meetday' ? (
         <MeetDayTab userId={athlete.id} isAdmin={true} showAthleteSelector={true} />
+      ) : tab === 'prioriteti' ? (
+        <LiftPriorityAdmin athleteId={athlete.id} />
       ) : (
         <>
           {/* DETALJNO — calendar + day detail */}
