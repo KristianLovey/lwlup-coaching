@@ -115,12 +115,7 @@ export default function TrainingPage() {
         setExercises(exData ?? [])
         setAllBlocks((ab ?? []) as BlockSummary[])
 
-        let blockData = rawBlock
-        if (!blockData && role !== 'trener') {
-          const today = new Date(); const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
-          const { data: nb } = await supabase.from('blocks').insert({ athlete_id: uid, name: 'Moj program', start_date: today.toISOString().split('T')[0], end_date: endDate.toISOString().split('T')[0], status: 'active' }).select('*').single()
-          blockData = { ...nb, weeks: [] }
-        }
+        const blockData = rawBlock
         if (blockData?.weeks) {
           blockData.weeks.sort((a: Week, b: Week) => a.week_number - b.week_number)
           blockData.weeks.forEach((w: Week) => {

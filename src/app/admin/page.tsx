@@ -1382,6 +1382,10 @@ export default function AdminPage() {
   const [showAddLifter, setShowAddLifter] = useState(false)
   const [newLifterEmail, setNewLifterEmail] = useState('')
   const [newLifterName, setNewLifterName] = useState('')
+  const [newLifterCategory, setNewLifterCategory] = useState('')
+  const [newLifterSquat, setNewLifterSquat] = useState('')
+  const [newLifterBench, setNewLifterBench] = useState('')
+  const [newLifterDeadlift, setNewLifterDeadlift] = useState('')
   const [addLifterLoading, setAddLifterLoading] = useState(false)
   const [addLifterError, setAddLifterError] = useState('')
   const [addLifterSuccess, setAddLifterSuccess] = useState('')
@@ -1498,13 +1502,17 @@ export default function AdminPage() {
       const res = await fetch('/api/admin/create-lifter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ email: newLifterEmail, fullName: newLifterName }),
+        body: JSON.stringify({ email: newLifterEmail, fullName: newLifterName, category: newLifterCategory || undefined, squat: newLifterSquat || undefined, bench: newLifterBench || undefined, deadlift: newLifterDeadlift || undefined }),
       })
       const json = await res.json()
       if (!res.ok) { setAddLifterError(json.error ?? 'Greška.'); return }
       setAddLifterSuccess(`${newLifterName} uspješno dodan!`)
       setNewLifterEmail('')
       setNewLifterName('')
+      setNewLifterCategory('')
+      setNewLifterSquat('')
+      setNewLifterBench('')
+      setNewLifterDeadlift('')
       // Refresh athletes
       const { data } = await supabase.from('profiles').select('*, blocks:training_blocks(*), notes:athlete_notes(*)').order('full_name')
       if (data) setAthletes(data)
@@ -2071,7 +2079,7 @@ export default function AdminPage() {
       {showAddLifter && (
         <div onClick={() => setShowAddLifter(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div onClick={e => e.stopPropagation()} style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.1)', padding: '36px', width: '100%', maxWidth: '420px', animation: 'slideUp 0.25s ease' }}>
-            <div style={{ fontSize: '0.6rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.3)', marginBottom: '24px', fontFamily: 'var(--fm)', fontWeight: 700 }}>DODAJ NOVOG LIFTERA</div>
+            <div style={{ fontSize: '0.6rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.3)', marginBottom: '24px', fontFamily: 'var(--fm)', fontWeight: 700 }}>DODAJ LIFTERA</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
                 <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>IME I PREZIME</div>
@@ -2082,6 +2090,20 @@ export default function AdminPage() {
                 <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>EMAIL</div>
                 <input value={newLifterEmail} onChange={e => setNewLifterEmail(e.target.value)} placeholder="email@gmail.com" type="email"
                   style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.95rem', padding: '8px 0', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>KATEGORIJA / TEŽINSKA KLASA <span style={{ color: 'rgba(255,255,255,0.15)' }}>(opcionalno)</span></div>
+                <input value={newLifterCategory} onChange={e => setNewLifterCategory(e.target.value)} placeholder="npr. 93, 83, 72..."
+                  style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.95rem', padding: '8px 0', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                {[['ČUČANJ', newLifterSquat, setNewLifterSquat], ['BENCH', newLifterBench, setNewLifterBench], ['MRTVO', newLifterDeadlift, setNewLifterDeadlift]].map(([label, val, set]) => (
+                  <div key={label as string}>
+                    <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>{label as string} <span style={{ color: 'rgba(255,255,255,0.15)' }}>kg</span></div>
+                    <input value={val as string} onChange={e => (set as any)(e.target.value)} placeholder="0" type="number" min="0"
+                      style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.95rem', padding: '8px 0', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
+                  </div>
+                ))}
               </div>
               <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>Defaultna lozinka: <span style={{ color: 'rgba(255,255,255,0.5)' }}>LwlupChange123!</span></div>
               {addLifterError && <div style={{ fontSize: '0.75rem', color: '#ef4444', fontFamily: 'var(--fm)' }}>{addLifterError}</div>}

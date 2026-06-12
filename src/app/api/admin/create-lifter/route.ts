@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Kreiraj liftera
-    const { email, fullName } = await req.json()
+    const { email, fullName, category, squat, bench, deadlift } = await req.json()
     if (!email || !fullName) {
       return NextResponse.json({ error: 'Email i ime su obavezni' }, { status: 400 })
     }
@@ -42,30 +42,18 @@ export async function POST(req: NextRequest) {
 
     if (createError) return NextResponse.json({ error: createError.message }, { status: 400 })
 
-    // Kreiraj profil
-    await adminClient.from('profiles').insert({
+    // Upsert profil — trigger može kreirati prazan red prije ovoga
+    const { error: profileError } = await adminClient.from('profiles').upsert({
       id: newUser.user.id,
       full_name: fullName,
       role: 'lifter',
-    })
+      weight_class: category || null,
+      current_squat_1rm: squat ? Number(squat) : null,
+      current_bench_1rm: bench ? Number(bench) : null,
+      current_deadlift_1rm: deadlift ? Number(deadlift) : null,
+    }, { onConflict: 'id' })
 
-    // Kreiraj prazan trening blok za liftera
-    await adminClient.from('training_blocks').insert({
-      user_id: newUser.user.id,
-      name: 'Blok 1',
-      data: [
-        {
-          weekNumber: 1,
-          days: [
-            { id: crypto.randomUUID(), dayNumber: 1, date: '', blocks: [] },
-            { id: crypto.randomUUID(), dayNumber: 2, date: '', blocks: [] },
-            { id: crypto.randomUUID(), dayNumber: 3, date: '', blocks: [] },
-            { id: crypto.randomUUID(), dayNumber: 4, date: '', blocks: [] },
-          ],
-        },
-      ],
-      is_active: true,
-    })
+    if (profileError) console.error('profile upsert error:', profileError.message)
 
     return NextResponse.json({ userId: newUser.user.id, email, fullName })
   } catch (e: any) {

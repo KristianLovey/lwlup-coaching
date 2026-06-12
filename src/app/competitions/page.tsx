@@ -242,6 +242,7 @@ export default function CompetitionsPage() {
   const [loading, setLoading] = useState(true)
   const [selectedYear, setSelectedYear] = useState<number | 'all'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'announced' | 'completed'>('all')
+  const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'name-asc' | 'name-desc'>('date-desc')
 
   const heroReveal = useReveal(0.05)
 
@@ -298,14 +299,21 @@ export default function CompetitionsPage() {
     new Set(competitions.map(c => new Date(c.date).getFullYear()))
   ).sort((a, b) => b - a) // newest first
 
-  // Filter competitions
-  const filtered = competitions.filter(c => {
-    const year = new Date(c.date).getFullYear()
-    const matchYear = selectedYear === 'all' || year === selectedYear
-    const matchStatus = statusFilter === 'all' || c.status === statusFilter ||
-      (statusFilter === 'announced' && (c.status === 'announced' || c.status === 'ongoing'))
-    return matchYear && matchStatus
-  })
+  // Filter + sort competitions
+  const filtered = competitions
+    .filter(c => {
+      const year = new Date(c.date).getFullYear()
+      const matchYear = selectedYear === 'all' || year === selectedYear
+      const matchStatus = statusFilter === 'all' || c.status === statusFilter ||
+        (statusFilter === 'announced' && (c.status === 'announced' || c.status === 'ongoing'))
+      return matchYear && matchStatus
+    })
+    .sort((a, b) => {
+      if (sortBy === 'name-asc') return a.name.localeCompare(b.name)
+      if (sortBy === 'name-desc') return b.name.localeCompare(a.name)
+      if (sortBy === 'date-asc') return a.date.localeCompare(b.date)
+      return b.date.localeCompare(a.date) // date-desc default
+    })
 
   // Stats for selected view
   const upcoming = filtered.filter(c => c.status !== 'completed').length
@@ -383,6 +391,26 @@ export default function CompetitionsPage() {
                     style={{ padding: '8px 16px', background: statusFilter === f ? 'rgba(255,255,255,0.08)' : 'transparent', color: statusFilter === f ? '#fff' : 'rgba(255,255,255,0.35)', border: `1px solid ${statusFilter === f ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)'}`, fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.15em', cursor: 'pointer', transition: '0.2s', fontFamily: 'var(--fm)' }}
                     onMouseEnter={e => { if (statusFilter !== f) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' } }}
                     onMouseLeave={e => { if (statusFilter !== f) { e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' } }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div style={{ width: '1px', height: '28px', background: 'rgba(255,255,255,0.1)' }} />
+
+              {/* Sort */}
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {([
+                  ['date-desc', 'DATUM ↓'],
+                  ['date-asc',  'DATUM ↑'],
+                  ['name-asc',  'A → Z'],
+                  ['name-desc', 'Z → A'],
+                ] as [string, string][]).map(([s, label]) => (
+                  <button key={s} onClick={() => setSortBy(s as any)}
+                    style={{ padding: '8px 14px', background: sortBy === s ? 'rgba(255,255,255,0.08)' : 'transparent', color: sortBy === s ? '#fff' : 'rgba(255,255,255,0.35)', border: `1px solid ${sortBy === s ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)'}`, fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer', transition: '0.2s', fontFamily: 'var(--fm)' }}
+                    onMouseEnter={e => { if (sortBy !== s) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' } }}
+                    onMouseLeave={e => { if (sortBy !== s) { e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' } }}>
                     {label}
                   </button>
                 ))}

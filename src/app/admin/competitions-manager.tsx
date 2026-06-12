@@ -47,6 +47,8 @@ export function CompetitionsManager() {
   const [showNewForm, setShowNewForm] = useState(false)
   const [expandedComp, setExpandedComp] = useState<string | null>(null)
 
+  const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'name-asc' | 'name-desc'>('date-desc')
+
   const [newComp, setNewComp] = useState({
     name: '', date: '', location: '', status: 'announced' as Competition['status'], description: ''
   })
@@ -182,6 +184,24 @@ export function CompetitionsManager() {
         </div>
       )}
 
+      {/* Sort controls */}
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.2)', alignSelf: 'center', fontFamily: 'var(--fm)', marginRight: '4px' }}>SORTIRAJ</div>
+        {([
+          ['date-desc', 'DATUM ↓'],
+          ['date-asc',  'DATUM ↑'],
+          ['name-asc',  'A → Z'],
+          ['name-desc', 'Z → A'],
+        ] as [string, string][]).map(([s, label]) => (
+          <button key={s} onClick={() => setSortBy(s as any)}
+            style={{ padding: '6px 12px', background: sortBy === s ? 'rgba(255,255,255,0.1)' : 'transparent', color: sortBy === s ? '#fff' : 'rgba(255,255,255,0.35)', border: `1px solid ${sortBy === s ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)'}`, fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.12em', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'var(--fm)' }}
+            onMouseEnter={e => { if (sortBy !== s) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' } }}
+            onMouseLeave={e => { if (sortBy !== s) { e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' } }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Competitions list */}
       <style>{`
         @media (max-width: 600px) {
@@ -196,7 +216,12 @@ export function CompetitionsManager() {
         <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.2)', border: '1px dashed rgba(255,255,255,0.08)', fontSize: '0.78rem', letterSpacing: '0.2em' }}>
           NEMA NATJECANJA — KREIRAJ PRVO
         </div>
-      ) : competitions.map(comp => {
+      ) : [...competitions].sort((a, b) => {
+          if (sortBy === 'name-asc')  return a.name.localeCompare(b.name)
+          if (sortBy === 'name-desc') return b.name.localeCompare(a.name)
+          if (sortBy === 'date-asc')  return a.date.localeCompare(b.date)
+          return b.date.localeCompare(a.date)
+        }).map(comp => {
         const isExpanded = expandedComp === comp.id
         const athleteIds = new Set(comp.comp_athletes?.map(ca => ca.athlete_id) ?? [])
 

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Trophy, TrendingUp, Award, Instagram, Loader2 } from 'lucide-react'
+import { Trophy, TrendingUp, Award, Instagram, Loader2, Pencil, Plus, X } from 'lucide-react'
 import Footer from '@/app/components/Footer'
 import Navbar from '@/app/components/Navbar'
 import { createClient } from '@/lib/supabase/client'
@@ -25,10 +25,29 @@ type AthleteStat = {
   display_order: number
 }
 
+type AthleteForm = {
+  name: string
+  nickname: string
+  img: string
+  category: string
+  squat: string
+  bench: string
+  deadlift: string
+  total: string
+  glp: string
+  instagram: string
+  highlights: string
+  is_active: boolean
+}
+
+const emptyForm: AthleteForm = {
+  name: '', nickname: '', img: '', category: '', squat: '', bench: '',
+  deadlift: '', total: '', glp: '', instagram: '', highlights: '', is_active: true,
+}
 
 function normName(s: string | null | undefined) {
   if (!s) return ''
-  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
 }
 
 function glpTier(glp: number): { label: string; color: string } {
@@ -103,34 +122,51 @@ export default function TeamPage() {
   const [hoveredMember, setHoveredMember] = useState<string | null>(null)
   const [athletes, setAthletes] = useState<AthleteStat[]>([])
   const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  // Admin modal state
+  const [showModal, setShowModal] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [form, setForm] = useState<AthleteForm>(emptyForm)
+  const [modalSaving, setModalSaving] = useState(false)
+  const [modalError, setModalError] = useState('')
 
   const heroReveal  = useReveal(0.05)
   const statsReveal = useReveal(0.1)
   const ctaReveal   = useReveal(0.1)
 
+  const loadAthletes = async () => {
+    const { data } = await supabase.from('athlete_stats').select('*').eq('is_active', true)
+    const list: AthleteStat[] = (data ?? []).map((s: any) => ({
+      id:            s.id,
+      name:          s.name ?? '',
+      nickname:      s.nickname ?? null,
+      img:           s.img ?? null,
+      category:      s.category ?? '',
+      squat:         (s.squat    ?? 0) as number,
+      bench:         (s.bench    ?? 0) as number,
+      deadlift:      (s.deadlift ?? 0) as number,
+      total:         (s.total    ?? 0) as number,
+      glp:           (s.glp      ?? 0) as number,
+      highlights:    s.highlights ?? null,
+      instagram:     s.instagram ?? null,
+      display_order: s.display_order ?? 99,
+    }))
+    list.sort((a, b) => a.display_order - b.display_order || a.name.localeCompare(b.name))
+    setAthletes(list)
+  }
+
   useEffect(() => {
-    const load = async () => {
-      const { data } = await supabase.from('athlete_stats').select('*').eq('is_active', true)
-      const athletes: AthleteStat[] = (data ?? []).map((s: any) => ({
-        id:            s.id,
-        name:          s.name ?? '',
-        nickname:      s.nickname ?? null,
-        img:           s.img ?? null,
-        category:      s.category ?? '',
-        squat:         (s.squat    ?? 0) as number,
-        bench:         (s.bench    ?? 0) as number,
-        deadlift:      (s.deadlift ?? 0) as number,
-        total:         (s.total    ?? 0) as number,
-        glp:           (s.glp      ?? 0) as number,
-        highlights:    s.highlights ?? null,
-        instagram:     s.instagram ?? null,
-        display_order: s.display_order ?? 99,
-      }))
-      athletes.sort((a, b) => a.display_order - b.display_order || a.name.localeCompare(b.name))
-      setAthletes(athletes)
+    const init = async () => {
+      await loadAthletes()
       setLoading(false)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user?.id) {
+        const { data: prof } = await supabase.from('profiles').select('role').eq('id', session.user.id).single()
+        setIsAdmin(prof?.role === 'admin')
+      }
     }
-    load()
+    init()
   }, [])
 
   const filteredMembers = athletes.filter(m => {
@@ -151,6 +187,82 @@ export default function TeamPage() {
     { label: t('team.stats.combined'), value: `${combinedTotal.toLocaleString()}kg`, icon: <TrendingUp size={20} /> },
     { label: t('team.stats.glp'),      value: String(topGlp),                       icon: <Trophy size={20} /> },
   ]
+
+  const openAdd = () => {
+    setEditingId(null)
+    setForm(emptyForm)
+    setModalError('')
+    setShowModal(true)
+  }
+
+  const openEdit = (member: AthleteStat) => {
+    setEditingId(member.id)
+    setForm({
+      name:       member.name,
+      nickname:   member.nickname ?? '',
+      img:        member.img ?? '',
+      category:   member.category,
+      squat:      member.squat > 0 ? String(member.squat) : '',
+      bench:      member.bench > 0 ? String(member.bench) : '',
+      deadlift:   member.deadlift > 0 ? String(member.deadlift) : '',
+      total:      member.total > 0 ? String(member.total) : '',
+      glp:        member.glp > 0 ? String(member.glp) : '',
+      instagram:  member.instagram ?? '',
+      highlights: (member.highlights ?? []).join('\n'),
+      is_active:  true,
+    })
+    setModalError('')
+    setShowModal(true)
+  }
+
+  const saveAthlete = async () => {
+    if (!form.name.trim()) { setModalError('Ime je obavezno.'); return }
+    setModalSaving(true)
+    setModalError('')
+    const sq = parseFloat(form.squat) || 0
+    const bp = parseFloat(form.bench) || 0
+    const dl = parseFloat(form.deadlift) || 0
+    const tot = parseFloat(form.total) || (sq + bp + dl) || 0
+    const glp = parseFloat(form.glp) || 0
+    const highlights = form.highlights.split('\n').map(s => s.trim()).filter(Boolean)
+    const payload = {
+      name:          form.name.trim(),
+      nickname:      form.nickname.trim() || null,
+      img:           form.img.trim() || null,
+      category:      form.category.trim(),
+      squat:         sq,
+      bench:         bp,
+      deadlift:      dl,
+      total:         tot,
+      glp:           glp,
+      instagram:     form.instagram.trim() || null,
+      highlights:    highlights.length > 0 ? highlights : null,
+      is_active:     form.is_active,
+      updated_at:    new Date().toISOString(),
+    }
+    let err: any
+    if (editingId) {
+      const res = await supabase.from('athlete_stats').update(payload).eq('id', editingId)
+      err = res.error
+    } else {
+      const res = await supabase.from('athlete_stats').insert({ ...payload, display_order: athletes.length })
+      err = res.error
+    }
+    if (err) { setModalError(err.message); setModalSaving(false); return }
+    await loadAthletes()
+    setShowModal(false)
+    setModalSaving(false)
+  }
+
+  const deleteAthlete = async () => {
+    if (!editingId) return
+    if (!confirm('Sakriti ovog sportistu s javne stranice? (is_active = false)')) return
+    await supabase.from('athlete_stats').update({ is_active: false }).eq('id', editingId)
+    await loadAthletes()
+    setShowModal(false)
+  }
+
+  const setF = (k: keyof AthleteForm, v: string | boolean) => setForm(f => ({ ...f, [k]: v }))
 
   return (
     <div style={{ background: '#050505', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
@@ -199,7 +311,7 @@ export default function TeamPage() {
         </div>
       </section>
 
-      {/* GRID — FIX: bez ref/opacity JS logike, samo CSS animacija */}
+      {/* GRID */}
       <section style={{ padding: '120px 60px', maxWidth: '1600px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '80px 0', color: 'rgba(255,255,255,0.3)' }}>
@@ -226,6 +338,15 @@ export default function TeamPage() {
                   animationDelay: `${i * 0.06}s`,
                 }}
               >
+                {/* Admin edit button */}
+                {isAdmin && (
+                  <button
+                    onClick={e => { e.stopPropagation(); openEdit(member) }}
+                    style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 10, background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', padding: '6px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.6rem', letterSpacing: '0.15em', backdropFilter: 'blur(8px)', fontFamily: 'var(--fm)', fontWeight: 700 }}>
+                    <Pencil size={11} /> UREDI
+                  </button>
+                )}
+
                 {/* IMAGE */}
                 <div style={{ height: '400px', overflow: 'hidden', position: 'relative', background: '#000' }}>
                   {member.img ? (
@@ -290,8 +411,8 @@ export default function TeamPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                           <div style={{ fontSize: '0.55rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)', marginBottom: '5px' }}>GLP</div>
                           <div style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1 }}>{member.glp}</div>
-                          {member.glp > 0 && (() => { const t = glpTier(member.glp); return (
-                            <div style={{ fontSize: '0.5rem', letterSpacing: '0.18em', color: t.color, fontWeight: 700, marginTop: '4px' }}>{t.label}</div>
+                          {member.glp > 0 && (() => { const tier = glpTier(member.glp); return (
+                            <div style={{ fontSize: '0.5rem', letterSpacing: '0.18em', color: tier.color, fontWeight: 700, marginTop: '4px' }}>{tier.label}</div>
                           )})()}
                         </div>
                       </div>
@@ -315,6 +436,30 @@ export default function TeamPage() {
                 </div>
               </div>
             ))}
+
+            {/* Admin: add new athlete card */}
+            {isAdmin && (
+              <div
+                onClick={openAdd}
+                style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px dashed rgba(255,255,255,0.12)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '16px',
+                  cursor: 'pointer',
+                  minHeight: '300px',
+                  transition: 'border-color 0.25s, background 0.25s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}
+              >
+                <Plus size={32} color="rgba(255,255,255,0.3)" />
+                <div style={{ fontSize: '0.65rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontWeight: 700 }}>DODAJ SPORTISTU</div>
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -338,8 +483,95 @@ export default function TeamPage() {
 
       <Footer />
 
+      {/* Admin add/edit modal */}
+      {showModal && (
+        <div onClick={() => setShowModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.12)', padding: '36px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', animation: 'slideUp 0.25s ease' }}>
+            <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '4px' }}>
+              <X size={18} />
+            </button>
+            <div style={{ fontSize: '0.6rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.3)', marginBottom: '28px', fontFamily: 'var(--fm)', fontWeight: 700 }}>
+              {editingId ? 'UREDI SPORTISTU' : 'DODAJ SPORTISTU'}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Name + nickname */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                {[['IME I PREZIME *', 'name', 'Ime Prezime'], ['NADIMAK', 'nickname', '"The Beast"']].map(([label, key, ph]) => (
+                  <div key={key}>
+                    <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>{label}</div>
+                    <input value={form[key as keyof AthleteForm] as string} onChange={e => setF(key as keyof AthleteForm, e.target.value)} placeholder={ph}
+                      style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.9rem', padding: '8px 0', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Category */}
+              <div>
+                <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>KATEGORIJA</div>
+                <input value={form.category} onChange={e => setF('category', e.target.value)} placeholder="npr. M-93, F-72"
+                  style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.9rem', padding: '8px 0', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
+              </div>
+
+              {/* Lifts */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
+                {[['ČUČANJ kg', 'squat'], ['BENCH kg', 'bench'], ['MRTVO kg', 'deadlift'], ['TOTAL kg', 'total']].map(([label, key]) => (
+                  <div key={key}>
+                    <div style={{ fontSize: '0.5rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>{label}</div>
+                    <input value={form[key as keyof AthleteForm] as string} onChange={e => setF(key as keyof AthleteForm, e.target.value)} placeholder="0" type="number" min="0"
+                      style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.9rem', padding: '8px 0', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
+                  </div>
+                ))}
+              </div>
+
+              {/* GLP */}
+              <div>
+                <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>GL POINTS</div>
+                <input value={form.glp} onChange={e => setF('glp', e.target.value)} placeholder="0.00" type="number" min="0" step="0.01"
+                  style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.9rem', padding: '8px 0', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
+              </div>
+
+              {/* Instagram + img */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                {[['INSTAGRAM URL', 'instagram', 'https://instagram.com/...'], ['SLIKA URL', 'img', 'https://...']].map(([label, key, ph]) => (
+                  <div key={key}>
+                    <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>{label}</div>
+                    <input value={form[key as keyof AthleteForm] as string} onChange={e => setF(key as keyof AthleteForm, e.target.value)} placeholder={ph}
+                      style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.9rem', padding: '8px 0', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Highlights */}
+              <div>
+                <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>HIGHLIGHTS <span style={{ color: 'rgba(255,255,255,0.15)' }}>(jedan po liniji)</span></div>
+                <textarea value={form.highlights} onChange={e => setF('highlights', e.target.value)} placeholder={"3x prvak države\nIPF Junior rekord"} rows={3}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.85rem', padding: '10px 12px', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box', resize: 'vertical' }} />
+              </div>
+
+              {modalError && <div style={{ fontSize: '0.75rem', color: '#ef4444', fontFamily: 'var(--fm)' }}>{modalError}</div>}
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                {editingId && (
+                  <button onClick={deleteAthlete} style={{ padding: '12px 16px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', cursor: 'pointer', fontSize: '0.6rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700 }}>
+                    SAKRIJ
+                  </button>
+                )}
+                <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700 }}>
+                  ODUSTANI
+                </button>
+                <button onClick={saveAthlete} disabled={modalSaving} style={{ flex: 2, padding: '12px', background: modalSaving ? 'rgba(255,255,255,0.05)' : '#fff', color: modalSaving ? 'rgba(255,255,255,0.3)' : '#000', border: 'none', cursor: modalSaving ? 'not-allowed' : 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  {modalSaving ? <><Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> SPREMA...</> : 'SPREMI'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes spin { to { transform: rotate(360deg) } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: none } }
 
         .team-stat-card:hover {
           background: rgba(255,255,255,0.04) !important;
