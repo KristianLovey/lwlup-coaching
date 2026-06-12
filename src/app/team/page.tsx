@@ -457,7 +457,7 @@ export default function TeamPage() {
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}
               >
                 <Plus size={32} color="rgba(255,255,255,0.3)" />
-                <div style={{ fontSize: '0.65rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontWeight: 700 }}>DODAJ SPORTISTU</div>
+                <div style={{ fontSize: '0.65rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontWeight: 700 }}>DODAJ LIFTERA</div>
               </div>
             )}
           </div>
@@ -491,7 +491,7 @@ export default function TeamPage() {
               <X size={18} />
             </button>
             <div style={{ fontSize: '0.6rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.3)', marginBottom: '28px', fontFamily: 'var(--fm)', fontWeight: 700 }}>
-              {editingId ? 'UREDI SPORTISTU' : 'DODAJ SPORTISTU'}
+              {editingId ? 'UREDI LIFTERA' : 'DODAJ LIFTERA'}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
