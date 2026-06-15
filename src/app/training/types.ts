@@ -1,5 +1,17 @@
 // src/app/training/types.ts
 export type Exercise = { id: string; name: string; category: string; notes: string | null }
+
+// ── Set plan types ─────────────────────────────────────────────────
+export type SetPlanType = 'backoff' | 'dropset'
+export type DropConfig = { pct: number; ref: number } // ref = 0-based set index
+export type SetPlan = {
+  type: SetPlanType
+  top_weight: number
+  backoff_pct: number
+  direction: 'asc' | 'desc'
+  drop_configs: DropConfig[]
+}
+
 export type WorkoutExercise = {
   id: string; workout_id: string; exercise_id: string; exercise_order: number
   planned_sets: number; planned_reps: string | null; planned_weight_kg: number | null
@@ -8,6 +20,7 @@ export type WorkoutExercise = {
   actual_sets: number | null; actual_reps: string | null; actual_weight_kg: number | null
   actual_rpe: number | null; actual_note: string | null
   notes: string | null; completed: boolean; is_top_set: boolean | null; exercise?: Exercise
+  set_plan?: SetPlan | null
   // runtime-only (not in DB) — used for progress tracking
   _completedSets?: number; _totalSets?: number
 }

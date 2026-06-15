@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Exercise, WorkoutExercise, Workout, Week, SetLog, Competition } from './types'
+import { SetPlanSection, SetPlanWeightsView } from './training-setplan'
 
 const supabase = createClient()
 
@@ -1016,6 +1017,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
 }) {
   const [expanded, setExpanded]     = useState(false)
   const [setsOpen, setSetsOpen]     = useState(false)
+  const [planOpen, setPlanOpen]     = useState(false)
   const [showHistory, setShowHistory]   = useState(false)
   const [historyLogs, setHistoryLogs]   = useState<{ dayName: string; logs: any[] }[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
@@ -1135,12 +1137,26 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
               </div>
             ) : <div style={{ flex: 1 }} />}
             <button
+              onClick={() => setPlanOpen(v => !v)}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', background: planOpen || we.set_plan ? 'rgba(107,140,255,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${planOpen || we.set_plan ? 'rgba(107,140,255,0.35)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '5px', color: planOpen || we.set_plan ? '#6b8cff' : '#555', cursor: 'pointer', padding: '4px 10px', fontSize: '0.56rem', letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700, flexShrink: 0, transition: 'all 0.2s' }}>
+              %
+            </button>
+            <button
               onClick={() => setSetsOpen(v => !v)}
               style={{ display: 'flex', alignItems: 'center', gap: '5px', background: setsOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)', border: `1px solid ${setsOpen ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '5px', color: setsOpen ? 'rgba(255,255,255,0.8)' : '#555', cursor: 'pointer', padding: '4px 10px', fontSize: '0.56rem', letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700, flexShrink: 0, transition: 'all 0.2s' }}>
               SETOVI
               <ChevronRight size={10} style={{ transform: setsOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
           </div>
+          {planOpen && (
+            <SetPlanSection
+              initialPlan={we.set_plan}
+              topWeightFallback={we.planned_weight_kg}
+              numSets={we.planned_sets ?? 3}
+              onSave={plan => onUpdate(we.id, { set_plan: plan })}
+              onClear={() => { onUpdate(we.id, { set_plan: null }); setPlanOpen(false) }}
+            />
+          )}
         </div>
       ) : (
         /* Lifter: colored-left-border design */
@@ -1197,6 +1213,9 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
                     <span style={{ fontSize: '0.62rem', color: '#f59e0b', fontFamily: 'var(--fm)' }}>↳ {we.coach_note}</span>
                   )}
                 </div>
+                {we.set_plan && (
+                  <SetPlanWeightsView plan={we.set_plan} numSets={we.planned_sets ?? 3} />
+                )}
               </div>
 
               {/* Completion dots + counter + chevron */}
