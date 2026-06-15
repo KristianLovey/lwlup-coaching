@@ -12,8 +12,8 @@ import {
   Timer, Ghost, Forklift, Drama, Cat, Bird, PawPrint, Clover, Spade,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import type { Exercise, WorkoutExercise, Workout, Week, SetLog, Competition } from './types'
-import { SetPlanSection, SetPlanWeightsView } from './training-setplan'
+import type { Exercise, WorkoutExercise, Workout, Week, SetLog, Competition, SetPlanRow, SetMode } from './types'
+import { computeWeights, defaultRow } from './training-setplan'
 
 const supabase = createClient()
 
@@ -696,6 +696,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
 }) {
   const plannedSets = we.planned_sets ?? 3
   const [logs, setLogs] = useState<SetLog[]>([])
+  const [planRows, setPlanRows] = useState<SetPlanRow[]>(() =>
+    Array.from({ length: plannedSets }, (_, i) => we.set_plan?.rows?.[i] ?? defaultRow(i))
+  )
   const [saving, setSaving] = useState(false)
   const [localVals, setLocalVals] = useState<Record<string, string>>({})
   const focusedKey = useRef<string | null>(null)
@@ -793,6 +796,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       await upsertDirect(setNum, field, val)
     }
 
+    // A manual weight change cascades to any backoff sets referencing it
+    if (field === 'weight_kg') await persistBackoffWeights(planRows, updated)
+
     const filled = updated.filter(s => s.weight_kg || s.reps)
     if (filled.length > 0) {
       const avgKg = Math.round((filled.reduce((s, x) => s + (x.weight_kg ?? 0), 0) / filled.length) * 100) / 100
@@ -835,10 +841,75 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     }
   }
 
+  // ── BACKOFF (per-set plan) ──────────────────────────────────────
+  // Keep plan rows in sync when the planned set count changes
+  useEffect(() => {
+    setPlanRows(prev => {
+      if (prev.length === plannedSets) return prev
+      return Array.from({ length: plannedSets }, (_, i) => prev[i] ?? we.set_plan?.rows?.[i] ?? defaultRow(i))
+    })
+  }, [plannedSets]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const computed = computeWeights(logs.map(l => l.weight_kg), planRows)
+
+  const savePlan = (rows: SetPlanRow[]) => onAggregateUpdate({ set_plan: { rows } })
+
+  // Recompute every backoff set's weight from the manual sets it references and
+  // persist the changed weights into set_logs (so it becomes the planned weight).
+  const persistBackoffWeights = async (rows: SetPlanRow[], baseLogs: SetLog[]) => {
+    const comp = computeWeights(baseLogs.map(l => l.weight_kg), rows)
+    const changed: { setNum: number; val: number | null }[] = []
+    baseLogs.forEach((l, i) => {
+      if (rows[i]?.mode === 'backoff' && comp[i] !== l.weight_kg) {
+        changed.push({ setNum: l.set_number, val: comp[i] })
+      }
+    })
+    if (changed.length === 0) return
+    const newLogs = baseLogs.map(l => {
+      const u = changed.find(c => c.setNum === l.set_number)
+      return u ? { ...l, weight_kg: u.val } : l
+    })
+    setLogs(newLogs)
+    setLocalVals(prev => {
+      const next = { ...prev }
+      changed.forEach(c => { next[`${c.setNum}_weight_kg`] = c.val != null ? String(c.val) : '' })
+      return next
+    })
+    for (const c of changed) {
+      if (isAdmin) await upsertViaApi(c.setNum, 'weight_kg', c.val)
+      else await upsertDirect(c.setNum, 'weight_kg', c.val)
+    }
+  }
+
+  const toggleBackoff = (setNum: number) => {
+    const i = setNum - 1
+    if (i === 0) return // first set has nothing earlier to reference
+    const cur = planRows[i] ?? defaultRow(i)
+    const nextMode: SetMode = cur.mode === 'backoff' ? 'manual' : 'backoff'
+    const ref = cur.ref >= i ? Math.max(0, i - 1) : cur.ref
+    const rows = planRows.map((r, idx) => idx === i
+      ? { ...(r ?? defaultRow(idx)), mode: nextMode, ref }
+      : (r ?? defaultRow(idx)))
+    setPlanRows(rows)
+    savePlan(rows)
+    if (nextMode === 'backoff') persistBackoffWeights(rows, logs)
+  }
+
+  const updatePlanRow = (i: number, field: 'pct' | 'ref', val: number) => {
+    const rows = planRows.map((r, idx) => idx === i
+      ? { ...(r ?? defaultRow(idx)), [field]: val }
+      : (r ?? defaultRow(idx)))
+    setPlanRows(rows)
+    savePlan(rows)
+    persistBackoffWeights(rows, logs)
+  }
+
   // Both admin and lifter use the same table layout.
   // Admin routes saves through service-role API; lifter writes directly via anon client.
   const targetRpe = we.target_rpe ?? we.planned_rpe
-  const SLR_GRID = '52px 1fr 1fr 80px 44px'
+  // Admin gets an extra "B" (backoff) column after TOP
+  const SLR_GRID = isAdmin ? '48px 1fr 1fr 62px 34px 34px' : '52px 1fr 1fr 80px 44px'
+  const BLUE = '#6b8cff'
   const cellStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)' }
   const inputStyle: React.CSSProperties = { width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#f0f0f0', padding: '5px 6px', fontSize: '1rem', outline: 'none', fontFamily: 'var(--fm)', fontWeight: 700, textAlign: 'center', boxSizing: 'border-box' }
 
@@ -873,9 +944,14 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
             RPE{targetRpe ? ` · ${targetRpe}` : ''}
           </span>
         </div>
-        <div style={{ ...cellStyle, padding: '6px 0', borderRight: 'none' }}>
+        <div style={{ ...cellStyle, padding: '6px 0', borderRight: isAdmin ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
           <span style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)' }}>{isAdmin ? 'TOP' : '○'}</span>
         </div>
+        {isAdmin && (
+          <div style={{ ...cellStyle, padding: '6px 0', borderRight: 'none' }}>
+            <span style={{ fontSize: '0.4rem', color: BLUE, letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)' }} title="Backoff">B</span>
+          </div>
+        )}
       </div>
 
 
@@ -884,6 +960,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
         const prevComplete = prevLog?.completed && prevLog?.weight_kg && prevLog?.reps
         const isLocked = !isAdmin && i > 0 && !log.is_top_set && !prevComplete
         const canComplete = !isAdmin && !log.completed && (!log.weight_kg || !log.reps)
+        const row = planRows[i] ?? defaultRow(i)
+        const isBackoff = isAdmin && row.mode === 'backoff'
+        const compVal = computed[i]
         return (
           <div key={i} style={{ position: 'relative', overflow: 'hidden' }}>
             {/* Row content — blurred when locked */}
@@ -898,17 +977,26 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                 )}
               </div>
 
-              {/* KG input */}
-              <div style={{ ...cellStyle, padding: '10px 12px', background: 'rgba(255,255,255,0.015)' }}>
-                <input
-                  type="number" step="2.5"
-                  value={localVals[`${log.set_number}_weight_kg`] ?? ''}
-                  onChange={e => { setLocalVals(v => ({ ...v, [`${log.set_number}_weight_kg`]: e.target.value })); scheduleSet(log.set_number, 'weight_kg', e.target.value) }}
-                  onFocus={e => { focusedKey.current = `${log.set_number}_weight_kg`; e.target.style.borderBottomColor = 'rgba(255,255,255,0.5)' }}
-                  onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushSet(log.set_number, 'weight_kg', e.target.value) }}
-                  placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : 'upiši'}
-                  style={{ ...inputStyle, color: 'rgba(255,255,255,0.85)' }}
-                />
+              {/* KG — backoff sets show a computed (read-only) weight */}
+              <div style={{ ...cellStyle, padding: '10px 12px', background: isBackoff ? 'rgba(107,140,255,0.06)' : 'rgba(255,255,255,0.015)' }}>
+                {isBackoff ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', width: '100%' }} title={`${row.pct}% od seta ${row.ref + 1}`}>
+                    <span style={{ fontSize: '1rem', fontWeight: 800, color: compVal != null ? BLUE : '#555', fontFamily: 'var(--fm)' }}>
+                      {compVal != null ? compVal : '—'}
+                    </span>
+                    <span style={{ fontSize: '0.4rem', color: 'rgba(107,140,255,0.5)', fontFamily: 'var(--fm)', letterSpacing: '0.06em' }}>↓{row.pct}%</span>
+                  </div>
+                ) : (
+                  <input
+                    type="number" step="2.5"
+                    value={localVals[`${log.set_number}_weight_kg`] ?? ''}
+                    onChange={e => { setLocalVals(v => ({ ...v, [`${log.set_number}_weight_kg`]: e.target.value })); scheduleSet(log.set_number, 'weight_kg', e.target.value) }}
+                    onFocus={e => { focusedKey.current = `${log.set_number}_weight_kg`; e.target.style.borderBottomColor = 'rgba(255,255,255,0.5)' }}
+                    onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushSet(log.set_number, 'weight_kg', e.target.value) }}
+                    placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : 'upiši'}
+                    style={{ ...inputStyle, color: 'rgba(255,255,255,0.85)' }}
+                  />
+                )}
               </div>
 
               {/* REPS input */}
@@ -961,7 +1049,43 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                   </button>
                 )}
               </div>
+
+              {/* Admin: backoff toggle */}
+              {isAdmin && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {i === 0 ? (
+                    <span style={{ color: '#222', fontSize: '0.7rem' }}>·</span>
+                  ) : (
+                    <button onClick={() => toggleBackoff(log.set_number)}
+                      title={isBackoff ? 'Makni backoff' : 'Backoff od ranijeg seta'}
+                      style={{ background: isBackoff ? 'rgba(107,140,255,0.16)' : 'transparent', border: `1px solid ${isBackoff ? 'rgba(107,140,255,0.4)' : 'transparent'}`, borderRadius: '5px', cursor: 'pointer', color: isBackoff ? BLUE : '#333', width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', fontSize: '0.6rem', fontWeight: 800, fontFamily: 'var(--fm)' }}>
+                      {isBackoff ? '◉' : '○'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Admin: inline backoff config under a backoff set */}
+            {isBackoff && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px 9px 50px', background: 'rgba(107,140,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <span style={{ fontSize: '0.4rem', color: BLUE, letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)' }}>BACKOFF</span>
+                <input type="number" min={1} max={200} step={0.5} value={row.pct || ''}
+                  onChange={e => updatePlanRow(i, 'pct', Number(e.target.value) || 0)}
+                  style={{ width: '52px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(107,140,255,0.3)', borderRadius: '5px', color: BLUE, fontFamily: 'var(--fm)', fontSize: '0.82rem', fontWeight: 800, padding: '3px 6px', outline: 'none', textAlign: 'right' as const }} />
+                <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>% od</span>
+                <select value={row.ref}
+                  onChange={e => updatePlanRow(i, 'ref', Number(e.target.value))}
+                  style={{ background: '#111', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--fm)', fontSize: '0.56rem', padding: '4px 6px', outline: 'none', cursor: 'pointer' }}>
+                  {Array.from({ length: i }, (_, ri) => (
+                    <option key={ri} value={ri} style={{ background: '#0d0d0d' }}>Set {ri + 1}</option>
+                  ))}
+                </select>
+                <span style={{ marginLeft: 'auto', fontSize: '0.78rem', fontWeight: 800, color: compVal != null ? '#f0f0f0' : '#555', fontFamily: 'var(--fm)' }}>
+                  → {compVal != null ? `${compVal} kg` : '—'}
+                </span>
+              </div>
+            )}
 
             {/* Lock overlay — shown when previous set not completed */}
             {isLocked && (
@@ -1017,7 +1141,6 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
 }) {
   const [expanded, setExpanded]     = useState(false)
   const [setsOpen, setSetsOpen]     = useState(false)
-  const [planOpen, setPlanOpen]     = useState(false)
   const [showHistory, setShowHistory]   = useState(false)
   const [historyLogs, setHistoryLogs]   = useState<{ dayName: string; logs: any[] }[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
@@ -1137,26 +1260,12 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
               </div>
             ) : <div style={{ flex: 1 }} />}
             <button
-              onClick={() => setPlanOpen(v => !v)}
-              style={{ display: 'flex', alignItems: 'center', gap: '5px', background: planOpen || we.set_plan ? 'rgba(107,140,255,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${planOpen || we.set_plan ? 'rgba(107,140,255,0.35)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '5px', color: planOpen || we.set_plan ? '#6b8cff' : '#555', cursor: 'pointer', padding: '4px 10px', fontSize: '0.56rem', letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700, flexShrink: 0, transition: 'all 0.2s' }}>
-              %
-            </button>
-            <button
               onClick={() => setSetsOpen(v => !v)}
               style={{ display: 'flex', alignItems: 'center', gap: '5px', background: setsOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)', border: `1px solid ${setsOpen ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '5px', color: setsOpen ? 'rgba(255,255,255,0.8)' : '#555', cursor: 'pointer', padding: '4px 10px', fontSize: '0.56rem', letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700, flexShrink: 0, transition: 'all 0.2s' }}>
               SETOVI
               <ChevronRight size={10} style={{ transform: setsOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
           </div>
-          {planOpen && (
-            <SetPlanSection
-              initialPlan={we.set_plan}
-              topWeightFallback={we.planned_weight_kg}
-              numSets={we.planned_sets ?? 3}
-              onSave={plan => onUpdate(we.id, { set_plan: plan })}
-              onClear={() => { onUpdate(we.id, { set_plan: null }); setPlanOpen(false) }}
-            />
-          )}
         </div>
       ) : (
         /* Lifter: colored-left-border design */
@@ -1213,9 +1322,6 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
                     <span style={{ fontSize: '0.62rem', color: '#f59e0b', fontFamily: 'var(--fm)' }}>↳ {we.coach_note}</span>
                   )}
                 </div>
-                {we.set_plan && (
-                  <SetPlanWeightsView plan={we.set_plan} numSets={we.planned_sets ?? 3} />
-                )}
               </div>
 
               {/* Completion dots + counter + chevron */}

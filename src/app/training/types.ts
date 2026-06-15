@@ -2,15 +2,11 @@
 export type Exercise = { id: string; name: string; category: string; notes: string | null }
 
 // ── Set plan types ─────────────────────────────────────────────────
-export type SetPlanType = 'backoff' | 'dropset'
-export type DropConfig = { pct: number; ref: number } // ref = 0-based set index
-export type SetPlan = {
-  type: SetPlanType
-  top_weight: number
-  backoff_pct: number
-  direction: 'asc' | 'desc'
-  drop_configs: DropConfig[]
-}
+// Per-set configuration. Each set is either a "manual" weight (typed by the
+// coach) or a "backoff" set computed as a % of another (earlier) set.
+export type SetMode = 'manual' | 'backoff'
+export type SetPlanRow = { mode: SetMode; pct: number; ref: number } // ref = 0-based index of the referenced set
+export type SetPlan = { rows: SetPlanRow[] } // rows[i] → set number i+1
 
 export type WorkoutExercise = {
   id: string; workout_id: string; exercise_id: string; exercise_order: number
