@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
-  GripVertical, Loader2, LogOut, Lock,
+  GripVertical, Loader2, LogOut, Lock, TrendingDown,
   User, Shield, X, Dumbbell, BarChart2, MessageSquare, Copy, CalendarDays, ArrowUp, ArrowDown,
   Flame, Zap, Rocket, Gauge, Activity, Trophy, Medal, Crown, Star, Award, Gem,
   Target, Crosshair, Sword, Compass, Mountain, Anchor, Skull, Sparkles, Brain,
@@ -839,6 +839,17 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     for (const l of newLogs) {
       await upsertDirect(l.set_number, 'is_top_set', l.is_top_set)
     }
+    // A top set can't also be a backoff set — clear backoff on it
+    if (isTop) {
+      const i = setNum - 1
+      if (planRows[i]?.mode === 'backoff') {
+        const rows = planRows.map((r, idx) => idx === i
+          ? { ...(r ?? defaultRow(idx)), mode: 'manual' as SetMode }
+          : (r ?? defaultRow(idx)))
+        setPlanRows(rows)
+        savePlan(rows)
+      }
+    }
   }
 
   // ── BACKOFF (per-set plan) ──────────────────────────────────────
@@ -892,7 +903,18 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       : (r ?? defaultRow(idx)))
     setPlanRows(rows)
     savePlan(rows)
-    if (nextMode === 'backoff') persistBackoffWeights(rows, logs)
+    if (nextMode === 'backoff') {
+      // A backoff set can't also be the top set — clear top on it
+      const s = logs.find(l => l.set_number === setNum)
+      if (s?.is_top_set) {
+        const newLogs = logs.map(l => l.set_number === setNum ? { ...l, is_top_set: false } : l)
+        setLogs(newLogs)
+        upsertDirect(setNum, 'is_top_set', false)
+        persistBackoffWeights(rows, newLogs)
+      } else {
+        persistBackoffWeights(rows, logs)
+      }
+    }
   }
 
   const updatePlanRow = (i: number, field: 'pct' | 'ref', val: number) => {
@@ -948,8 +970,8 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
           <span style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)' }}>{isAdmin ? 'TOP' : '○'}</span>
         </div>
         {isAdmin && (
-          <div style={{ ...cellStyle, padding: '6px 0', borderRight: 'none' }}>
-            <span style={{ fontSize: '0.4rem', color: BLUE, letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)' }} title="Backoff">B</span>
+          <div style={{ ...cellStyle, padding: '6px 0', borderRight: 'none' }} title="Backoff">
+            <TrendingDown size={9} color={BLUE} strokeWidth={2.5} />
           </div>
         )}
       </div>
@@ -980,11 +1002,13 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
               {/* KG — backoff sets show a computed (read-only) weight */}
               <div style={{ ...cellStyle, padding: '10px 12px', background: isBackoff ? 'rgba(107,140,255,0.06)' : 'rgba(255,255,255,0.015)' }}>
                 {isBackoff ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', width: '100%' }} title={`${row.pct}% od seta ${row.ref + 1}`}>
-                    <span style={{ fontSize: '1rem', fontWeight: 800, color: compVal != null ? BLUE : '#555', fontFamily: 'var(--fm)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: '2px', width: '100%' }} title={`${row.pct}% od seta ${row.ref + 1}`}>
+                    <span style={{ fontSize: '0.98rem', fontWeight: 800, color: compVal != null ? BLUE : '#555', fontFamily: 'var(--fd)', lineHeight: 1.05 }}>
                       {compVal != null ? compVal : '—'}
                     </span>
-                    <span style={{ fontSize: '0.4rem', color: 'rgba(107,140,255,0.5)', fontFamily: 'var(--fm)', letterSpacing: '0.06em' }}>↓{row.pct}%</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', fontSize: '0.4rem', color: 'rgba(107,140,255,0.85)', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.04em', background: 'rgba(107,140,255,0.12)', borderRadius: '3px', padding: '1px 4px' }}>
+                      <TrendingDown size={7} strokeWidth={2.5} />{row.pct}%
+                    </span>
                   </div>
                 ) : (
                   <input
@@ -1034,8 +1058,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {isAdmin ? (
                   <button onClick={() => toggleTopSet(log.set_number)}
-                    title={log.is_top_set ? 'Makni top set' : 'Označi kao top set'}
-                    style={{ background: log.is_top_set ? 'rgba(250,204,21,0.1)' : 'transparent', border: 'none', cursor: 'pointer', color: log.is_top_set ? '#facc15' : '#333', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', fontSize: '0.9rem' }}>
+                    disabled={isBackoff}
+                    title={isBackoff ? 'Backoff set ne može biti top set' : (log.is_top_set ? 'Makni top set' : 'Označi kao top set')}
+                    style={{ background: log.is_top_set ? 'rgba(250,204,21,0.12)' : 'transparent', border: `1px solid ${log.is_top_set ? 'rgba(250,204,21,0.4)' : 'transparent'}`, borderRadius: '6px', cursor: isBackoff ? 'not-allowed' : 'pointer', color: log.is_top_set ? '#facc15' : '#3a3a3a', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', fontSize: '0.92rem', opacity: isBackoff ? 0.2 : 1 }}>
                     {log.is_top_set ? '★' : '☆'}
                   </button>
                 ) : (
@@ -1054,12 +1079,13 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
               {isAdmin && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {i === 0 ? (
-                    <span style={{ color: '#222', fontSize: '0.7rem' }}>·</span>
+                    <span style={{ color: '#2a2a2a', fontSize: '0.7rem' }}>–</span>
                   ) : (
                     <button onClick={() => toggleBackoff(log.set_number)}
-                      title={isBackoff ? 'Makni backoff' : 'Backoff od ranijeg seta'}
-                      style={{ background: isBackoff ? 'rgba(107,140,255,0.16)' : 'transparent', border: `1px solid ${isBackoff ? 'rgba(107,140,255,0.4)' : 'transparent'}`, borderRadius: '5px', cursor: 'pointer', color: isBackoff ? BLUE : '#333', width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', fontSize: '0.6rem', fontWeight: 800, fontFamily: 'var(--fm)' }}>
-                      {isBackoff ? '◉' : '○'}
+                      disabled={!!log.is_top_set}
+                      title={log.is_top_set ? 'Top set ne može biti backoff' : (isBackoff ? 'Makni backoff' : 'Backoff od ranijeg seta')}
+                      style={{ background: isBackoff ? 'rgba(107,140,255,0.18)' : 'transparent', border: `1px solid ${isBackoff ? 'rgba(107,140,255,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '6px', cursor: log.is_top_set ? 'not-allowed' : 'pointer', color: isBackoff ? BLUE : '#3a3a3a', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: log.is_top_set ? 0.2 : 1 }}>
+                      <TrendingDown size={13} strokeWidth={2.5} />
                     </button>
                   )}
                 </div>
@@ -1068,22 +1094,34 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
 
             {/* Admin: inline backoff config under a backoff set */}
             {isBackoff && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px 9px 50px', background: 'rgba(107,140,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <span style={{ fontSize: '0.4rem', color: BLUE, letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)' }}>BACKOFF</span>
-                <input type="number" min={1} max={200} step={0.5} value={row.pct || ''}
-                  onChange={e => updatePlanRow(i, 'pct', Number(e.target.value) || 0)}
-                  style={{ width: '52px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(107,140,255,0.3)', borderRadius: '5px', color: BLUE, fontFamily: 'var(--fm)', fontSize: '0.82rem', fontWeight: 800, padding: '3px 6px', outline: 'none', textAlign: 'right' as const }} />
-                <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>% od</span>
-                <select value={row.ref}
-                  onChange={e => updatePlanRow(i, 'ref', Number(e.target.value))}
-                  style={{ background: '#111', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--fm)', fontSize: '0.56rem', padding: '4px 6px', outline: 'none', cursor: 'pointer' }}>
-                  {Array.from({ length: i }, (_, ri) => (
-                    <option key={ri} value={ri} style={{ background: '#0d0d0d' }}>Set {ri + 1}</option>
-                  ))}
-                </select>
-                <span style={{ marginLeft: 'auto', fontSize: '0.78rem', fontWeight: 800, color: compVal != null ? '#f0f0f0' : '#555', fontFamily: 'var(--fm)' }}>
-                  → {compVal != null ? `${compVal} kg` : '—'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 16px 10px 50px', background: 'linear-gradient(90deg, rgba(107,140,255,0.08), rgba(107,140,255,0.015))', borderBottom: '1px solid rgba(255,255,255,0.05)', borderLeft: '2px solid rgba(107,140,255,0.55)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.42rem', color: BLUE, letterSpacing: '0.18em', fontWeight: 800, fontFamily: 'var(--fm)', flexShrink: 0 }}>
+                  <TrendingDown size={9} strokeWidth={2.5} /> BACKOFF
                 </span>
+                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(107,140,255,0.35)', borderRadius: '6px', padding: '2px 6px 2px 8px' }}>
+                  <input type="number" min={1} max={200} step={0.5} value={row.pct || ''}
+                    onChange={e => updatePlanRow(i, 'pct', Number(e.target.value) || 0)}
+                    style={{ width: '32px', background: 'transparent', border: 'none', color: BLUE, fontFamily: 'var(--fd)', fontSize: '0.85rem', fontWeight: 800, padding: 0, outline: 'none', textAlign: 'right' as const }} />
+                  <span style={{ fontSize: '0.6rem', color: 'rgba(107,140,255,0.7)', fontFamily: 'var(--fm)', fontWeight: 700, paddingLeft: '3px' }}>%</span>
+                </div>
+                <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', letterSpacing: '0.12em', fontWeight: 700 }}>OD</span>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <select value={row.ref}
+                    onChange={e => updatePlanRow(i, 'ref', Number(e.target.value))}
+                    style={{ appearance: 'none' as const, WebkitAppearance: 'none' as const, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'rgba(255,255,255,0.8)', fontFamily: 'var(--fm)', fontSize: '0.58rem', fontWeight: 700, padding: '5px 20px 5px 9px', outline: 'none', cursor: 'pointer' }}>
+                    {Array.from({ length: i }, (_, ri) => (
+                      <option key={ri} value={ri} style={{ background: '#0d0d0d' }}>Set {ri + 1}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={11} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', right: '6px', pointerEvents: 'none' }} />
+                </div>
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                  <ChevronRight size={11} color="rgba(255,255,255,0.2)" style={{ alignSelf: 'center' }} />
+                  <span style={{ fontSize: '0.95rem', fontWeight: 800, color: compVal != null ? '#f0f0f0' : '#555', fontFamily: 'var(--fd)' }}>
+                    {compVal != null ? compVal : '—'}
+                  </span>
+                  <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>kg</span>
+                </div>
               </div>
             )}
 
