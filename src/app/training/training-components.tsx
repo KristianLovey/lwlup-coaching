@@ -894,10 +894,13 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
 
   const toggleBackoff = (setNum: number) => {
     const i = setNum - 1
-    if (i === 0) return // first set has nothing earlier to reference
+    if (logs.length < 2) return // need at least one other set to reference
     const cur = planRows[i] ?? defaultRow(i)
     const nextMode: SetMode = cur.mode === 'backoff' ? 'manual' : 'backoff'
-    const ref = cur.ref >= i ? Math.max(0, i - 1) : cur.ref
+    // Reference can be any other set; fall back to previous (or next for set 1)
+    const ref = (cur.ref !== i && cur.ref >= 0 && cur.ref < logs.length)
+      ? cur.ref
+      : (i > 0 ? i - 1 : 1)
     const rows = planRows.map((r, idx) => idx === i
       ? { ...(r ?? defaultRow(idx)), mode: nextMode, ref }
       : (r ?? defaultRow(idx)))
@@ -1078,7 +1081,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
               {/* Admin: backoff toggle */}
               {isAdmin && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {i === 0 ? (
+                  {logs.length < 2 ? (
                     <span style={{ color: '#2a2a2a', fontSize: '0.7rem' }}>–</span>
                   ) : (
                     <button onClick={() => toggleBackoff(log.set_number)}
@@ -1109,7 +1112,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                   <select value={row.ref}
                     onChange={e => updatePlanRow(i, 'ref', Number(e.target.value))}
                     style={{ appearance: 'none' as const, WebkitAppearance: 'none' as const, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'rgba(255,255,255,0.8)', fontFamily: 'var(--fm)', fontSize: '0.58rem', fontWeight: 700, padding: '5px 20px 5px 9px', outline: 'none', cursor: 'pointer' }}>
-                    {Array.from({ length: i }, (_, ri) => (
+                    {logs.map((_, ri) => ri).filter(ri => ri !== i).map(ri => (
                       <option key={ri} value={ri} style={{ background: '#0d0d0d' }}>Set {ri + 1}</option>
                     ))}
                   </select>

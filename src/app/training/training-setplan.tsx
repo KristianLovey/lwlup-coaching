@@ -17,12 +17,12 @@ export function computeWeights(
     if (out[i] != null) return out[i]
     if (seen.has(i)) return null // cycle guard
     seen.add(i)
-    const row = rows[i] ?? { mode: 'manual' as const, pct: 90, ref: Math.max(0, i - 1) }
+    const row = rows[i] ?? { mode: 'manual' as const, pct: 90, ref: i > 0 ? i - 1 : 1 }
     if (row.mode !== 'backoff') {
       out[i] = manual[i] ?? null
     } else {
       const base = resolve(row.ref, seen)
-      out[i] = base != null ? Math.round(base * (row.pct || 0) / 100 * 10) / 10 : null
+      out[i] = base != null ? roundToPlate(base * (row.pct || 0) / 100) : null
     }
     return out[i]
   }
@@ -31,6 +31,12 @@ export function computeWeights(
   return out
 }
 
+// Round to the nearest 2.5 kg plate increment (e.g. 23.1 → 22.5, 24.6 → 25)
+export function roundToPlate(kg: number): number {
+  return Math.round(kg / 2.5) * 2.5
+}
+
 export function defaultRow(i: number): SetPlanRow {
-  return { mode: 'manual', pct: 90, ref: Math.max(0, i - 1) }
+  // Default reference is the previous set; the very first set falls back to the second
+  return { mode: 'manual', pct: 90, ref: i > 0 ? i - 1 : 1 }
 }
