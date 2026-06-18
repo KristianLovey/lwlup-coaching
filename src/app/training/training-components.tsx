@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Exercise, WorkoutExercise, Workout, Week, SetLog, Competition, SetPlanRow, SetMode } from './types'
-import { computeWeights, defaultRow } from './training-setplan'
+import { computeWeights, defaultRow, estimate1RM } from './training-setplan'
 
 const supabase = createClient()
 
@@ -832,13 +832,10 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     const s = logs.find(l => l.set_number === setNum)
     if (!s) return
     const isTop = !s.is_top_set
-    // Only one top set per exercise — clear others first
-    const newLogs = logs.map(l => ({ ...l, is_top_set: l.set_number === setNum ? isTop : false }))
+    // Multiple top sets allowed — just toggle this one
+    const newLogs = logs.map(l => l.set_number === setNum ? { ...l, is_top_set: isTop } : l)
     setLogs(newLogs)
-    // Save all logs: clear others, set this one
-    for (const l of newLogs) {
-      await upsertDirect(l.set_number, 'is_top_set', l.is_top_set)
-    }
+    await upsertDirect(setNum, 'is_top_set', isTop)
     // A top set can't also be a backoff set — clear backoff on it
     if (isTop) {
       const i = setNum - 1
@@ -932,9 +929,10 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   // Both admin and lifter use the same table layout.
   // Admin routes saves through service-role API; lifter writes directly via anon client.
   const targetRpe = we.target_rpe ?? we.planned_rpe
-  // Admin gets an extra "B" (backoff) column after TOP
-  const SLR_GRID = isAdmin ? '48px 1fr 1fr 62px 34px 34px' : '52px 1fr 1fr 80px 44px'
+  // Columns: SET · KG · REPS · RPE · 1RM · TOP (· B for admin)
+  const SLR_GRID = isAdmin ? '42px 0.85fr 0.62fr 76px 56px 30px 30px' : '46px 0.85fr 0.62fr 84px 58px 44px'
   const BLUE = '#6b8cff'
+  const GREEN = '#22c55e'
   const cellStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)' }
   const inputStyle: React.CSSProperties = { width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#f0f0f0', padding: '5px 6px', fontSize: '1rem', outline: 'none', fontFamily: 'var(--fm)', fontWeight: 700, textAlign: 'center', boxSizing: 'border-box' }
 
@@ -968,6 +966,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
           <span style={{ fontSize: '0.4rem', color: '#facc15', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
             RPE{targetRpe ? ` · ${targetRpe}` : ''}
           </span>
+        </div>
+        <div style={{ ...cellStyle, padding: '6px 0' }} title="Procijenjeni 1RM">
+          <span style={{ fontSize: '0.4rem', color: 'rgba(34,197,94,0.75)', letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)' }}>1RM</span>
         </div>
         <div style={{ ...cellStyle, padding: '6px 0', borderRight: isAdmin ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
           <span style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)' }}>{isAdmin ? 'TOP' : '○'}</span>
@@ -1055,6 +1056,21 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                   placeholder={targetRpe ? String(targetRpe) : 'upiši'}
                   style={{ ...inputStyle, color: log.rpe && targetRpe ? (Number(log.rpe) - Number(targetRpe) > 1 ? '#f87171' : Number(log.rpe) - Number(targetRpe) > 0 ? '#facc15' : '#4ade80') : '#e0e0e0' }}
                 />
+              </div>
+
+              {/* 1RM estimate — only for top sets */}
+              <div style={{ ...cellStyle, padding: '6px 4px', flexDirection: 'column' as const, gap: '1px' }} title={log.is_top_set ? 'Procijenjeni 1RM' : ''}>
+                {log.is_top_set ? (() => {
+                  const oneRm = estimate1RM(log.weight_kg, log.reps, log.rpe)
+                  return oneRm != null ? (
+                    <>
+                      <span style={{ fontSize: '0.84rem', fontWeight: 800, color: GREEN, fontFamily: 'var(--fd)', lineHeight: 1 }}>{oneRm}</span>
+                      <span style={{ fontSize: '0.34rem', color: 'rgba(34,197,94,0.5)', fontFamily: 'var(--fm)', letterSpacing: '0.1em' }}>kg</span>
+                    </>
+                  ) : <span style={{ color: '#333', fontSize: '0.7rem' }}>–</span>
+                })() : (
+                  <span style={{ color: '#2a2a2a', fontSize: '0.7rem' }}>·</span>
+                )}
               </div>
 
               {/* Admin: top set toggle ★ | Lifter: done toggle ✓ */}

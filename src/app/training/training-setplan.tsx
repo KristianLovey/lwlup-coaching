@@ -40,3 +40,22 @@ export function defaultRow(i: number): SetPlanRow {
   // Default reference is the previous set; the very first set falls back to the second
   return { mode: 'manual', pct: 90, ref: i > 0 ? i - 1 : 1 }
 }
+
+// ── Estimated 1RM ──────────────────────────────────────────────────────
+// Epley formula with RPE-derived reps-in-reserve. Returns the estimate
+// rounded to the nearest 2.5 kg plate, or null when there isn't enough data.
+export function estimate1RM(
+  weight: number | null | undefined,
+  reps: string | number | null | undefined,
+  rpe: number | null | undefined,
+): number | null {
+  const w = Number(weight)
+  const r = parseFloat(String(reps ?? ''))
+  if (!w || !Number.isFinite(r) || r < 1) return null
+  const rpeNum = Number(rpe)
+  // Only trust RPE within a realistic top-set range; otherwise just use reps
+  const rir = Number.isFinite(rpeNum) && rpeNum >= 5 && rpeNum <= 10 ? 10 - rpeNum : 0
+  const eff = r + rir
+  const oneRm = eff <= 1 ? w : w * (1 + eff / 30)
+  return roundToPlate(oneRm)
+}
