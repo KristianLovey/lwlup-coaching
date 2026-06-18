@@ -1163,8 +1163,11 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
         .slg-lifter { grid-template-columns: 46px minmax(0,1fr) minmax(0,0.72fr) 80px 56px 46px; }
         .set-log-row input::placeholder { color: rgba(255,255,255,0.22); font-style: italic; font-size: 0.62rem; letter-spacing: 0.05em; }
         @media (max-width: 540px) {
-          .slg-lifter { grid-template-columns: 34px minmax(0,1fr) minmax(0,0.6fr) 46px 52px 38px; }
-          .slg-admin  { grid-template-columns: 32px minmax(0,1fr) minmax(0,0.6fr) 46px 50px 28px 28px; }
+          .slg-lifter { grid-template-columns: 30px minmax(0,1fr) minmax(0,0.6fr) 42px 50px 36px; }
+          .slg-admin  { grid-template-columns: 28px minmax(0,1fr) minmax(0,0.6fr) 42px 48px 26px 26px; }
+          /* Compress so every column fits one row — !important beats inline padding */
+          .set-log-row > div, .set-log-header > div { padding-left: 3px !important; padding-right: 3px !important; min-width: 0; }
+          .set-log-row input { font-size: 0.9rem !important; padding-left: 1px !important; padding-right: 1px !important; min-width: 0; }
         }
       `}</style>
     </div>
