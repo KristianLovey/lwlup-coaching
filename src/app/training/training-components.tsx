@@ -930,7 +930,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   // Admin routes saves through service-role API; lifter writes directly via anon client.
   const targetRpe = we.target_rpe ?? we.planned_rpe
   // Columns: SET · KG · REPS · RPE · 1RM · TOP (· B for admin)
-  const SLR_GRID = isAdmin ? '42px 0.85fr 0.62fr 76px 56px 30px 30px' : '46px 0.85fr 0.62fr 84px 58px 44px'
+  // Grid template lives in the <style> block below (class `slg-admin`/`slg-lifter`)
+  // so a media query can tighten it on mobile — inline styles would override it.
+  const gridClass = isAdmin ? 'slg-admin' : 'slg-lifter'
   const BLUE = '#6b8cff'
   const GREEN = '#22c55e'
   const cellStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)' }
@@ -945,7 +947,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       )}
 
       {/* Single header row */}
-      <div className="set-log-header" style={{ display: 'grid', gridTemplateColumns: SLR_GRID, background: 'rgba(0,0,0,0.25)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+      <div className={`set-log-header ${gridClass}`} style={{ display: 'grid', background: 'rgba(0,0,0,0.25)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
         <div style={{ ...cellStyle, justifyContent: 'flex-start', padding: '6px 14px' }}>
           <span style={{ fontSize: '0.4rem', color: '#444', letterSpacing: '0.25em', fontWeight: 700, fontFamily: 'var(--fm)' }}>SET</span>
         </div>
@@ -992,7 +994,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
         return (
           <div key={i} style={{ position: 'relative', overflow: 'hidden' }}>
             {/* Row content — blurred when locked */}
-            <div className="set-log-row" style={{ display: 'grid', gridTemplateColumns: SLR_GRID, alignItems: 'stretch', background: log.completed ? 'rgba(34,197,94,0.07)' : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.013)', borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.15s, filter 0.35s', minHeight: '52px', filter: isLocked ? 'blur(5px)' : 'none', pointerEvents: isLocked ? 'none' : 'auto', userSelect: isLocked ? 'none' : 'auto' }}>
+            <div className={`set-log-row ${gridClass}`} style={{ display: 'grid', alignItems: 'stretch', background: log.completed ? 'rgba(34,197,94,0.07)' : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.013)', borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.15s, filter 0.35s', minHeight: '52px', filter: isLocked ? 'blur(5px)' : 'none', pointerEvents: isLocked ? 'none' : 'auto', userSelect: isLocked ? 'none' : 'auto' }}>
 
               {/* Set label */}
               <div style={{ ...cellStyle, justifyContent: 'center', padding: '12px 8px', gap: '6px', flexDirection: 'column' as const }}>
@@ -1156,7 +1158,15 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
           </div>
         )
       })}
-      <style>{`.set-log-row input::placeholder { color: rgba(255,255,255,0.22); font-style: italic; font-size: 0.62rem; letter-spacing: 0.05em; }`}</style>
+      <style>{`
+        .slg-admin  { grid-template-columns: 42px minmax(0,0.85fr) minmax(0,0.62fr) 76px 56px 30px 30px; }
+        .slg-lifter { grid-template-columns: 46px minmax(0,1fr) minmax(0,0.72fr) 80px 56px 46px; }
+        .set-log-row input::placeholder { color: rgba(255,255,255,0.22); font-style: italic; font-size: 0.62rem; letter-spacing: 0.05em; }
+        @media (max-width: 540px) {
+          .slg-lifter { grid-template-columns: 34px minmax(0,1fr) minmax(0,0.6fr) 46px 52px 38px; }
+          .slg-admin  { grid-template-columns: 32px minmax(0,1fr) minmax(0,0.6fr) 46px 50px 28px 28px; }
+        }
+      `}</style>
     </div>
   )
 }
