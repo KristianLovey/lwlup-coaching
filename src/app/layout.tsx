@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Space_Grotesk, Bricolage_Grotesque } from 'next/font/google'
+import { Space_Grotesk, Bricolage_Grotesque, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { LanguageProvider } from '@/context/LanguageContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -16,6 +16,14 @@ const bricolage = Bricolage_Grotesque({
   weight: ['400', '500', '600', '700', '800'],
   display: 'swap',
   variable: '--font-bg',
+})
+
+// Mono — used by the admin "OS" design for labels / tabular numbers
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-jb',
 })
 
 export const metadata: Metadata = {
@@ -41,7 +49,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="hr" className={`${spaceGrotesk.variable} ${bricolage.variable}`}>
+    <html lang="hr" className={`${spaceGrotesk.variable} ${bricolage.variable} ${jetbrainsMono.variable}`}>
       <head>
         {/* dns-prefetch only for Supabase */}
         <link rel="dns-prefetch" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" />
