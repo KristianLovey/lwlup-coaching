@@ -249,6 +249,18 @@
 .lwl-admin-os .donut-val { font-family: var(--font-display); font-weight: 800; font-size: 38px; letter-spacing: -0.04em; line-height: 1; }
 .lwl-admin-os .donut-sub { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-top: 6px; }
 
+/* macro card */
+.lwl-admin-os .macro-legend { display: flex; flex-direction: column; gap: 10px; }
+.lwl-admin-os .macro-legend .row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.lwl-admin-os .macro-legend .dot { width: 9px; height: 9px; border-radius: 3px; flex: 0 0 9px; }
+.lwl-admin-os .macro-legend .row .nm { color: var(--text-dim); }
+.lwl-admin-os .macro-legend .row .vv { margin-left: auto; font-family: var(--font-mono); font-size: 12px; }
+.lwl-admin-os .macro-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; border-radius: 12px; overflow: hidden; background: var(--border); border: 1px solid var(--border); }
+.lwl-admin-os .macro-foot .cell { background: var(--surface-1); padding: 14px; }
+.lwl-admin-os .macro-foot .cell .k { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+.lwl-admin-os .macro-foot .cell .v { font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: -0.02em; }
+@media (max-width: 720px) { .lwl-admin-os .macro-inner { grid-template-columns: 1fr !important; gap: 20px !important; } }
+
 .lwl-admin-os .compliance-rows { display: flex; flex-direction: column; gap: 14px; }
 .lwl-admin-os .compliance-row { display: flex; align-items: baseline; justify-content: space-between; }
 .lwl-admin-os .compliance-row .k { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
@@ -438,6 +450,32 @@
 .lwl-admin-os .rail-head-top .t { margin-bottom: 0; }
 .lwl-admin-os .rail-hide { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: var(--text-muted); transition: all 0.16s; flex: 0 0 30px; }
 .lwl-admin-os .rail-hide:hover { background: var(--surface-2); color: var(--text); }
+
+/* ── SETTINGS DRAWER (left overlay) ── */
+.lwl-admin-os .settings-drawer {
+  position: fixed; top: 0; left: 0; bottom: 0; width: 360px; max-width: 90vw; z-index: 90;
+  background: var(--surface-1); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; transform: translateX(-100%);
+  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1); box-shadow: 24px 0 60px -20px rgba(0,0,0,0.55);
+}
+.lwl-admin-os .settings-drawer.open { transform: translateX(0); }
+.lwl-admin-os .sd-scrim { position: fixed; inset: 0; z-index: 85; background: rgba(0,0,0,0.5); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+.lwl-admin-os .sd-head { display: flex; align-items: flex-start; justify-content: space-between; padding: 24px 24px 18px; border-bottom: 1px solid var(--border); }
+.lwl-admin-os .sd-title { font-family: var(--font-display); font-weight: 800; font-size: 26px; letter-spacing: -0.03em; line-height: 1; }
+.lwl-admin-os .sd-scroll { flex: 1; overflow-y: auto; padding: 22px 24px 28px; }
+.lwl-admin-os .sd-section { margin-bottom: 26px; }
+.lwl-admin-os .sd-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; }
+.lwl-admin-os .sd-cards { display: flex; flex-direction: column; gap: 4px; }
+.lwl-admin-os .sd-card-row { display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 11px; transition: background 0.15s; }
+.lwl-admin-os .sd-card-row:hover { background: var(--surface-2); }
+.lwl-admin-os .sd-card-row.off { opacity: 0.5; }
+.lwl-admin-os .sd-card-name { flex: 1; font-size: 14px; font-weight: 500; }
+.lwl-admin-os .sd-eye, .lwl-admin-os .sd-min { width: 30px; height: 30px; border-radius: 8px; flex: 0 0 30px; display: grid; place-items: center; color: var(--text-dim); border: 1px solid transparent; transition: all 0.16s; }
+.lwl-admin-os .sd-eye:hover, .lwl-admin-os .sd-min:hover { background: var(--surface-3); color: var(--text); }
+.lwl-admin-os .sd-card-row.off .sd-eye { color: var(--text-muted); }
+.lwl-admin-os .sd-na { font-family: var(--font-mono); font-size: 12px; color: var(--text-faint); width: 56px; text-align: center; }
+.lwl-admin-os .sd-reset { display: inline-flex; align-items: center; gap: 9px; padding: 12px 16px; border-radius: 12px; width: 100%; justify-content: center; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim); font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; transition: all 0.16s; }
+.lwl-admin-os .sd-reset:hover { border-color: var(--accent); color: var(--accent); }
 
 /* empty / loading helpers */
 .lwl-admin-os .os-empty { padding: 40px; text-align: center; color: var(--text-faint); font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.06em; }

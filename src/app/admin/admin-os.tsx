@@ -11,10 +11,11 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
   LayoutGrid, Users, Dumbbell, Trophy, Bell, Search, Plus, Check, Send,
-  Loader2, PanelLeft, PanelRight, ChevronRight, Settings, Trash2, LogOut, AlertCircle,
+  Loader2, PanelLeft, PanelRight, ChevronRight, ChevronLeft, Settings, Trash2, LogOut, AlertCircle, SlidersHorizontal,
 } from 'lucide-react'
 import type { AthleteProfile } from './athlete-panels'
 import type { Block, Exercise } from '../training/types'
+import { AthleteDashboard, SettingsDrawer, defaultCards, type DashCards, type CardId, type CardState } from './admin-os-dashboard'
 
 const supabase = createClient()
 
@@ -56,13 +57,24 @@ export default function AdminOS() {
 
   const [section, setSection] = useState<Section>('dashboard')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [lifteriManaging, setLifteriManaging] = useState(false)
   const [view, setView] = useState<'overview' | 'training'>('overview')
   const [navCollapsed, setNavCollapsed] = useState(false)
   const [railOpen, setRailOpen] = useState(false)
   const [railHidden, setRailHidden] = useState(false)
   const [search, setSearch] = useState('')
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [cards, setCards] = useState<DashCards>(defaultCards)
+  const setCard = useCallback((id: CardId, patch: Partial<CardState>) => setCards(prev => ({ ...prev, [id]: { ...prev[id], ...patch } })), [])
 
   const selected = useMemo(() => athletes.find(a => a.id === selectedId) ?? null, [athletes, selectedId])
+
+  // persist dashboard card settings
+  useEffect(() => {
+    const saved = localStorage.getItem('adminos:cards')
+    if (saved) { try { setCards(prev => ({ ...prev, ...JSON.parse(saved) })) } catch { /* ignore */ } }
+  }, [])
+  useEffect(() => { localStorage.setItem('adminos:cards', JSON.stringify(cards)) }, [cards])
 
   // ── Load (single round-trip for blocks + assignments — no N+1) ──
   const loadAthletes = useCallback(async () => {
@@ -122,7 +134,10 @@ export default function AdminOS() {
   useEffect(() => { localStorage.setItem('adminos:section', section) }, [section])
 
   const toggleRail = () => { if (window.innerWidth > 1180) setRailHidden(h => !h); else setRailOpen(o => !o) }
-  const pickAthlete = (id: string) => { setSelectedId(id); setView('overview'); setSection('dashboard'); setRailOpen(false) }
+  // Rail / dashboard selection → shows the analytics dashboard
+  const pickAthlete = (id: string) => { setSelectedId(id); setSection('dashboard'); setLifteriManaging(false); setRailOpen(false) }
+  // Lifteri grid → opens per-athlete management (overview + training editor)
+  const manageAthlete = (id: string) => { setSelectedId(id); setView('overview'); setLifteriManaging(true); setSection('lifteri') }
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
 
@@ -173,7 +188,7 @@ export default function AdminOS() {
           <div className="nav-section">Upravljanje</div>
           <nav className="nav-items">
             {NAV.map(n => (
-              <button key={n.id} className={'nav-item' + (section === n.id ? ' active' : '')} onClick={() => setSection(n.id)} title={n.label}>
+              <button key={n.id} className={'nav-item' + (section === n.id && !settingsOpen ? ' active' : '')} onClick={() => { setSection(n.id); setSettingsOpen(false); if (n.id === 'lifteri') setLifteriManaging(false) }} title={n.label}>
                 <span className="ico">{n.icon}</span>
                 <span className="nav-label">{n.label}</span>
                 {n.id === 'lifteri' && <span className="count">{athletes.length}</span>}
@@ -181,6 +196,13 @@ export default function AdminOS() {
                 {n.id === 'natjecanja' && <span className="count">{compCount}</span>}
               </button>
             ))}
+          </nav>
+          <div className="nav-section">Podešavanje</div>
+          <nav className="nav-items">
+            <button className={'nav-item' + (settingsOpen ? ' active' : '')} onClick={() => { setSection('dashboard'); setSettingsOpen(v => !v) }} title="Postavke dashboarda">
+              <span className="ico"><SlidersHorizontal size={19} /></span>
+              <span className="nav-label">Postavke</span>
+            </button>
           </nav>
           <div className="nav-foot">
             <button className="nav-coach" onClick={handleLogout} title="Odjava" style={{ width: '100%' }}>
@@ -195,30 +217,42 @@ export default function AdminOS() {
         <main className="main">
           <div className="topbar">
             <div className="title-block">
-              <div className="eyebrow">LWL UP · {section === 'dashboard' ? 'PREGLED' : 'ADMIN PANEL'}</div>
+              <div className="eyebrow">LWL UP · {section === 'dashboard' ? 'PREGLED' : (section === 'lifteri' && lifteriManaging) ? 'UREĐIVANJE' : 'ADMIN PANEL'}</div>
               <h1>
                 {section === 'dashboard' && selected
                   ? <>{selected.full_name} <span className="dim">· {(selected.role ?? 'lifter').toUpperCase()}</span></>
-                  : sectionTitle[section]}
+                  : (section === 'lifteri' && lifteriManaging && selected)
+                    ? <>{selected.full_name} <span className="dim">· {(selected.role ?? 'lifter').toUpperCase()}</span></>
+                    : sectionTitle[section]}
               </h1>
             </div>
             <div className="topbar-controls">
+              {section === 'dashboard' && selected && (
+                <button className={'ctrl icon' + (settingsOpen ? ' on' : '')} onClick={() => setSettingsOpen(v => !v)} aria-label="Postavke" title="Postavke dashboarda"><SlidersHorizontal size={16} /></button>
+              )}
               <button className="ctrl icon mobile-rail-btn" onClick={toggleRail} aria-label="Lifteri"><Users size={16} /></button>
               <button className={'ctrl icon' + (railHidden ? '' : ' on')} onClick={toggleRail} aria-label="Panel liftera" title="Panel liftera"><Users size={16} /></button>
             </div>
           </div>
 
-          <div className="os-section" key={`${section}-${view}-${selectedId ?? 'none'}`}>
+          <div className="os-section" key={`${section}-${lifteriManaging}-${view}-${selectedId ?? 'none'}`}>
             {section === 'dashboard' && (
-              selected ? (
-                view === 'training'
-                  ? <AthletePanel athlete={selected} exercises={exercises} allAthletes={athletes} onBack={() => setView('overview')} onRefresh={loadAthletes} />
-                  : <AthleteOverview athlete={selected} onBack={() => setSelectedId(null)} onGoTraining={() => setView('training')} />
-              ) : (
-                <DashboardSummary athletes={athletes} totalAthletes={athletes.length} activeBlocks={activeBlocks} totalBlocks={totalBlocks} onPick={pickAthlete} />
-              )
+              selected
+                ? <AthleteDashboard athleteId={selected.id} athleteName={selected.full_name} cards={cards} setCard={setCard} />
+                : <DashboardSummary athletes={athletes} totalAthletes={athletes.length} activeBlocks={activeBlocks} totalBlocks={totalBlocks} onPick={pickAthlete} />
             )}
-            {section === 'lifteri' && <LifteriSection athletes={athletes} search={search} setSearch={setSearch} onPick={pickAthlete} onAdded={loadAthletes} onDelete={deleteUser} adminId={adminId} />}
+            {section === 'lifteri' && (
+              (lifteriManaging && selected)
+                ? (view === 'training'
+                    ? <AthletePanel athlete={selected} exercises={exercises} allAthletes={athletes} onBack={() => setView('overview')} onRefresh={loadAthletes} />
+                    : (
+                      <>
+                        <button className="btn-a" style={{ marginBottom: 16 }} onClick={() => setLifteriManaging(false)}><ChevronLeft size={14} /> Natrag na lifere</button>
+                        <AthleteOverview athlete={selected} onBack={() => setLifteriManaging(false)} onGoTraining={() => setView('training')} />
+                      </>
+                    ))
+                : <LifteriSection athletes={athletes} search={search} setSearch={setSearch} onPick={manageAthlete} onAdded={loadAthletes} onDelete={deleteUser} adminId={adminId} />
+            )}
             {section === 'tim' && <TimSection athletes={athletes} onSaved={loadAthletes} />}
             {section === 'treneri' && <TreneriSection athletes={athletes} coaches={coaches} assignments={assignments} setAssignments={setAssignments} onRoleChange={loadAthletes} />}
             {section === 'natjecanja' && <CompetitionsManager />}
@@ -257,6 +291,7 @@ export default function AdminOS() {
         </aside>
       </div>
       {railOpen && <div className="rail-scrim" onClick={() => setRailOpen(false)} />}
+      <SettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)} cards={cards} setCard={setCard} onReset={() => setCards(defaultCards())} />
     </div>
   )
 }
