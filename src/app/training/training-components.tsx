@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Exercise, WorkoutExercise, Workout, Week, SetLog, Competition, SetPlanRow, SetMode } from './types'
-import { computeWeights, defaultRow, estimate1RM } from './training-setplan'
+import { computeWeights, defaultRow, estimate1RM, totalTonnage } from './training-setplan'
 
 const supabase = createClient()
 
@@ -703,21 +703,76 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   const [localVals, setLocalVals] = useState<Record<string, string>>({})
   const focusedKey = useRef<string | null>(null)
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+  // Refs mirror the latest state so debounced / fire-and-forget saves never read
+  // a stale closure (which previously caused lost updates and the "tap elsewhere
+  // first" bug on the ✓ button).
+  const logsRef = useRef<SetLog[]>([])
+  const planRowsRef = useRef<SetPlanRow[]>(planRows)
+  const tokenRef = useRef<string | null>(null)
+  useEffect(() => { logsRef.current = logs }, [logs])
+  useEffect(() => { planRowsRef.current = planRows }, [planRows])
 
   useEffect(() => {
     return () => { Object.values(debounceTimers.current).forEach(clearTimeout) }
   }, [])
 
-  const scheduleSet = (setNum: number, field: keyof SetLog, raw: string) => {
-    const key = `${setNum}_${String(field)}`
-    clearTimeout(debounceTimers.current[key])
-    debounceTimers.current[key] = setTimeout(() => saveSet(setNum, field, raw), 600)
+  // Cache the admin access token once so we don't call getSession() on every keystroke
+  useEffect(() => {
+    if (!isAdmin) return
+    supabase.auth.getSession().then(({ data }) => { tokenRef.current = data.session?.access_token ?? null })
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => { tokenRef.current = session?.access_token ?? null })
+    return () => sub.subscription.unsubscribe()
+  }, [isAdmin])
+
+  const parseVal = (field: keyof SetLog, raw: string): string | number | null =>
+    (field === 'weight_kg' || field === 'rpe') ? (raw ? Number(raw) : null) : (raw || null)
+
+  // Summary fields shown on the collapsed exercise row (total tonnage + last RPE).
+  // actual_weight_kg (avg) is kept for the progress hub; _tonnage drives the display.
+  const aggFields = (list: SetLog[]): Partial<WorkoutExercise> => {
+    const tonnage = totalTonnage(list)
+    const filled = list.filter(s => s.weight_kg || s.reps)
+    if (filled.length === 0) return { _tonnage: tonnage }
+    const avgKg = Math.round((filled.reduce((s, x) => s + (x.weight_kg ?? 0), 0) / filled.length) * 100) / 100
+    return { actual_weight_kg: avgKg, actual_rpe: filled[filled.length - 1].rpe, _tonnage: tonnage }
+  }
+  const pushAggregates = (list: SetLog[] = logsRef.current) => {
+    const agg = aggFields(list)
+    if (Object.keys(agg).length) onAggregateUpdate(agg)
   }
 
-  const flushSet = (setNum: number, field: keyof SetLog, raw: string) => {
+  // Typing: update the input + optimistic logs instantly; persist to DB on a short debounce.
+  const editField = (setNum: number, field: keyof SetLog, raw: string) => {
+    setLocalVals(v => ({ ...v, [`${setNum}_${String(field)}`]: raw }))
+    const val = parseVal(field, raw)
+    setLogs(prev => prev.map(s => s.set_number === setNum ? { ...s, [field]: val } : s))
     const key = `${setNum}_${String(field)}`
     clearTimeout(debounceTimers.current[key])
-    saveSet(setNum, field, raw)
+    debounceTimers.current[key] = setTimeout(() => { delete debounceTimers.current[key]; commitField(setNum, field, val, false) }, 350)
+  }
+
+  // Blur: persist immediately and push the summary up to the parent.
+  const flushField = (setNum: number, field: keyof SetLog, raw: string) => {
+    const key = `${setNum}_${String(field)}`
+    clearTimeout(debounceTimers.current[key])
+    delete debounceTimers.current[key]
+    const val = parseVal(field, raw)
+    setLogs(prev => prev.map(s => s.set_number === setNum ? { ...s, [field]: val } : s))
+    commitField(setNum, field, val, true)
+  }
+
+  const commitField = async (setNum: number, field: keyof SetLog, val: unknown, pushAgg: boolean) => {
+    setSaving(true)
+    try {
+      if (isAdmin) await upsertViaApi(setNum, String(field), val)
+      else await upsertDirect(setNum, String(field), val)
+      if (field === 'weight_kg') await persistBackoffWeights(planRowsRef.current, logsRef.current)
+      if (pushAgg) pushAggregates()
+    } catch (e) {
+      console.error('set_log save failed', e)
+    } finally {
+      setSaving(false)
+    }
   }
 
   // Propagate set counts up for progress tracking
@@ -763,10 +818,15 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
 
 
   const upsertViaApi = async (setNum: number, field: string, value: unknown) => {
-    const { data: { session } } = await supabase.auth.getSession()
+    let token = tokenRef.current
+    if (!token) {
+      const { data } = await supabase.auth.getSession()
+      token = data.session?.access_token ?? null
+      tokenRef.current = token
+    }
     await fetch('/api/admin/upsert-set-log', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ workoutExerciseId: we.id, athleteId: userId, setNumber: setNum, field, value }),
     })
   }
@@ -783,64 +843,53 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     }, { onConflict: 'workout_exercise_id,set_number' })
   }
 
-  const saveSet = async (setNum: number, field: keyof SetLog, raw: string) => {
-    const val = (field === 'weight_kg' || field === 'rpe') ? (raw ? Number(raw) : null) : (raw || null)
-    setSaving(true)
-
-    const updated = logs.map(s => s.set_number === setNum ? { ...s, [field]: val } : s)
-    setLogs(updated)
-
-    if (isAdmin) {
-      await upsertViaApi(setNum, field, val)
-    } else {
-      await upsertDirect(setNum, field, val)
-    }
-
-    // A manual weight change cascades to any backoff sets referencing it
-    if (field === 'weight_kg') await persistBackoffWeights(planRows, updated)
-
-    const filled = updated.filter(s => s.weight_kg || s.reps)
-    if (filled.length > 0) {
-      const avgKg = Math.round((filled.reduce((s, x) => s + (x.weight_kg ?? 0), 0) / filled.length) * 100) / 100
-      const lastRpe = filled[filled.length - 1].rpe
-      onAggregateUpdate({ actual_weight_kg: avgKg, actual_rpe: lastRpe })
-    }
-    propagateCounts(updated)
-    setSaving(false)
-  }
-
-  const markSetDone = async (setNum: number) => {
-    const s = logs.find(l => l.set_number === setNum)
+  // Tap ✓ — reads the freshest optimistic state (logsRef) so it works the
+  // instant you've typed kg/reps, with no need to blur first.
+  const markSetDone = (setNum: number) => {
+    const cur = logsRef.current
+    const s = cur.find(l => l.set_number === setNum)
     if (!s) return
     if (!s.completed && (!s.weight_kg || !s.reps)) return
     const nowDone = !s.completed
-    const newLogs = logs.map(l => l.set_number === setNum ? { ...l, completed: nowDone } : l)
-    setLogs(newLogs)
+    const after = cur.map(l => l.set_number === setNum ? { ...l, completed: nowDone } : l)
+    setLogs(after)
 
-    if (isAdmin) {
-      await upsertViaApi(setNum, 'completed', nowDone)
-    } else {
-      await upsertDirect(setNum, 'completed', nowDone)
-    }
+    // Single parent update (progress dots + summary) — instant, no await
+    const allDone = after.length > 0 && after.every(l => l.completed)
+    onAggregateUpdate({
+      completed: allDone,
+      ...aggFields(after),
+      ...(isAdmin ? {} : { _completedSets: after.filter(l => l.completed).length, _totalSets: after.length }),
+    })
 
-    const allDone = newLogs.length > 0 && newLogs.every(l => l.completed)
-    onAggregateUpdate({ completed: allDone })
-    propagateCounts(newLogs)
+    // Flush any pending debounced writes for this set so a quick tap never loses data
+    const row = after.find(l => l.set_number === setNum)
+    Object.keys(debounceTimers.current).forEach(k => {
+      if (!k.startsWith(`${setNum}_`)) return
+      clearTimeout(debounceTimers.current[k])
+      delete debounceTimers.current[k]
+      const field = k.slice(String(setNum).length + 1)
+      const v = row ? (row as Record<string, unknown>)[field] : null
+      if (isAdmin) upsertViaApi(setNum, field, v); else upsertDirect(setNum, field, v)
+    })
+
+    // Persist completion in the background
+    if (isAdmin) upsertViaApi(setNum, 'completed', nowDone)
+    else upsertDirect(setNum, 'completed', nowDone)
   }
 
-  const toggleTopSet = async (setNum: number) => {
-    const s = logs.find(l => l.set_number === setNum)
+  const toggleTopSet = (setNum: number) => {
+    const s = logsRef.current.find(l => l.set_number === setNum)
     if (!s) return
     const isTop = !s.is_top_set
     // Multiple top sets allowed — just toggle this one
-    const newLogs = logs.map(l => l.set_number === setNum ? { ...l, is_top_set: isTop } : l)
-    setLogs(newLogs)
-    await upsertDirect(setNum, 'is_top_set', isTop)
+    setLogs(prev => prev.map(l => l.set_number === setNum ? { ...l, is_top_set: isTop } : l))
+    upsertDirect(setNum, 'is_top_set', isTop)
     // A top set can't also be a backoff set — clear backoff on it
     if (isTop) {
       const i = setNum - 1
-      if (planRows[i]?.mode === 'backoff') {
-        const rows = planRows.map((r, idx) => idx === i
+      if (planRowsRef.current[i]?.mode === 'backoff') {
+        const rows = planRowsRef.current.map((r, idx) => idx === i
           ? { ...(r ?? defaultRow(idx)), mode: 'manual' as SetMode }
           : (r ?? defaultRow(idx)))
         setPlanRows(rows)
@@ -873,11 +922,10 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       }
     })
     if (changed.length === 0) return
-    const newLogs = baseLogs.map(l => {
+    setLogs(prev => prev.map(l => {
       const u = changed.find(c => c.setNum === l.set_number)
       return u ? { ...l, weight_kg: u.val } : l
-    })
-    setLogs(newLogs)
+    }))
     setLocalVals(prev => {
       const next = { ...prev }
       changed.forEach(c => { next[`${c.setNum}_weight_kg`] = c.val != null ? String(c.val) : '' })
@@ -890,40 +938,38 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   }
 
   const toggleBackoff = (setNum: number) => {
+    const curLogs = logsRef.current
     const i = setNum - 1
-    if (logs.length < 2) return // need at least one other set to reference
-    const cur = planRows[i] ?? defaultRow(i)
+    if (curLogs.length < 2) return // need at least one other set to reference
+    const cur = planRowsRef.current[i] ?? defaultRow(i)
     const nextMode: SetMode = cur.mode === 'backoff' ? 'manual' : 'backoff'
     // Reference can be any other set; fall back to previous (or next for set 1)
-    const ref = (cur.ref !== i && cur.ref >= 0 && cur.ref < logs.length)
+    const ref = (cur.ref !== i && cur.ref >= 0 && cur.ref < curLogs.length)
       ? cur.ref
       : (i > 0 ? i - 1 : 1)
-    const rows = planRows.map((r, idx) => idx === i
+    const rows = planRowsRef.current.map((r, idx) => idx === i
       ? { ...(r ?? defaultRow(idx)), mode: nextMode, ref }
       : (r ?? defaultRow(idx)))
     setPlanRows(rows)
     savePlan(rows)
     if (nextMode === 'backoff') {
       // A backoff set can't also be the top set — clear top on it
-      const s = logs.find(l => l.set_number === setNum)
+      const s = curLogs.find(l => l.set_number === setNum)
       if (s?.is_top_set) {
-        const newLogs = logs.map(l => l.set_number === setNum ? { ...l, is_top_set: false } : l)
-        setLogs(newLogs)
+        setLogs(prev => prev.map(l => l.set_number === setNum ? { ...l, is_top_set: false } : l))
         upsertDirect(setNum, 'is_top_set', false)
-        persistBackoffWeights(rows, newLogs)
-      } else {
-        persistBackoffWeights(rows, logs)
       }
+      persistBackoffWeights(rows, curLogs)
     }
   }
 
   const updatePlanRow = (i: number, field: 'pct' | 'ref', val: number) => {
-    const rows = planRows.map((r, idx) => idx === i
+    const rows = planRowsRef.current.map((r, idx) => idx === i
       ? { ...(r ?? defaultRow(idx)), [field]: val }
       : (r ?? defaultRow(idx)))
     setPlanRows(rows)
     savePlan(rows)
-    persistBackoffWeights(rows, logs)
+    persistBackoffWeights(rows, logsRef.current)
   }
 
   // Both admin and lifter use the same table layout.
@@ -1020,9 +1066,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                   <input
                     type="number" step="2.5"
                     value={localVals[`${log.set_number}_weight_kg`] ?? ''}
-                    onChange={e => { setLocalVals(v => ({ ...v, [`${log.set_number}_weight_kg`]: e.target.value })); scheduleSet(log.set_number, 'weight_kg', e.target.value) }}
+                    onChange={e => editField(log.set_number, 'weight_kg', e.target.value)}
                     onFocus={e => { focusedKey.current = `${log.set_number}_weight_kg`; e.target.style.borderBottomColor = 'rgba(255,255,255,0.5)' }}
-                    onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushSet(log.set_number, 'weight_kg', e.target.value) }}
+                    onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushField(log.set_number, 'weight_kg', e.target.value) }}
                     placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : 'upiši'}
                     style={{ ...inputStyle, color: 'rgba(255,255,255,0.85)' }}
                   />
@@ -1034,9 +1080,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                 <input
                   type="text"
                   value={localVals[`${log.set_number}_reps`] ?? ''}
-                  onChange={e => { setLocalVals(v => ({ ...v, [`${log.set_number}_reps`]: e.target.value })); scheduleSet(log.set_number, 'reps', e.target.value) }}
+                  onChange={e => editField(log.set_number, 'reps', e.target.value)}
                   onFocus={e => { focusedKey.current = `${log.set_number}_reps`; e.target.style.borderBottomColor = 'rgba(255,255,255,0.6)' }}
-                  onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushSet(log.set_number, 'reps', e.target.value) }}
+                  onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushField(log.set_number, 'reps', e.target.value) }}
                   placeholder={we.planned_reps != null ? String(we.planned_reps) : 'upiši'}
                   style={inputStyle}
                 />
@@ -1052,9 +1098,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                 <input
                   type="number" step="0.5" min="1" max="10"
                   value={localVals[`${log.set_number}_rpe`] ?? ''}
-                  onChange={e => { setLocalVals(v => ({ ...v, [`${log.set_number}_rpe`]: e.target.value })); scheduleSet(log.set_number, 'rpe', e.target.value) }}
+                  onChange={e => editField(log.set_number, 'rpe', e.target.value)}
                   onFocus={e => { focusedKey.current = `${log.set_number}_rpe`; e.target.style.borderBottomColor = 'rgba(250,204,21,0.7)' }}
-                  onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushSet(log.set_number, 'rpe', e.target.value) }}
+                  onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushField(log.set_number, 'rpe', e.target.value) }}
                   placeholder={targetRpe ? String(targetRpe) : 'upiši'}
                   style={{ ...inputStyle, color: log.rpe && targetRpe ? (Number(log.rpe) - Number(targetRpe) > 1 ? '#f87171' : Number(log.rpe) - Number(targetRpe) > 0 ? '#facc15' : '#4ade80') : '#e0e0e0' }}
                 />
@@ -1377,11 +1423,10 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
                       @ {we.planned_weight_kg}kg
                     </span>
                   )}
-                  {we.actual_weight_kg && (
-                    <>
-                      <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.25)' }}>→</span>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f0f0f0', fontFamily: 'var(--fm)' }}>{we.actual_weight_kg}kg</span>
-                    </>
+                  {!!we._tonnage && we._tonnage > 0 && (
+                    <span style={{ fontSize: '0.66rem', fontWeight: 700, color: '#22c55e', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>
+                      ukupna kilaža = {we._tonnage}kg
+                    </span>
                   )}
                   {(we.target_rpe ?? we.planned_rpe) && (
                     <span style={{ fontSize: '0.62rem', color: 'rgba(250,204,21,0.65)', fontFamily: 'var(--fm)' }}>

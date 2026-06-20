@@ -18,7 +18,7 @@ export type WorkoutExercise = {
   notes: string | null; completed: boolean; is_top_set: boolean | null; exercise?: Exercise
   set_plan?: SetPlan | null
   // runtime-only (not in DB) — used for progress tracking
-  _completedSets?: number; _totalSets?: number
+  _completedSets?: number; _totalSets?: number; _tonnage?: number
 }
 export type Workout = {
   id: string; week_id: string; athlete_id: string; day_name: string; workout_date: string

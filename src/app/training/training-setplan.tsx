@@ -41,6 +41,20 @@ export function defaultRow(i: number): SetPlanRow {
   return { mode: 'manual', pct: 90, ref: i > 0 ? i - 1 : 1 }
 }
 
+// ── Total tonnage ──────────────────────────────────────────────────────
+// Sum of weight × reps across every logged set (the work actually done).
+export function totalTonnage(
+  sets: { weight_kg: number | null; reps: string | number | null }[],
+): number {
+  let t = 0
+  for (const s of sets) {
+    const w = Number(s.weight_kg)
+    const r = parseFloat(String(s.reps ?? ''))
+    if (w > 0 && Number.isFinite(r) && r > 0) t += w * r
+  }
+  return Math.round(t * 10) / 10
+}
+
 // ── Estimated 1RM ──────────────────────────────────────────────────────
 // Epley formula with RPE-derived reps-in-reserve. Returns the estimate
 // rounded to the nearest 2.5 kg plate, or null when there isn't enough data.

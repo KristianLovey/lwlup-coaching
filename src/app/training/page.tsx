@@ -5,6 +5,7 @@ import { Loader2, Plus, Check, FolderOpen, ChevronDown, X, Menu } from 'lucide-r
 import { useRouter } from 'next/navigation'
 import type { Block, BlockSummary, Week, Exercise, WorkoutExercise, Workout } from './types'
 import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-components'
+import { totalTonnage } from './training-setplan'
 import { HubTab } from './training-hub'
 import { MeetDayTab } from './training-meet'
 import { LiftPriorityView } from './training-priority'
@@ -195,6 +196,7 @@ export default function TrainingPage() {
           const logs = byWeId[we.id] ?? []
           we._totalSets = Math.max(logs.length, we.planned_sets ?? 0)
           we._completedSets = logs.filter((l: any) => l.completed).length
+          we._tonnage = totalTonnage(logs)
         })
       })
     })
@@ -398,11 +400,11 @@ export default function TrainingPage() {
     if (!error && data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, workout_exercises: [...(wo.workout_exercises ?? []), data] } : wo) })) } : b)
     setSaving(false)
   }, [])
-  const LIFTER_FIELDS: (keyof WorkoutExercise)[] = ['actual_sets','actual_reps','actual_weight_kg','actual_rpe','actual_note','completed','_completedSets','_totalSets']
+  const LIFTER_FIELDS: (keyof WorkoutExercise)[] = ['actual_sets','actual_reps','actual_weight_kg','actual_rpe','actual_note','completed','_completedSets','_totalSets','_tonnage']
 
   const canEdit = false // Admini/treneri editiraju isključivo kroz admin panel
 
-  const RUNTIME_ONLY = ['_completedSets', '_totalSets']
+  const RUNTIME_ONLY = ['_completedSets', '_totalSets', '_tonnage']
   const updateExercise = useCallback(async (weId: string, data: Partial<WorkoutExercise>) => {
     const filtered = canEdit
       ? data
