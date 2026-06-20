@@ -709,6 +709,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   const logsRef = useRef<SetLog[]>([])
   const planRowsRef = useRef<SetPlanRow[]>(planRows)
   const tokenRef = useRef<string | null>(null)
+  // Live typed values (updated synchronously, no re-render) so ✓ / guards read the
+  // freshest input without putting `logs` on the keystroke render path.
+  const valsRef = useRef<Record<string, string>>({})
   useEffect(() => { logsRef.current = logs }, [logs])
   useEffect(() => { planRowsRef.current = planRows }, [planRows])
 
@@ -741,33 +744,37 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     if (Object.keys(agg).length) onAggregateUpdate(agg)
   }
 
-  // Typing: update the input + optimistic logs instantly; persist to DB on a short debounce.
+  // Typing: only update the input (single scoped render) + a synchronous ref.
+  // logs/DB stay OFF the keystroke path → no re-render cascade, no input lag.
   const editField = (setNum: number, field: keyof SetLog, raw: string) => {
-    setLocalVals(v => ({ ...v, [`${setNum}_${String(field)}`]: raw }))
-    const val = parseVal(field, raw)
-    setLogs(prev => prev.map(s => s.set_number === setNum ? { ...s, [field]: val } : s))
     const key = `${setNum}_${String(field)}`
+    valsRef.current[key] = raw
+    setLocalVals(v => ({ ...v, [key]: raw }))
+    const val = parseVal(field, raw)
     clearTimeout(debounceTimers.current[key])
-    debounceTimers.current[key] = setTimeout(() => { delete debounceTimers.current[key]; commitField(setNum, field, val, false) }, 350)
+    debounceTimers.current[key] = setTimeout(() => { delete debounceTimers.current[key]; commitField(setNum, field, val, false) }, 400)
   }
 
   // Blur: persist immediately and push the summary up to the parent.
   const flushField = (setNum: number, field: keyof SetLog, raw: string) => {
     const key = `${setNum}_${String(field)}`
+    valsRef.current[key] = raw
     clearTimeout(debounceTimers.current[key])
     delete debounceTimers.current[key]
-    const val = parseVal(field, raw)
-    setLogs(prev => prev.map(s => s.set_number === setNum ? { ...s, [field]: val } : s))
-    commitField(setNum, field, val, true)
+    commitField(setNum, field, parseVal(field, raw), true)
   }
 
+  // Commit = update local `logs` (source of truth) + persist to DB. Runs on
+  // debounce / blur, NOT per keystroke.
   const commitField = async (setNum: number, field: keyof SetLog, val: unknown, pushAgg: boolean) => {
+    const updated = logsRef.current.map(s => s.set_number === setNum ? { ...s, [field]: val } : s)
+    setLogs(updated)
     setSaving(true)
     try {
       if (isAdmin) await upsertViaApi(setNum, String(field), val)
       else await upsertDirect(setNum, String(field), val)
-      if (field === 'weight_kg') await persistBackoffWeights(planRowsRef.current, logsRef.current)
-      if (pushAgg) pushAggregates()
+      if (field === 'weight_kg') await persistBackoffWeights(planRowsRef.current, updated)
+      if (pushAgg) pushAggregates(updated)
     } catch (e) {
       console.error('set_log save failed', e)
     } finally {
@@ -843,18 +850,28 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     }, { onConflict: 'workout_exercise_id,set_number' })
   }
 
-  // Tap ✓ — reads the freshest optimistic state (logsRef) so it works the
-  // instant you've typed kg/reps, with no need to blur first.
+  // Tap ✓ — reads live typed values (valsRef) so it works the instant you've
+  // typed kg/reps, even if the debounced save hasn't fired yet.
   const markSetDone = (setNum: number) => {
     const cur = logsRef.current
     const s = cur.find(l => l.set_number === setNum)
     if (!s) return
-    if (!s.completed && (!s.weight_kg || !s.reps)) return
+    const getLive = (field: keyof SetLog): string | number | null => {
+      const k = `${setNum}_${String(field)}`
+      return valsRef.current[k] !== undefined ? parseVal(field, valsRef.current[k]) : (s[field] as string | number | null)
+    }
+    const liveW = getLive('weight_kg'), liveR = getLive('reps'), liveE = getLive('rpe')
+    if (!s.completed && (!liveW || !liveR)) return
     const nowDone = !s.completed
-    const after = cur.map(l => l.set_number === setNum ? { ...l, completed: nowDone } : l)
+
+    // cancel pending field timers for this set (we persist the live values now)
+    Object.keys(debounceTimers.current).forEach(k => {
+      if (k.startsWith(`${setNum}_`)) { clearTimeout(debounceTimers.current[k]); delete debounceTimers.current[k] }
+    })
+
+    const after = cur.map(l => l.set_number === setNum ? { ...l, weight_kg: liveW as number | null, reps: liveR as string | null, rpe: liveE as number | null, completed: nowDone } : l)
     setLogs(after)
 
-    // Single parent update (progress dots + summary) — instant, no await
     const allDone = after.length > 0 && after.every(l => l.completed)
     onAggregateUpdate({
       completed: allDone,
@@ -862,20 +879,12 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       ...(isAdmin ? {} : { _completedSets: after.filter(l => l.completed).length, _totalSets: after.length }),
     })
 
-    // Flush any pending debounced writes for this set so a quick tap never loses data
-    const row = after.find(l => l.set_number === setNum)
-    Object.keys(debounceTimers.current).forEach(k => {
-      if (!k.startsWith(`${setNum}_`)) return
-      clearTimeout(debounceTimers.current[k])
-      delete debounceTimers.current[k]
-      const field = k.slice(String(setNum).length + 1)
-      const v = row ? (row as Record<string, unknown>)[field] : null
-      if (isAdmin) upsertViaApi(setNum, field, v); else upsertDirect(setNum, field, v)
-    })
-
-    // Persist completion in the background
-    if (isAdmin) upsertViaApi(setNum, 'completed', nowDone)
-    else upsertDirect(setNum, 'completed', nowDone)
+    // persist live values + completion (only changed fields)
+    const writes: [string, unknown][] = [['completed', nowDone]]
+    if (liveW !== s.weight_kg) writes.push(['weight_kg', liveW])
+    if (liveR !== s.reps) writes.push(['reps', liveR])
+    if (liveE !== s.rpe) writes.push(['rpe', liveE])
+    for (const [f, v] of writes) { if (isAdmin) upsertViaApi(setNum, f, v); else upsertDirect(setNum, f, v) }
   }
 
   const toggleTopSet = (setNum: number) => {
@@ -907,7 +916,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     })
   }, [plannedSets]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const computed = computeWeights(logs.map(l => l.weight_kg), planRows)
+  const computed = useMemo(() => computeWeights(logs.map(l => l.weight_kg), planRows), [logs, planRows])
 
   const savePlan = (rows: SetPlanRow[]) => onAggregateUpdate({ set_plan: { rows } })
 
@@ -1033,7 +1042,12 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
         const prevLog = logs[i - 1]
         const prevComplete = prevLog?.completed && prevLog?.weight_kg && prevLog?.reps
         const isLocked = !isAdmin && i > 0 && !log.is_top_set && !prevComplete
-        const canComplete = !isAdmin && !log.completed && (!log.weight_kg || !log.reps)
+        // enable ✓ from the live input values so it reacts the instant kg+reps are typed
+        const lvW = localVals[`${log.set_number}_weight_kg`]
+        const lvR = localVals[`${log.set_number}_reps`]
+        const hasW = lvW !== undefined ? lvW.trim() !== '' : log.weight_kg != null
+        const hasR = lvR !== undefined ? lvR.trim() !== '' : log.reps != null
+        const canComplete = !isAdmin && !log.completed && (!hasW || !hasR)
         const row = planRows[i] ?? defaultRow(i)
         const isBackoff = isAdmin && row.mode === 'backoff'
         const compVal = computed[i]
