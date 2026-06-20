@@ -6,6 +6,7 @@ import { Loader2, AlertCircle, Search, Bell, Eye, Check, Send } from 'lucide-rea
 import { AppNav } from '../training/training-components'
 import { AthleteOverview, AthletePanel, type AthleteProfile } from '../admin/athlete-panels'
 import type { Block, Exercise } from '../training/types'
+import '../admin/admin-os.css'
 
 const supabase = createClient()
 
@@ -154,7 +155,7 @@ export default function TrainerPage() {
   )
 
   return (
-    <div style={{ background: '#090909', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', position: 'relative' }}>
+    <div className="lwl-admin-os" style={{ background: '#090909', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', position: 'relative' }}>
 
       {/* ── BACKGROUND ── */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.35,

@@ -6,17 +6,25 @@
 // ───────────────────────────────────────────────────────────
 import './admin-os.css'
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
   LayoutGrid, Users, Dumbbell, Trophy, Bell, Search, Plus, Check, Send,
-  Loader2, PanelLeft, PanelRight, ChevronRight, Settings, Trash2, Pencil, LogOut, AlertCircle,
+  Loader2, PanelLeft, PanelRight, ChevronRight, Settings, Trash2, LogOut, AlertCircle,
 } from 'lucide-react'
-import { AthleteOverview, AthletePanel, type AthleteProfile } from './athlete-panels'
-import { CompetitionsManager } from './competitions-manager'
+import type { AthleteProfile } from './athlete-panels'
 import type { Block, Exercise } from '../training/types'
 
 const supabase = createClient()
+
+// Heavy per-athlete screens — code-split so they don't bloat the initial load
+const SectionLoader = () => (
+  <div className="os-empty" style={{ display: 'flex', justifyContent: 'center' }}><Loader2 size={20} className="os-spin" /></div>
+)
+const AthleteOverview = dynamic(() => import('./athlete-panels').then(m => ({ default: m.AthleteOverview })), { ssr: false, loading: SectionLoader })
+const AthletePanel = dynamic(() => import('./athlete-panels').then(m => ({ default: m.AthletePanel })), { ssr: false, loading: SectionLoader })
+const CompetitionsManager = dynamic(() => import('./competitions-manager').then(m => ({ default: m.CompetitionsManager })), { ssr: false, loading: SectionLoader })
 
 type Section = 'dashboard' | 'lifteri' | 'tim' | 'treneri' | 'natjecanja' | 'obavijesti'
 type Coach = AthleteProfile
@@ -56,20 +64,29 @@ export default function AdminOS() {
 
   const selected = useMemo(() => athletes.find(a => a.id === selectedId) ?? null, [athletes, selectedId])
 
-  // ── Load ──
+  // ── Load (single round-trip for blocks + assignments — no N+1) ──
   const loadAthletes = useCallback(async () => {
     const { data } = await supabase.from('profiles').select('id, full_name, role, created_at').order('full_name')
     if (!data) return
-    const withBlocks = await Promise.all(data.map(async (p) => {
-      const { data: blocks } = await supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', p.id)
-      return { ...p, blocks: blocks ?? [] } as AthleteProfile
-    }))
+    const ids = data.map(p => p.id)
+    const [{ data: allBlocks }, { data: asgn }] = await Promise.all([
+      supabase.from('blocks').select('id, name, status, start_date, end_date, athlete_id').in('athlete_id', ids),
+      supabase.from('coach_assignments').select('coach_id, lifter_id'),
+    ])
+    const byAthlete: Record<string, Block[]> = {}
+    for (const b of (allBlocks ?? [])) (byAthlete[(b as { athlete_id: string }).athlete_id] ??= []).push(b as unknown as Block)
+    const withBlocks = data.map(p => ({ ...p, blocks: byAthlete[p.id] ?? [] }) as AthleteProfile)
     setAthletes(withBlocks)
     setCoaches(withBlocks.filter(p => p.role === 'trener' || p.role === 'admin'))
-    const { data: asgn } = await supabase.from('coach_assignments').select('coach_id, lifter_id')
     const map: Record<string, string> = {}
     for (const a of (asgn ?? [])) map[a.lifter_id] = a.coach_id
     setAssignments(map)
+  }, [])
+
+  const deleteUser = useCallback(async (id: string) => {
+    await supabase.from('profiles').delete().eq('id', id)
+    setSelectedId(prev => (prev === id ? null : prev))
+    setAthletes(a => a.filter(x => x.id !== id))
   }, [])
 
   useEffect(() => {
@@ -191,20 +208,22 @@ export default function AdminOS() {
             </div>
           </div>
 
-          {section === 'dashboard' && (
-            selected ? (
-              view === 'training'
-                ? <AthletePanel athlete={selected} exercises={exercises} allAthletes={athletes} onBack={() => setView('overview')} onRefresh={loadAthletes} />
-                : <div className="os-fade"><AthleteOverview athlete={selected} onBack={() => setSelectedId(null)} onGoTraining={() => setView('training')} /></div>
-            ) : (
-              <DashboardSummary athletes={athletes} totalAthletes={athletes.length} activeBlocks={activeBlocks} totalBlocks={totalBlocks} onPick={pickAthlete} />
-            )
-          )}
-          {section === 'lifteri' && <LifteriSection athletes={athletes} search={search} setSearch={setSearch} onPick={pickAthlete} onAdded={loadAthletes} adminId={adminId} />}
-          {section === 'tim' && <TimSection athletes={athletes} onSaved={loadAthletes} />}
-          {section === 'treneri' && <TreneriSection athletes={athletes} coaches={coaches} assignments={assignments} setAssignments={setAssignments} onRoleChange={loadAthletes} />}
-          {section === 'natjecanja' && <div className="os-fade"><CompetitionsManager /></div>}
-          {section === 'obavijesti' && <ObavijestiSection athletes={athletes} adminId={adminId} />}
+          <div className="os-section" key={`${section}-${view}-${selectedId ?? 'none'}`}>
+            {section === 'dashboard' && (
+              selected ? (
+                view === 'training'
+                  ? <AthletePanel athlete={selected} exercises={exercises} allAthletes={athletes} onBack={() => setView('overview')} onRefresh={loadAthletes} />
+                  : <AthleteOverview athlete={selected} onBack={() => setSelectedId(null)} onGoTraining={() => setView('training')} />
+              ) : (
+                <DashboardSummary athletes={athletes} totalAthletes={athletes.length} activeBlocks={activeBlocks} totalBlocks={totalBlocks} onPick={pickAthlete} />
+              )
+            )}
+            {section === 'lifteri' && <LifteriSection athletes={athletes} search={search} setSearch={setSearch} onPick={pickAthlete} onAdded={loadAthletes} onDelete={deleteUser} adminId={adminId} />}
+            {section === 'tim' && <TimSection athletes={athletes} onSaved={loadAthletes} />}
+            {section === 'treneri' && <TreneriSection athletes={athletes} coaches={coaches} assignments={assignments} setAssignments={setAssignments} onRoleChange={loadAthletes} />}
+            {section === 'natjecanja' && <CompetitionsManager />}
+            {section === 'obavijesti' && <ObavijestiSection athletes={athletes} adminId={adminId} />}
+          </div>
         </main>
 
         {/* ── RAIL ── */}
@@ -247,7 +266,7 @@ function DashboardSummary({ athletes, totalAthletes, activeBlocks, totalBlocks, 
   athletes: AthleteProfile[]; totalAthletes: number; activeBlocks: number; totalBlocks: number; onPick: (id: string) => void
 }) {
   return (
-    <div className="os-fade">
+    <div>
       <div className="kpi-strip" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         {[
           { label: 'Lifera', num: totalAthletes },
@@ -281,35 +300,59 @@ function DashboardSummary({ athletes, totalAthletes, activeBlocks, totalBlocks, 
 }
 
 // ── Lifteri ──
-function LifteriSection({ athletes, search, setSearch, onPick, onAdded, adminId }: {
-  athletes: AthleteProfile[]; search: string; setSearch: (v: string) => void; onPick: (id: string) => void; onAdded: () => void; adminId: string
+function LifteriSection({ athletes, search, setSearch, onPick, onAdded, onDelete, adminId }: {
+  athletes: AthleteProfile[]; search: string; setSearch: (v: string) => void; onPick: (id: string) => void
+  onAdded: () => void; onDelete: (id: string) => void; adminId: string
 }) {
   const [showAdd, setShowAdd] = useState(false)
+  const [manage, setManage] = useState(false)
+  const [confirmId, setConfirmId] = useState<string | null>(null)
   const list = athletes.filter(a => a.full_name?.toLowerCase().includes(search.toLowerCase()))
   return (
-    <div className="os-fade">
+    <div>
       <div className="toolbar">
         <div className="search-box">
           <span className="ico"><Search size={16} /></span>
           <input placeholder="Pretraži lifere…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
+        <button className={'btn-a' + (manage ? ' accent' : '')} onClick={() => setManage(m => !m)}>
+          <Settings size={14} /> {manage ? 'Gotovo' : 'Upravljaj'}
+        </button>
         <button className="btn-a accent" onClick={() => setShowAdd(true)}><Plus size={14} /> Dodaj liftera</button>
       </div>
-      <div className="lifter-grid">
+      <div className="lifter-grid os-stagger">
         {list.map(a => {
           const active = (a.blocks as Block[])?.find(b => b.status === 'active')
           return (
-            <button className="lifter-cell" key={a.id} onClick={() => onPick(a.id)}>
+            <div className="lifter-cell" key={a.id} onClick={() => !manage && onPick(a.id)} style={{ position: 'relative', cursor: manage ? 'default' : 'pointer' }}>
+              {manage && a.role !== 'admin' && (
+                <button className="icon-sm danger" onClick={e => { e.stopPropagation(); setConfirmId(a.id) }}
+                  style={{ position: 'absolute', top: 10, right: 10 }} title="Obriši korisnika"><Trash2 size={14} /></button>
+              )}
               <div className="circle">{initials(a.full_name)}<span className={'sdot ' + (active ? 'on-track' : 'monitor')} /></div>
               <div className="n">{a.full_name}</div>
               <div className="c">{(a.role ?? 'lifter')}</div>
               <div className="tot">{active ? active.name : 'Nema aktivnog bloka'}</div>
-            </button>
+            </div>
           )
         })}
         {list.length === 0 && <div className="os-empty">Nema rezultata.</div>}
       </div>
       {showAdd && <AddLifterModal onClose={() => setShowAdd(false)} onAdded={() => { setShowAdd(false); onAdded() }} adminId={adminId} />}
+      {confirmId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.8)', display: 'grid', placeItems: 'center', padding: 24 }} onClick={() => setConfirmId(null)}>
+          <div className="card" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()}>
+            <div className="card-head"><span className="t">Obriši korisnika</span></div>
+            <p style={{ color: 'var(--text-dim)', fontSize: 14, lineHeight: 1.6, margin: '0 0 18px' }}>
+              Obrisat će se profil i svi podaci korisnika <b style={{ color: 'var(--text)' }}>{athletes.find(a => a.id === confirmId)?.full_name}</b>. Nepovratno.
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn-a" onClick={() => setConfirmId(null)}>Odustani</button>
+              <button className="btn-a accent" onClick={() => { onDelete(confirmId); setConfirmId(null) }}>Obriši</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -390,7 +433,7 @@ function TimSection({ athletes, onSaved }: { athletes: AthleteProfile[]; onSaved
   const set = (id: string, field: string, val: string) => setStats(p => ({ ...p, [id]: { ...(p[id] ?? { sq: '', bp: '', dl: '', bw: '', wc: '', sex: 'male' }), [field]: val } }))
 
   return (
-    <div className="os-fade">
+    <div>
       <div className="eyebrow" style={{ marginBottom: 20 }}>Statistike tima — uredi 1RM, kategoriju i tjelesnu težinu</div>
       <div className="edit-grid">
         {athletes.map(a => {
@@ -440,7 +483,7 @@ function TreneriSection({ athletes, coaches, assignments, setAssignments, onRole
   }
   const setRole = async (id: string, role: string) => { await supabase.from('profiles').update({ role }).eq('id', id); onRoleChange() }
   return (
-    <div className="os-fade">
+    <div>
       <div className="eyebrow" style={{ marginBottom: 18 }}>Dodijeli liftera treneru ili promijeni rolu korisnika</div>
       <div className="grid c2">
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -491,7 +534,7 @@ function ObavijestiSection({ athletes, adminId }: { athletes: AthleteProfile[]; 
     setMsg(''); setSel(new Set()); setSending(false)
   }
   return (
-    <div className="notif-layout os-fade">
+    <div className="notif-layout">
       <div className="card compose">
         <div className="card-head"><span className="t">Nova obavijest</span></div>
         <textarea placeholder="Napiši poruku liferima…" value={msg} onChange={e => setMsg(e.target.value)} />

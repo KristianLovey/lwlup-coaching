@@ -25,6 +25,11 @@
   --font-mono:    var(--font-jb), 'JetBrains Mono', ui-monospace, monospace;
   --font-body:    var(--font-bg), 'Bricolage Grotesque', system-ui, sans-serif;
 
+  /* Remap the app's embedded-component font vars so reused admin/trainer screens
+     (AthleteOverview, training editor) adopt the OS typography automatically. */
+  --fm: var(--font-jb), 'JetBrains Mono', ui-monospace, monospace;
+  --fd: var(--font-bg), 'Bricolage Grotesque', system-ui, sans-serif;
+
   --radius-xs: 8px;
   --radius-sm: 12px;
   --radius-md: 18px;
@@ -440,6 +445,39 @@
 @keyframes os-spin { to { transform: rotate(360deg); } }
 @keyframes os-fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .lwl-admin-os .os-fade { animation: os-fadeUp 0.3s ease; }
+
+/* ── Transitions / entrance animations ── */
+@keyframes os-sectionIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.lwl-admin-os .os-section { animation: os-sectionIn 0.36s cubic-bezier(0.22, 1, 0.36, 1); min-width: 0; }
+
+@keyframes os-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.lwl-admin-os .lifter-grid > *,
+.lwl-admin-os .kpi-strip > *,
+.lwl-admin-os .edit-grid > *,
+.lwl-admin-os .grid > * { animation: os-rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.lwl-admin-os .lifter-grid > *:nth-child(1),  .lwl-admin-os .kpi-strip > *:nth-child(1),  .lwl-admin-os .edit-grid > *:nth-child(1),  .lwl-admin-os .grid > *:nth-child(1)  { animation-delay: 0.02s; }
+.lwl-admin-os .lifter-grid > *:nth-child(2),  .lwl-admin-os .kpi-strip > *:nth-child(2),  .lwl-admin-os .edit-grid > *:nth-child(2),  .lwl-admin-os .grid > *:nth-child(2)  { animation-delay: 0.06s; }
+.lwl-admin-os .lifter-grid > *:nth-child(3),  .lwl-admin-os .kpi-strip > *:nth-child(3),  .lwl-admin-os .edit-grid > *:nth-child(3),  .lwl-admin-os .grid > *:nth-child(3)  { animation-delay: 0.10s; }
+.lwl-admin-os .lifter-grid > *:nth-child(4),  .lwl-admin-os .kpi-strip > *:nth-child(4),  .lwl-admin-os .edit-grid > *:nth-child(4),  .lwl-admin-os .grid > *:nth-child(4)  { animation-delay: 0.14s; }
+.lwl-admin-os .lifter-grid > *:nth-child(5),  .lwl-admin-os .edit-grid > *:nth-child(5)  { animation-delay: 0.18s; }
+.lwl-admin-os .lifter-grid > *:nth-child(6),  .lwl-admin-os .edit-grid > *:nth-child(6)  { animation-delay: 0.22s; }
+.lwl-admin-os .lifter-grid > *:nth-child(7),  .lwl-admin-os .edit-grid > *:nth-child(7)  { animation-delay: 0.26s; }
+.lwl-admin-os .lifter-grid > *:nth-child(8),  .lwl-admin-os .edit-grid > *:nth-child(8)  { animation-delay: 0.30s; }
+.lwl-admin-os .lifter-grid > *:nth-child(n+9) { animation-delay: 0.34s; }
+
+.lwl-admin-os .nav-item { transition: background 0.18s, color 0.18s; }
+.lwl-admin-os .nav-item.active::before { transition: opacity 0.2s; }
+.lwl-admin-os .lifter-cell, .lwl-admin-os .kpi, .lwl-admin-os .card, .lwl-admin-os .edit-card,
+.lwl-admin-os .rail-athlete, .lwl-admin-os .comp-card, .lwl-admin-os .btn-a, .lwl-admin-os .ctrl {
+  transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s, color 0.18s;
+}
+.lwl-admin-os .rail-athlete:active, .lwl-admin-os .lifter-cell:active { transform: scale(0.985); }
+
+@media (prefers-reduced-motion: reduce) {
+  .lwl-admin-os .os-section,
+  .lwl-admin-os .lifter-grid > *, .lwl-admin-os .kpi-strip > *, .lwl-admin-os .edit-grid > *, .lwl-admin-os .grid > *,
+  .lwl-admin-os .os-fade { animation: none !important; }
+}
 
 /* ── COLLAPSED NAV ── */
 .lwl-admin-os.os-nav-collapsed .admin-shell { grid-template-columns: 78px minmax(0, 1fr) 312px; }

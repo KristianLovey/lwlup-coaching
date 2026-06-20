@@ -136,7 +136,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const FM = 'var(--fm)', FD = 'var(--fd)'
 
   const Section = ({ title, open, onToggle, children, accent = 'rgba(255,255,255,0.4)' }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode; accent?: string }) => (
-    <div style={{ background: '#111111', border: `1px solid rgba(255,255,255,0.07)`, borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
+    <div style={{ background: 'var(--surface-1)', border: `1px solid var(--border)`, borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
       <button onClick={onToggle} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', color: '#fff' }}>
         <span style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: accent, fontFamily: FM, fontWeight: 700 }}>{title}</span>
         <ChevronDown size={14} color={accent} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
@@ -186,7 +186,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const hasWb      = (d: string) => wbLogs.some((l: any) => String(l.log_date).slice(0, 10) === d)
 
   const FreqGrid = () => (
-    <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px 16px', marginBottom: '12px' }}>
+    <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px 16px', marginBottom: '12px' }}>
       <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontFamily: FM, marginBottom: '12px', fontWeight: 700 }}>FREKVENCIJA LOGIRANJA</div>
       <div style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', gap: '2px', marginBottom: '6px' }}>
         <div />
@@ -236,7 +236,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '2px', marginBottom: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '3px', overflowX: 'auto' as const }}>
+      <div style={{ display: 'flex', gap: '2px', marginBottom: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: '10px', padding: '3px', overflowX: 'auto' as const }}>
         {([['opcenito','OPĆENITO'],['detaljno','DETALJNO'],['meetday','MEET DAY'],['prioriteti','PRIORITETI'],['trening','UREĐIVANJE TRENINGA']] as const).map(([id, label]) => (
           <button key={id} onClick={() => id === 'trening' ? onGoTraining() : setTab(id as 'opcenito'|'detaljno'|'meetday'|'prioriteti')}
             style={{ flex: 1, padding: '8px 6px', background: tab === id ? 'rgba(255,255,255,0.1)' : 'transparent', border: tab === id ? '1px solid rgba(255,255,255,0.18)' : '1px solid transparent', borderRadius: '7px', cursor: 'pointer', fontSize: '0.55rem', fontFamily: FM, fontWeight: tab === id ? 700 : 400, color: tab === id ? '#ffffff' : 'rgba(255,255,255,0.35)', transition: 'all 0.15s', letterSpacing: '0.04em', whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -257,7 +257,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
               { label: 'KALORIJE', val: todayCal !== '—' ? `${todayCal}` : '—',    color: '#f59e0b' },
               { label: 'VODA',     val: todayWater !== '—' ? `${todayWater}L` : '—', color: '#38bdf8' },
             ].map(s => (
-              <div key={s.label} style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '12px 10px', textAlign: 'center' }}>
+              <div key={s.label} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '10px', padding: '12px 10px', textAlign: 'center' }}>
                 <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px', fontFamily: FM }}>{s.label}</div>
                 <div style={{ fontSize: '1.1rem', fontWeight: 900, color: s.color, fontFamily: FD }}>{s.val}</div>
               </div>
@@ -269,7 +269,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
               { label: 'STRES',  val: todayStress !== '—' ? `${todayStress}/10` : '—', color: (todayStress !== '—' && Number(todayStress) > 7) ? '#f87171' : (todayStress !== '—' && Number(todayStress) > 4) ? '#f59e0b' : '#4ade80' },
               { label: 'SUPLEM.', val: todaySuppsCount > 0 ? `${todaySuppsCount}×` : '—', color: '#10b981' },
             ].map(s => (
-              <div key={s.label} style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
+              <div key={s.label} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
                 <div style={{ fontSize: '0.44rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.25)', marginBottom: '5px', fontFamily: FM }}>{s.label}</div>
                 <div style={{ fontSize: '1rem', fontWeight: 900, color: s.color, fontFamily: FD }}>{s.val}</div>
               </div>
@@ -286,7 +286,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
                 { label: 'BP', val: e1rms.bp, color: '#f472b6' },
                 { label: 'DL', val: e1rms.dl, color: '#fb923c' },
               ].map(s => (
-                <div key={s.label} style={{ background: '#111111', border: `1px solid ${s.val ? s.color + '30' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', padding: '14px 10px', textAlign: 'center' }}>
+                <div key={s.label} style={{ background: 'var(--surface-1)', border: `1px solid ${s.val ? s.color + '30' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', padding: '14px 10px', textAlign: 'center' }}>
                   <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px', fontFamily: FM }}>{s.label}</div>
                   <div style={{ fontSize: '1.4rem', fontWeight: 900, color: s.val ? s.color : 'rgba(255,255,255,0.15)', fontFamily: FD }}>{s.val ?? '—'}</div>
                   {s.val && <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginTop: '2px' }}>kg e1RM</div>}
@@ -359,7 +359,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
 
             return (
               <>
-                <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px', marginBottom: '12px' }}>
+                <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px', marginBottom: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                     <button onClick={() => setCalViewDate(({ y, m }) => m === 0 ? { y: y-1, m: 11 } : { y, m: m-1 })}
                       style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
@@ -429,7 +429,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
                 </div>
 
                 {selectedDay && (
-                  <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '14px', marginBottom: '12px', animation: 'fadeUp 0.2s ease' }}>
+                  <div style={{ background: 'var(--surface-1)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '14px', marginBottom: '12px', animation: 'fadeUp 0.2s ease' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                       <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.45)', fontFamily: FM, fontWeight: 700, letterSpacing: '0.2em' }}>{selectedDay}</span>
                       <div style={{ display: 'flex', gap: '6px' }}>
@@ -1100,7 +1100,7 @@ export function AthletePanel({
       </div>
 
       <div style={{ position: 'relative', marginBottom: '24px' }} ref={blockSelectorRef}>
-        <div className="block-bar-inner" style={{ display: 'flex', alignItems: 'stretch', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.3)' }}>
+        <div className="block-bar-inner" style={{ display: 'flex', alignItems: 'stretch', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.3)' }}>
 
           <div className="block-bar-top" style={{ display: 'flex', alignItems: 'stretch', flex: 1 }}>
             <button onClick={() => setShowBlockSelector(!showBlockSelector)}
@@ -1170,10 +1170,10 @@ export function AthletePanel({
         </div>
 
         {showBlockSelector && allBlocks.length > 0 && (
-          <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, background: '#09090e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', maxHeight: '280px', overflowY: 'auto', animation: 'dropDown 0.18s ease' }}>
+          <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, background: '#09090e', border: '1px solid var(--border)', borderRadius: '10px', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', maxHeight: '280px', overflowY: 'auto', animation: 'dropDown 0.18s ease' }}>
             {allBlocks.map(b => (
               <button key={b.id} onClick={() => switchBlock(b.id)}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: b.id === block?.id ? '#111113' : 'transparent', border: 'none', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.07)', textAlign: 'left', transition: 'background 0.12s' }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: b.id === block?.id ? '#111113' : 'transparent', border: 'none', cursor: 'pointer', borderBottom: '1px solid var(--border)', textAlign: 'left', transition: 'background 0.12s' }}
                 onMouseEnter={e => e.currentTarget.style.background = '#111113'}
                 onMouseLeave={e => e.currentTarget.style.background = b.id === block?.id ? '#111113' : 'transparent'}>
                 <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.status === 'active' ? '#22c55e' : b.status === 'completed' ? '#60a5fa' : '#333', flexShrink: 0 }} />
@@ -1291,7 +1291,7 @@ export function AthletePanel({
         .add-btn:hover { border-color:rgba(255,255,255,0.4); color:#f0f0f0; background:rgba(255,255,255,0.04); }
         .icon-btn-danger { background:transparent; border:none; cursor:pointer; color:rgba(255,255,255,0.2); padding:6px; display:flex; align-items:center; justify-content:center; border-radius:6px; transition:all 0.15s; }
         .icon-btn-danger:hover { color:#ef4444; background:rgba(239,68,68,0.08); }
-        .cat-btn { padding:4px 12px; font-size:0.62rem; letter-spacing:0.1em; font-weight:700; cursor:pointer; font-family:var(--fm); background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.08); border-radius:6px; transition:all 0.15s; }
+        .cat-btn { padding:4px 12px; font-size:0.62rem; letter-spacing:0.1em; font-weight:700; cursor:pointer; font-family:var(--fm); background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.4); border:1px solid var(--border); border-radius:6px; transition:all 0.15s; }
         .cat-btn-active, .cat-btn:hover { background:rgba(255,255,255,0.08); color:#f0f0f0; border-color:rgba(255,255,255,0.2); }
         @keyframes fadeUp { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
         @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
