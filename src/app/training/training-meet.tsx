@@ -351,13 +351,13 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
   // Load athlete list (admin only) and lifter profile
   useEffect(() => {
     if (showAthleteSelector) {
-      supabase.from('profiles').select('id, full_name').order('full_name')
+      supabase.from('lifters').select('id, full_name').order('full_name')
         .then(({ data }) => setAthletes((data ?? []) as AthleteOption[]))
     }
   }, [showAthleteSelector])
 
   useEffect(() => {
-    supabase.from('profiles').select('body_weight, sex').eq('id', athleteId).single()
+    supabase.from('lifters').select('body_weight, sex').eq('id', athleteId).single()
       .then(({ data }) => {
         if (data) {
           setLifterProfile({ bw: data.body_weight ?? null, sex: (data.sex ?? 'male') as 'male' | 'female' })
@@ -413,7 +413,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
     const parsed = parseFloat(lifterBwEdit)
     if (!parsed) return
     setSavingBw(true)
-    await supabase.from('profiles').update({ body_weight: parsed }).eq('id', athleteId)
+    await supabase.from('lifters').update({ body_weight: parsed }).eq('id', athleteId)
     setLifterProfile(prev => ({ ...prev, bw: parsed }))
     setSavingBw(false)
   }
@@ -734,7 +734,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
                       style={{ width: '80px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(107,140,255,0.3)', borderRadius: '7px', color: '#f0f0f5', padding: '6px 10px', fontSize: '0.85rem', fontFamily: 'var(--fm)', outline: 'none' }} />
                     <div style={{ display: 'flex', gap: '4px' }}>
                       {(['male','female'] as const).map(s => (
-                        <button key={s} onClick={async () => { setLifterProfile(p => ({ ...p, sex: s })); await supabase.from('profiles').update({ sex: s }).eq('id', athleteId) }}
+                        <button key={s} onClick={async () => { setLifterProfile(p => ({ ...p, sex: s })); await supabase.from('lifters').update({ sex: s }).eq('id', athleteId) }}
                           style={{ padding: '5px 9px', borderRadius: '6px', border: `1px solid ${lifterProfile.sex === s ? 'rgba(107,140,255,0.4)' : 'rgba(255,255,255,0.1)'}`, background: lifterProfile.sex === s ? 'rgba(107,140,255,0.12)' : 'transparent', color: lifterProfile.sex === s ? '#a5b4fc' : 'rgba(255,255,255,0.35)', fontSize: '0.62rem', fontFamily: 'var(--fm)', cursor: 'pointer', transition: 'all 0.15s' }}>
                           {s === 'male' ? '♂' : '♀'}
                         </button>

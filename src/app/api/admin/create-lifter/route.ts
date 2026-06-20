@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { data: profile } = await adminClient
-      .from('profiles')
+      .from('lifters')
       .select('role')
       .eq('id', user.id)
       .single()
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     if (createError) return NextResponse.json({ error: createError.message }, { status: 400 })
 
     // Upsert profil — trigger može kreirati prazan red prije ovoga
-    const { error: profileError } = await adminClient.from('profiles').upsert({
+    const { error: profileError } = await adminClient.from('lifters').upsert({
       id: newUser.user.id,
       full_name: fullName,
       role: 'lifter',

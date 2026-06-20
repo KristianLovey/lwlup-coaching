@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { data: callerProfile } = await adminClient
-      .from('profiles')
+      .from('lifters')
       .select('role')
       .eq('id', user.id)
       .single()
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       log.uid = uid
 
       // 2. Kreiraj profile
-      const { error: profileError } = await adminClient.from('profiles').insert({
+      const { error: profileError } = await adminClient.from('lifters').insert({
         id: uid,
         full_name: athlete.name,
         role: 'lifter',
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       // 3. Ako postoji u athlete_stats — poveži profile_id
       if (athlete.hasAthleteStats) {
         const { data: statRow, error: findError } = await adminClient
-          .from('athlete_stats')
+          .from('lwlup_members')
           .select('id')
           .ilike('name', athlete.name)
           .maybeSingle()
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
           log.warn = `athlete_stats row not found for name "${athlete.name}"`
         } else {
           const { error: updateError } = await adminClient
-            .from('athlete_stats')
+            .from('lwlup_members')
             .update({ profile_id: uid })
             .eq('id', statRow.id)
 

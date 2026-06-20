@@ -136,7 +136,7 @@ export default function TeamPage() {
   const ctaReveal   = useReveal(0.1)
 
   const loadAthletes = async () => {
-    const { data } = await supabase.from('athlete_stats').select('*').eq('is_active', true)
+    const { data } = await supabase.from('lwlup_members').select('*').eq('is_active', true)
     const list: AthleteStat[] = (data ?? []).map((s: any) => ({
       id:            s.id,
       name:          s.name ?? '',
@@ -162,7 +162,7 @@ export default function TeamPage() {
       setLoading(false)
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user?.id) {
-        const { data: prof } = await supabase.from('profiles').select('role').eq('id', session.user.id).single()
+        const { data: prof } = await supabase.from('lifters').select('role').eq('id', session.user.id).single()
         setIsAdmin(prof?.role === 'admin')
       }
     }
@@ -242,10 +242,10 @@ export default function TeamPage() {
     }
     let err: any
     if (editingId) {
-      const res = await supabase.from('athlete_stats').update(payload).eq('id', editingId)
+      const res = await supabase.from('lwlup_members').update(payload).eq('id', editingId)
       err = res.error
     } else {
-      const res = await supabase.from('athlete_stats').insert({ ...payload, display_order: athletes.length })
+      const res = await supabase.from('lwlup_members').insert({ ...payload, display_order: athletes.length })
       err = res.error
     }
     if (err) { setModalError(err.message); setModalSaving(false); return }
@@ -257,7 +257,7 @@ export default function TeamPage() {
   const deleteAthlete = async () => {
     if (!editingId) return
     if (!confirm('Sakriti ovog sportistu s javne stranice? (is_active = false)')) return
-    await supabase.from('athlete_stats').update({ is_active: false }).eq('id', editingId)
+    await supabase.from('lwlup_members').update({ is_active: false }).eq('id', editingId)
     await loadAthletes()
     setShowModal(false)
   }

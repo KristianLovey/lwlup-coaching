@@ -102,7 +102,7 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
       scopedIds = (asg ?? []).map(a => a.lifter_id)
       if (scopedIds.length === 0) { setAthletes([]); setCoaches([]); return }
     }
-    let q = supabase.from('profiles').select('id, full_name, role, created_at')
+    let q = supabase.from('lifters').select('id, full_name, role, created_at')
     if (scopedIds) q = q.in('id', scopedIds)
     const { data } = await q.order('full_name')
     if (!data) return
@@ -122,7 +122,7 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
   }, [])
 
   const deleteUser = useCallback(async (id: string) => {
-    await supabase.from('profiles').delete().eq('id', id)
+    await supabase.from('lifters').delete().eq('id', id)
     setSelectedId(prev => (prev === id ? null : prev))
     setAthletes(a => a.filter(x => x.id !== id))
   }, [])
@@ -134,7 +134,7 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { setError('Nisi prijavljen/a.'); setLoading(false); return }
         setAdminId(user.id)
-        const { data: profile } = await supabase.from('profiles').select('full_name, role').eq('id', user.id).single()
+        const { data: profile } = await supabase.from('lifters').select('full_name, role').eq('id', user.id).single()
         if (!profile) { setError('Profil ne postoji.'); setLoading(false); return }
         const allowed = isTrener ? (profile.role === 'trener' || profile.role === 'admin') : profile.role === 'admin'
         if (!allowed) { setError(`Pristup odbijen — rola "${profile.role}".`); setLoading(false); return }
@@ -497,7 +497,7 @@ function TimSection({ athletes, onSaved }: { athletes: AthleteProfile[]; onSaved
 
   useEffect(() => {
     if (!athletes.length) return
-    supabase.from('profiles')
+    supabase.from('lifters')
       .select('id, current_squat_1rm, current_bench_1rm, current_deadlift_1rm, body_weight, weight_class, sex')
       .in('id', athletes.map(a => a.id))
       .then(({ data }) => {
@@ -513,7 +513,7 @@ function TimSection({ athletes, onSaved }: { athletes: AthleteProfile[]; onSaved
   const dbField: Record<string, string> = { sq: 'current_squat_1rm', bp: 'current_bench_1rm', dl: 'current_deadlift_1rm', bw: 'body_weight', wc: 'weight_class', sex: 'sex' }
   const save = async (id: string, field: string, val: string) => {
     const isNum = ['sq', 'bp', 'dl', 'bw'].includes(field)
-    await supabase.from('profiles').update({ [dbField[field]]: val === '' ? null : (isNum ? parseFloat(val) : val) }).eq('id', id)
+    await supabase.from('lifters').update({ [dbField[field]]: val === '' ? null : (isNum ? parseFloat(val) : val) }).eq('id', id)
     setSavedId(id); setTimeout(() => setSavedId(s => s === id ? null : s), 1400)
     onSaved()
   }
@@ -568,7 +568,7 @@ function TreneriSection({ athletes, coaches, assignments, setAssignments, onRole
       setAssignments(prev => ({ ...prev, [lifterId]: coachId }))
     }
   }
-  const setRole = async (id: string, role: string) => { await supabase.from('profiles').update({ role }).eq('id', id); onRoleChange() }
+  const setRole = async (id: string, role: string) => { await supabase.from('lifters').update({ role }).eq('id', id); onRoleChange() }
   return (
     <div>
       <div className="eyebrow" style={{ marginBottom: 18 }}>Dodijeli liftera treneru ili promijeni rolu korisnika</div>

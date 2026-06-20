@@ -294,7 +294,7 @@ export default function ExerciseLibraryPage() {
     loadExercises()
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
-      supabase.from('profiles').select('full_name, role, avatar_icon').eq('id', user.id).single()
+      supabase.from('lifters').select('full_name, role, avatar_icon').eq('id', user.id).single()
         .then(({ data }) => {
           const r = data?.role as 'admin' | 'trener' | undefined
           setNavUser({ name: data?.full_name ?? '', isAdmin: r === 'admin' || r === 'trener', role: r, avatarIcon: data?.avatar_icon ?? 'barbell' })

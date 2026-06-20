@@ -356,8 +356,8 @@ export default function ProfilePage() {
       setUserId(user.id)
 
       const [{ data: prof }, { data: athleteStat }, { data: prs }, { data: lb }, { data: workoutRows }] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
-        supabase.from('athlete_stats').select('id').eq('profile_id', user.id).maybeSingle(),
+        supabase.from('lifters').select('*').eq('id', user.id).single(),
+        supabase.from('lwlup_members').select('id').eq('profile_id', user.id).maybeSingle(),
         supabase.from('pr_logs').select('*').eq('athlete_id', user.id).order('date', { ascending: false }),
         supabase.from('leaderboard_view').select('*'),
         supabase.from('workouts').select('athlete_id, completed'),
@@ -448,7 +448,7 @@ export default function ProfilePage() {
 
   const saveAvatar = async (iconId: string) => {
     if (!userId) return
-    await supabase.from('profiles').update({ avatar_icon: iconId }).eq('id', userId)
+    await supabase.from('lifters').update({ avatar_icon: iconId }).eq('id', userId)
     setProfile(p => p ? { ...p, avatar_icon: iconId } : p)
     setLeaderboard(lb => lb.map(e => e.id === userId ? { ...e, avatar_icon: iconId } : e))
   }
@@ -462,7 +462,7 @@ export default function ProfilePage() {
       body_weight:          ormVals.body_weight ? Number(ormVals.body_weight) : null,
       sex: ormVals.sex,
     }
-    await supabase.from('profiles').update(data).eq('id', userId)
+    await supabase.from('lifters').update(data).eq('id', userId)
     setProfile(p => p ? { ...p, ...data } : p)
     setLeaderboard(lb => lb.map(e => e.id === userId ? { ...e, body_weight: data.body_weight, sex: data.sex } : e))
     setEditingORM(false)

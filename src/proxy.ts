@@ -57,7 +57,7 @@ export async function proxy(request: NextRequest) {
 
     // Provjeri rolu kroz Supabase (service definer function - nema rekurzije)
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('lifters')
       .select('role')
       .eq('id', user.id)
       .single()

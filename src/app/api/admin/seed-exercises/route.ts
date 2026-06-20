@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { data: profile } = await adminClient
-      .from('profiles')
+      .from('lifters')
       .select('role')
       .eq('id', user.id)
       .single()

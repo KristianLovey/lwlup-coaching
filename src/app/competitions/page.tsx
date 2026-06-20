@@ -262,7 +262,7 @@ export default function CompetitionsPage() {
         .select(`
           competition_id,
           result_squat, result_bench, result_deadlift, result_total, result_place, result_notes,
-          athlete:athlete_stats(id, name, nickname, img, category)
+          athlete:lwlup_members(id, name, nickname, img, category)
         `)
         .in('competition_id', compIds)
 

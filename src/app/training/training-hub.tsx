@@ -2557,7 +2557,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
   // Load hub preferences from profiles
   useEffect(() => {
     if (!userId) return
-    supabase.from('profiles').select('hub_hidden_tools').eq('id', userId).single()
+    supabase.from('lifters').select('hub_hidden_tools').eq('id', userId).single()
       .then(({ data }) => {
         if (data?.hub_hidden_tools) setHiddenTools(data.hub_hidden_tools)
       })
@@ -2576,7 +2576,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
   const saveSettings = async () => {
     if (!userId) return
     setSavingSettings(true)
-    await supabase.from('profiles').update({ hub_hidden_tools: draftHidden }).eq('id', userId)
+    await supabase.from('lifters').update({ hub_hidden_tools: draftHidden }).eq('id', userId)
     setHiddenTools(draftHidden)
     setSavingSettings(false)
     setShowSettings(false)

@@ -397,7 +397,7 @@ export default function RecordsPage() {
   const [clubMembers, setClubMembers] = useState<string[]>([])
 
   useEffect(() => {
-    supabase.from('athlete_stats').select('name').eq('is_active', true)
+    supabase.from('lwlup_members').select('name').eq('is_active', true)
       .then(({ data }) => { if (data) setClubMembers(data.map((r: any) => r.name)) })
   }, [])
 

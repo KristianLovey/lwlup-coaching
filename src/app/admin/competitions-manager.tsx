@@ -59,7 +59,7 @@ export function CompetitionsManager() {
     setLoading(true)
     const [{ data: comps }, { data: athletes }] = await Promise.all([
       supabase.from('competitions').select('*').order('date', { ascending: true }),
-      supabase.from('athlete_stats').select('id, name, nickname, category, img').eq('is_active', true).order('display_order'),
+      supabase.from('lwlup_members').select('id, name, nickname, category, img').eq('is_active', true).order('display_order'),
     ])
     setAllAthletes(athletes ?? [])
 

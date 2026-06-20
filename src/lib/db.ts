@@ -5,7 +5,7 @@ import { WeekPlan } from './exercises'
 
 export async function getProfile(uid: string) {
   const { data, error } = await supabase
-    .from('profiles')
+    .from('lifters')
     .select('*')
     .eq('id', uid)
     .single()
@@ -15,7 +15,7 @@ export async function getProfile(uid: string) {
 
 export async function getAllLifters() {
   const { data, error } = await supabase
-    .from('profiles')
+    .from('lifters')
     .select('*')
     .eq('role', 'lifter')
     .order('full_name')

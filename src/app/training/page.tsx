@@ -64,7 +64,7 @@ export default function TrainingPage() {
         Promise.all([
           supabase.from('competitions').select('id,name,date,location,status').order('date', { ascending: false }),
           supabase.from('meet_attempts').select('*').eq('athlete_id', uid).order('created_at', { ascending: false }),
-          supabase.from('profiles').select('body_weight, sex').eq('id', uid).single(),
+          supabase.from('lifters').select('body_weight, sex').eq('id', uid).single(),
         ]).then(([comps, atts, prof]) => {
           if (comps.data)  cacheSet(meetKeys.competitions(),  comps.data, 5 * 60_000)
           if (atts.data)   cacheSet(meetKeys.attempts(uid),   atts.data,  30_000)
@@ -94,7 +94,7 @@ export default function TrainingPage() {
           { data: rawBlock },
           { data: ab },
         ] = await Promise.all([
-          supabase.from('profiles').select('full_name, role, avatar_icon').eq('id', uid).single(),
+          supabase.from('lifters').select('full_name, role, avatar_icon').eq('id', uid).single(),
           supabase.from('exercises').select('id, name, category, notes').order('category').order('name'),
           supabase.from('blocks')
             .select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(id, name, category, notes))))')
