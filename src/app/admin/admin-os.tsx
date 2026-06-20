@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutGrid, Users, Dumbbell, Trophy, Bell, Search, Plus, Check, Send,
   Loader2, PanelLeft, PanelRight, ChevronRight, ChevronLeft, ChevronDown, Settings, Trash2, LogOut, AlertCircle, SlidersHorizontal,
-  User, Activity, Shield,
+  User, Activity, Menu,
 } from 'lucide-react'
 import type { AthleteProfile } from './athlete-panels'
 import type { Block, Exercise } from '../training/types'
@@ -65,6 +65,7 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
   const [lifteriManaging, setLifteriManaging] = useState(false)
   const [view, setView] = useState<'overview' | 'training'>('overview')
   const [navCollapsed, setNavCollapsed] = useState(true)
+  const [navMobileOpen, setNavMobileOpen] = useState(false)
   const [railOpen, setRailOpen] = useState(false)
   const [railHidden, setRailHidden] = useState(true)
   const [search, setSearch] = useState('')
@@ -206,7 +207,7 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
     <div className={shellClass}>
       <div className="admin-shell">
         {/* ── NAV ── */}
-        <aside className={'nav' + (navCollapsed ? ' nav--collapsed' : '')}>
+        <aside className={'nav' + (navCollapsed ? ' nav--collapsed' : '') + (navMobileOpen ? ' mobile-open' : '')}>
           <div className="nav-logo">
             <div className="mark">L</div>
             <div className="txt">LWL UP<small>{isTrener ? 'TRENER · OS' : 'ADMIN · OS'}</small></div>
@@ -215,7 +216,7 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
           <div className="nav-section">Upravljanje</div>
           <nav className="nav-items">
             {(isTrener ? NAV.filter(n => n.id === 'dashboard' || n.id === 'lifteri' || n.id === 'obavijesti') : NAV).map(n => (
-              <button key={n.id} className={'nav-item' + (section === n.id && !settingsOpen ? ' active' : '')} onClick={() => { setSection(n.id); setSettingsOpen(false); if (n.id === 'lifteri') setLifteriManaging(false) }} title={n.label}>
+              <button key={n.id} className={'nav-item' + (section === n.id && !settingsOpen ? ' active' : '')} onClick={() => { setSection(n.id); setSettingsOpen(false); setNavMobileOpen(false); if (n.id === 'lifteri') setLifteriManaging(false) }} title={n.label}>
                 <span className="ico">{n.icon}</span>
                 <span className="nav-label">{n.label}</span>
                 {n.id === 'lifteri' && <span className="count">{athletes.length}</span>}
@@ -268,6 +269,8 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
         {/* ── MAIN ── */}
         <main className="main">
           <div className="topbar">
+           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            <button className="ctrl icon mobile-nav-btn" onClick={() => setNavMobileOpen(true)} aria-label="Izbornik"><Menu size={18} /></button>
             <div className="title-block">
               <div className="eyebrow">LWL UP · {section === 'dashboard' ? 'PREGLED' : (section === 'lifteri' && lifteriManaging) ? 'UREĐIVANJE' : 'ADMIN PANEL'}</div>
               <h1>
@@ -278,6 +281,7 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
                     : sectionTitle[section]}
               </h1>
             </div>
+           </div>
             <div className="topbar-controls">
               {section === 'dashboard' && selected && (
                 <button className={'ctrl icon' + (settingsOpen ? ' on' : '')} onClick={() => setSettingsOpen(v => !v)} aria-label="Postavke" title="Postavke dashboarda"><SlidersHorizontal size={16} /></button>
@@ -343,6 +347,7 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
         </aside>
       </div>
       {railOpen && <div className="rail-scrim" onClick={() => setRailOpen(false)} />}
+      {navMobileOpen && <div className="nav-mobile-scrim" onClick={() => setNavMobileOpen(false)} />}
       <SettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)} cards={cards} setCard={setCard} onReset={() => setCards(defaultCards())} />
     </div>
   )

@@ -463,9 +463,11 @@
 .lwl-admin-os .recipient.all { border-bottom: 1px solid var(--border); border-radius: 0; margin-bottom: 6px; padding-bottom: 16px; }
 .lwl-admin-os .recipient.all .nm { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
 
-/* mobile rail toggle / scrim */
+/* mobile rail / nav toggles + scrims */
 .lwl-admin-os .mobile-rail-btn { display: none; }
+.lwl-admin-os .mobile-nav-btn { display: none; }
 .lwl-admin-os .rail-scrim { display: none; }
+.lwl-admin-os .nav-mobile-scrim { display: none; }
 .lwl-admin-os .rail-head-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .lwl-admin-os .rail-head-top .t { margin-bottom: 0; }
 .lwl-admin-os .rail-hide { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: var(--text-muted); transition: all 0.16s; flex: 0 0 30px; }
@@ -584,17 +586,51 @@
   .lwl-admin-os .notif-layout { grid-template-columns: 1fr; }
 }
 @media (max-width: 900px) {
-  .lwl-admin-os .admin-shell { grid-template-columns: 1fr; }
-  .lwl-admin-os .nav { position: static; height: auto; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 8px; padding: 14px 16px; }
-  .lwl-admin-os .nav-logo { padding: 4px 8px; }
-  .lwl-admin-os .nav-section, .lwl-admin-os .nav-foot { display: none; }
-  .lwl-admin-os .nav-items { flex-direction: row; flex-wrap: wrap; }
-  .lwl-admin-os .nav-item .count { display: none; }
-  .lwl-admin-os .nav-item.active::before { display: none; }
-  .lwl-admin-os .kpi-strip { grid-template-columns: 1fr 1fr; }
-  .lwl-admin-os .grid.c2 { grid-template-columns: 1fr; }
+  /* nav becomes an off-canvas left drawer; main is full width */
+  .lwl-admin-os .admin-shell,
+  .lwl-admin-os.os-nav-collapsed .admin-shell,
+  .lwl-admin-os.os-rail-hidden .admin-shell,
+  .lwl-admin-os.os-nav-collapsed.os-rail-hidden .admin-shell { grid-template-columns: 1fr !important; }
+
+  .lwl-admin-os .nav {
+    position: fixed; left: 0; top: 0; bottom: 0; height: 100vh;
+    width: 264px; max-width: 82vw; z-index: 95;
+    flex-direction: column; padding: 22px 16px;
+    transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 24px 0 60px -20px rgba(0,0,0,0.7);
+  }
+  .lwl-admin-os .nav.mobile-open { transform: translateX(0); }
+  /* always show full (un-collapsed) inside the mobile drawer */
+  .lwl-admin-os .nav .nav-label,
+  .lwl-admin-os .nav .nav-section,
+  .lwl-admin-os .nav .nav-item .count,
+  .lwl-admin-os .nav .nav-coach .meta { display: revert; }
+  .lwl-admin-os .nav .nav-item { justify-content: flex-start; padding: 11px 12px; }
+  .lwl-admin-os .nav .nav-collapse { display: none; }
+  .lwl-admin-os .nav .nav-logo { flex-direction: row; justify-content: flex-start; padding: 4px 8px 22px; }
+  .lwl-admin-os .nav .nav-logo .txt { display: block; }
+  .lwl-admin-os .nav .nav-coach > svg { display: revert; }
+
+  .lwl-admin-os .nav-mobile-scrim { display: block; position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,0.55); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+  .lwl-admin-os .mobile-nav-btn { display: inline-flex; }
+
+  .lwl-admin-os .main { padding: 16px 14px 64px; }
+  .lwl-admin-os .topbar { margin-bottom: 20px; }
+  .lwl-admin-os .topbar h1 { font-size: clamp(22px, 6.5vw, 34px); }
+  .lwl-admin-os .kpi-strip { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .lwl-admin-os .grid.c2, .lwl-admin-os .grid.c2feat, .lwl-admin-os .grid.c3, .lwl-admin-os .grid.c3e { grid-template-columns: 1fr; }
   .lwl-admin-os .edit-grid { grid-template-columns: 1fr; }
-  .lwl-admin-os .main { padding: 20px 16px 60px; }
+  .lwl-admin-os .notif-layout { grid-template-columns: 1fr; }
   .lwl-admin-os .a-table thead { display: none; }
   .lwl-admin-os .a-table tbody td:nth-child(n+4) { display: none; }
+}
+@media (max-width: 520px) {
+  .lwl-admin-os .main { padding: 14px 10px 64px; }
+  .lwl-admin-os .kpi { padding: 16px 16px; }
+  .lwl-admin-os .kpi .num { font-size: 30px; }
+  .lwl-admin-os .card { padding: 18px 16px; }
+  .lwl-admin-os .lifter-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .lwl-admin-os .field-row { grid-template-columns: 1fr 1fr; }
+  .lwl-admin-os .toolbar { gap: 8px; }
+  .lwl-admin-os .os-select select { min-width: 150px; }
 }
