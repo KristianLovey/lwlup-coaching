@@ -286,7 +286,6 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
               {section === 'dashboard' && selected && (
                 <button className={'ctrl icon' + (settingsOpen ? ' on' : '')} onClick={() => setSettingsOpen(v => !v)} aria-label="Postavke" title="Postavke dashboarda"><SlidersHorizontal size={16} /></button>
               )}
-              <button className="ctrl icon mobile-rail-btn" onClick={toggleRail} aria-label="Lifteri"><Users size={16} /></button>
               <button className={'ctrl icon' + (railHidden ? '' : ' on')} onClick={toggleRail} aria-label="Panel liftera" title="Panel liftera"><Users size={16} /></button>
             </div>
           </div>
