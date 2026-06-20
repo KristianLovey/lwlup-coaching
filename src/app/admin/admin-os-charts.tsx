@@ -88,18 +88,26 @@ export function VolumeBars({ volume, rpe, labels }: { volume: number[]; rpe: num
   const bw = (w - padL - padR) / volume.length
   const rMin = 4, rMax = 10
   const X = (i: number) => padL + i * bw + bw / 2
-  const RY = (v: number) => h - padB - ((v - rMin) / (rMax - rMin)) * (h - padT - padB)
-  const rpeLine = (rpe || []).map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${RY(v).toFixed(1)}`).join(' ')
+  const RY = (v: number) => h - padB - ((Math.max(rMin, Math.min(rMax, v)) - rMin) / (rMax - rMin)) * (h - padT - padB)
+  // Keep RPE points aligned to their bar index; skip weeks with no RPE (v<=0)
+  const rpePts = (rpe || []).map((v, i) => ({ v, i })).filter(p => p.v > 0)
+  const rpeLine = rpePts.map((p, k) => `${k ? 'L' : 'M'}${X(p.i).toFixed(1)},${RY(p.v).toFixed(1)}`).join(' ')
   return (
     <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" width="100%" height={h}>
+      <defs>
+        <linearGradient id="volbar" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--text)" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="var(--text)" stopOpacity="0.08" />
+        </linearGradient>
+      </defs>
       {volume.map((v, i) => {
-        const bh = (v / maxV) * (h - padT - padB)
-        return <rect key={i} x={padL + i * bw + bw * 0.18} y={h - padB - bh} width={bw * 0.64} height={bh} rx="2" fill="var(--text)" opacity="0.22" />
+        const bh = Math.max(0, (v / maxV) * (h - padT - padB))
+        return <rect key={i} x={padL + i * bw + bw * 0.2} y={h - padB - bh} width={bw * 0.6} height={bh} rx="3" fill="url(#volbar)" />
       })}
-      {rpe && rpe.length > 1 && <path d={rpeLine} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />}
-      {(rpe || []).map((v, i) => <circle key={i} cx={X(i)} cy={RY(v)} r="2.5" fill="var(--accent)" />)}
+      {rpePts.length > 1 && <path d={rpeLine} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />}
+      {rpePts.map(p => <circle key={p.i} cx={X(p.i)} cy={RY(p.v)} r="3" fill="var(--accent)" stroke="var(--bg)" strokeWidth="1.5" />)}
       {labels && labels.map((l, i) => (
-        <text key={i} x={padL + (i / Math.max(1, labels.length - 1)) * (w - padL - padR)} y={h - 8} textAnchor="middle" className="chart-axis">{l}</text>
+        i % Math.ceil(labels.length / 6) === 0 ? <text key={i} x={X(i)} y={h - 8} textAnchor="middle" className="chart-axis">{l}</text> : null
       ))}
     </svg>
   )

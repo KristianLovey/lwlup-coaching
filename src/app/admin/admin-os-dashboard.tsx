@@ -96,10 +96,12 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
     // weekly buckets
     const weekSet = new Set<string>()
     const e1: Record<'sq' | 'bp' | 'dl', Record<string, number>> = { sq: {}, bp: {}, dl: {} }
+    // per fully-completed day → best top-set e1RM (drives the progress chart)
+    const dayE1: Record<'sq' | 'bp' | 'dl', Record<string, number>> = { sq: {}, bp: {}, dl: {} }
     const volByWeek: Record<string, number> = {}
     const rpeByWeek: Record<string, number[]> = {}
     const compByWeek: Record<string, { done: number; total: number }> = {}
-    let bestE1: Record<'sq' | 'bp' | 'dl', number> = { sq: 0, bp: 0, dl: 0 }
+    const bestE1: Record<'sq' | 'bp' | 'dl', number> = { sq: 0, bp: 0, dl: 0 }
 
     for (const w of workouts) {
       const wk = weekKey(w.workout_date)
@@ -118,10 +120,17 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
               const e = epley(kg, reps)
               if (!e1[lk][wk] || e > e1[lk][wk]) e1[lk][wk] = e
               if (e > bestE1[lk]) bestE1[lk] = e
+              // only count days that are marked fully completed
+              if (w.completed && (!dayE1[lk][w.workout_date] || e > dayE1[lk][w.workout_date])) dayE1[lk][w.workout_date] = e
             }
           }
         }
       }
+    }
+    const e1Sessions: Record<'sq' | 'bp' | 'dl', { date: string; e1: number }[]> = {
+      sq: Object.entries(dayE1.sq).map(([date, e1v]) => ({ date, e1: e1v })).sort((a, b) => a.date.localeCompare(b.date)),
+      bp: Object.entries(dayE1.bp).map(([date, e1v]) => ({ date, e1: e1v })).sort((a, b) => a.date.localeCompare(b.date)),
+      dl: Object.entries(dayE1.dl).map(([date, e1v]) => ({ date, e1: e1v })).sort((a, b) => a.date.localeCompare(b.date)),
     }
     const weeks = [...weekSet].sort()
     const bwByWeek: Record<string, number> = {}
@@ -160,7 +169,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
     const latestNut = nut[0] ?? null
 
     return {
-      weeks, allWeeks, e1, bestE1, volByWeek, rpeByWeek, totalE1Week, bwByWeek,
+      weeks, allWeeks, e1, e1Sessions, bestE1, volByWeek, rpeByWeek, totalE1Week, bwByWeek,
       complianceSeries, complianceOverall: totalWo ? Math.round((doneWo / totalWo) * 100) : 0,
       doneWo, totalWo, curTotal, curBw, ton7, latestWb, latestNut, profile,
       balance: {
@@ -181,13 +190,19 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
   const bwSpark = fillSeries(data.allWeeks, data.bwByWeek)
   const volSpark = data.weeks.map(w => Math.round((data.volByWeek[w] ?? 0) / 100))
 
-  // progress card
+  // progress card — plotted by actual dates of fully-completed logged days
   const pr = cards.progress
-  const e1Weeks = data.weeks.filter(w => data.e1[lift][w] != null)
-  const e1Full = fillSeries(data.weeks, data.e1[lift])
-  const e1Series = sliceNum(pr.range, e1Full)
+  const fmtDate = (d: string) => { const [, mo, da] = d.split('-'); return `${da}.${mo}` }
+  const allSess = data.e1Sessions[lift]
+  const cutoff = Date.now() - pr.range * 7 * 86400000
+  let sess = allSess.filter(s => new Date(s.date + 'T12:00:00').getTime() >= cutoff)
+  if (sess.length < 2) sess = allSess.slice(-Math.max(2, Math.min(allSess.length, 8)))
+  const e1Series = sess.map(s => s.e1)
   const e1Last = e1Series[e1Series.length - 1] ?? 0
   const e1Prev = e1Series[Math.max(0, e1Series.length - 2)] ?? e1Last
+  const e1Labels = sess.length >= 2
+    ? [fmtDate(sess[0].date), ...(sess.length > 3 ? [fmtDate(sess[Math.floor(sess.length / 2)].date)] : []), fmtDate(sess[sess.length - 1].date)]
+    : undefined
 
   const vol = cards.volume
   const volWeeks = rangeWeeks(vol.range, data.weeks)
@@ -239,14 +254,15 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
       <div className="grid c2feat">
         <Card id="progress" title={`Pregled napretka — ${athleteName.split(' ')[0]}`}
           head={<><div className="seg">{(['sq', 'bp', 'dl'] as const).map(k => <button key={k} className={lift === k ? 'on' : ''} onClick={() => setLift(k)}>{liftNames[k]}</button>)}</div><RangeSel id="progress" /></>}>
-          {e1Weeks.length === 0 ? <div className="os-empty">Nema označenih top setova za {liftNames[lift]}</div> : (
+          {e1Series.length < 2 ? <div className="os-empty">Nema dovoljno odrađenih dana s top setom za {liftNames[lift]}</div> : (
             <>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 6, flexWrap: 'wrap' }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>e1RM</span>
                 <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 34, letterSpacing: '-0.04em' }}>{e1Last}<span style={{ fontSize: 15, color: 'var(--text-dim)', fontWeight: 500, marginLeft: 4 }}>kg</span></span>
-                {e1Last - e1Prev !== 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>{e1Last - e1Prev > 0 ? '+' : ''}{e1Last - e1Prev} <span style={{ color: 'var(--text-muted)' }}>tj.</span></span>}
+                {e1Last - e1Prev !== 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>{e1Last - e1Prev > 0 ? '+' : ''}{e1Last - e1Prev} <span style={{ color: 'var(--text-muted)' }}>zadnji</span></span>}
+                <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{sess.length} sesija</span>
               </div>
-              <LineChart data={e1Series} height={200} />
+              <LineChart data={e1Series} labels={e1Labels} height={200} />
             </>
           )}
         </Card>
@@ -268,7 +284,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
         <Card id="volume" title="Volumen & intenzitet" head={<><span className="r">×100 kg · RPE</span><RangeSel id="volume" /></>}>
           {volSeries.every(v => v === 0) ? <div className="os-empty">Nema logiranog volumena</div> : (
             <>
-              <VolumeBars volume={volSeries} rpe={rpeSeries.filter(v => v > 0)} />
+              <VolumeBars volume={volSeries} rpe={rpeSeries} labels={volWeeks.map(w => fmtDate(w))} />
               <div className="readout" style={{ gridTemplateColumns: '1fr 1fr' }}>
                 <div className="cell"><div className="k">Avg RPE</div><div className="v">{(() => { const a = rpeSeries.filter(v => v > 0); return a.length ? (a.reduce((x, y) => x + y, 0) / a.length).toFixed(1) : '—' })()}</div></div>
                 <div className="cell"><div className="k">Tonaža 7d</div><div className="v">{Math.round(data.ton7).toLocaleString('hr')}<small> kg</small></div></div>

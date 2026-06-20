@@ -204,10 +204,17 @@ export function CompetitionsManager() {
 
       {/* Competitions list */}
       <style>{`
+        @keyframes compIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+        .comp-card-anim { animation: compIn 0.32s cubic-bezier(0.22,1,0.36,1) backwards; }
+        .comp-athlete-anim { animation: compIn 0.3s cubic-bezier(0.22,1,0.36,1) backwards; }
+        /* hide number spinners so result fields have room for the numbers */
+        .comp-results-grid input::-webkit-outer-spin-button,
+        .comp-results-grid input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .comp-results-grid input { -moz-appearance: textfield; }
         @media (max-width: 600px) {
           .comp-header-row { padding: 12px !important; }
           .comp-athletes-grid { grid-template-columns: 1fr !important; }
-          .comp-results-grid { grid-template-columns: repeat(3, 1fr) !important; }
+          .comp-results-grid { grid-template-columns: repeat(5, 1fr) !important; }
           .comp-new-form-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
@@ -226,7 +233,7 @@ export function CompetitionsManager() {
         const athleteIds = new Set(comp.comp_athletes?.map(ca => ca.athlete_id) ?? [])
 
         return (
-          <div key={comp.id} style={{ border: '1px solid rgba(255,255,255,0.08)', marginBottom: '12px', background: 'rgba(255,255,255,0.02)' }}>
+          <div key={comp.id} className="comp-card-anim" style={{ border: '1px solid var(--border, rgba(255,255,255,0.08))', borderRadius: '14px', marginBottom: '12px', background: 'var(--surface-1, rgba(255,255,255,0.02))', overflow: 'hidden', boxShadow: '0 1px 0 rgba(255,255,255,0.04) inset, 0 18px 50px -28px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.4)' }}>
             {/* Status stripe */}
             <div style={{ height: '2px', background: STATUS_COLORS[comp.status], opacity: comp.status === 'completed' ? 0.3 : 0.8 }} />
 
@@ -276,13 +283,13 @@ export function CompetitionsManager() {
                 <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.2)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>
                   ODABERI LIFERE {comp.status === 'completed' && '— UNESI REZULTATE'}
                 </div>
-                <div className="comp-athletes-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '8px' }}>
-                  {allAthletes.map(athlete => {
+                <div className="comp-athletes-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '10px' }}>
+                  {allAthletes.map((athlete, ai) => {
                     const isSelected = athleteIds.has(athlete.id)
                     const compAthlete = comp.comp_athletes?.find(ca => ca.athlete_id === athlete.id)
 
                     return (
-                      <div key={athlete.id} style={{ border: `1px solid ${isSelected ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)'}`, background: isSelected ? 'rgba(255,255,255,0.04)' : 'transparent', transition: 'all 0.2s' }}>
+                      <div key={athlete.id} className="comp-athlete-anim" style={{ border: `1px solid ${isSelected ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', background: isSelected ? 'rgba(255,255,255,0.04)' : 'transparent', transition: 'all 0.2s', animationDelay: `${Math.min(ai * 0.03, 0.4)}s` }}>
                         {/* Athlete row */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', cursor: 'pointer' }} onClick={() => toggleAthlete(comp.id, athlete.id)}>
                           <div style={{ width: '22px', height: '22px', border: `1px solid ${isSelected ? '#fff' : 'rgba(255,255,255,0.2)'}`, background: isSelected ? '#fff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>
@@ -301,7 +308,7 @@ export function CompetitionsManager() {
                         {/* Results inputs (only if selected and comp is completed) */}
                         {isSelected && comp.status === 'completed' && (
                           <div style={{ padding: '0 14px 12px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '10px' }}>
-                            <div className="comp-results-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px' }}>
+                            <div className="comp-results-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '7px' }}>
                               {[
                                 { key: 'result_squat', label: 'SQ' },
                                 { key: 'result_bench', label: 'BP' },
@@ -310,12 +317,12 @@ export function CompetitionsManager() {
                                 { key: 'result_place', label: '#' },
                               ].map(f => (
                                 <div key={f.key}>
-                                  <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em', marginBottom: '4px', textAlign: 'center' }}>{f.label}</div>
+                                  <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.2em', marginBottom: '5px', textAlign: 'center', fontFamily: 'var(--fm)' }}>{f.label}</div>
                                   <input
                                     type="number"
                                     defaultValue={(compAthlete as any)?.[f.key] ?? ''}
                                     onBlur={e => updateResult(comp.id, athlete.id, f.key, e.target.value)}
-                                    style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '5px 6px', fontSize: '0.75rem', outline: 'none', fontFamily: 'var(--fm)', textAlign: 'center', boxSizing: 'border-box' }}
+                                    style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '7px', color: '#fff', padding: '9px 8px', fontSize: '0.92rem', fontWeight: 700, outline: 'none', fontFamily: 'var(--fd)', textAlign: 'center', boxSizing: 'border-box' }}
                                   />
                                 </div>
                               ))}

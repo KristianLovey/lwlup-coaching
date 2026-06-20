@@ -5,13 +5,15 @@
 // (Supabase). Deep per-athlete features reuse the existing components.
 // ───────────────────────────────────────────────────────────
 import './admin-os.css'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
   LayoutGrid, Users, Dumbbell, Trophy, Bell, Search, Plus, Check, Send,
-  Loader2, PanelLeft, PanelRight, ChevronRight, ChevronLeft, Settings, Trash2, LogOut, AlertCircle, SlidersHorizontal,
+  Loader2, PanelLeft, PanelRight, ChevronRight, ChevronLeft, ChevronDown, Settings, Trash2, LogOut, AlertCircle, SlidersHorizontal,
+  User, Activity, Shield,
 } from 'lucide-react'
 import type { AthleteProfile } from './athlete-panels'
 import type { Block, Exercise } from '../training/types'
@@ -42,12 +44,15 @@ const NAV: { id: Section; label: string; icon: React.ReactNode }[] = [
 const initials = (name?: string) => (name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '??')
 
 // ─────────────────────────────────────────────────────────────
-export default function AdminOS() {
+export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' }) {
+  const isTrener = role === 'trener'
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [adminName, setAdminName] = useState('Admin')
+  const [adminName, setAdminName] = useState(isTrener ? 'Trener' : 'Admin')
   const [adminId, setAdminId] = useState('')
+  const [profileOpen, setProfileOpen] = useState(false)
+  const profileRef = useRef<HTMLDivElement>(null)
 
   const [athletes, setAthletes] = useState<AthleteProfile[]>([])
   const [coaches, setCoaches] = useState<Coach[]>([])
@@ -59,9 +64,9 @@ export default function AdminOS() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [lifteriManaging, setLifteriManaging] = useState(false)
   const [view, setView] = useState<'overview' | 'training'>('overview')
-  const [navCollapsed, setNavCollapsed] = useState(false)
+  const [navCollapsed, setNavCollapsed] = useState(true)
   const [railOpen, setRailOpen] = useState(false)
-  const [railHidden, setRailHidden] = useState(false)
+  const [railHidden, setRailHidden] = useState(true)
   const [search, setSearch] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [cards, setCards] = useState<DashCards>(defaultCards)
@@ -69,16 +74,37 @@ export default function AdminOS() {
 
   const selected = useMemo(() => athletes.find(a => a.id === selectedId) ?? null, [athletes, selectedId])
 
-  // persist dashboard card settings
+  // persist dashboard card settings + side-menu state
   useEffect(() => {
     const saved = localStorage.getItem('adminos:cards')
     if (saved) { try { setCards(prev => ({ ...prev, ...JSON.parse(saved) })) } catch { /* ignore */ } }
+    const nc = localStorage.getItem('adminos:navCollapsed'); if (nc != null) setNavCollapsed(nc === '1')
+    const rh = localStorage.getItem('adminos:railHidden'); if (rh != null) setRailHidden(rh === '1')
   }, [])
   useEffect(() => { localStorage.setItem('adminos:cards', JSON.stringify(cards)) }, [cards])
+  useEffect(() => { localStorage.setItem('adminos:navCollapsed', navCollapsed ? '1' : '0') }, [navCollapsed])
+  useEffect(() => { localStorage.setItem('adminos:railHidden', railHidden ? '1' : '0') }, [railHidden])
+
+  // close profile dropdown on outside click
+  useEffect(() => {
+    if (!profileOpen) return
+    const h = (e: MouseEvent) => { if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [profileOpen])
 
   // ── Load (single round-trip for blocks + assignments — no N+1) ──
   const loadAthletes = useCallback(async () => {
-    const { data } = await supabase.from('profiles').select('id, full_name, role, created_at').order('full_name')
+    let scopedIds: string[] | null = null
+    if (isTrener) {
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data: asg } = await supabase.from('coach_assignments').select('lifter_id').eq('coach_id', user?.id ?? '')
+      scopedIds = (asg ?? []).map(a => a.lifter_id)
+      if (scopedIds.length === 0) { setAthletes([]); setCoaches([]); return }
+    }
+    let q = supabase.from('profiles').select('id, full_name, role, created_at')
+    if (scopedIds) q = q.in('id', scopedIds)
+    const { data } = await q.order('full_name')
     if (!data) return
     const ids = data.map(p => p.id)
     const [{ data: allBlocks }, { data: asgn }] = await Promise.all([
@@ -110,8 +136,9 @@ export default function AdminOS() {
         setAdminId(user.id)
         const { data: profile } = await supabase.from('profiles').select('full_name, role').eq('id', user.id).single()
         if (!profile) { setError('Profil ne postoji.'); setLoading(false); return }
-        if (profile.role !== 'admin') { setError(`Pristup odbijen — rola "${profile.role}", treba "admin".`); setLoading(false); return }
-        setAdminName(profile.full_name ?? 'Admin')
+        const allowed = isTrener ? (profile.role === 'trener' || profile.role === 'admin') : profile.role === 'admin'
+        if (!allowed) { setError(`Pristup odbijen — rola "${profile.role}".`); setLoading(false); return }
+        setAdminName(profile.full_name ?? (isTrener ? 'Trener' : 'Admin'))
         const [{ data: exData }, { count }] = await Promise.all([
           supabase.from('exercises').select('*').order('category').order('name'),
           supabase.from('competitions').select('id', { count: 'exact', head: true }),
@@ -182,12 +209,12 @@ export default function AdminOS() {
         <aside className={'nav' + (navCollapsed ? ' nav--collapsed' : '')}>
           <div className="nav-logo">
             <div className="mark">L</div>
-            <div className="txt">LWL UP<small>ADMIN · OS</small></div>
+            <div className="txt">LWL UP<small>{isTrener ? 'TRENER · OS' : 'ADMIN · OS'}</small></div>
             <button className="nav-collapse" onClick={() => setNavCollapsed(v => !v)} aria-label="Skupi izbornik"><PanelLeft size={18} /></button>
           </div>
           <div className="nav-section">Upravljanje</div>
           <nav className="nav-items">
-            {NAV.map(n => (
+            {(isTrener ? NAV.filter(n => n.id === 'dashboard' || n.id === 'lifteri' || n.id === 'obavijesti') : NAV).map(n => (
               <button key={n.id} className={'nav-item' + (section === n.id && !settingsOpen ? ' active' : '')} onClick={() => { setSection(n.id); setSettingsOpen(false); if (n.id === 'lifteri') setLifteriManaging(false) }} title={n.label}>
                 <span className="ico">{n.icon}</span>
                 <span className="nav-label">{n.label}</span>
@@ -204,12 +231,37 @@ export default function AdminOS() {
               <span className="nav-label">Postavke</span>
             </button>
           </nav>
-          <div className="nav-foot">
-            <button className="nav-coach" onClick={handleLogout} title="Odjava" style={{ width: '100%' }}>
+          <div className="nav-foot" ref={profileRef} style={{ position: 'relative' }}>
+            <button className="nav-coach" onClick={() => setProfileOpen(v => !v)} title="Izbornik" style={{ width: '100%', cursor: 'pointer' }}>
               <div className="avatar">{initials(adminName)}</div>
-              <div className="meta"><div className="n">{adminName}</div><div className="r">Administrator</div></div>
-              <LogOut size={15} style={{ marginLeft: 'auto', color: 'var(--text-muted)' }} />
+              <div className="meta"><div className="n">{adminName}</div><div className="r">{isTrener ? 'Trener' : 'Administrator'}</div></div>
+              <ChevronDown size={14} style={{ marginLeft: 'auto', color: 'var(--text-muted)', transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
+            {profileOpen && (
+              <div style={{ position: 'fixed', left: navCollapsed ? 12 : 14, bottom: 78, width: 224, maxWidth: 'calc(100vw - 24px)', background: 'var(--surface-1)', border: '1px solid var(--border-strong)', borderRadius: 14, boxShadow: '0 24px 64px rgba(0,0,0,0.7)', zIndex: 120, overflow: 'hidden', animation: 'os-fadeUp 0.18s ease' }}>
+                <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div className="avatar" style={{ width: 36, height: 36 }}>{initials(adminName)}</div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-display)' }}>{adminName}</div>
+                    <div style={{ fontSize: 11, color: isTrener ? '#f59e0b' : '#ef4444', fontFamily: 'var(--font-mono)', marginTop: 1 }}>● {isTrener ? 'Trener' : 'Administrator'}</div>
+                  </div>
+                </div>
+                <div style={{ padding: 6 }}>
+                  {[
+                    { href: '/profile', icon: <User size={15} />, label: 'Moj profil' },
+                    { href: '/training', icon: <Activity size={15} />, label: 'Trening' },
+                    { href: '/exercises', icon: <Dumbbell size={15} />, label: 'Baza vježbi' },
+                  ].map(it => (
+                    <Link key={it.href} href={it.href} onClick={() => setProfileOpen(false)} style={{ textDecoration: 'none' }}>
+                      <button className="os-menu-item">{it.icon}<span>{it.label}</span></button>
+                    </Link>
+                  ))}
+                </div>
+                <div style={{ padding: 6, borderTop: '1px solid var(--border)' }}>
+                  <button className="os-menu-item os-menu-logout" onClick={() => { setProfileOpen(false); handleLogout() }}><LogOut size={15} /><span>Odjava</span></button>
+                </div>
+              </div>
+            )}
           </div>
         </aside>
 
@@ -524,14 +576,14 @@ function TreneriSection({ athletes, coaches, assignments, setAssignments, onRole
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div className="atc-head"><span className="t">Dodjela liftera treneru</span></div>
           {athletes.map(a => (
-            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 22px', borderTop: '1px solid var(--border)' }}>
+            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 22px', borderTop: '1px solid var(--border)' }}>
               <span style={{ flex: 1, fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 14 }}>{a.full_name}</span>
-              <div className="range-select">
+              <div className="os-select">
                 <select value={assignments[a.id] ?? ''} onChange={e => assign(a.id, e.target.value)}>
                   <option value="">— Bez trenera —</option>
                   {coaches.map(c => <option key={c.id} value={c.id}>{c.full_name}</option>)}
                 </select>
-                <span className="rs-caret"><ChevronRight size={11} style={{ transform: 'rotate(90deg)' }} /></span>
+                <span className="cr"><ChevronDown size={14} /></span>
               </div>
             </div>
           ))}
@@ -539,13 +591,13 @@ function TreneriSection({ athletes, coaches, assignments, setAssignments, onRole
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div className="atc-head"><span className="t">Role korisnika</span></div>
           {athletes.filter(a => a.role !== 'admin').map(a => (
-            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 22px', borderTop: '1px solid var(--border)' }}>
+            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 22px', borderTop: '1px solid var(--border)' }}>
               <span style={{ flex: 1, fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 14 }}>{a.full_name}</span>
-              <div className="range-select">
+              <div className="os-select">
                 <select value={a.role} onChange={e => setRole(a.id, e.target.value)}>
                   <option value="lifter">Lifter</option><option value="trener">Trener</option>
                 </select>
-                <span className="rs-caret"><ChevronRight size={11} style={{ transform: 'rotate(90deg)' }} /></span>
+                <span className="cr"><ChevronDown size={14} /></span>
               </div>
             </div>
           ))}
@@ -586,7 +638,7 @@ function ObavijestiSection({ athletes, adminId }: { athletes: AthleteProfile[]; 
             <span className="nm">Svi korisnici</span>
           </button>
           {athletes.map(a => (
-            <button className="recipient" key={a.id} onClick={() => toggle(a.id)}>
+            <button className={'recipient' + (sel.has(a.id) ? ' on' : '')} key={a.id} onClick={() => toggle(a.id)}>
               <span className={'checkbox' + (sel.has(a.id) ? ' on' : '')}><Check size={12} /></span>
               <span className="a-avatar">{initials(a.full_name)}</span>
               <span className="nm">{a.full_name}</span>
