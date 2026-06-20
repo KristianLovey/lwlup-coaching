@@ -10,6 +10,7 @@ import {
 import { WeekPanel, EditableField } from '../training/training-components'
 import { MeetDayTab } from '../training/training-meet'
 import { LiftPriorityAdmin } from '../training/training-priority'
+import { estimate1RM } from '../training/training-setplan'
 import type { Block, Week, Workout, WorkoutExercise, Exercise, BlockSummary } from '../training/types'
 
 const supabase = createClient()
@@ -92,21 +93,20 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
 
       const { data: topSets } = await supabase
         .from('set_logs')
-        .select('weight_kg, reps, workout_exercise_id, workout_exercises!inner(exercise:exercises(name,category))')
+        .select('weight_kg, reps, rpe, workout_exercise_id, workout_exercises!inner(exercise:exercises(name,category))')
         .eq('athlete_id', athlete.id)
         .eq('is_top_set', true)
         .order('id', { ascending: false })
         .limit(100)
 
       if (topSets && topSets.length > 0) {
-        const epley = (kg: number, reps: number) => Math.round(kg * (1 + reps / 30))
         const catMap: Record<string, number> = {}
         for (const s of topSets) {
           const cat: string = (s as any).workout_exercises?.exercise?.category ?? ''
           const kg = Number(s.weight_kg)
           const reps = parseInt(String(s.reps)) || 1
           if (!kg || !reps) continue
-          const e1 = epley(kg, reps)
+          const e1 = estimate1RM(kg, reps, (s as any).rpe) ?? 0
           const key = cat === 'Squat' || cat === 'Squat Variation' ? 'sq'
             : cat === 'Bench' || cat === 'Bench Variation' ? 'bp'
             : cat === 'Deadlift' || cat === 'Deadlift Variation' ? 'dl'

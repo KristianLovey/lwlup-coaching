@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Minus, Plus, ChevronDown, X, RotateCcw, Eye, EyeOff } from 'lucide-react'
 import { Spark, LineChart, VolumeBars, Donut, StrengthRadar, MetricBar } from './admin-os-charts'
+import { estimate1RM } from '../training/training-setplan'
 
 const supabase = createClient()
 
@@ -26,7 +27,6 @@ export function defaultCards(): DashCards {
   return o
 }
 
-const epley = (kg: number, reps: number) => Math.round(kg * (1 + reps / 30))
 const liftKey = (cat: string): 'sq' | 'bp' | 'dl' | null =>
   cat === 'Squat' || cat === 'Squat Variation' ? 'sq'
     : cat === 'Bench' || cat === 'Bench Variation' ? 'bp'
@@ -117,7 +117,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
             volByWeek[wk] = (volByWeek[wk] ?? 0) + kg * reps
             if (s.rpe) (rpeByWeek[wk] ??= []).push(Number(s.rpe))
             if (s.is_top_set && lk) {
-              const e = epley(kg, reps)
+              const e = estimate1RM(kg, reps, s.rpe) ?? 0
               if (!e1[lk][wk] || e > e1[lk][wk]) e1[lk][wk] = e
               if (e > bestE1[lk]) bestE1[lk] = e
               // only count days that are marked fully completed

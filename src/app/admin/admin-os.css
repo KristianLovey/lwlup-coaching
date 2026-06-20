@@ -555,9 +555,10 @@
 .lwl-admin-os .nav--collapsed .nav-item .count { display: none; }
 .lwl-admin-os .nav--collapsed .nav-item { justify-content: center; padding: 12px 0; }
 .lwl-admin-os .nav--collapsed .nav-item.active::before { left: -14px; }
-.lwl-admin-os .nav--collapsed .nav-coach { justify-content: center; padding: 8px; }
+.lwl-admin-os .nav--collapsed .nav-coach { justify-content: center; padding: 8px; gap: 0; }
 .lwl-admin-os .nav--collapsed .nav-coach .meta { display: none; }
-.lwl-admin-os .nav--collapsed .nav-coach .avatar { margin: 0 auto; }
+.lwl-admin-os .nav--collapsed .nav-coach .avatar { margin: 0 auto; flex: 0 0 auto; }
+.lwl-admin-os .nav--collapsed .nav-coach > svg { display: none; }
 .lwl-admin-os .nav-collapse svg { transition: transform 0.25s; }
 .lwl-admin-os .nav--collapsed .nav-collapse svg { transform: rotate(180deg); }
 
