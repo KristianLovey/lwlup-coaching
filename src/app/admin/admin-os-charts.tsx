@@ -1,7 +1,9 @@
 'use client'
 // LWL UP · ADMIN OS — monochrome SVG charts (B&W + red accent)
 // Pure presentational; all data comes from props (real Supabase aggregates).
-import { useId } from 'react'
+import { useId, useState, useRef } from 'react'
+
+const SERIES_COLORS = ['#6b8cff', '#22c55e', '#f59e0b', '#f472b6', '#fb923c', '#38bdf8', '#a78bfa', '#ef4444', '#10b981', '#eab308']
 
 function pathFrom(data: number[], w: number, h: number, pad: number) {
   const min = Math.min(...data), max = Math.max(...data)
@@ -34,11 +36,13 @@ export function Spark({ data, accent = false, height = 56 }: { data: number[]; a
   )
 }
 
-export function LineChart({ data, labels, accent = false, height = 220, valueSuffix = '' }: {
-  data: number[]; labels?: string[]; accent?: boolean; height?: number; valueSuffix?: string
+export function LineChart({ data, labels, dates, accent = false, height = 220, valueSuffix = '', unit = 'kg' }: {
+  data: number[]; labels?: string[]; dates?: string[]; accent?: boolean; height?: number; valueSuffix?: string; unit?: string
 }) {
   const w = 640, h = height, padL = 36, padR = 16, padT = 16, padB = 28
   const gid = useId().replace(/:/g, '')
+  const [hi, setHi] = useState<number | null>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
   if (!data || data.length < 2) return <div className="os-empty">Nema dovoljno podataka za graf</div>
   const min = Math.min(...data), max = Math.max(...data)
   const range = (max - min) || 1
@@ -49,35 +53,121 @@ export function LineChart({ data, labels, accent = false, height = 220, valueSuf
   const color = accent ? 'var(--accent)' : 'var(--text)'
   const ticks = 4
   const last = data[data.length - 1]
+  const onMove = (clientX: number) => {
+    const el = wrapRef.current; if (!el) return
+    const r = el.getBoundingClientRect()
+    const frac = (clientX - r.left) / r.width
+    setHi(Math.max(0, Math.min(data.length - 1, Math.round(frac * (data.length - 1)))))
+  }
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" width="100%" height={h}>
-      <defs>
-        <linearGradient id={'lg' + gid} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.16" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {Array.from({ length: ticks + 1 }).map((_, i) => {
-        const v = min + (range * i) / ticks
-        const y = Y(v)
-        return (
-          <g key={i}>
-            <line x1={padL} y1={y} x2={w - padR} y2={y} stroke="var(--border)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-            <text x={padL - 8} y={y + 3} textAnchor="end" className="chart-axis">{Math.round(v)}</text>
-          </g>
-        )
-      })}
-      <path d={area} fill={`url(#lg${gid})`} stroke="none" />
-      <path d={line} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-      <line x1={X(data.length - 1)} y1={padT} x2={X(data.length - 1)} y2={h - padB} stroke={color} strokeWidth="1" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" opacity="0.5" />
-      <circle cx={X(data.length - 1)} cy={Y(last)} r="4.5" fill="var(--bg)" stroke={color} strokeWidth="2.5" />
-      <g transform={`translate(${X(data.length - 1) - 4}, ${Y(last) - 12})`}>
-        <text textAnchor="end" className="chart-endlabel" fill={color}>{last}{valueSuffix}</text>
-      </g>
-      {labels && labels.map((l, i) => (
-        <text key={i} x={X(i * Math.floor((data.length - 1) / Math.max(1, labels.length - 1)))} y={h - 8} textAnchor="middle" className="chart-axis">{l}</text>
-      ))}
-    </svg>
+    <div ref={wrapRef} style={{ position: 'relative', touchAction: 'none' }}
+      onMouseMove={e => onMove(e.clientX)} onMouseLeave={() => setHi(null)}
+      onTouchStart={e => onMove(e.touches[0].clientX)} onTouchMove={e => onMove(e.touches[0].clientX)} onTouchEnd={() => setHi(null)}>
+      <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" width="100%" height={h}>
+        <defs>
+          <linearGradient id={'lg' + gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.16" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {Array.from({ length: ticks + 1 }).map((_, i) => {
+          const v = min + (range * i) / ticks
+          const y = Y(v)
+          return (
+            <g key={i}>
+              <line x1={padL} y1={y} x2={w - padR} y2={y} stroke="var(--border)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+              <text x={padL - 8} y={y + 3} textAnchor="end" className="chart-axis">{Math.round(v)}</text>
+            </g>
+          )
+        })}
+        <path d={area} fill={`url(#lg${gid})`} stroke="none" />
+        <path d={line} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        {hi != null ? (
+          <>
+            <line x1={X(hi)} y1={padT} x2={X(hi)} y2={h - padB} stroke="var(--accent)" strokeWidth="1" vectorEffect="non-scaling-stroke" opacity="0.7" />
+            <circle cx={X(hi)} cy={Y(data[hi])} r="5" fill="var(--bg)" stroke="var(--accent)" strokeWidth="2.5" />
+          </>
+        ) : (
+          <>
+            <line x1={X(data.length - 1)} y1={padT} x2={X(data.length - 1)} y2={h - padB} stroke={color} strokeWidth="1" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" opacity="0.5" />
+            <circle cx={X(data.length - 1)} cy={Y(last)} r="4.5" fill="var(--bg)" stroke={color} strokeWidth="2.5" />
+            <g transform={`translate(${X(data.length - 1) - 4}, ${Y(last) - 12})`}>
+              <text textAnchor="end" className="chart-endlabel" fill={color}>{last}{valueSuffix}</text>
+            </g>
+          </>
+        )}
+        {labels && labels.map((l, i) => (
+          <text key={i} x={X(i * Math.floor((data.length - 1) / Math.max(1, labels.length - 1)))} y={h - 8} textAnchor="middle" className="chart-axis">{l}</text>
+        ))}
+      </svg>
+      {hi != null && (
+        <div style={{ position: 'absolute', left: `${(X(hi) / w) * 100}%`, top: 2, transform: `translateX(${hi > data.length / 2 ? '-100%' : '0'})`, pointerEvents: 'none', background: 'var(--surface-3)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '5px 9px', whiteSpace: 'nowrap', boxShadow: '0 6px 20px rgba(0,0,0,0.5)' }}>
+          {dates?.[hi] && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-muted)' }}>{dates[hi]}</div>}
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14 }}>{data[hi]}{valueSuffix}<span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 2 }}>{unit}</span></div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Multi-series line chart with a color legend + hover tooltip (volume by variation)
+export function MultiLineChart({ series, dates, height = 240 }: {
+  series: { name: string; data: number[] }[]; dates?: string[]; height?: number
+}) {
+  const w = 640, h = height, padL = 36, padR = 16, padT = 16, padB = 28
+  const [hi, setHi] = useState<number | null>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const n = Math.max(0, ...series.map(s => s.data.length))
+  const all = series.flatMap(s => s.data).filter(v => v > 0)
+  if (!series.length || all.length === 0 || n < 2) return <div className="os-empty">Nema podataka za odabir</div>
+  const max = Math.max(...all) * 1.08 || 1
+  const X = (i: number) => padL + (i / (n - 1)) * (w - padL - padR)
+  const Y = (v: number) => h - padB - (v / max) * (h - padT - padB)
+  const colored = series.map((s, i) => ({ ...s, color: SERIES_COLORS[i % SERIES_COLORS.length] }))
+  const onMove = (clientX: number) => {
+    const el = wrapRef.current; if (!el) return
+    const r = el.getBoundingClientRect()
+    setHi(Math.max(0, Math.min(n - 1, Math.round(((clientX - r.left) / r.width) * (n - 1)))))
+  }
+  return (
+    <div>
+      <div ref={wrapRef} style={{ position: 'relative', touchAction: 'none' }}
+        onMouseMove={e => onMove(e.clientX)} onMouseLeave={() => setHi(null)}
+        onTouchStart={e => onMove(e.touches[0].clientX)} onTouchMove={e => onMove(e.touches[0].clientX)} onTouchEnd={() => setHi(null)}>
+        <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" width="100%" height={h}>
+          {Array.from({ length: 5 }).map((_, i) => {
+            const v = (max * i) / 4, y = Y(v)
+            return <g key={i}><line x1={padL} y1={y} x2={w - padR} y2={y} stroke="var(--border)" strokeWidth="1" vectorEffect="non-scaling-stroke" /><text x={padL - 8} y={y + 3} textAnchor="end" className="chart-axis">{Math.round(v)}</text></g>
+          })}
+          {colored.map(s => {
+            const pts = s.data.map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')
+            return <path key={s.name} d={pts} fill="none" stroke={s.color} strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          })}
+          {hi != null && <line x1={X(hi)} y1={padT} x2={X(hi)} y2={h - padB} stroke="var(--text-muted)" strokeWidth="1" vectorEffect="non-scaling-stroke" />}
+          {hi != null && colored.map(s => s.data[hi] > 0 ? <circle key={s.name} cx={X(hi)} cy={Y(s.data[hi])} r="3.5" fill={s.color} stroke="var(--bg)" strokeWidth="1.5" /> : null)}
+        </svg>
+        {hi != null && (
+          <div style={{ position: 'absolute', left: `${(X(hi) / w) * 100}%`, top: 2, transform: `translateX(${hi > n / 2 ? '-100%' : '0'})`, pointerEvents: 'none', background: 'var(--surface-3)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '6px 9px', whiteSpace: 'nowrap', boxShadow: '0 6px 20px rgba(0,0,0,0.5)' }}>
+            {dates?.[hi] && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 3 }}>{dates[hi]}</div>}
+            {colored.filter(s => s.data[hi] > 0).map(s => (
+              <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+                <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />
+                <span style={{ color: 'var(--text-dim)', flex: 1 }}>{s.name}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{(s.data[hi] * 100).toLocaleString('hr')}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', marginTop: 12 }}>
+        {colored.map(s => (
+          <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: s.color, flexShrink: 0 }} />
+            <span style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{s.name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
