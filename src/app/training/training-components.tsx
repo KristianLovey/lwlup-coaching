@@ -1179,10 +1179,10 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.42rem', color: BLUE, letterSpacing: '0.18em', fontWeight: 800, fontFamily: 'var(--fm)', flexShrink: 0 }}>
                   <TrendingDown size={9} strokeWidth={2.5} /> BACKOFF
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(107,140,255,0.35)', borderRadius: '6px', padding: '2px 6px 2px 8px' }}>
-                  <input type="number" min={1} max={200} step={0.5} value={row.pct || ''}
+                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(107,140,255,0.35)', borderRadius: '6px', padding: '3px 8px 3px 10px' }}>
+                  <input type="number" min={1} max={300} step={0.5} value={row.pct || ''}
                     onChange={e => updatePlanRow(i, 'pct', Number(e.target.value) || 0)}
-                    style={{ width: '32px', background: 'transparent', border: 'none', color: BLUE, fontFamily: 'var(--fd)', fontSize: '0.85rem', fontWeight: 800, padding: 0, outline: 'none', textAlign: 'right' as const }} />
+                    style={{ width: '56px', background: 'transparent', border: 'none', color: BLUE, fontFamily: 'var(--fd)', fontSize: '0.95rem', fontWeight: 800, padding: 0, outline: 'none', textAlign: 'right' as const }} />
                   <span style={{ fontSize: '0.6rem', color: 'rgba(107,140,255,0.7)', fontFamily: 'var(--fm)', fontWeight: 700, paddingLeft: '3px' }}>%</span>
                 </div>
                 <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', letterSpacing: '0.12em', fontWeight: 700 }}>OD</span>
