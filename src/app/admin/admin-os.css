@@ -599,6 +599,10 @@
     box-shadow: 24px 0 60px -20px rgba(0,0,0,0.7);
   }
   .lwl-admin-os .nav.mobile-open { transform: translateX(0); }
+  /* prevent flex children from compressing/overlapping in the drawer column */
+  .lwl-admin-os .nav { gap: 0; justify-content: flex-start; overflow-y: auto; }
+  .lwl-admin-os .nav > * { flex-shrink: 0; }
+  .lwl-admin-os .nav .nav-items { display: flex; flex-direction: column; }
   /* always show full (un-collapsed) inside the mobile drawer */
   .lwl-admin-os .nav .nav-label,
   .lwl-admin-os .nav .nav-section,

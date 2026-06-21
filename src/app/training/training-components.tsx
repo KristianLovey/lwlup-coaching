@@ -989,7 +989,6 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   // so a media query can tighten it on mobile — inline styles would override it.
   const gridClass = isAdmin ? 'slg-admin' : 'slg-lifter'
   const BLUE = '#6b8cff'
-  const GREEN = '#22c55e'
   const cellStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)' }
   const inputStyle: React.CSSProperties = { width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#f0f0f0', padding: '5px 6px', fontSize: '1rem', outline: 'none', fontFamily: 'var(--fm)', fontWeight: 700, textAlign: 'center', boxSizing: 'border-box' }
 
@@ -1023,9 +1022,6 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
           <span style={{ fontSize: '0.4rem', color: '#facc15', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
             RPE{targetRpe ? ` · ${targetRpe}` : ''}
           </span>
-        </div>
-        <div style={{ ...cellStyle, padding: '6px 0' }} title="Procijenjeni 1RM">
-          <span style={{ fontSize: '0.4rem', color: 'rgba(34,197,94,0.75)', letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)' }}>1RM</span>
         </div>
         <div style={{ ...cellStyle, padding: '6px 0', borderRight: isAdmin ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
           <span style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)' }}>{isAdmin ? 'TOP' : '○'}</span>
@@ -1120,21 +1116,6 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                 />
               </div>
 
-              {/* 1RM estimate — only for top sets */}
-              <div style={{ ...cellStyle, padding: '6px 4px', flexDirection: 'column' as const, gap: '1px' }} title={log.is_top_set ? 'Procijenjeni 1RM' : ''}>
-                {log.is_top_set ? (() => {
-                  const oneRm = estimate1RM(log.weight_kg, log.reps, log.rpe)
-                  return oneRm != null ? (
-                    <>
-                      <span style={{ fontSize: '0.84rem', fontWeight: 800, color: GREEN, fontFamily: 'var(--fd)', lineHeight: 1 }}>{oneRm}</span>
-                      <span style={{ fontSize: '0.34rem', color: 'rgba(34,197,94,0.5)', fontFamily: 'var(--fm)', letterSpacing: '0.1em' }}>kg</span>
-                    </>
-                  ) : <span style={{ color: '#333', fontSize: '0.7rem' }}>–</span>
-                })() : (
-                  <span style={{ color: '#2a2a2a', fontSize: '0.7rem' }}>·</span>
-                )}
-              </div>
-
               {/* Admin: top set toggle ★ | Lifter: done toggle ✓ */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {isAdmin ? (
@@ -1219,12 +1200,12 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
         )
       })}
       <style>{`
-        .slg-admin  { grid-template-columns: 42px minmax(0,0.85fr) minmax(0,0.62fr) 76px 56px 30px 30px; }
-        .slg-lifter { grid-template-columns: 46px minmax(0,1fr) minmax(0,0.72fr) 80px 56px 46px; }
+        .slg-admin  { grid-template-columns: 42px minmax(0,0.9fr) minmax(0,0.66fr) 80px 32px 32px; }
+        .slg-lifter { grid-template-columns: 46px minmax(0,1fr) minmax(0,0.78fr) 88px 48px; }
         .set-log-row input::placeholder { color: rgba(255,255,255,0.22); font-style: italic; font-size: 0.62rem; letter-spacing: 0.05em; }
         @media (max-width: 540px) {
-          .slg-lifter { grid-template-columns: 30px minmax(0,1fr) minmax(0,0.6fr) 42px 50px 36px; }
-          .slg-admin  { grid-template-columns: 28px minmax(0,1fr) minmax(0,0.6fr) 42px 48px 26px 26px; }
+          .slg-lifter { grid-template-columns: 36px minmax(0,1fr) minmax(0,0.66fr) 54px 44px; }
+          .slg-admin  { grid-template-columns: 32px minmax(0,1fr) minmax(0,0.66fr) 50px 28px 28px; }
           /* Compress so every column fits one row — !important beats inline padding */
           .set-log-row > div, .set-log-header > div { padding-left: 3px !important; padding-right: 3px !important; min-width: 0; }
           .set-log-row input { font-size: 0.9rem !important; padding-left: 1px !important; padding-right: 1px !important; min-width: 0; }
@@ -1274,6 +1255,27 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
   const [showHistory, setShowHistory]   = useState(false)
   const [historyLogs, setHistoryLogs]   = useState<{ dayName: string; logs: any[] }[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [rmOpen, setRmOpen] = useState(false)
+  const [rmVal, setRmVal] = useState<number | null | undefined>(undefined) // undefined = not loaded yet
+
+  const toggleRm = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const next = !rmOpen
+    setRmOpen(next)
+    if (next && rmVal === undefined) {
+      const { data } = await supabase.from('set_logs').select('weight_kg, reps, rpe').eq('workout_exercise_id', we.id).eq('athlete_id', userId)
+      let best = 0
+      for (const s of (data ?? [])) { const v = estimate1RM(s.weight_kg, s.reps, s.rpe) ?? 0; if (v > best) best = v }
+      setRmVal(best || null)
+    }
+  }
+  // Small "1RM" pill shown next to the ⓘ button — reveals the best estimated 1RM
+  const rmButton = (
+    <button onClick={toggleRm} title="Procijenjeni 1RM (najbolji set)"
+      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: rmOpen ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${rmOpen ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '5px', color: rmOpen ? '#4ade80' : '#777', cursor: 'pointer', padding: '3px 7px', fontSize: '0.5rem', letterSpacing: '0.1em', fontWeight: 800, fontFamily: 'var(--fm)', flexShrink: 0, transition: 'all 0.15s' }}>
+      1RM{rmOpen && <span style={{ fontFamily: 'var(--fd)', fontSize: '0.72rem', color: rmVal ? '#4ade80' : '#777' }}>{rmVal === undefined ? '…' : rmVal != null ? rmVal : '—'}</span>}
+    </button>
+  )
 
   const save = (field: keyof WorkoutExercise, val: string, isNum = false) =>
     onUpdate(we.id, { [field]: isNum ? (val ? Number(val) : null) : (val || null) })
@@ -1354,6 +1356,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
               style={{ background: showHistory ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)', border: `1px solid ${showHistory ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showHistory ? 'rgba(255,255,255,0.85)' : '#555', fontSize: '0.58rem', fontWeight: 800, flexShrink: 0, transition: 'all 0.15s' }}>
               i
             </button>
+            {rmButton}
             {/* Note/expand */}
             <button onClick={e => { e.stopPropagation(); setExpanded(!expanded) }}
               style={{ background: hasNote ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${hasNote ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '4px', color: hasNote ? '#f59e0b' : '#555', fontSize: '0.52rem', fontWeight: 800, padding: '3px 7px', cursor: 'pointer', fontFamily: 'var(--fm)', flexShrink: 0, transition: 'all 0.15s' }}>
@@ -1424,6 +1427,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
                     style={{ background: showHistory ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)', border: `1px solid ${showHistory ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showHistory ? 'rgba(255,255,255,0.85)' : '#444', fontSize: '0.6rem', fontWeight: 800, flexShrink: 0, transition: 'all 0.15s' }}>
                     i
                   </button>
+                  {rmButton}
                 </div>
                 {/* Plan line: 4×5 @ 160kg → actual */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' as const }}>
