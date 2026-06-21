@@ -699,7 +699,6 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   const [planRows, setPlanRows] = useState<SetPlanRow[]>(() =>
     Array.from({ length: plannedSets }, (_, i) => we.set_plan?.rows?.[i] ?? defaultRow(i))
   )
-  const [saving, setSaving] = useState(false)
   const [localVals, setLocalVals] = useState<Record<string, string>>({})
   const focusedKey = useRef<string | null>(null)
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
@@ -769,7 +768,8 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   const commitField = async (setNum: number, field: keyof SetLog, val: unknown, pushAgg: boolean) => {
     const updated = logsRef.current.map(s => s.set_number === setNum ? { ...s, [field]: val } : s)
     setLogs(updated)
-    setSaving(true)
+    // Persist silently in the background — no visual indicator, no extra re-renders
+    // so it never interrupts the user's input.
     try {
       if (isAdmin) await upsertViaApi(setNum, String(field), val)
       else await upsertDirect(setNum, String(field), val)
@@ -777,8 +777,6 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       if (pushAgg) pushAggregates(updated)
     } catch (e) {
       console.error('set_log save failed', e)
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -994,12 +992,6 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
 
   return (
     <div>
-      {saving && (
-        <div style={{ fontSize: '0.44rem', color: '#555', letterSpacing: '0.2em', padding: '3px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <Loader2 size={9} style={{ animation: 'spin 1s linear infinite' }} /> SNIMANJE...
-        </div>
-      )}
-
       {/* Single header row */}
       <div className={`set-log-header ${gridClass}`} style={{ display: 'grid', background: 'rgba(0,0,0,0.25)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
         <div style={{ ...cellStyle, justifyContent: 'flex-start', padding: '6px 14px' }}>
@@ -1256,25 +1248,52 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
   const [historyLogs, setHistoryLogs]   = useState<{ dayName: string; logs: any[] }[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [rmOpen, setRmOpen] = useState(false)
-  const [rmVal, setRmVal] = useState<number | null | undefined>(undefined) // undefined = not loaded yet
+  type RmRow = { w: number; r: number; rpe: number | null; e: number }
+  const [rmRows, setRmRows] = useState<RmRow[] | undefined>(undefined) // undefined = not loaded yet
 
   const toggleRm = async (e: React.MouseEvent) => {
     e.stopPropagation()
     const next = !rmOpen
     setRmOpen(next)
-    if (next && rmVal === undefined) {
-      const { data } = await supabase.from('set_logs').select('weight_kg, reps, rpe').eq('workout_exercise_id', we.id).eq('athlete_id', userId)
-      let best = 0
-      for (const s of (data ?? [])) { const v = estimate1RM(s.weight_kg, s.reps, s.rpe) ?? 0; if (v > best) best = v }
-      setRmVal(best || null)
+    if (next && rmRows === undefined) {
+      const { data } = await supabase.from('set_logs')
+        .select('weight_kg, reps, rpe, set_number')
+        .eq('workout_exercise_id', we.id).eq('athlete_id', userId).eq('is_top_set', true)
+        .order('set_number', { ascending: true })
+      const rows: RmRow[] = []
+      for (const s of (data ?? [])) {
+        const e1 = estimate1RM(s.weight_kg, s.reps, s.rpe)
+        if (e1 != null && s.weight_kg != null && s.reps != null) rows.push({ w: s.weight_kg, r: s.reps, rpe: s.rpe ?? null, e: e1 })
+      }
+      setRmRows(rows)
     }
   }
-  // Small "1RM" pill shown next to the ⓘ button — reveals the best estimated 1RM
+  const rmBest = rmRows && rmRows.length ? Math.max(...rmRows.map(r => r.e)) : null
+  // Small "1RM" pill next to the ⓘ button — toggles a breakdown of all top sets: kg × reps @ rpe = 1RM
   const rmButton = (
-    <button onClick={toggleRm} title="Procijenjeni 1RM (najbolji set)"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: rmOpen ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${rmOpen ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '5px', color: rmOpen ? '#4ade80' : '#777', cursor: 'pointer', padding: '3px 7px', fontSize: '0.5rem', letterSpacing: '0.1em', fontWeight: 800, fontFamily: 'var(--fm)', flexShrink: 0, transition: 'all 0.15s' }}>
-      1RM{rmOpen && <span style={{ fontFamily: 'var(--fd)', fontSize: '0.72rem', color: rmVal ? '#4ade80' : '#777' }}>{rmVal === undefined ? '…' : rmVal != null ? rmVal : '—'}</span>}
-    </button>
+    <div style={{ position: 'relative', flexShrink: 0 }}>
+      <button onClick={toggleRm} title="Procijenjeni 1RM po top setovima"
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: rmOpen ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${rmOpen ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '5px', color: rmOpen ? '#4ade80' : '#777', cursor: 'pointer', padding: '3px 7px', fontSize: '0.5rem', letterSpacing: '0.1em', fontWeight: 800, fontFamily: 'var(--fm)', transition: 'all 0.15s' }}>
+        1RM{rmOpen && rmBest != null && <span style={{ fontFamily: 'var(--fd)', fontSize: '0.72rem', color: '#4ade80' }}>{rmBest}</span>}
+      </button>
+      {rmOpen && (
+        <div onClick={e => e.stopPropagation()}
+          style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 60, background: '#0c100c', border: '1px solid rgba(34,197,94,0.28)', borderRadius: '8px', padding: '7px 9px', minWidth: '170px', boxShadow: '0 14px 36px rgba(0,0,0,0.65)', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          {rmRows === undefined ? (
+            <span style={{ color: '#777', fontSize: '0.62rem', fontFamily: 'var(--fm)' }}>…</span>
+          ) : rmRows.length === 0 ? (
+            <span style={{ color: '#777', fontSize: '0.62rem', fontFamily: 'var(--fm)' }}>nema top setova</span>
+          ) : rmRows.map((r, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: '5px', whiteSpace: 'nowrap', fontFamily: 'var(--fm)', fontSize: '0.64rem' }}>
+              <span style={{ color: '#cfcfcf' }}>{r.w} × {r.r} @ {r.rpe != null ? r.rpe : '–'}</span>
+              <span style={{ color: '#555' }}>=</span>
+              <span style={{ color: '#4ade80', fontFamily: 'var(--fd)', fontWeight: 800, fontSize: '0.74rem' }}>{r.e}</span>
+              <span style={{ color: 'rgba(74,222,128,0.55)', fontSize: '0.5rem' }}>kg</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 
   const save = (field: keyof WorkoutExercise, val: string, isNum = false) =>
