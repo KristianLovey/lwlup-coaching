@@ -249,12 +249,17 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
                     const cell = config[lift.key][day.key]
                     const pri  = cell.priority
                     const m    = PRIORITY_META[pri]
+                    const empty = pri === 'none'
                     return (
-                      <td key={day.key} style={{ padding: '2px', verticalAlign: 'top' as const }}>
+                      <td key={day.key} style={{ padding: '3px', verticalAlign: 'stretch' as const }}>
                         <div className="pa-cell-wrap" style={{
-                          background: m.bg, border: `1px solid ${m.border}`, borderRadius: '10px',
+                          background: empty ? 'rgba(255,255,255,0.02)' : `linear-gradient(155deg, ${m.bg}, rgba(0,0,0,0.18))`,
+                          border: empty ? '1px dashed rgba(255,255,255,0.08)' : `1px solid ${m.border}`,
+                          boxShadow: empty ? 'none' : `0 6px 18px -10px ${m.color}, inset 0 1px 0 rgba(255,255,255,0.05)`,
+                          borderRadius: '12px',
                           display: 'flex', flexDirection: 'column' as const, overflow: 'hidden',
-                          minHeight: '52px',
+                          minHeight: '56px', height: '100%',
+                          transition: 'background 0.18s, border-color 0.18s, box-shadow 0.18s',
                         }}>
                           {/* Priority cycle button */}
                           <button
@@ -262,34 +267,35 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
                             title={m.label}
                             style={{
                               width: '100%', background: 'transparent', border: 'none', cursor: 'pointer',
-                              padding: '8px 4px 5px',
-                              display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: '2px',
-                              transition: 'opacity 0.12s', flexShrink: 0,
+                              padding: empty ? '0' : '9px 4px 6px',
+                              flex: empty ? 1 : 'unset',
+                              display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: '3px',
+                              transition: 'opacity 0.12s',
                             }}
-                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity = '0.7'}
+                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity = '0.65'}
                             onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.opacity = '1'}>
-                            <span className="pa-roman" style={{ fontSize: '0.78rem', fontWeight: 900, color: m.color, fontFamily: FM, lineHeight: 1 }}>
-                              {m.roman}
+                            <span className="pa-roman" style={{ fontSize: '0.95rem', fontWeight: 900, color: empty ? 'rgba(255,255,255,0.16)' : m.color, fontFamily: FM, lineHeight: 1, textShadow: empty ? 'none' : `0 0 14px ${m.color}66` }}>
+                              {empty ? '+' : m.roman}
                             </span>
-                            {pri !== 'none' && (
-                              <span className="pa-sublabel" style={{ fontSize: '0.3rem', color: m.color, opacity: 0.65, fontFamily: FM, letterSpacing: '0.05em' }}>
+                            {!empty && (
+                              <span className="pa-sublabel" style={{ fontSize: '0.34rem', color: m.color, opacity: 0.7, fontFamily: FM, letterSpacing: '0.12em', fontWeight: 700 }}>
                                 {m.label.slice(0, 4)}
                               </span>
                             )}
                           </button>
                           {/* Exercise name input — only for non-none days */}
-                          {pri !== 'none' && (
+                          {!empty && (
                             <input
                               value={cell.exercise}
                               onChange={e => setExercise(lift.key, day.key, e.target.value)}
-                              placeholder="vježba..."
+                              placeholder="vježba…"
                               className="pa-ex-input"
                               onMouseDown={e => e.stopPropagation()}
                               style={{
-                                width: '100%', background: 'rgba(0,0,0,0.25)',
+                                width: '100%', background: 'rgba(0,0,0,0.32)',
                                 border: 'none', borderTop: `1px solid ${m.border}`,
-                                color: m.color, fontFamily: FM, fontSize: '0.42rem',
-                                padding: '5px 6px', outline: 'none',
+                                color: m.color, fontFamily: FM, fontSize: '0.46rem', fontWeight: 600,
+                                padding: '6px 6px', outline: 'none',
                                 textAlign: 'center' as const, letterSpacing: '0.03em',
                                 boxSizing: 'border-box' as const,
                               }}
@@ -311,14 +317,14 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
         @keyframes dropDown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:translateY(0) } }
         .pa-ex-input::placeholder { color: rgba(255,255,255,0.18) !important; }
         @media (min-width: 768px) {
-          .pa-table       { border-spacing: 6px !important; }
-          .pa-day-th      { font-size: 0.6rem !important; padding: 6px 6px !important; }
-          .pa-cell-wrap   { min-height: 68px !important; border-radius: 12px !important; }
-          .pa-roman       { font-size: 1.05rem !important; }
-          .pa-sublabel    { font-size: 0.38rem !important; }
-          .pa-lift-abbr   { font-size: 1.25rem !important; }
-          .pa-lift-name   { font-size: 0.46rem !important; }
-          .pa-ex-input    { font-size: 0.52rem !important; padding: 6px 8px !important; }
+          .pa-table       { border-spacing: 7px !important; }
+          .pa-day-th      { font-size: 0.62rem !important; padding: 6px 6px !important; }
+          .pa-cell-wrap   { min-height: 74px !important; border-radius: 14px !important; }
+          .pa-roman       { font-size: 1.25rem !important; }
+          .pa-sublabel    { font-size: 0.42rem !important; }
+          .pa-lift-abbr   { font-size: 1.3rem !important; }
+          .pa-lift-name   { font-size: 0.48rem !important; }
+          .pa-ex-input    { font-size: 0.56rem !important; padding: 7px 8px !important; }
         }
       `}</style>
     </div>
@@ -428,31 +434,40 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
                     const cell = config[lift.key][day.key]
                     const pri  = cell.priority
                     const m    = PRIORITY_META[pri]
+                    const empty = pri === 'none'
                     return (
-                      <td key={day.key} style={{ padding: '2px' }}>
+                      <td key={day.key} style={{ padding: '3px', verticalAlign: 'stretch' as const }}>
                         <div className="pv-cell" style={{
-                          minWidth: '34px', background: m.bg, border: `1px solid ${m.border}`,
-                          borderRadius: '8px', overflow: 'hidden',
-                          display: 'flex', flexDirection: 'column' as const, alignItems: 'center',
+                          minWidth: '34px', minHeight: '54px', height: '100%',
+                          background: empty ? 'rgba(255,255,255,0.018)' : `linear-gradient(155deg, ${m.bg}, rgba(0,0,0,0.18))`,
+                          border: empty ? '1px dashed rgba(255,255,255,0.06)' : `1px solid ${m.border}`,
+                          boxShadow: empty ? 'none' : `0 6px 18px -10px ${m.color}, inset 0 1px 0 rgba(255,255,255,0.04)`,
+                          borderRadius: '11px', overflow: 'hidden',
+                          display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center',
                         }}>
-                          <div className="pv-cell-top" style={{ padding: '7px 4px 5px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '2px', width: '100%', justifyContent: 'center' }}>
-                            <span className="pv-roman" style={{ fontSize: '0.62rem', fontWeight: 900, color: m.color, fontFamily: FM, lineHeight: 1 }}>
-                              {m.roman}
-                            </span>
-                          </div>
-                          {/* Exercise name (if set) */}
-                          {pri !== 'none' && cell.exercise && (
-                            <div className="pv-ex" style={{
-                              width: '100%', padding: '3px 4px',
-                              borderTop: `1px solid ${m.border}`,
-                              background: 'rgba(0,0,0,0.2)',
-                              fontSize: '0.3rem', color: m.color, opacity: 0.85,
-                              fontFamily: FM, textAlign: 'center' as const,
-                              letterSpacing: '0.03em', lineHeight: 1.2,
-                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const,
-                            }}>
-                              {cell.exercise}
-                            </div>
+                          {empty ? (
+                            <span style={{ color: 'rgba(255,255,255,0.1)', fontSize: '0.7rem', fontFamily: FM, lineHeight: 1 }}>·</span>
+                          ) : (
+                            <>
+                              <div className="pv-cell-top" style={{ flex: 1, padding: '8px 4px 6px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '2px', width: '100%', justifyContent: 'center' }}>
+                                <span className="pv-roman" style={{ fontSize: '0.82rem', fontWeight: 900, color: m.color, fontFamily: FM, lineHeight: 1, textShadow: `0 0 12px ${m.color}55` }}>
+                                  {m.roman}
+                                </span>
+                              </div>
+                              {cell.exercise && (
+                                <div className="pv-ex" style={{
+                                  width: '100%', padding: '4px 5px',
+                                  borderTop: `1px solid ${m.border}`,
+                                  background: 'rgba(0,0,0,0.28)',
+                                  fontSize: '0.4rem', color: m.color, opacity: 0.92,
+                                  fontFamily: FM, fontWeight: 600, textAlign: 'center' as const,
+                                  letterSpacing: '0.02em', lineHeight: 1.25,
+                                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const,
+                                }}>
+                                  {cell.exercise}
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       </td>
@@ -490,14 +505,14 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
           .priority-view-card { padding: 28px 32px !important; }
           .pv-title            { font-size: 1.05rem !important; }
           .pv-day-badge        { font-size: 0.5rem !important; padding: 4px 10px !important; }
-          .pv-table            { border-spacing: 5px !important; }
-          .pv-day-th           { font-size: 0.56rem !important; padding: 6px 4px !important; }
-          .pv-cell             { border-radius: 10px !important; }
-          .pv-cell-top         { padding: 10px 4px 7px !important; }
-          .pv-roman            { font-size: 0.88rem !important; }
-          .pv-ex               { font-size: 0.4rem !important; padding: 4px 6px !important; }
-          .pv-lift-abbr        { font-size: 1.25rem !important; }
-          .pv-lift-name        { font-size: 0.46rem !important; }
+          .pv-table            { border-spacing: 7px !important; }
+          .pv-day-th           { font-size: 0.58rem !important; padding: 6px 4px !important; }
+          .pv-cell             { border-radius: 13px !important; min-height: 72px !important; }
+          .pv-cell-top         { padding: 11px 4px 8px !important; }
+          .pv-roman            { font-size: 1.15rem !important; }
+          .pv-ex               { font-size: 0.5rem !important; padding: 6px 7px !important; }
+          .pv-lift-abbr        { font-size: 1.3rem !important; }
+          .pv-lift-name        { font-size: 0.48rem !important; }
         }
       `}</style>
     </div>
