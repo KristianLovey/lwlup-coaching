@@ -639,3 +639,9 @@
   .lwl-admin-os .toolbar { gap: 8px; }
   .lwl-admin-os .os-select select { min-width: 150px; }
 }
+
+/* ── Mobile layout hard-fix: block flow so fixed drawers never overlap content ── */
+@media (max-width: 900px) {
+  .lwl-admin-os .admin-shell { display: block !important; min-height: 100vh; }
+  .lwl-admin-os .main { width: 100%; min-width: 0; }
+}

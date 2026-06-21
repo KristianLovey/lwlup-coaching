@@ -818,11 +818,16 @@ export function AthletePanel({
     const ed = endDate.toISOString().split('T')[0]
     const tmpId = `tmp_${Date.now()}`
     setBlock(b => b ? { ...b, weeks: [...(b.weeks ?? []), { id: tmpId, block_id: block.id, week_number: weekNum, start_date: sd, end_date: ed, notes: null, workouts: [] } as Week] } : b)
-    const { data, error } = await supabase.from('weeks').insert({
-      block_id: block.id, week_number: weekNum, start_date: sd, end_date: ed
-    }).select('*').single()
-    if (!error && data) {
-      setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === tmpId ? { ...data, workouts: [] } : w) } : b)
+    // service-role API so trainers/admin (with RLS) can insert weeks for their athletes
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/admin/add-week', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ blockId: block.id, weekNumber: weekNum, startDate: sd, endDate: ed }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (json.data) {
+      setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => w.id === tmpId ? { ...json.data, workouts: [] } : w) } : b)
     } else {
       setBlock(b => b ? { ...b, weeks: b.weeks?.filter(w => w.id !== tmpId) } : b)
     }
@@ -1032,10 +1037,15 @@ export function AthletePanel({
     setSaving(true)
     const workout = block?.weeks?.flatMap(w => w.workouts ?? []).find(w => w.id === workoutId)
     const order = (workout?.workout_exercises?.length ?? 0) + 1
-    const { data, error } = await supabase.from('workout_exercises').insert({
-      workout_id: workoutId, exercise_id: ex.id, exercise_order: order, planned_sets: 3, planned_reps: '5'
-    }).select('*, exercise:exercises(*)').single()
-    if (!error && data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, workout_exercises: [...(wo.workout_exercises ?? []), data as WorkoutExercise] } : wo) })) } : b)
+    // service-role API so trainers/admin (with RLS) can insert exercises for their athletes
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/admin/add-exercise', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ workoutId, exerciseId: ex.id, order }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (json.data) setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, workout_exercises: [...(wo.workout_exercises ?? []), json.data as WorkoutExercise] } : wo) })) } : b)
     setSaving(false)
   }, [block])
 
