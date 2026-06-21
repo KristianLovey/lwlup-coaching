@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutGrid, Users, Dumbbell, Trophy, Bell, Search, Plus, Check, Send,
   Loader2, PanelLeft, PanelRight, ChevronRight, ChevronLeft, ChevronDown, Settings, Trash2, LogOut, AlertCircle, SlidersHorizontal,
-  User, Activity, Menu,
+  User, Activity, Menu, FolderOpen, Copy,
 } from 'lucide-react'
 import type { AthleteProfile } from './athlete-panels'
 import type { Block, Exercise } from '../training/types'
@@ -29,12 +29,13 @@ const AthleteOverview = dynamic(() => import('./athlete-panels').then(m => ({ de
 const AthletePanel = dynamic(() => import('./athlete-panels').then(m => ({ default: m.AthletePanel })), { ssr: false, loading: SectionLoader })
 const CompetitionsManager = dynamic(() => import('./competitions-manager').then(m => ({ default: m.CompetitionsManager })), { ssr: false, loading: SectionLoader })
 
-type Section = 'dashboard' | 'lifteri' | 'tim' | 'treneri' | 'natjecanja' | 'obavijesti'
+type Section = 'dashboard' | 'lifteri' | 'tim' | 'treneri' | 'natjecanja' | 'obavijesti' | 'predlosci'
 type Coach = AthleteProfile
 
 const NAV: { id: Section; label: string; icon: React.ReactNode }[] = [
   { id: 'dashboard',  label: 'Dashboard',  icon: <LayoutGrid size={19} /> },
   { id: 'lifteri',    label: 'Lifteri',    icon: <Users size={19} /> },
+  { id: 'predlosci',  label: 'Predlošci',  icon: <FolderOpen size={19} /> },
   { id: 'tim',        label: 'Tim',        icon: <Dumbbell size={19} /> },
   { id: 'treneri',    label: 'Treneri',    icon: <Users size={19} /> },
   { id: 'natjecanja', label: 'Natjecanja', icon: <Trophy size={19} /> },
@@ -201,6 +202,7 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
     dashboard: selected ? selected.full_name : 'Athlete Dashboard',
     lifteri: 'Upravljanje liferima', tim: 'Statistika tima',
     treneri: 'Treneri & role', natjecanja: 'Natjecanja', obavijesti: 'Obavijesti',
+    predlosci: 'Predlošci blokova',
   }
 
   return (
@@ -311,6 +313,7 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
             {section === 'tim' && <TimSection athletes={athletes} onSaved={loadAthletes} />}
             {section === 'treneri' && <TreneriSection athletes={athletes} coaches={coaches} assignments={assignments} setAssignments={setAssignments} onRoleChange={loadAthletes} />}
             {section === 'natjecanja' && <CompetitionsManager />}
+            {section === 'predlosci' && <PredlosciSection athletes={athletes} adminId={adminId} />}
             {section === 'obavijesti' && <ObavijestiSection athletes={athletes} adminId={adminId} />}
           </div>
         </main>
@@ -606,6 +609,127 @@ function TreneriSection({ athletes, coaches, assignments, setAssignments, onRole
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Predlošci (block ideas → copy to athlete) ──
+async function postApi(path: string, body: unknown) {
+  const { data: { session } } = await supabase.auth.getSession()
+  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` }, body: JSON.stringify(body) })
+  return res.json().catch(() => ({}))
+}
+
+function PredlosciSection({ athletes, adminId }: { athletes: AthleteProfile[]; adminId: string }) {
+  const [templates, setTemplates] = useState<{ id: string; name: string }[]>([])
+  const [loading, setLoading] = useState(true)
+  const [importOpen, setImportOpen] = useState(false)
+  const [copyId, setCopyId] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const { data } = await supabase.from('blocks').select('id, name').eq('goal', '__template__').order('created_at', { ascending: false })
+    setTemplates((data ?? []) as { id: string; name: string }[]); setLoading(false)
+  }, [])
+  useEffect(() => { load() }, [load])
+
+  const delTemplate = async (id: string) => {
+    if (!confirm('Obrisati ovaj predložak?')) return
+    await postApi('/api/admin/delete-block', { blockId: id }); load()
+  }
+  const copyToLifter = async (templateId: string, athleteId: string, name: string) => {
+    setBusy(true)
+    await postApi('/api/admin/copy-block', { sourceBlockId: templateId, targetAthleteId: athleteId, name, asTemplate: false })
+    setBusy(false); setCopyId(null)
+  }
+
+  return (
+    <div>
+      <div className="toolbar">
+        <div className="eyebrow" style={{ flex: 1 }}>Ideje blokova — spremi dobar blok i kopiraj ga u bilo kojeg liftera</div>
+        <button className="btn-a accent" onClick={() => setImportOpen(true)}><Plus size={14} /> Spremi blok kao predložak</button>
+      </div>
+      {loading ? <div className="os-empty"><Loader2 size={18} className="os-spin" /></div>
+        : templates.length === 0 ? <div className="os-empty">Nema spremljenih predložaka. Klikni „Spremi blok kao predložak".</div>
+        : (
+          <div className="lifter-grid os-stagger">
+            {templates.map(t => (
+              <div className="lifter-cell" key={t.id} style={{ cursor: 'default', textAlign: 'left' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <FolderOpen size={18} color="var(--accent)" />
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button className="btn-a" style={{ flex: 1, padding: '8px 10px', fontSize: 11 }} onClick={() => setCopyId(t.id)}><Copy size={13} /> Kopiraj</button>
+                  <button className="icon-sm danger" onClick={() => delTemplate(t.id)} title="Obriši"><Trash2 size={14} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+      {importOpen && <ImportTemplateModal athletes={athletes} adminId={adminId} onClose={() => setImportOpen(false)} onDone={() => { setImportOpen(false); load() }} />}
+      {copyId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.8)', display: 'grid', placeItems: 'center', padding: 24 }} onClick={() => setCopyId(null)}>
+          <div className="card" style={{ width: '100%', maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+            <div className="card-head"><span className="t">Kopiraj predložak u liftera</span></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 340, overflowY: 'auto' }}>
+              {athletes.map(a => (
+                <button key={a.id} className="recipient" disabled={busy} onClick={() => copyToLifter(copyId, a.id, templates.find(t => t.id === copyId)?.name ?? 'Blok')}>
+                  <span className="a-avatar">{initials(a.full_name)}</span>
+                  <span className="nm">{a.full_name}</span>
+                </button>
+              ))}
+            </div>
+            {busy && <div style={{ marginTop: 10, color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-mono)' }}><Loader2 size={12} className="os-spin" /> Kopiram…</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ImportTemplateModal({ athletes, adminId, onClose, onDone }: { athletes: AthleteProfile[]; adminId: string; onClose: () => void; onDone: () => void }) {
+  const [athleteId, setAthleteId] = useState('')
+  const [blocks, setBlocks] = useState<{ id: string; name: string }[]>([])
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    if (!athleteId) { setBlocks([]); return }
+    supabase.from('blocks').select('id, name').eq('athlete_id', athleteId).neq('goal', '__template__').order('created_at', { ascending: false })
+      .then(({ data }) => setBlocks((data ?? []) as { id: string; name: string }[]))
+  }, [athleteId])
+  const save = async (blockId: string, name: string) => {
+    setBusy(true)
+    // template is owned by the admin so it never pollutes a lifter's plan
+    await postApi('/api/admin/copy-block', { sourceBlockId: blockId, targetAthleteId: adminId, name, asTemplate: true })
+    setBusy(false); onDone()
+  }
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.8)', display: 'grid', placeItems: 'center', padding: 24 }} onClick={onClose}>
+      <div className="card" style={{ width: '100%', maxWidth: 440 }} onClick={e => e.stopPropagation()}>
+        <div className="card-head"><span className="t">Spremi blok kao predložak</span></div>
+        <div className="field" style={{ marginBottom: 12 }}>
+          <label>Lifter</label>
+          <div className="os-select" style={{ width: '100%' }}>
+            <select value={athleteId} onChange={e => setAthleteId(e.target.value)} style={{ minWidth: 0, width: '100%' }}>
+              <option value="">— odaberi liftera —</option>
+              {athletes.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
+            </select>
+            <span className="cr"><ChevronDown size={14} /></span>
+          </div>
+        </div>
+        {athleteId && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 300, overflowY: 'auto' }}>
+            {blocks.length === 0 ? <div className="os-empty">Nema blokova</div> : blocks.map(b => (
+              <button key={b.id} className="recipient" disabled={busy} onClick={() => save(b.id, b.name)}>
+                <FolderOpen size={15} /><span className="nm">{b.name}</span><Plus size={14} />
+              </button>
+            ))}
+          </div>
+        )}
+        {busy && <div style={{ marginTop: 10, color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-mono)' }}><Loader2 size={12} className="os-spin" /> Spremam…</div>}
       </div>
     </div>
   )

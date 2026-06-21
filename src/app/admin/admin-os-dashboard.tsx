@@ -1,6 +1,6 @@
 'use client'
 // LWL UP · ADMIN OS — per-athlete analytics dashboard (real Supabase data)
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Minus, Plus, ChevronDown, X, RotateCcw, Eye, EyeOff } from 'lucide-react'
 import { Spark, LineChart, MultiLineChart, Donut, StrengthRadar, MetricBar } from './admin-os-charts'
@@ -9,10 +9,11 @@ import { estimate1RM } from '../training/training-setplan'
 const supabase = createClient()
 
 // ── Card settings model ──
-export type CardId = 'progress' | 'compliance' | 'volume' | 'bodyweight' | 'recovery' | 'balance' | 'macro'
+export type CardId = 'blockplan' | 'progress' | 'compliance' | 'volume' | 'bodyweight' | 'recovery' | 'balance' | 'macro'
 export type CardState = { hidden: boolean; collapsed: boolean; range: number }
 export type DashCards = Record<CardId, CardState>
 export const CARD_META: { id: CardId; label: string; series: boolean }[] = [
+  { id: 'blockplan',  label: 'Plan blokova',       series: false },
   { id: 'progress',   label: 'Pregled napretka',   series: true },
   { id: 'compliance', label: 'Trening compliance',  series: false },
   { id: 'volume',     label: 'Volumen & intenzitet', series: true },
@@ -49,7 +50,7 @@ function fillSeries(weeks: string[], perWeek: Record<string, number>): number[] 
 }
 
 type Best = { e1: number; date: string; name: string; day: string; kg: number; reps: number; rpe: number | null }
-type Raw = { workouts: any[]; bw: { date: string; weight_kg: number }[]; wb: any[]; nut: any[]; meets: any[]; profile: any | null }
+type Raw = { workouts: any[]; bw: { date: string; weight_kg: number }[]; wb: any[]; nut: any[]; meets: any[]; blocks: any[]; comps: any[]; profile: any | null }
 
 export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
   athleteId: string; athleteName: string; cards: DashCards; setCard: (id: CardId, patch: Partial<CardState>) => void
@@ -59,36 +60,56 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
   const [lift, setLift] = useState<LiftK>('sq')
   const [volLift, setVolLift] = useState<'all' | LiftK>('all')
   const [exp, setExp] = useState<'total' | 'predicted' | 'compliance' | 'bw' | 'tonnage' | null>(null)
+  const [calM, setCalM] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
 
-  useEffect(() => {
-    let alive = true
-    setLoading(true)
-    const load = async () => {
-      const [woRes, bwRes, wbRes, nutRes, meetRes, profRes] = await Promise.all([
-        supabase.from('workouts')
-          .select('id, workout_date, completed, day_name, workout_exercises(id, exercise:exercises(category, name), set_logs(weight_kg, reps, rpe, completed, is_top_set))')
-          .eq('athlete_id', athleteId).order('workout_date', { ascending: true }).limit(500),
-        supabase.from('pr_logs').select('date, weight_kg').eq('athlete_id', athleteId)
-          .eq('lift', 'other').eq('notes', 'Tjelesna težina').order('date', { ascending: true }).limit(400),
-        supabase.from('wellbeing_logs').select('*').eq('user_id', athleteId).order('log_date', { ascending: false }).limit(14),
-        supabase.from('nutrition_logs').select('*').eq('user_id', athleteId).order('date', { ascending: false }).limit(90),
-        supabase.from('meet_attempts').select('lift, meet_date, competition_id, attempt1_max, attempt1_actual, attempt2_max, attempt2_actual, attempt3_max, attempt3_actual').eq('athlete_id', athleteId).order('meet_date', { ascending: false }).limit(30),
-        supabase.from('lifters').select('current_squat_1rm, current_bench_1rm, current_deadlift_1rm, body_weight, weight_class').eq('id', athleteId).single(),
-      ])
-      if (!alive) return
-      setRaw({
-        workouts: woRes.data ?? [], bw: (bwRes.data ?? []) as { date: string; weight_kg: number }[],
-        wb: wbRes.data ?? [], nut: nutRes.data ?? [], meets: meetRes.data ?? [], profile: profRes.data ?? null,
-      })
-      setLoading(false)
-    }
-    load()
-    return () => { alive = false }
+  const load = useCallback(async () => {
+    const today = new Date().toISOString().slice(0, 10)
+    const [woRes, bwRes, wbRes, nutRes, meetRes, blkRes, compRes, profRes] = await Promise.all([
+      supabase.from('workouts')
+        .select('id, workout_date, completed, day_name, workout_exercises(id, exercise:exercises(category, name), set_logs(weight_kg, reps, rpe, completed, is_top_set))')
+        .eq('athlete_id', athleteId).order('workout_date', { ascending: true }).limit(500),
+      supabase.from('pr_logs').select('date, weight_kg').eq('athlete_id', athleteId)
+        .eq('lift', 'other').eq('notes', 'Tjelesna težina').order('date', { ascending: true }).limit(400),
+      supabase.from('wellbeing_logs').select('*').eq('user_id', athleteId).order('log_date', { ascending: false }).limit(14),
+      supabase.from('nutrition_logs').select('*').eq('user_id', athleteId).order('date', { ascending: false }).limit(90),
+      supabase.from('meet_attempts').select('lift, meet_date, competition_id, attempt1_max, attempt1_actual, attempt2_max, attempt2_actual, attempt3_max, attempt3_actual').eq('athlete_id', athleteId).order('meet_date', { ascending: false }).limit(30),
+      supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', athleteId).order('start_date', { ascending: true }).limit(60),
+      supabase.from('competitions').select('name, date, location').gte('date', today).order('date', { ascending: true }).limit(5),
+      supabase.from('lifters').select('current_squat_1rm, current_bench_1rm, current_deadlift_1rm, body_weight, weight_class').eq('id', athleteId).single(),
+    ])
+    setRaw({
+      workouts: woRes.data ?? [], bw: (bwRes.data ?? []) as { date: string; weight_kg: number }[],
+      wb: wbRes.data ?? [], nut: nutRes.data ?? [], meets: meetRes.data ?? [],
+      blocks: blkRes.data ?? [], comps: compRes.data ?? [], profile: profRes.data ?? null,
+    })
+    setLoading(false)
   }, [athleteId])
+
+  useEffect(() => { setLoading(true); load() }, [load])
+
+  // #1 realtime — admin/trener sees lifter's inputs live
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | null = null
+    const ping = () => { if (t) clearTimeout(t); t = setTimeout(load, 600) }
+    const ch = supabase.channel(`dash-rt-${athleteId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'set_logs', filter: `athlete_id=eq.${athleteId}` }, ping)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'workouts', filter: `athlete_id=eq.${athleteId}` }, ping)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pr_logs', filter: `athlete_id=eq.${athleteId}` }, ping)
+      .subscribe()
+    return () => { if (t) clearTimeout(t); supabase.removeChannel(ch) }
+  }, [athleteId, load])
 
   const data = useMemo(() => {
     if (!raw) return null
-    const { workouts, bw, wb, nut, meets, profile } = raw
+    const { workouts, bw, wb, nut, meets, blocks, comps, profile } = raw
+    // training days for the calendar: any day with a completed workout or a completed set
+    const doneDates = new Set<string>()
+    const plannedDates = new Set<string>()
+    for (const w of workouts) {
+      plannedDates.add(w.workout_date)
+      const anyDone = w.completed || (w.workout_exercises ?? []).some((we: any) => (we.set_logs ?? []).some((s: any) => s.completed))
+      if (anyDone) doneDates.add(w.workout_date)
+    }
 
     const weekSet = new Set<string>()
     const e1: Record<LiftK, Record<string, number>> = { sq: {}, bp: {}, dl: {} }
@@ -185,6 +206,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
       doneWo, totalWo, firstDate, lastDate, curTotal, curBw, ton7, ton7ByCat,
       predicted, predBy, latestMeet: meets[0]?.meet_date ?? null,
       latestWb: wb[0] ?? null, latestNut: nut[0] ?? null, nutHistory: nut, bw, profile,
+      blocks, nextComp: comps[0] ?? null, comps, doneDates, plannedDates,
       balance: {
         benchSquat: bestE1.sq ? Math.round((bestE1.bp / bestE1.sq) * 100) : 0,
         deadliftSquat: bestE1.sq ? Math.round((bestE1.dl / bestE1.sq) * 100) : 0,
@@ -316,6 +338,89 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
           )}
         </div>
       )}
+
+      {/* Plan blokova — timeline + countdown + kalendar */}
+      <div className="grid c1">
+        <Card id="blockplan" title="Plan blokova & kalendar">
+          {(() => {
+            const STC: Record<string, string> = { completed: 'var(--text-muted)', active: '#22c55e', planned: '#f59e0b' }
+            const STL: Record<string, string> = { completed: 'ODRAĐEN', active: 'AKTIVAN', planned: 'PLAN' }
+            const todayStr = new Date().toISOString().slice(0, 10)
+            const nc = data.nextComp
+            const daysTo = nc ? Math.max(0, Math.ceil((new Date(nc.date + 'T12:00:00').getTime() - Date.now()) / 86400000)) : null
+            const { y, m } = calM
+            const monthNames = ['Siječanj', 'Veljača', 'Ožujak', 'Travanj', 'Svibanj', 'Lipanj', 'Srpanj', 'Kolovoz', 'Rujan', 'Listopad', 'Studeni', 'Prosinac']
+            const firstDow = (new Date(y, m, 1).getDay() + 6) % 7
+            const daysIn = new Date(y, m + 1, 0).getDate()
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 24 }} className="bp-grid">
+                {/* left: blocks timeline + next comp */}
+                <div>
+                  {nc && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 14px', marginBottom: 14, borderRadius: 12, background: 'var(--accent-soft)', border: '1px solid var(--accent-glow)' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--accent)' }}>Sljedeće natjecanje</div>
+                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nc.name}</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{fmtDate(nc.date)}{nc.location ? ` · ${nc.location}` : ''}</div>
+                      </div>
+                      <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: 'var(--accent)', lineHeight: 1 }}>{daysTo}</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)' }}>DANA</div>
+                      </div>
+                    </div>
+                  )}
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>Blokovi</div>
+                  {data.blocks.length === 0 ? <div className="os-empty" style={{ padding: 20 }}>Nema blokova</div> : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {data.blocks.map((b: any) => {
+                        const isNow = b.start_date <= todayStr && todayStr <= b.end_date
+                        const st = b.status || (isNow ? 'active' : b.end_date < todayStr ? 'completed' : 'planned')
+                        return (
+                          <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, border: `1px solid ${isNow ? 'var(--border-strong)' : 'var(--border)'}`, background: isNow ? 'var(--surface-2)' : 'transparent' }}>
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: STC[st] ?? 'var(--text-muted)', flexShrink: 0 }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</div>
+                              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{fmtDate(b.start_date)} – {fmtDate(b.end_date)}</div>
+                            </div>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: STC[st], flexShrink: 0 }}>{STL[st] ?? st}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+                {/* right: month calendar of training days */}
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <button className="ctrl icon" style={{ padding: 6 }} onClick={() => setCalM(({ y, m }) => m === 0 ? { y: y - 1, m: 11 } : { y, m: m - 1 })}><ChevronDown size={14} style={{ transform: 'rotate(90deg)' }} /></button>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em' }}>{monthNames[m]} {y}</span>
+                    <button className="ctrl icon" style={{ padding: 6 }} onClick={() => setCalM(({ y, m }) => m === 11 ? { y: y + 1, m: 0 } : { y, m: m + 1 })}><ChevronDown size={14} style={{ transform: 'rotate(-90deg)' }} /></button>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3 }}>
+                    {['P', 'U', 'S', 'Č', 'P', 'S', 'N'].map((d, i) => <div key={i} style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-faint)', padding: '2px 0' }}>{d}</div>)}
+                    {Array.from({ length: firstDow }).map((_, i) => <div key={'e' + i} />)}
+                    {Array.from({ length: daysIn }).map((_, i) => {
+                      const day = i + 1
+                      const ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                      const done = data.doneDates.has(ds), planned = data.plannedDates.has(ds), isToday = ds === todayStr
+                      return (
+                        <div key={day} style={{ aspectRatio: '1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, position: 'relative', background: done ? 'rgba(34,197,94,0.16)' : planned ? 'var(--surface-2)' : 'transparent', border: isToday ? '1px solid var(--accent)' : '1px solid transparent', color: done ? '#4ade80' : planned ? 'var(--text-dim)' : 'var(--text-faint)' }}>
+                          {day}
+                          {done && <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#4ade80', marginTop: 1 }} />}
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div style={{ display: 'flex', gap: 14, marginTop: 10, flexWrap: 'wrap' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(34,197,94,0.6)' }} /> odrađeno</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--surface-3)' }} /> planirano</span>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+        </Card>
+      </div>
 
       {/* row 1: progress | compliance */}
       <div className="grid c2feat">

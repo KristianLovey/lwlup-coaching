@@ -645,3 +645,8 @@
   .lwl-admin-os .admin-shell { display: block !important; min-height: 100vh; }
   .lwl-admin-os .main { width: 100%; min-width: 0; }
 }
+
+/* Plan blokova kartica — stack na užem ekranu */
+@media (max-width: 760px) {
+  .lwl-admin-os .bp-grid { grid-template-columns: 1fr !important; }
+}
