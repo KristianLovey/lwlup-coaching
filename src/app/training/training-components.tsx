@@ -523,11 +523,18 @@ export function ExercisePicker({ exercises, onSelect, onClose }: {
               style={{ background: 'transparent', border: 'none', outline: 'none', color: '#e0e0e0', fontSize: '0.88rem', width: '100%', fontFamily: 'var(--fm)' }} />
           </div>
         </div>
-        {/* Cats */}
-        <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.09)', display: 'flex', gap: '6px', flexWrap: 'wrap', flexShrink: 0 }}>
-          <button onClick={() => setCat(null)} className={`cat-btn${!cat ? ' cat-btn-active' : ''}`}>SVE</button>
-          {cats.map(c => <button key={c} onClick={() => setCat(c === cat ? null : c)} className={`cat-btn${cat === c ? ' cat-btn-active' : ''}`}>{c}</button>)}
+        {/* Cats — horizontal scroll so they never dominate the modal (esp. mobile) */}
+        <div className="ep-cats" style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.09)', display: 'flex', gap: '6px', flexWrap: 'nowrap', overflowX: 'auto', flexShrink: 0, WebkitOverflowScrolling: 'touch' as const }}>
+          <button onClick={() => setCat(null)} className={`ep-cat-btn${!cat ? ' ep-cat-btn-active' : ''}`}>SVE</button>
+          {cats.map(c => <button key={c} onClick={() => setCat(c === cat ? null : c)} className={`ep-cat-btn${cat === c ? ' ep-cat-btn-active' : ''}`}>{c}</button>)}
         </div>
+        <style>{`
+          .ep-cats::-webkit-scrollbar { height: 5px; }
+          .ep-cats::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+          .ep-cat-btn { white-space: nowrap; flex-shrink: 0; padding: 6px 13px; font-size: 0.62rem; letter-spacing: 0.1em; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: var(--fm), ui-monospace, monospace; background: transparent; color: #888; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; }
+          .ep-cat-btn:hover { border-color: rgba(255,255,255,0.3); color: #ddd; }
+          .ep-cat-btn-active { background: #e6e6e6; color: #000; border-color: #e6e6e6; }
+        `}</style>
         {/* List */}
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {filtered.length === 0 ? (
