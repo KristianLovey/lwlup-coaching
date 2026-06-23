@@ -5,7 +5,7 @@ import {
   Plus, Trash2, ChevronDown, Check,
   Loader2,
   FolderOpen, Copy,
-  ChevronLeft,
+  ChevronLeft, Trophy,
 } from 'lucide-react'
 import { WeekPanel, EditableField } from '../training/training-components'
 import { MeetDayTab } from '../training/training-meet'
@@ -21,6 +21,14 @@ export type AthleteNote = {
   admin_id: string
   content: string
   created_at: string
+}
+
+type TrainingPhase = {
+  id: string
+  label: string
+  start_date: string
+  end_date: string
+  color: string
 }
 
 export type AthleteProfile = {
@@ -39,7 +47,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
   athlete: AthleteProfile; onBack: () => void; onGoTraining: () => void
 }) {
   const initials = athlete.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
-  const [tab, setTab] = useState<'opcenito' | 'detaljno' | 'meetday' | 'prioriteti'>('opcenito')
+  const [tab, setTab] = useState<'opcenito' | 'detaljno' | 'meetday' | 'prioriteti' | 'planiranje'>('opcenito')
   const [bwLogs, setBwLogs] = useState<any[]>([])
   const [nutLogs, setNutLogs] = useState<any[]>([])
   const [waterLogs, setWaterLogs] = useState<any[]>([])
@@ -53,6 +61,13 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
   const [compOpen, setCompOpen] = useState(true)
   const [loading, setLoading] = useState(true)
   const initialLoadDone = useRef(false)
+  const [phases, setPhases] = useState<TrainingPhase[]>([])
+  const [competitionSel, setCompetitionSel] = useState<{ name: string; date: string; location?: string } | null>(null)
+  const [newPhaseLabel, setNewPhaseLabel] = useState('')
+  const [newPhaseStart, setNewPhaseStart] = useState('')
+  const [newPhaseEnd, setNewPhaseEnd] = useState('')
+  const [newPhaseColor, setNewPhaseColor] = useState('#818cf8')
+  const [savingPhase, setSavingPhase] = useState(false)
 
   const loadAll = useCallback(async () => {
       const [bwRes, nutRes, waterRes, wbRes, suppRes, meetRes, woRes] = await Promise.all([
@@ -60,17 +75,17 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
           .select('id, date, weight_kg')
           .eq('athlete_id', athlete.id)
           .eq('lift', 'other').eq('notes', 'Tjelesna težina')
-          .order('date', { ascending: false }).limit(200),
-        supabase.from('nutrition_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(200),
-        supabase.from('water_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(500),
-        supabase.from('wellbeing_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(200),
-        supabase.from('supplement_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(500),
+          .order('date', { ascending: false }).limit(120),
+        supabase.from('nutrition_logs').select('*').eq('user_id', athlete.id).order('date', { ascending: false }).limit(90),
+        supabase.from('water_logs').select('log_date, amount_ml').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(120),
+        supabase.from('wellbeing_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(90),
+        supabase.from('supplement_logs').select('log_date, name, amount, unit').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(120),
         supabase.from('meet_attempts').select('*, competition:competitions(name,date)').eq('athlete_id', athlete.id).order('meet_date', { ascending: false }).limit(9),
         supabase.from('workouts')
           .select('id, workout_date, completed, completion_date, day_name, workout_exercises(id, exercise_order, exercise:exercises(name,category), actual_weight_kg, actual_reps, actual_rpe, actual_note, planned_sets, planned_reps, planned_weight_kg, set_logs(set_number, weight_kg, reps, rpe, completed, is_top_set))')
           .eq('athlete_id', athlete.id)
           .order('workout_date', { ascending: false })
-          .limit(200),
+          .limit(60),
       ])
       setBwLogs(bwRes.data ?? [])
       setNutLogs(nutRes.data ?? [])
@@ -120,6 +135,23 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
   }, [athlete.id])
 
   useEffect(() => {
+    supabase.from('athlete_training_phases')
+      .select('id, label, start_date, end_date, color')
+      .eq('athlete_id', athlete.id)
+      .order('start_date', { ascending: true })
+      .then(({ data }) => setPhases((data ?? []) as TrainingPhase[]))
+
+    supabase.from('athlete_competition_selection')
+      .select('competitions(name, date, location)')
+      .eq('athlete_id', athlete.id)
+      .single()
+      .then(({ data }) => {
+        const c = (data as any)?.competitions
+        if (c) setCompetitionSel({ name: c.name, date: c.date, location: c.location })
+      })
+  }, [athlete.id])
+
+  useEffect(() => {
     loadAll()
     const ch = supabase.channel(`overview-${athlete.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'workouts',       filter: `athlete_id=eq.${athlete.id}` }, loadAll)
@@ -134,6 +166,26 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
   }, [loadAll, athlete.id])
 
   const FM = 'var(--fm)', FD = 'var(--fd)'
+
+  const phasesForDate = (dateStr: string) => phases.filter(ph => dateStr >= ph.start_date && dateStr <= ph.end_date)
+
+  const PHASE_COLORS = ['#818cf8','#4ade80','#f59e0b','#f87171','#38bdf8','#a78bfa','#fb923c','#e879f9']
+
+  const addPhase = async () => {
+    if (!newPhaseLabel.trim() || !newPhaseStart || !newPhaseEnd) return
+    setSavingPhase(true)
+    const { data } = await supabase.from('athlete_training_phases')
+      .insert({ athlete_id: athlete.id, label: newPhaseLabel.trim(), start_date: newPhaseStart, end_date: newPhaseEnd, color: newPhaseColor })
+      .select('id, label, start_date, end_date, color').single()
+    if (data) setPhases(p => [...p, data as TrainingPhase].sort((a, b) => a.start_date.localeCompare(b.start_date)))
+    setNewPhaseLabel(''); setNewPhaseStart(''); setNewPhaseEnd(''); setNewPhaseColor('#818cf8')
+    setSavingPhase(false)
+  }
+
+  const deletePhase = async (id: string) => {
+    setPhases(p => p.filter(ph => ph.id !== id))
+    await supabase.from('athlete_training_phases').delete().eq('id', id)
+  }
 
   const Section = ({ title, open, onToggle, children, accent = 'rgba(255,255,255,0.4)' }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode; accent?: string }) => (
     <div style={{ background: 'var(--surface-1)', border: `1px solid var(--border)`, borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
@@ -237,8 +289,8 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
       </div>
 
       <div style={{ display: 'flex', gap: '2px', marginBottom: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: '10px', padding: '3px', overflowX: 'auto' as const }}>
-        {([['opcenito','OPĆENITO'],['detaljno','DETALJNO'],['meetday','MEET DAY'],['prioriteti','PRIORITETI'],['trening','UREĐIVANJE TRENINGA']] as const).map(([id, label]) => (
-          <button key={id} onClick={() => id === 'trening' ? onGoTraining() : setTab(id as 'opcenito'|'detaljno'|'meetday'|'prioriteti')}
+        {([['opcenito','OPĆENITO'],['detaljno','DETALJNO'],['planiranje','PLANIRANJE'],['meetday','MEET DAY'],['prioriteti','PRIORITETI'],['trening','UREĐIVANJE TRENINGA']] as const).map(([id, label]) => (
+          <button key={id} onClick={() => id === 'trening' ? onGoTraining() : setTab(id as 'opcenito'|'detaljno'|'meetday'|'prioriteti'|'planiranje')}
             style={{ flex: 1, padding: '8px 6px', background: tab === id ? 'rgba(255,255,255,0.1)' : 'transparent', border: tab === id ? '1px solid rgba(255,255,255,0.18)' : '1px solid transparent', borderRadius: '7px', cursor: 'pointer', fontSize: '0.55rem', fontFamily: FM, fontWeight: tab === id ? 700 : 400, color: tab === id ? '#ffffff' : 'rgba(255,255,255,0.35)', transition: 'all 0.15s', letterSpacing: '0.04em', whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {label}
           </button>
@@ -389,23 +441,29 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
                       const isSelected = selectedDay === dateStr
                       const isToday = dateStr === todayStr
                       const hasWoCompleted = wo?.completed || (wo?.workout_exercises ?? []).some((we: any) => (we.set_logs ?? []).some((s: any) => s.completed))
+                      const dayPhases = phasesForDate(dateStr)
+                      const isCompDate = competitionSel?.date === dateStr
 
                       return (
                         <button key={ci} onClick={() => setSelectedDay(isSelected ? null : dateStr)}
                           style={{
-                            background: isSelected ? 'rgba(239,53,53,0.15)' : 'transparent',
-                            border: isSelected ? '1px solid rgba(239,53,53,0.5)' : isToday ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent',
+                            background: isSelected ? 'rgba(239,53,53,0.15)' : dayPhases.length > 0 ? `${dayPhases[0].color}18` : 'transparent',
+                            border: isSelected ? '1px solid rgba(239,53,53,0.5)' : isToday ? '1px solid rgba(255,255,255,0.2)' : dayPhases.length > 0 ? `1px solid ${dayPhases[0].color}40` : '1px solid transparent',
                             borderRadius: '7px', cursor: 'pointer', padding: '4px 2px',
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
-                            transition: 'all 0.15s',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                            transition: 'all 0.15s', position: 'relative' as const,
                           }}>
-                          <span style={{ fontSize: '0.7rem', fontWeight: isToday ? 800 : 500, color: isToday ? '#fff' : 'rgba(255,255,255,0.6)', fontFamily: FM, lineHeight: 1 }}>{dayNum}</span>
+                          {dayPhases.length > 0 && (
+                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', borderRadius: '7px 7px 0 0', background: dayPhases[0].color, opacity: 0.8 }} />
+                          )}
+                          <span style={{ fontSize: '0.7rem', fontWeight: isToday ? 800 : 500, color: isToday ? '#fff' : 'rgba(255,255,255,0.6)', fontFamily: FM, lineHeight: 1, marginTop: '2px' }}>{dayNum}</span>
                           <div style={{ display: 'flex', gap: '2px', flexWrap: 'wrap', justifyContent: 'center', minHeight: '7px' }}>
                             {hasWoCompleted && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#4ade80', flexShrink: 0 }} />}
                             {hasBwD    && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#a78bfa', flexShrink: 0 }} />}
                             {hasCalD   && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />}
                             {hasWaterD && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#38bdf8', flexShrink: 0 }} />}
                             {hasWbD    && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#8b5cf6', flexShrink: 0 }} />}
+                            {isCompDate && <Trophy size={5} color="#fbbf24" style={{ flexShrink: 0 }} />}
                           </div>
                         </button>
                       )
@@ -425,6 +483,18 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
                         <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>{l.label}</span>
                       </div>
                     ))}
+                    {phases.length > 0 && phases.map(ph => (
+                      <div key={ph.id} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ width: '12px', height: '3px', borderRadius: '2px', background: ph.color }} />
+                        <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>{ph.label}</span>
+                      </div>
+                    ))}
+                    {competitionSel && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Trophy size={6} color="#fbbf24" />
+                        <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>Natjecanje</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -584,7 +654,187 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
         <MeetDayTab userId={athlete.id} isAdmin={true} showAthleteSelector={true} />
       ) : tab === 'prioriteti' ? (
         <LiftPriorityAdmin athleteId={athlete.id} />
+      ) : tab === 'planiranje' ? (
+        <PlaningTab
+          phases={phases}
+          competitionSel={competitionSel}
+          newPhaseLabel={newPhaseLabel} setNewPhaseLabel={setNewPhaseLabel}
+          newPhaseStart={newPhaseStart} setNewPhaseStart={setNewPhaseStart}
+          newPhaseEnd={newPhaseEnd} setNewPhaseEnd={setNewPhaseEnd}
+          newPhaseColor={newPhaseColor} setNewPhaseColor={setNewPhaseColor}
+          savingPhase={savingPhase}
+          onAdd={addPhase}
+          onDelete={deletePhase}
+          PHASE_COLORS={PHASE_COLORS}
+          FM={FM}
+        />
       ) : null}
+    </div>
+  )
+}
+
+// ── Planning phases tab ─────────────────────────────────────────────
+function PlaningTab({ phases, competitionSel, newPhaseLabel, setNewPhaseLabel, newPhaseStart, setNewPhaseStart, newPhaseEnd, setNewPhaseEnd, newPhaseColor, setNewPhaseColor, savingPhase, onAdd, onDelete, PHASE_COLORS, FM }: {
+  phases: TrainingPhase[]
+  competitionSel: { name: string; date: string; location?: string } | null
+  newPhaseLabel: string; setNewPhaseLabel: (v: string) => void
+  newPhaseStart: string; setNewPhaseStart: (v: string) => void
+  newPhaseEnd: string; setNewPhaseEnd: (v: string) => void
+  newPhaseColor: string; setNewPhaseColor: (v: string) => void
+  savingPhase: boolean
+  onAdd: () => void
+  onDelete: (id: string) => void
+  PHASE_COLORS: string[]
+  FM: string
+}) {
+  const [calViewDate, setCalViewDate] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
+  const monthNames = ['Siječanj','Veljača','Ožujak','Travanj','Svibanj','Lipanj','Srpanj','Kolovoz','Rujan','Listopad','Studeni','Prosinac']
+  const { y, m } = calViewDate
+  const firstDay = new Date(y, m, 1)
+  const daysInMonth = new Date(y, m + 1, 0).getDate()
+  const startOffset = (firstDay.getDay() + 6) % 7
+  const cells = startOffset + daysInMonth
+
+  const phasesForDate = (dateStr: string) => phases.filter(ph => dateStr >= ph.start_date && dateStr <= ph.end_date)
+
+  const formatDate = (d: string) => {
+    if (!d) return ''
+    const [, mo, day] = d.split('-')
+    return `${parseInt(day)}.${parseInt(mo)}.`
+  }
+
+  return (
+    <div>
+      {/* Mini calendar */}
+      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <button onClick={() => setCalViewDate(({ y, m }) => m === 0 ? { y: y-1, m: 11 } : { y, m: m-1 })}
+            style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#e0e0f0', fontFamily: FM, letterSpacing: '0.1em' }}>{monthNames[m]} {y}</span>
+          <button onClick={() => setCalViewDate(({ y, m }) => m === 11 ? { y: y+1, m: 0 } : { y, m: m+1 })}
+            style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '2px', marginBottom: '4px' }}>
+          {['P','U','S','Č','P','S','N'].map((d, i) => (
+            <div key={i} style={{ textAlign: 'center', fontSize: '0.44rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, fontWeight: 700, padding: '2px 0' }}>{d}</div>
+          ))}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '3px' }}>
+          {Array.from({ length: Math.ceil(cells / 7) * 7 }, (_, ci) => {
+            const dayNum = ci - startOffset + 1
+            if (dayNum < 1 || dayNum > daysInMonth) return <div key={ci} />
+            const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`
+            const dayPhases = phasesForDate(dateStr)
+            const isCompDate = competitionSel?.date === dateStr
+            const todayStr = new Date().toISOString().slice(0, 10)
+            const isToday = dateStr === todayStr
+            return (
+              <div key={ci} style={{
+                position: 'relative' as const,
+                background: dayPhases.length > 0 ? `${dayPhases[0].color}18` : 'transparent',
+                border: isToday ? '1px solid rgba(255,255,255,0.2)' : dayPhases.length > 0 ? `1px solid ${dayPhases[0].color}30` : '1px solid transparent',
+                borderRadius: '7px', padding: '5px 2px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+              }}>
+                {dayPhases.length > 0 && (
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', borderRadius: '7px 7px 0 0', background: dayPhases[0].color, opacity: 0.85 }} />
+                )}
+                <span style={{ fontSize: '0.68rem', fontWeight: isToday ? 800 : 400, color: isToday ? '#fff' : 'rgba(255,255,255,0.55)', fontFamily: FM, lineHeight: 1, marginTop: '2px' }}>{dayNum}</span>
+                {isCompDate && <Trophy size={7} color="#fbbf24" />}
+              </div>
+            )
+          })}
+        </div>
+        {/* Legend */}
+        <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+          {phases.map(ph => (
+            <div key={ph.id} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div style={{ width: '12px', height: '3px', borderRadius: '2px', background: ph.color }} />
+              <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM }}>{ph.label}</span>
+            </div>
+          ))}
+          {competitionSel && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Trophy size={6} color="#fbbf24" />
+              <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM }}>{competitionSel.name}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Phases list */}
+      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
+        <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontFamily: FM, fontWeight: 700, marginBottom: '12px' }}>FAZE TRENINGA</div>
+        {phases.length === 0 ? (
+          <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema unesenih faza</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {phases.map(ph => (
+              <div key={ph.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: `${ph.color}10`, border: `1px solid ${ph.color}30`, borderRadius: '8px', borderLeft: `3px solid ${ph.color}` }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f0f0f0', fontFamily: FM }}>{ph.label}</div>
+                  <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM, marginTop: '2px' }}>{formatDate(ph.start_date)} → {formatDate(ph.end_date)}</div>
+                </div>
+                <button onClick={() => onDelete(ph.id)}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '4px', display: 'flex', alignItems: 'center', borderRadius: '4px', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent' }}>
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Competition selection display */}
+      {competitionSel && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: '8px', borderLeft: '3px solid #fbbf24', marginBottom: '12px' }}>
+          <Trophy size={14} color="#fbbf24" />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f0f0f0', fontFamily: FM }}>{competitionSel.name}</div>
+            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM, marginTop: '2px' }}>{formatDate(competitionSel.date)}{competitionSel.location ? ` · ${competitionSel.location}` : ''}</div>
+          </div>
+          <span style={{ fontSize: '0.48rem', letterSpacing: '0.2em', color: '#fbbf24', fontFamily: FM, fontWeight: 700 }}>NATJECANJE</span>
+        </div>
+      )}
+
+      {/* Add phase form */}
+      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px' }}>
+        <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontFamily: FM, fontWeight: 700, marginBottom: '14px' }}>DODAJ FAZU</div>
+        <div style={{ marginBottom: '10px' }}>
+          <input
+            value={newPhaseLabel} onChange={e => setNewPhaseLabel(e.target.value)}
+            placeholder="Naziv faze (npr. Volumen, Deload...)"
+            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '9px 12px', fontSize: '0.84rem', outline: 'none', fontFamily: FM, borderRadius: '8px', boxSizing: 'border-box' as const }}
+          />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+          <div>
+            <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginBottom: '5px' }}>OD</div>
+            <input type="date" value={newPhaseStart} onChange={e => setNewPhaseStart(e.target.value)}
+              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', fontSize: '0.8rem', outline: 'none', fontFamily: FM, borderRadius: '8px', boxSizing: 'border-box' as const, colorScheme: 'dark' }} />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginBottom: '5px' }}>DO</div>
+            <input type="date" value={newPhaseEnd} onChange={e => setNewPhaseEnd(e.target.value)}
+              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', fontSize: '0.8rem', outline: 'none', fontFamily: FM, borderRadius: '8px', boxSizing: 'border-box' as const, colorScheme: 'dark' }} />
+          </div>
+        </div>
+        <div style={{ marginBottom: '14px' }}>
+          <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginBottom: '8px' }}>BOJA</div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {PHASE_COLORS.map(c => (
+              <button key={c} onClick={() => setNewPhaseColor(c)}
+                style={{ width: '26px', height: '26px', borderRadius: '50%', background: c, border: newPhaseColor === c ? `3px solid #fff` : '2px solid transparent', cursor: 'pointer', transition: 'border 0.15s', outline: 'none', flexShrink: 0 }} />
+            ))}
+          </div>
+        </div>
+        <button onClick={onAdd} disabled={savingPhase || !newPhaseLabel.trim() || !newPhaseStart || !newPhaseEnd}
+          style={{ width: '100%', padding: '10px', background: newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? 'rgba(129,140,248,0.4)' : 'transparent'}`, color: newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? '#a5b4fc' : 'rgba(255,255,255,0.2)', cursor: newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? 'pointer' : 'not-allowed', fontSize: '0.68rem', letterSpacing: '0.2em', fontFamily: FM, fontWeight: 700, borderRadius: '8px', transition: 'all 0.2s' }}>
+          {savingPhase ? 'SPREMA...' : '+ DODAJ FAZU'}
+        </button>
+      </div>
     </div>
   )
 }

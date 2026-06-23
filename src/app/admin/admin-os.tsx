@@ -44,6 +44,9 @@ const NAV: { id: Section; label: string; icon: React.ReactNode }[] = [
 
 const initials = (name?: string) => (name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '??')
 
+const ATHLETES_CACHE_KEY = 'adminos:athletes:v2'
+const ATHLETES_CACHE_TTL = 3 * 60_000
+
 // ─────────────────────────────────────────────────────────────
 export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' }) {
   const isTrener = role === 'trener'
@@ -95,33 +98,38 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
     return () => document.removeEventListener('mousedown', h)
   }, [profileOpen])
 
-  // ── Load (single round-trip for blocks + assignments — no N+1) ──
-  const loadAthletes = useCallback(async () => {
+  // ── Load athletes — 2 parallel round-trips, userId avoids extra getUser() call ──
+  const ATHLETES_CACHE_KEY = 'adminos:athletes:v2'
+  const ATHLETES_CACHE_TTL = 3 * 60_000 // 3 min
+
+  const loadAthletes = useCallback(async (knownUserId?: string) => {
     let scopedIds: string[] | null = null
     if (isTrener) {
-      const { data: { user } } = await supabase.auth.getUser()
-      const { data: asg } = await supabase.from('coach_assignments').select('lifter_id').eq('coach_id', user?.id ?? '')
-      scopedIds = (asg ?? []).map(a => a.lifter_id)
+      const uid = knownUserId ?? (await supabase.auth.getUser()).data.user?.id ?? ''
+      const { data: asg } = await supabase.from('coach_assignments').select('lifter_id').eq('coach_id', uid)
+      scopedIds = (asg ?? []).map((a: any) => a.lifter_id)
       if (scopedIds.length === 0) { setAthletes([]); setCoaches([]); return }
     }
     let q = supabase.from('lifters').select('id, full_name, role, created_at')
     if (scopedIds) q = q.in('id', scopedIds)
     const { data } = await q.order('full_name')
     if (!data) return
-    const ids = data.map(p => p.id)
+    const ids = data.map((p: any) => p.id)
     const [{ data: allBlocks }, { data: asgn }] = await Promise.all([
       supabase.from('blocks').select('id, name, status, start_date, end_date, athlete_id').in('athlete_id', ids),
       supabase.from('coach_assignments').select('coach_id, lifter_id'),
     ])
     const byAthlete: Record<string, Block[]> = {}
     for (const b of (allBlocks ?? [])) (byAthlete[(b as { athlete_id: string }).athlete_id] ??= []).push(b as unknown as Block)
-    const withBlocks = data.map(p => ({ ...p, blocks: byAthlete[p.id] ?? [] }) as AthleteProfile)
-    setAthletes(withBlocks)
-    setCoaches(withBlocks.filter(p => p.role === 'trener' || p.role === 'admin'))
+    const withBlocks = data.map((p: any) => ({ ...p, blocks: byAthlete[p.id] ?? [] }) as AthleteProfile)
     const map: Record<string, string> = {}
-    for (const a of (asgn ?? [])) map[a.lifter_id] = a.coach_id
+    for (const a of (asgn ?? [])) map[(a as any).lifter_id] = (a as any).coach_id
+    setAthletes(withBlocks)
+    setCoaches(withBlocks.filter((p: AthleteProfile) => p.role === 'trener' || p.role === 'admin'))
     setAssignments(map)
-  }, [])
+    // Cache for instant repeat loads
+    try { localStorage.setItem(ATHLETES_CACHE_KEY, JSON.stringify({ ts: Date.now(), withBlocks, map })) } catch {}
+  }, [ATHLETES_CACHE_KEY])
 
   const deleteUser = useCallback(async (id: string) => {
     await supabase.from('lifters').delete().eq('id', id)
@@ -132,32 +140,51 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
   useEffect(() => {
     const init = async () => {
       setLoading(true)
+
+      // Serve stale athletes immediately so the UI isn't empty while loading
+      try {
+        const cached = JSON.parse(localStorage.getItem(ATHLETES_CACHE_KEY) ?? 'null')
+        if (cached?.ts && Date.now() - cached.ts < ATHLETES_CACHE_TTL && cached.withBlocks?.length > 0) {
+          setAthletes(cached.withBlocks)
+          setCoaches(cached.withBlocks.filter((p: AthleteProfile) => p.role === 'trener' || p.role === 'admin'))
+          setAssignments(cached.map ?? {})
+        }
+      } catch {}
+
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { setError('Nisi prijavljen/a.'); setLoading(false); return }
         setAdminId(user.id)
-        const { data: profile } = await supabase.from('lifters').select('full_name, role').eq('id', user.id).single()
+
+        // Restore navigation state early so sidebar renders immediately
+        const savedId  = localStorage.getItem('adminos:selectedAthleteId')
+        const savedSec = localStorage.getItem('adminos:section') as Section | null
+        if (savedId)  setSelectedId(savedId)
+        if (savedSec) setSection(savedSec)
+
+        // 3 queries in parallel instead of sequential — saves ~2 round-trips
+        const [profileRes, exRes, compRes] = await Promise.all([
+          supabase.from('lifters').select('full_name, role').eq('id', user.id).single(),
+          supabase.from('exercises').select('*').order('category').order('name'),
+          supabase.from('competitions').select('id', { count: 'exact', head: true }),
+        ])
+
+        const profile = profileRes.data
         if (!profile) { setError('Profil ne postoji.'); setLoading(false); return }
         const allowed = isTrener ? (profile.role === 'trener' || profile.role === 'admin') : profile.role === 'admin'
         if (!allowed) { setError(`Pristup odbijen — rola "${profile.role}".`); setLoading(false); return }
         setAdminName(profile.full_name ?? (isTrener ? 'Trener' : 'Admin'))
-        const [{ data: exData }, { count }] = await Promise.all([
-          supabase.from('exercises').select('*').order('category').order('name'),
-          supabase.from('competitions').select('id', { count: 'exact', head: true }),
-        ])
-        setExercises(exData ?? [])
-        setCompCount(count ?? 0)
-        await loadAthletes()
-        const savedId = localStorage.getItem('adminos:selectedAthleteId')
-        if (savedId) setSelectedId(savedId)
-        const savedSec = localStorage.getItem('adminos:section') as Section | null
-        if (savedSec) setSection(savedSec)
+        setExercises(exRes.data ?? [])
+        setCompCount(compRes.count ?? 0)
+
+        // Athletes load after profile check passes (still parallel with rendering)
+        await loadAthletes(user.id)
       } catch (e) {
         setError(`Greška: ${(e as Error)?.message ?? String(e)}`)
       } finally { setLoading(false) }
     }
     init()
-  }, [loadAthletes])
+  }, [loadAthletes, ATHLETES_CACHE_KEY, ATHLETES_CACHE_TTL])
 
   useEffect(() => { if (selectedId) localStorage.setItem('adminos:selectedAthleteId', selectedId) }, [selectedId])
   useEffect(() => { localStorage.setItem('adminos:section', section) }, [section])
