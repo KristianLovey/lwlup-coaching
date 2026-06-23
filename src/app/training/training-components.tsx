@@ -1073,7 +1073,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                   </div>
                 ) : (
                   <input
-                    type="number" step="2.5"
+                    type="number" step="2.5" inputMode="decimal"
                     value={localVals[`${log.set_number}_weight_kg`] ?? ''}
                     onChange={e => editField(log.set_number, 'weight_kg', e.target.value)}
                     onFocus={e => { focusedKey.current = `${log.set_number}_weight_kg`; e.target.style.borderBottomColor = 'rgba(255,255,255,0.5)' }}
@@ -1087,7 +1087,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
               {/* REPS input */}
               <div style={{ ...cellStyle, padding: '10px 12px' }}>
                 <input
-                  type="text"
+                  type="text" inputMode="numeric"
                   value={localVals[`${log.set_number}_reps`] ?? ''}
                   onChange={e => editField(log.set_number, 'reps', e.target.value)}
                   onFocus={e => { focusedKey.current = `${log.set_number}_reps`; e.target.style.borderBottomColor = 'rgba(255,255,255,0.6)' }}
@@ -1105,7 +1105,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                   </div>
                 )}
                 <input
-                  type="number" step="0.5" min="1" max="10"
+                  type="number" step="0.5" min="1" max="10" inputMode="decimal"
                   value={localVals[`${log.set_number}_rpe`] ?? ''}
                   onChange={e => editField(log.set_number, 'rpe', e.target.value)}
                   onFocus={e => { focusedKey.current = `${log.set_number}_rpe`; e.target.style.borderBottomColor = 'rgba(250,204,21,0.7)' }}
@@ -1125,12 +1125,14 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                     {log.is_top_set ? '★' : '☆'}
                   </button>
                 ) : (
-                  <button onClick={() => markSetDone(log.set_number)}
+                  <button
+                    onClick={() => { (document.activeElement as HTMLElement | null)?.blur(); markSetDone(log.set_number) }}
                     disabled={canComplete}
-                    style={{ background: 'transparent', border: 'none', cursor: canComplete ? 'not-allowed' : 'pointer', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                    className="set-done-btn"
+                    style={{ background: 'transparent', border: 'none', cursor: canComplete ? 'not-allowed' : 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'manipulation' }}
                     title={log.completed ? 'Poništi' : canComplete ? 'Unesi kg i reps' : 'Odrađeno'}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', border: log.completed ? 'none' : `1.5px solid ${canComplete ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.2)'}`, background: log.completed ? '#22c55e' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', boxShadow: log.completed ? '0 0 10px rgba(34,197,94,0.4)' : 'none', opacity: canComplete ? 0.3 : 1 }}>
-                      {log.completed && <Check size={12} color="#fff" strokeWidth={3} />}
+                    <div style={{ width: '26px', height: '26px', minWidth: '26px', minHeight: '26px', borderRadius: '50%', flexShrink: 0, border: log.completed ? 'none' : `1.5px solid ${canComplete ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.28)'}`, background: log.completed ? '#22c55e' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.18s cubic-bezier(0.16,1,0.3,1)', boxShadow: log.completed ? '0 0 12px rgba(34,197,94,0.45)' : 'none', opacity: canComplete ? 0.3 : 1 }}>
+                      {log.completed && <Check size={13} color="#fff" strokeWidth={3} />}
                     </div>
                   </button>
                 )}
@@ -1202,6 +1204,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
         .slg-admin  { grid-template-columns: 42px minmax(0,0.9fr) minmax(0,0.66fr) 80px 32px 32px; }
         .slg-lifter { grid-template-columns: 46px minmax(0,1fr) minmax(0,0.78fr) 88px 48px; }
         .set-log-row input::placeholder { color: rgba(255,255,255,0.22); font-style: italic; font-size: 0.62rem; letter-spacing: 0.05em; }
+        .set-done-btn { -webkit-tap-highlight-color: transparent; }
+        .set-done-btn:active > div { transform: scale(0.88); background: rgba(34,197,94,0.15) !important; }
+        .set-done-btn[disabled]:active > div { transform: none; background: transparent !important; }
         @media (max-width: 540px) {
           .slg-lifter { grid-template-columns: 36px minmax(0,1fr) minmax(0,0.66fr) 54px 44px; }
           .slg-admin  { grid-template-columns: 32px minmax(0,1fr) minmax(0,0.66fr) 50px 28px 28px; }
