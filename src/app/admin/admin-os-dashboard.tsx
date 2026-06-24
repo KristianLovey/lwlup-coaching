@@ -169,10 +169,16 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
     const totalE1Week: Record<string, number> = {}
     for (const wk of weeks) { const t = (e1.sq[wk] ?? 0) + (e1.bp[wk] ?? 0) + (e1.dl[wk] ?? 0); if (t) totalE1Week[wk] = t }
 
-    const totalWo = workouts.length
-    const doneWo = workouts.filter((w: any) => w.completed).length
+    // Compliance scoped to active block only
+    const activeBlock = blocks.find((b: any) => b.status === 'active') ?? blocks[blocks.length - 1] ?? null
+    const blockWo = activeBlock
+      ? workouts.filter((w: any) => w.workout_date >= activeBlock.start_date && w.workout_date <= activeBlock.end_date)
+      : workouts
+    const totalWo = blockWo.length
+    const doneWo = blockWo.filter((w: any) => w.completed).length
     const complianceSeries = weeks.map(wk => { const c = compByWeek[wk]; return c && c.total ? Math.round((c.done / c.total) * 100) : 0 })
-    const firstDate = workouts[0]?.workout_date, lastDate = workouts[workouts.length - 1]?.workout_date
+    const blockWeeks = [...new Set(blockWo.map((w: any) => weekKey(w.workout_date)))].sort()
+    const firstDate = blockWo[0]?.workout_date, lastDate = blockWo[blockWo.length - 1]?.workout_date
 
     // tonnage last 7 days + by muscle group
     const ago7 = new Date(); ago7.setDate(ago7.getDate() - 7)
@@ -207,7 +213,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
     return {
       weeks, e1Sessions, bestE1, bestSrc, volByWeek, rpeByWeek, totalE1Week, bwByWeek, volMain, volVar,
       complianceSeries, complianceOverall: totalWo ? Math.round((doneWo / totalWo) * 100) : 0,
-      doneWo, totalWo, firstDate, lastDate, curTotal, curBw, ton7, ton7ByCat,
+      doneWo, totalWo, firstDate, lastDate, blockWeeks, curTotal, curBw, ton7, ton7ByCat,
       predicted, predBy, latestMeet: meets[0]?.meet_date ?? null,
       latestWb: wb[0] ?? null, latestNut: nut[0] ?? null, nutHistory: nut, bw, profile,
       blocks, nextComp: compSel ?? comps[0] ?? null, comps, doneDates, plannedDates, phases, compSel,
@@ -347,8 +353,8 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
       <div className="grid c1">
         <Card id="blockplan" title="Plan blokova & kalendar">
           {(() => {
-            const STC: Record<string, string> = { completed: 'var(--text-muted)', active: '#22c55e', planned: '#f59e0b' }
-            const STL: Record<string, string> = { completed: 'ODRAĐEN', active: 'AKTIVAN', planned: 'PLAN' }
+            const STC: Record<string, string> = { completed: 'var(--text-muted)', active: '#22c55e', planned: 'var(--text-muted)' }
+            const STL: Record<string, string> = { completed: 'ZAVRŠENO', active: 'AKTIVAN', planned: 'ZAVRŠENO' }
             const todayStr = new Date().toISOString().slice(0, 10)
             const nc = data.nextComp
             const daysTo = nc ? Math.max(0, Math.ceil((new Date(nc.date + 'T12:00:00').getTime() - Date.now()) / 86400000)) : null
@@ -378,7 +384,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {data.blocks.map((b: any) => {
                         const isNow = b.start_date <= todayStr && todayStr <= b.end_date
-                        const st = b.status || (isNow ? 'active' : b.end_date < todayStr ? 'completed' : 'planned')
+                        const st = b.status === 'active' ? 'active' : 'completed'
                         return (
                           <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, border: `1px solid ${isNow ? 'var(--border-strong)' : 'var(--border)'}`, background: isNow ? 'var(--surface-2)' : 'transparent' }}>
                             <span style={{ width: 8, height: 8, borderRadius: '50%', background: STC[st] ?? 'var(--text-muted)', flexShrink: 0 }} />
@@ -477,7 +483,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
             <Donut pct={data.complianceOverall} label={data.complianceOverall + '%'} sub="Odrađeno" size={150} stroke={14} />
             <div className="compliance-rows">
               <div className="compliance-row"><span className="k">Odrađeni treninzi</span><span className="v">{data.doneWo}<small> / {data.totalWo}</small></span></div>
-              <div className="compliance-row"><span className="k">Tjedana</span><span className="v">{data.weeks.length}</span></div>
+              <div className="compliance-row"><span className="k">Tjedana</span><span className="v">{data.blockWeeks.length}</span></div>
               <div className="compliance-row"><span className="k">Period</span><span className="v" style={{ fontSize: 13 }}>{data.firstDate ? fmtDate(data.firstDate) : '—'}{data.lastDate ? `–${fmtDate(data.lastDate)}` : ''}</span></div>
             </div>
           </div>

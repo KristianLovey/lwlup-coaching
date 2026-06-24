@@ -359,7 +359,7 @@ export default function ProfilePage() {
         supabase.from('lifters').select('*').eq('id', user.id).single(),
         supabase.from('lwlup_members').select('id').eq('profile_id', user.id).maybeSingle(),
         supabase.from('pr_logs').select('*').eq('athlete_id', user.id).order('date', { ascending: false }),
-        supabase.from('leaderboard_view').select('*'),
+        supabase.from('lifters').select('id, full_name, avatar_icon, weight_class, body_weight, sex, current_squat_1rm, current_bench_1rm, current_deadlift_1rm').in('role', ['lifter', 'trener']),
         supabase.from('workouts').select('athlete_id, completed'),
       ])
 
@@ -487,11 +487,13 @@ export default function ProfilePage() {
 
   const lbSorted = useMemo(() =>
     [...leaderboard]
-      .filter(e => !isCoach || assignedLifterIds.includes(e.id))
-      .map(e => { const c = completions[e.id] ?? { total: 0, done: 0, pct: 0 }; return { ...e, compTotal: c.total, compDone: c.done, compPct: c.pct } })
-      .filter(e => e.compTotal > 0)
+      .map(e => {
+        const c = completions[e.id] ?? { total: 0, done: 0, pct: 0 }
+        const t = (Number(e.current_squat_1rm) || 0) + (Number(e.current_bench_1rm) || 0) + (Number(e.current_deadlift_1rm) || 0)
+        return { ...e, training_total: t || null, compTotal: c.total, compDone: c.done, compPct: c.pct }
+      })
       .sort((a, b) => b.compPct - a.compPct || b.compDone - a.compDone)
-  , [leaderboard, isCoach, assignedLifterIds, completions])
+  , [leaderboard, completions])
 
   if (loading) return (
     <div style={{ background: '#090909', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>
