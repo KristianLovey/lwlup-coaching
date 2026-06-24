@@ -162,7 +162,13 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
         if (savedId)  setSelectedId(savedId)
         if (savedSec) setSection(savedSec)
 
-        // 3 queries in parallel instead of sequential — saves ~2 round-trips
+        // Serve cached exercises immediately (they change rarely)
+        const EX_CACHE_KEY = 'adminos:exercises:v1', EX_CACHE_TTL = 30 * 60_000
+        try {
+          const ec = JSON.parse(localStorage.getItem(EX_CACHE_KEY) ?? 'null')
+          if (ec?.ts && Date.now() - ec.ts < EX_CACHE_TTL && ec.data?.length > 0) setExercises(ec.data)
+        } catch {}
+
         const [profileRes, exRes, compRes] = await Promise.all([
           supabase.from('lifters').select('full_name, role').eq('id', user.id).single(),
           supabase.from('exercises').select('*').order('category').order('name'),
@@ -174,7 +180,9 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
         const allowed = isTrener ? (profile.role === 'trener' || profile.role === 'admin') : profile.role === 'admin'
         if (!allowed) { setError(`Pristup odbijen — rola "${profile.role}".`); setLoading(false); return }
         setAdminName(profile.full_name ?? (isTrener ? 'Trener' : 'Admin'))
-        setExercises(exRes.data ?? [])
+        const exData = exRes.data ?? []
+        setExercises(exData)
+        try { localStorage.setItem('adminos:exercises:v1', JSON.stringify({ ts: Date.now(), data: exData })) } catch {}
         setCompCount(compRes.count ?? 0)
 
         // Athletes load after profile check passes (still parallel with rendering)

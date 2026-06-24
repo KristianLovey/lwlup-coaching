@@ -50,7 +50,7 @@ function fillSeries(weeks: string[], perWeek: Record<string, number>): number[] 
 }
 
 type Best = { e1: number; date: string; name: string; day: string; kg: number; reps: number; rpe: number | null }
-type Raw = { workouts: any[]; bw: { date: string; weight_kg: number }[]; wb: any[]; nut: any[]; meets: any[]; blocks: any[]; comps: any[]; profile: any | null; phases: any[]; compSel: any | null }
+type Raw = { workouts: any[]; sets: any[]; bw: { date: string; weight_kg: number }[]; wb: any[]; nut: any[]; meets: any[]; blocks: any[]; comps: any[]; profile: any | null; phases: any[]; compSel: any | null }
 
 export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
   athleteId: string; athleteName: string; cards: DashCards; setCard: (id: CardId, patch: Partial<CardState>) => void
@@ -62,34 +62,58 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
   const [exp, setExp] = useState<'total' | 'predicted' | 'compliance' | 'bw' | 'tonnage' | null>(null)
   const [calM, setCalM] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
 
-  const load = useCallback(async () => {
+  const DASH_CACHE_TTL = 90_000 // 90 s
+  const dashCacheKey = `adminos:dash:${athleteId}`
+
+  const load = useCallback(async (background = false) => {
+    // Serve stale cache immediately so UI renders before network
+    if (!background) {
+      try {
+        const c = JSON.parse(localStorage.getItem(`adminos:dash:${athleteId}`) ?? 'null')
+        if (c?.ts && Date.now() - c.ts < DASH_CACHE_TTL && c.raw) {
+          setRaw(c.raw); setLoading(false)
+          // Refresh in background so next view is still fresh
+          setTimeout(() => load(true), 0); return
+        }
+      } catch {}
+    }
+
     const today = new Date().toISOString().slice(0, 10)
-    const [woRes, bwRes, wbRes, nutRes, meetRes, blkRes, compRes, profRes, phaseRes, compSelRes] = await Promise.all([
+    // Two lean workouts queries instead of one huge nested query:
+    // A) just dates+completion (for calendar/compliance) — tiny payload
+    // B) flat set_logs join (for e1RM/volume charts) — no workout_exercises nesting
+    const [woRes, setsRes, bwRes, wbRes, nutRes, meetRes, blkRes, profRes, phaseRes, compSelRes] = await Promise.all([
       supabase.from('workouts')
-        .select('id, workout_date, completed, day_name, workout_exercises(id, exercise:exercises(category, name), set_logs(weight_kg, reps, rpe, completed, is_top_set))')
+        .select('id, workout_date, completed, day_name')
         .eq('athlete_id', athleteId).order('workout_date', { ascending: true }).limit(500),
+      supabase.from('set_logs')
+        .select('weight_kg, reps, rpe, is_top_set, workout_exercises!inner(exercise:exercises(name,category), workouts!inner(workout_date))')
+        .eq('athlete_id', athleteId).eq('completed', true)
+        .order('id', { ascending: true }).limit(6000),
       supabase.from('pr_logs').select('date, weight_kg').eq('athlete_id', athleteId)
         .eq('lift', 'other').eq('notes', 'Tjelesna težina').order('date', { ascending: true }).limit(400),
       supabase.from('wellbeing_logs').select('*').eq('user_id', athleteId).order('log_date', { ascending: false }).limit(14),
       supabase.from('nutrition_logs').select('*').eq('user_id', athleteId).order('date', { ascending: false }).limit(90),
       supabase.from('meet_attempts').select('lift, meet_date, competition_id, attempt1_max, attempt1_actual, attempt2_max, attempt2_actual, attempt3_max, attempt3_actual').eq('athlete_id', athleteId).order('meet_date', { ascending: false }).limit(30),
       supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', athleteId).order('start_date', { ascending: true }).limit(60),
-      supabase.from('competitions').select('name, date, location').gte('date', today).order('date', { ascending: true }).limit(5),
       supabase.from('lifters').select('current_squat_1rm, current_bench_1rm, current_deadlift_1rm, body_weight, weight_class').eq('id', athleteId).single(),
       supabase.from('athlete_training_phases').select('id, label, start_date, end_date, color').eq('athlete_id', athleteId).order('start_date', { ascending: true }),
       supabase.from('athlete_competition_selection').select('competition:competitions(name, date, location)').eq('athlete_id', athleteId).maybeSingle(),
     ])
     const compSelComp = (compSelRes.data as any)?.competition ?? null
-    setRaw({
-      workouts: woRes.data ?? [], bw: (bwRes.data ?? []) as { date: string; weight_kg: number }[],
+    const next: Raw = {
+      workouts: woRes.data ?? [], sets: setsRes.data ?? [],
+      bw: (bwRes.data ?? []) as { date: string; weight_kg: number }[],
       wb: wbRes.data ?? [], nut: nutRes.data ?? [], meets: meetRes.data ?? [],
-      blocks: blkRes.data ?? [], comps: compRes.data ?? [], profile: profRes.data ?? null,
+      blocks: blkRes.data ?? [], comps: [], profile: profRes.data ?? null,
       phases: phaseRes.data ?? [], compSel: compSelComp,
-    })
+    }
+    setRaw(next)
+    try { localStorage.setItem(`adminos:dash:${athleteId}`, JSON.stringify({ ts: Date.now(), raw: next })) } catch {}
     setLoading(false)
   }, [athleteId])
 
-  useEffect(() => { setLoading(true); load() }, [load])
+  useEffect(() => { setLoading(true); load(false) }, [load])
 
   // #1 realtime — admin/trener sees lifter's inputs live
   useEffect(() => {
@@ -105,14 +129,13 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
 
   const data = useMemo(() => {
     if (!raw) return null
-    const { workouts, bw, wb, nut, meets, blocks, comps, profile, phases, compSel } = raw
-    // training days for the calendar: any day with a completed workout or a completed set
+    const { workouts, sets, bw, wb, nut, meets, blocks, profile, phases, compSel } = raw
+    // Calendar: use flat workouts (date + completed only)
     const doneDates = new Set<string>()
     const plannedDates = new Set<string>()
     for (const w of workouts) {
       plannedDates.add(w.workout_date)
-      const anyDone = w.completed || (w.workout_exercises ?? []).some((we: any) => (we.set_logs ?? []).some((s: any) => s.completed))
-      if (anyDone) doneDates.add(w.workout_date)
+      if (w.completed) doneDates.add(w.workout_date)
     }
 
     const weekSet = new Set<string>()
@@ -123,36 +146,40 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
     const compByWeek: Record<string, { done: number; total: number }> = {}
     const bestE1: Record<LiftK, number> = { sq: 0, bp: 0, dl: 0 }
     const bestSrc: Record<LiftK, Best | null> = { sq: null, bp: null, dl: null }
-    // volume by main lift per week + by variation (exercise name) per week
     const volMain: Record<LiftK, Record<string, number>> = { sq: {}, bp: {}, dl: {} }
     const volVar: Record<LiftK, Record<string, Record<string, number>>> = { sq: {}, bp: {}, dl: {} }
 
+    // Compliance: from flat workouts
     for (const w of workouts) {
       const wk = weekKey(w.workout_date)
       weekSet.add(wk)
       const c = (compByWeek[wk] ??= { done: 0, total: 0 })
       c.total++; if (w.completed) c.done++
-      for (const we of (w.workout_exercises ?? [])) {
-        const cat = we.exercise?.category ?? ''
-        const nm = we.exercise?.name ?? cat
-        const lk = liftKey(cat)
-        for (const s of (we.set_logs ?? [])) {
-          const kg = Number(s.weight_kg), reps = parseFloat(String(s.reps ?? ''))
-          if (kg > 0 && Number.isFinite(reps) && reps > 0) {
-            const ton = kg * reps
-            volByWeek[wk] = (volByWeek[wk] ?? 0) + ton
-            if (s.rpe) (rpeByWeek[wk] ??= []).push(Number(s.rpe))
-            if (lk) {
-              volMain[lk][wk] = (volMain[lk][wk] ?? 0) + ton
-              const vv = (volVar[lk][nm] ??= {}); vv[wk] = (vv[wk] ?? 0) + ton
-              // e1RM — use any logged set (best of the day) so the chart always has data
-              const e = estimate1RM(kg, reps, s.rpe) ?? 0
-              if (e > 0) {
-                if (!e1[lk][wk] || e > e1[lk][wk]) e1[lk][wk] = e
-                if (!dayE1[lk][w.workout_date] || e > dayE1[lk][w.workout_date]) dayE1[lk][w.workout_date] = e
-                if (e > bestE1[lk]) { bestE1[lk] = e; bestSrc[lk] = { e1: e, date: w.workout_date, name: nm, day: w.day_name ?? '', kg, reps, rpe: s.rpe ?? null } }
-              }
-            }
+    }
+
+    // Analytics (e1RM, volume): from flat set_logs join — much smaller payload
+    for (const s of sets) {
+      const we = (s as any).workout_exercises
+      const wo = we?.workouts
+      const workoutDate: string = wo?.workout_date ?? ''
+      if (!workoutDate) continue
+      const cat: string = we?.exercise?.category ?? ''
+      const nm: string = we?.exercise?.name ?? cat
+      const lk = liftKey(cat)
+      const wk = weekKey(workoutDate)
+      const kg = Number(s.weight_kg), reps = parseFloat(String(s.reps ?? ''))
+      if (kg > 0 && Number.isFinite(reps) && reps > 0) {
+        const ton = kg * reps
+        volByWeek[wk] = (volByWeek[wk] ?? 0) + ton
+        if (s.rpe) (rpeByWeek[wk] ??= []).push(Number(s.rpe))
+        if (lk) {
+          volMain[lk][wk] = (volMain[lk][wk] ?? 0) + ton
+          const vv = (volVar[lk][nm] ??= {}); vv[wk] = (vv[wk] ?? 0) + ton
+          const e = estimate1RM(kg, reps, s.rpe) ?? 0
+          if (e > 0) {
+            if (!e1[lk][wk] || e > e1[lk][wk]) e1[lk][wk] = e
+            if (!dayE1[lk][workoutDate] || e > dayE1[lk][workoutDate]) dayE1[lk][workoutDate] = e
+            if (e > bestE1[lk]) { bestE1[lk] = e; bestSrc[lk] = { e1: e, date: workoutDate, name: nm, day: '', kg, reps, rpe: s.rpe ?? null } }
           }
         }
       }
@@ -180,17 +207,16 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
     const blockWeeks = [...new Set(blockWo.map((w: any) => weekKey(w.workout_date)))].sort()
     const firstDate = blockWo[0]?.workout_date, lastDate = blockWo[blockWo.length - 1]?.workout_date
 
-    // tonnage last 7 days + by muscle group
-    const ago7 = new Date(); ago7.setDate(ago7.getDate() - 7)
+    // tonnage last 7 days + by muscle group — use flat sets
+    const ago7Str = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10)
     let ton7 = 0
     const ton7ByCat: Record<string, number> = {}
-    for (const w of workouts) {
-      if (new Date(w.workout_date + 'T12:00:00') >= ago7) for (const we of (w.workout_exercises ?? [])) {
-        const cat = we.exercise?.category ?? 'Ostalo'
-        for (const s of (we.set_logs ?? [])) {
-          const kg = Number(s.weight_kg), reps = parseFloat(String(s.reps ?? ''))
-          if (kg > 0 && reps > 0) { ton7 += kg * reps; ton7ByCat[cat] = (ton7ByCat[cat] ?? 0) + kg * reps }
-        }
+    for (const s of sets) {
+      const workoutDate: string = (s as any).workout_exercises?.workouts?.workout_date ?? ''
+      if (workoutDate >= ago7Str) {
+        const cat = (s as any).workout_exercises?.exercise?.category ?? 'Ostalo'
+        const kg = Number(s.weight_kg), reps = parseFloat(String(s.reps ?? ''))
+        if (kg > 0 && reps > 0) { ton7 += kg * reps; ton7ByCat[cat] = (ton7ByCat[cat] ?? 0) + kg * reps }
       }
     }
 
@@ -216,7 +242,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
       doneWo, totalWo, firstDate, lastDate, blockWeeks, curTotal, curBw, ton7, ton7ByCat,
       predicted, predBy, latestMeet: meets[0]?.meet_date ?? null,
       latestWb: wb[0] ?? null, latestNut: nut[0] ?? null, nutHistory: nut, bw, profile,
-      blocks, nextComp: compSel ?? comps[0] ?? null, comps, doneDates, plannedDates, phases, compSel,
+      blocks, nextComp: compSel ?? null, comps: [], doneDates, plannedDates, phases, compSel,
       balance: {
         sqTotal: curTotal ? Math.round((bestE1.sq / curTotal) * 100) : 0,
         bpTotal: curTotal ? Math.round((bestE1.bp / curTotal) * 100) : 0,
