@@ -1739,6 +1739,10 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
     }
   }
 
+  const totalSets = localExs.reduce((s, e) => s + (e._totalSets ?? e.planned_sets ?? 0), 0)
+  const doneSets = localExs.reduce((s, e) => e.completed ? s + (e._totalSets ?? e.planned_sets ?? 0) : s + (e._completedSets ?? 0), 0)
+  const progressPct = workout.completed ? 100 : (totalSets > 0 ? Math.min(100, (doneSets / totalSets) * 100) : 0)
+
   return (
     <>
       {/* Outer card: sharp border */}
@@ -1748,8 +1752,10 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
         <div
           style={{ background: workout.completed ? '#0a1c0e' : '#111111', borderBottom: open ? '1px solid rgba(255,255,255,0.1)' : 'none', cursor: 'pointer', padding: '0' }}
           onClick={() => { const next = !open; setOpen(next); try { sessionStorage.setItem(ssKey, String(next)) } catch {} }}>
-          {/* Top accent line — amber for active days, green for completed */}
-          <div style={{ height: '3px', background: workout.completed ? 'linear-gradient(90deg, #22c55e 0%, #16a34a 60%, #15803d 100%)' : 'linear-gradient(90deg, rgba(239,53,53,0.5) 0%, rgba(239,53,53,0.75) 50%, rgba(239,53,53,0.4) 100%)', boxShadow: workout.completed ? '0 0 14px rgba(34,197,94,0.4)' : '0 0 10px rgba(239,53,53,0.15)', transition: 'all 0.3s' }} />
+          {/* Top accent line / progress bar */}
+          <div style={{ height: '3px', position: 'relative', background: progressPct > 0 ? 'rgba(34,197,94,0.1)' : 'rgba(239,53,53,0.18)', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', inset: '0 auto 0 0', width: `${progressPct}%`, background: progressPct >= 100 ? 'linear-gradient(90deg, #22c55e 0%, #16a34a 60%, #15803d 100%)' : '#22c55e', boxShadow: progressPct > 0 ? `0 0 ${progressPct >= 100 ? 14 : 6}px rgba(34,197,94,${progressPct >= 100 ? 0.4 : 0.3})` : 'none', transition: 'width 0.5s cubic-bezier(0.16,1,0.3,1)', borderRadius: '0 2px 2px 0' }} />
+          </div>
 
           <div className='workout-header-inner' style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px' }}>
             {/* Workout name — large, bold */}
