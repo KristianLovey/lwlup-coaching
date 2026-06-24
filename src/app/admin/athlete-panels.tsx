@@ -43,8 +43,8 @@ export type AthleteProfile = {
 
 
 // ── Athlete Overview ───────────────────────────────────────────────
-export function AthleteOverview({ athlete, onBack, onGoTraining }: {
-  athlete: AthleteProfile; onBack: () => void; onGoTraining: () => void
+export function AthleteOverview({ athlete, onGoTraining }: {
+  athlete: AthleteProfile; onBack?: () => void; onGoTraining: () => void
 }) {
   const initials = athlete.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
   const [tab, setTab] = useState<'opcenito' | 'detaljno' | 'meetday' | 'prioriteti' | 'planiranje'>('opcenito')
@@ -284,13 +284,6 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
 
   return (
     <div style={{ padding: '20px 28px', maxWidth: '1140px', margin: '0 auto', paddingBottom: '60px' }}>
-
-      <button onClick={onBack}
-        style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', cursor: 'pointer', fontSize: '0.58rem', letterSpacing: '0.2em', fontFamily: FM, padding: '0 0 18px', transition: 'color 0.15s' }}
-        onMouseEnter={e => { e.currentTarget.style.color = '#fff' }}
-        onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.28)' }}>
-        <ChevronLeft size={12} /> NATRAG
-      </button>
 
       {/* ── Hero header ── */}
       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '22px 24px', marginBottom: '0', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' as const }}>
