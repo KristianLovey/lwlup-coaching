@@ -414,6 +414,27 @@
 .lwl-admin-os .lifter-cell .tot { font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
 .lwl-admin-os .lifter-cell .tot b { font-family: var(--font-display); color: var(--text); }
 
+/* ── Predlošci (template) cards ── */
+.lwl-admin-os .tmpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.lwl-admin-os .tmpl-cell {
+  border-radius: var(--radius-lg); border: 1px solid var(--border);
+  background: linear-gradient(165deg, var(--surface-2), var(--surface-1));
+  padding: 18px; display: flex; flex-direction: column; gap: 16px; transition: all 0.2s;
+}
+.lwl-admin-os .tmpl-cell:hover { border-color: var(--border-strong); transform: translateY(-2px); box-shadow: var(--shadow-card); }
+.lwl-admin-os .tmpl-top { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.lwl-admin-os .tmpl-ic {
+  width: 42px; height: 42px; border-radius: 11px; flex: 0 0 42px; display: grid; place-items: center;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.lwl-admin-os .tmpl-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lwl-admin-os .tmpl-name { font-family: var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lwl-admin-os .tmpl-sub { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); }
+.lwl-admin-os .tmpl-actions { display: flex; gap: 8px; align-items: stretch; }
+.lwl-admin-os .tmpl-actions .btn-a { flex: 1; justify-content: center; padding: 10px 8px; font-size: 11px; gap: 7px; }
+.lwl-admin-os .tmpl-actions .icon-sm { flex: 0 0 38px; height: auto; }
+
 .lwl-admin-os .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .lwl-admin-os .edit-card { border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--surface-1); padding: 20px 22px; box-shadow: var(--shadow-card); transition: border-color 0.2s, box-shadow 0.2s; }
 .lwl-admin-os .edit-card:hover { border-color: var(--border-strong); }

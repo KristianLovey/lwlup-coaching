@@ -707,17 +707,20 @@ function PredlosciSection({ athletes, adminId, exercises }: { athletes: AthleteP
       {loading ? <div className="os-empty"><Loader2 size={18} className="os-spin" /></div>
         : templates.length === 0 ? <div className="os-empty">Nema spremljenih predložaka. Klikni „Kreiraj predložak".</div>
         : (
-          <div className="lifter-grid os-stagger">
+          <div className="tmpl-grid os-stagger">
             {templates.map(t => (
-              <div className="lifter-cell" key={t.id} style={{ cursor: 'default', textAlign: 'left' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                  <FolderOpen size={18} color="var(--accent)" />
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
+              <div className="tmpl-cell" key={t.id}>
+                <div className="tmpl-top">
+                  <span className="tmpl-ic"><FolderOpen size={18} /></span>
+                  <div className="tmpl-meta">
+                    <span className="tmpl-name">{t.name}</span>
+                    <span className="tmpl-sub">Predložak bloka</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button className="btn-a" style={{ flex: 1, padding: '8px 10px', fontSize: 11 }} onClick={() => setCopyId(t.id)}><Copy size={13} /> Kopiraj</button>
-                  <button className="btn-a" style={{ padding: '8px 10px', fontSize: 11 }} onClick={() => setBuildMode(true)}><FolderOpen size={13} /> Uredi</button>
-                  <button className="icon-sm danger" onClick={() => delTemplate(t.id)} title="Obriši"><Trash2 size={14} /></button>
+                <div className="tmpl-actions">
+                  <button className="btn-a" onClick={() => setCopyId(t.id)}><Copy size={13} /> Kopiraj</button>
+                  <button className="btn-a" onClick={() => setBuildMode(true)}><FolderOpen size={13} /> Uredi</button>
+                  <button className="icon-sm danger" onClick={() => delTemplate(t.id)} title="Obriši predložak"><Trash2 size={14} /></button>
                 </div>
               </div>
             ))}
