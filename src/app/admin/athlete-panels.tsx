@@ -80,7 +80,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
         supabase.from('water_logs').select('log_date, amount_ml').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(120),
         supabase.from('wellbeing_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(90),
         supabase.from('supplement_logs').select('log_date, name, amount, unit').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(120),
-        supabase.from('competition_athletes').select('competition_id, result_squat, result_bench, result_deadlift, result_total, result_place, competition:competitions(id, name, date, location)').eq('athlete_id', athlete.id).limit(20),
+        supabase.from('lwlup_members').select('id').eq('profile_id', athlete.id).maybeSingle(),
         supabase.from('workouts')
           .select('id, workout_date, completed, completion_date, day_name, workout_exercises(id, exercise_order, exercise:exercises(name,category), actual_weight_kg, actual_reps, actual_rpe, actual_note, planned_sets, planned_reps, planned_weight_kg, set_logs(set_number, weight_kg, reps, rpe, completed, is_top_set))')
           .eq('athlete_id', athlete.id)
@@ -92,7 +92,18 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
       setWaterLogs(waterRes.data ?? [])
       setWbLogs(wbRes.data ?? [])
       setSuppLogs(suppRes.data ?? [])
-      setLastMeets(meetRes.data ?? [])
+      // meetRes.data is the lwlup_members row — use its id to fetch competition_athletes
+      const memberId = (meetRes.data as any)?.id
+      if (memberId) {
+        const { data: compData } = await supabase
+          .from('competition_athletes')
+          .select('competition_id, result_squat, result_bench, result_deadlift, result_total, result_place, competition:competitions(id, name, date, location)')
+          .eq('athlete_id', memberId)
+          .limit(20)
+        setLastMeets(compData ?? [])
+      } else {
+        setLastMeets([])
+      }
       const woData = woRes.data ?? []
       setWorkoutLogs(woData)
       // On initial load: navigate calendar to the month of the most recent workout
