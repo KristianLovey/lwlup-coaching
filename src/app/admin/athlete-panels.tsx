@@ -80,7 +80,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
         supabase.from('water_logs').select('log_date, amount_ml').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(120),
         supabase.from('wellbeing_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(90),
         supabase.from('supplement_logs').select('log_date, name, amount, unit').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(120),
-        supabase.from('meet_competitors').select('id, sq_best, bp_best, dl_best, bw_kg, competition:competitions(id, name, date, location)').eq('athlete_id', athlete.id).order('created_at', { ascending: false }).limit(10),
+        supabase.from('meet_competitors').select('id, competition_id, sq_best, bp_best, dl_best, bw_kg, competition:competitions(id, name, date, location)').eq('athlete_id', athlete.id).order('created_at', { ascending: false }).limit(20),
         supabase.from('workouts')
           .select('id, workout_date, completed, completion_date, day_name, workout_exercises(id, exercise_order, exercise:exercises(name,category), actual_weight_kg, actual_reps, actual_rpe, actual_note, planned_sets, planned_reps, planned_weight_kg, set_logs(set_number, weight_kg, reps, rpe, completed, is_top_set))')
           .eq('athlete_id', athlete.id)
@@ -377,7 +377,22 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
           <Section title="NATJECANJA" open={compOpen} onToggle={() => setCompOpen(v => !v)} accent="#22c55e">
             {lastMeets.length === 0 ? (
               <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema unesenih natjecanja</div>
-            ) : lastMeets.map((row: any) => {
+            ) : (() => {
+                // Deduplicate by competition_id, keep row with highest total
+                const seen = new Map<string, any>()
+                for (const row of lastMeets) {
+                  const cid = row.competition_id ?? row.id
+                  const t = (Number(row.sq_best)||0) + (Number(row.bp_best)||0) + (Number(row.dl_best)||0)
+                  const prev = seen.get(cid)
+                  const prevT = prev ? (Number(prev.sq_best)||0) + (Number(prev.bp_best)||0) + (Number(prev.dl_best)||0) : -1
+                  if (!prev || t > prevT) seen.set(cid, row)
+                }
+                return [...seen.values()].sort((a, b) => {
+                  const da = (a.competition as any)?.date ?? ''
+                  const db = (b.competition as any)?.date ?? ''
+                  return db.localeCompare(da)
+                })
+              })().map((row: any) => {
                 const comp = row.competition as any
                 const compName = comp?.name ?? '—'
                 const compDate = comp?.date ?? ''
