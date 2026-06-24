@@ -80,7 +80,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
         supabase.from('water_logs').select('log_date, amount_ml').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(120),
         supabase.from('wellbeing_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(90),
         supabase.from('supplement_logs').select('log_date, name, amount, unit').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(120),
-        supabase.from('meet_attempts').select('*, competition:competitions(name,date)').eq('athlete_id', athlete.id).order('meet_date', { ascending: false }).limit(9),
+        supabase.from('meet_competitors').select('id, sq_best, bp_best, dl_best, bw_kg, competition:competitions(id, name, date, location)').eq('athlete_id', athlete.id).order('created_at', { ascending: false }).limit(10),
         supabase.from('workouts')
           .select('id, workout_date, completed, completion_date, day_name, workout_exercises(id, exercise_order, exercise:exercises(name,category), actual_weight_kg, actual_reps, actual_rpe, actual_note, planned_sets, planned_reps, planned_weight_kg, set_logs(set_number, weight_kg, reps, rpe, completed, is_top_set))')
           .eq('athlete_id', athlete.id)
@@ -197,12 +197,8 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
     </div>
   )
 
-  const meetsByComp: Record<string, any[]> = {}
-  for (const m of lastMeets) {
-    const key = m.competition_id ?? m.meet_date
-    if (!meetsByComp[key]) meetsByComp[key] = []
-    meetsByComp[key].push(m)
-  }
+  // meet_competitors rows — one per (athlete, competition) — used for ZADNJA NATJECANJA
+
 
   const todayStr = (() => {
     const d = new Date()
@@ -377,30 +373,27 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
             ))}
           </div>
 
-          {/* Recent competitions */}
-          <Section title="ZADNJA NATJECANJA" open={compOpen} onToggle={() => setCompOpen(v => !v)} accent="#22c55e">
-            {Object.keys(meetsByComp).length === 0 ? (
-              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
-            ) : Object.entries(meetsByComp).slice(0, 5).map(([key, attempts]) => {
-                const squat = attempts.find((a: any) => a.lift === 'squat')
-                const bench = attempts.find((a: any) => a.lift === 'bench')
-                const dl    = attempts.find((a: any) => a.lift === 'deadlift')
-                const compName = attempts[0]?.competition?.name
-                const compDate = attempts[0]?.competition?.date ?? attempts[0]?.meet_date
-                const pickBest = (r: any) => r ? ([r.attempt3_actual, r.attempt2_actual, r.attempt1_actual].find((v: any) => v != null) ?? null) : null
-                const bestSq = pickBest(squat)
-                const bestBe = pickBest(bench)
-                const bestDl = pickBest(dl)
-                const total = (Number(bestSq) || 0) + (Number(bestBe) || 0) + (Number(bestDl) || 0)
-                if (!compName && bestSq == null && bestBe == null && bestDl == null) return null
+          {/* Recent competitions — from meet_competitors (admin-entered results) */}
+          <Section title="NATJECANJA" open={compOpen} onToggle={() => setCompOpen(v => !v)} accent="#22c55e">
+            {lastMeets.length === 0 ? (
+              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema unesenih natjecanja</div>
+            ) : lastMeets.map((row: any) => {
+                const comp = row.competition as any
+                const compName = comp?.name ?? '—'
+                const compDate = comp?.date ?? ''
+                const sq = row.sq_best != null ? Number(row.sq_best) : null
+                const bp = row.bp_best != null ? Number(row.bp_best) : null
+                const dl = row.dl_best != null ? Number(row.dl_best) : null
+                const total = (sq ?? 0) + (bp ?? 0) + (dl ?? 0)
                 return (
-                  <div key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px', marginBottom: '12px' }}>
+                  <div key={row.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px', marginBottom: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '0.78rem', color: '#f0f0f0', fontFamily: FM, fontWeight: 700 }}>{compName ?? compDate}</span>
-                      {compName && <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>{compDate}</span>}
+                      <span style={{ fontSize: '0.78rem', color: '#f0f0f0', fontFamily: FM, fontWeight: 700 }}>{compName}</span>
+                      {compDate && <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>{compDate}</span>}
+                      {row.bw_kg != null && <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, marginLeft: 'auto' }}>{row.bw_kg}kg BW</span>}
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-                      {([['SQ', bestSq, '#a78bfa'], ['BP', bestBe, '#f472b6'], ['DL', bestDl, '#fb923c'], ['TOTAL', total || null, '#22c55e']] as const).map(([label, val, color]) => (
+                      {([['SQ', sq, '#a78bfa'], ['BP', bp, '#f472b6'], ['DL', dl, '#fb923c'], ['TOTAL', total || null, '#22c55e']] as const).map(([label, val, color]) => (
                         <div key={label} style={{ background: val ? color + '10' : 'rgba(255,255,255,0.03)', border: `1px solid ${val ? color + '30' : 'rgba(255,255,255,0.05)'}`, borderRadius: '8px', padding: '8px 4px', textAlign: 'center' }}>
                           <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', marginBottom: '4px', fontFamily: FM }}>{label}</div>
                           <div style={{ fontSize: '0.96rem', color: val ? color : 'rgba(255,255,255,0.15)', fontFamily: FD, fontWeight: 800 }}>{val ?? '—'}</div>
