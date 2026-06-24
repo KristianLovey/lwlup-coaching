@@ -141,6 +141,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
     const weekSet = new Set<string>()
     const e1: Record<LiftK, Record<string, number>> = { sq: {}, bp: {}, dl: {} }
     const dayE1: Record<LiftK, Record<string, number>> = { sq: {}, bp: {}, dl: {} }
+    const dayDone: Record<LiftK, Record<string, number>> = { sq: {}, bp: {}, dl: {} }
     const volByWeek: Record<string, number> = {}
     const rpeByWeek: Record<string, number[]> = {}
     const compByWeek: Record<string, { done: number; total: number }> = {}
@@ -175,11 +176,19 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
         if (lk) {
           volMain[lk][wk] = (volMain[lk][wk] ?? 0) + ton
           const vv = (volVar[lk][nm] ??= {}); vv[wk] = (vv[wk] ?? 0) + ton
-          const e = estimate1RM(kg, reps, s.rpe) ?? 0
-          if (e > 0) {
-            if (!e1[lk][wk] || e > e1[lk][wk]) e1[lk][wk] = e
-            if (!dayE1[lk][workoutDate] || e > dayE1[lk][workoutDate]) dayE1[lk][workoutDate] = e
-            if (e > bestE1[lk]) { bestE1[lk] = e; bestSrc[lk] = { e1: e, date: workoutDate, name: nm, day: '', kg, reps, rpe: s.rpe ?? null } }
+          // e1RM estimation is only valid for RPE >= 5 — ignore lighter/easier sets entirely
+          const validRpe = s.rpe != null && Number(s.rpe) >= 5
+          if (validRpe) {
+            // competition main lift only (exclude variations) — for the progress charts
+            const isComp = cat === 'Squat' || cat === 'Bench' || cat === 'Deadlift'
+            const e = estimate1RM(kg, reps, s.rpe) ?? 0
+            if (e > 0) {
+              if (!e1[lk][wk] || e > e1[lk][wk]) e1[lk][wk] = e
+              if (e > bestE1[lk]) { bestE1[lk] = e; bestSrc[lk] = { e1: e, date: workoutDate, name: nm, day: '', kg, reps, rpe: s.rpe ?? null } }
+              if (isComp && (!dayE1[lk][workoutDate] || e > dayE1[lk][workoutDate])) dayE1[lk][workoutDate] = e
+            }
+            // "odrađeno": heaviest actual weight lifted on the comp lift that day
+            if (isComp && (!dayDone[lk][workoutDate] || kg > dayDone[lk][workoutDate])) dayDone[lk][workoutDate] = kg
           }
         }
       }
@@ -188,6 +197,11 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
       sq: Object.entries(dayE1.sq).map(([date, v]) => ({ date, e1: v })).sort((a, b) => a.date.localeCompare(b.date)),
       bp: Object.entries(dayE1.bp).map(([date, v]) => ({ date, e1: v })).sort((a, b) => a.date.localeCompare(b.date)),
       dl: Object.entries(dayE1.dl).map(([date, v]) => ({ date, e1: v })).sort((a, b) => a.date.localeCompare(b.date)),
+    }
+    const doneSessions: Record<LiftK, { date: string; e1: number }[]> = {
+      sq: Object.entries(dayDone.sq).map(([date, v]) => ({ date, e1: v })).sort((a, b) => a.date.localeCompare(b.date)),
+      bp: Object.entries(dayDone.bp).map(([date, v]) => ({ date, e1: v })).sort((a, b) => a.date.localeCompare(b.date)),
+      dl: Object.entries(dayDone.dl).map(([date, v]) => ({ date, e1: v })).sort((a, b) => a.date.localeCompare(b.date)),
     }
     const weeks = [...weekSet].sort()
     const bwByWeek: Record<string, number> = {}
@@ -237,7 +251,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
     const curBw = bw.length ? Number(bw[bw.length - 1].weight_kg) : (profile?.body_weight ?? null)
 
     return {
-      weeks, e1Sessions, bestE1, bestSrc, volByWeek, rpeByWeek, totalE1Week, bwByWeek, volMain, volVar,
+      weeks, e1Sessions, doneSessions, bestE1, bestSrc, volByWeek, rpeByWeek, totalE1Week, bwByWeek, volMain, volVar,
       complianceSeries, complianceOverall: totalWo ? Math.round((doneWo / totalWo) * 100) : 0,
       doneWo, totalWo, firstDate, lastDate, blockWeeks, curTotal, curBw, ton7, ton7ByCat,
       predicted, predBy, latestMeet: meets[0]?.meet_date ?? null,
@@ -258,16 +272,26 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
   const volSpark = data.weeks.map(w => Math.round((data.volByWeek[w] ?? 0) / 100))
   const bwSparkE = data.bw.map(r => Number(r.weight_kg))
 
-  // progress (by session dates)
+  // progress (by session dates) — competition lifts only, RPE >= 5
   const pr = cards.progress
-  const allSess = data.e1Sessions[lift]
   const cut = Date.now() - pr.range * 7 * 86400000
-  let sess = allSess.filter(s => new Date(s.date + 'T12:00:00').getTime() >= cut)
-  if (sess.length < 2) sess = allSess.slice(-Math.max(2, Math.min(allSess.length, 8)))
+  const windowSess = (all: { date: string; e1: number }[]) => {
+    let s = all.filter(x => new Date(x.date + 'T12:00:00').getTime() >= cut)
+    if (s.length < 2) s = all.slice(-Math.max(2, Math.min(all.length, 8)))
+    return s
+  }
+  // estimated 1RM series
+  const sess = windowSess(data.e1Sessions[lift])
   const e1Series = sess.map(s => s.e1)
   const e1Dates = sess.map(s => fmtDate(s.date))
   const e1Last = e1Series[e1Series.length - 1] ?? 0
   const e1Prev = e1Series[Math.max(0, e1Series.length - 2)] ?? e1Last
+  // actual performed weight series
+  const doneSess = windowSess(data.doneSessions[lift])
+  const doneSeries = doneSess.map(s => s.e1)
+  const doneDates = doneSess.map(s => fmtDate(s.date))
+  const doneLast = doneSeries[doneSeries.length - 1] ?? 0
+  const donePrev = doneSeries[Math.max(0, doneSeries.length - 2)] ?? doneLast
 
   // volume (by lift / variation)
   const vol = cards.volume
@@ -491,16 +515,35 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
       <div className="grid c2feat">
         <Card id="progress" title={`Pregled napretka — ${athleteName.split(' ')[0]}`}
           head={<><div className="seg">{(['sq', 'bp', 'dl'] as LiftK[]).map(k => <button key={k} className={lift === k ? 'on' : ''} onClick={() => setLift(k)}>{liftNames[k]}</button>)}</div><RangeSel id="progress" /></>}>
-          {e1Series.length < 2 ? <div className="os-empty">Nema dovoljno logiranih dana za {liftNames[lift]}</div> : (
-            <>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 6, flexWrap: 'wrap' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>e1RM</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 34, letterSpacing: '-0.04em' }}>{e1Last}<span style={{ fontSize: 15, color: 'var(--text-dim)', fontWeight: 500, marginLeft: 4 }}>kg</span></span>
-                {e1Last - e1Prev !== 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>{e1Last - e1Prev > 0 ? '+' : ''}{e1Last - e1Prev} <span style={{ color: 'var(--text-muted)' }}>zadnji</span></span>}
-                <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{sess.length} sesija</span>
+          {e1Series.length < 2 && doneSeries.length < 2 ? (
+            <div className="os-empty">Nema dovoljno comp setova (RPE ≥ 5) za {liftNames[lift]}</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+              {/* Chart 1 — estimated 1RM */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Procijenjeni 1RM</span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 32, letterSpacing: '-0.04em' }}>{e1Last}<span style={{ fontSize: 14, color: 'var(--text-dim)', fontWeight: 500, marginLeft: 4 }}>kg</span></span>
+                  {e1Last - e1Prev !== 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>{e1Last - e1Prev > 0 ? '+' : ''}{e1Last - e1Prev} <span style={{ color: 'var(--text-muted)' }}>zadnji</span></span>}
+                  <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{sess.length} sesija</span>
+                </div>
+                {e1Series.length < 2
+                  ? <div className="os-empty" style={{ padding: '28px 0' }}>Premalo comp setova s RPE ≥ 5</div>
+                  : <LineChart data={e1Series} dates={e1Dates} labels={e1Dates.length > 2 ? [e1Dates[0], e1Dates[e1Dates.length - 1]] : e1Dates} height={170} />}
               </div>
-              <LineChart data={e1Series} dates={e1Dates} labels={e1Dates.length > 2 ? [e1Dates[0], e1Dates[e1Dates.length - 1]] : e1Dates} height={200} />
-            </>
+              {/* Chart 2 — actual performed weight */}
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 18 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Odrađeno · najteži set</span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 32, letterSpacing: '-0.04em' }}>{doneLast}<span style={{ fontSize: 14, color: 'var(--text-dim)', fontWeight: 500, marginLeft: 4 }}>kg</span></span>
+                  {doneLast - donePrev !== 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>{doneLast - donePrev > 0 ? '+' : ''}{doneLast - donePrev} <span style={{ color: 'var(--text-muted)' }}>zadnji</span></span>}
+                  <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{doneSess.length} sesija</span>
+                </div>
+                {doneSeries.length < 2
+                  ? <div className="os-empty" style={{ padding: '28px 0' }}>Premalo comp setova s RPE ≥ 5</div>
+                  : <LineChart data={doneSeries} dates={doneDates} labels={doneDates.length > 2 ? [doneDates[0], doneDates[doneDates.length - 1]] : doneDates} accent height={170} />}
+              </div>
+            </div>
           )}
         </Card>
 
