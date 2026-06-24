@@ -80,7 +80,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
         supabase.from('water_logs').select('log_date, amount_ml').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(120),
         supabase.from('wellbeing_logs').select('*').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(90),
         supabase.from('supplement_logs').select('log_date, name, amount, unit').eq('user_id', athlete.id).order('log_date', { ascending: false }).limit(120),
-        supabase.from('meet_competitors').select('id, competition_id, sq_best, bp_best, dl_best, bw_kg, competition:competitions(id, name, date, location)').eq('athlete_id', athlete.id).order('created_at', { ascending: false }).limit(20),
+        supabase.from('competition_athletes').select('competition_id, result_squat, result_bench, result_deadlift, result_total, result_place, competition:competitions(id, name, date, location)').eq('athlete_id', athlete.id).limit(20),
         supabase.from('workouts')
           .select('id, workout_date, completed, completion_date, day_name, workout_exercises(id, exercise_order, exercise:exercises(name,category), actual_weight_kg, actual_reps, actual_rpe, actual_note, planned_sets, planned_reps, planned_weight_kg, set_logs(set_number, weight_kg, reps, rpe, completed, is_top_set))')
           .eq('athlete_id', athlete.id)
@@ -197,7 +197,7 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
     </div>
   )
 
-  // meet_competitors rows — one per (athlete, competition) — used for ZADNJA NATJECANJA
+  // competition_athletes rows — one per (athlete, competition) — used for ZADNJA NATJECANJA
 
 
   const todayStr = (() => {
@@ -377,38 +377,23 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
           <Section title="NATJECANJA" open={compOpen} onToggle={() => setCompOpen(v => !v)} accent="#22c55e">
             {lastMeets.length === 0 ? (
               <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema unesenih natjecanja</div>
-            ) : (() => {
-                // Deduplicate by competition_id, keep row with highest total
-                const seen = new Map<string, any>()
-                for (const row of lastMeets) {
-                  const cid = row.competition_id ?? row.id
-                  const t = (Number(row.sq_best)||0) + (Number(row.bp_best)||0) + (Number(row.dl_best)||0)
-                  const prev = seen.get(cid)
-                  const prevT = prev ? (Number(prev.sq_best)||0) + (Number(prev.bp_best)||0) + (Number(prev.dl_best)||0) : -1
-                  if (!prev || t > prevT) seen.set(cid, row)
-                }
-                return [...seen.values()].sort((a, b) => {
-                  const da = (a.competition as any)?.date ?? ''
-                  const db = (b.competition as any)?.date ?? ''
-                  return db.localeCompare(da)
-                })
-              })().map((row: any) => {
+            ) : [...lastMeets].sort((a, b) => ((b.competition as any)?.date ?? '').localeCompare((a.competition as any)?.date ?? '')).map((row: any) => {
                 const comp = row.competition as any
                 const compName = comp?.name ?? '—'
                 const compDate = comp?.date ?? ''
-                const sq = row.sq_best != null ? Number(row.sq_best) : null
-                const bp = row.bp_best != null ? Number(row.bp_best) : null
-                const dl = row.dl_best != null ? Number(row.dl_best) : null
-                const total = (sq ?? 0) + (bp ?? 0) + (dl ?? 0)
+                const sq = row.result_squat != null ? Number(row.result_squat) : null
+                const bp = row.result_bench != null ? Number(row.result_bench) : null
+                const dl = row.result_deadlift != null ? Number(row.result_deadlift) : null
+                const total = row.result_total != null ? Number(row.result_total) : ((sq ?? 0) + (bp ?? 0) + (dl ?? 0)) || null
                 return (
-                  <div key={row.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px', marginBottom: '12px' }}>
+                  <div key={row.competition_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px', marginBottom: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '8px' }}>
                       <span style={{ fontSize: '0.78rem', color: '#f0f0f0', fontFamily: FM, fontWeight: 700 }}>{compName}</span>
                       {compDate && <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>{compDate}</span>}
-                      {row.bw_kg != null && <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, marginLeft: 'auto' }}>{row.bw_kg}kg BW</span>}
+                      {row.result_place != null && <span style={{ fontSize: '0.5rem', color: '#f59e0b', fontFamily: FM, marginLeft: 'auto' }}>#{row.result_place}</span>}
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-                      {([['SQ', sq, '#a78bfa'], ['BP', bp, '#f472b6'], ['DL', dl, '#fb923c'], ['TOTAL', total || null, '#22c55e']] as const).map(([label, val, color]) => (
+                      {([['SQ', sq, '#a78bfa'], ['BP', bp, '#f472b6'], ['DL', dl, '#fb923c'], ['TOTAL', total, '#22c55e']] as const).map(([label, val, color]) => (
                         <div key={label} style={{ background: val ? color + '10' : 'rgba(255,255,255,0.03)', border: `1px solid ${val ? color + '30' : 'rgba(255,255,255,0.05)'}`, borderRadius: '8px', padding: '8px 4px', textAlign: 'center' }}>
                           <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', marginBottom: '4px', fontFamily: FM }}>{label}</div>
                           <div style={{ fontSize: '0.96rem', color: val ? color : 'rgba(255,255,255,0.15)', fontFamily: FD, fontWeight: 800 }}>{val ?? '—'}</div>
@@ -884,13 +869,14 @@ function PlaningTab({ phases, competitionSel, newPhaseLabel, setNewPhaseLabel, n
 
 // ── Athlete Detail Panel (training-page style) ─────────────────────
 export function AthletePanel({
-  athlete, exercises, allAthletes, onBack, onRefresh
+  athlete, exercises, allAthletes, onBack, onRefresh, goalFilter
 }: {
   athlete: AthleteProfile
   exercises: Exercise[]
   allAthletes: AthleteProfile[]
   onBack: () => void
   onRefresh: () => void
+  goalFilter?: string
 }) {
   const [block, setBlock] = useState<Block | null>(null)
   const [allBlocks, setAllBlocks] = useState<BlockSummary[]>([])
@@ -920,21 +906,24 @@ export function AthletePanel({
 
   const loadData = async () => {
     setLoadingBlock(true)
-    const { data: blocksData } = await supabase.from('blocks')
+    let blocksQ = supabase.from('blocks')
       .select('id, name, status, start_date, end_date')
       .eq('athlete_id', athlete.id)
       .order('created_at', { ascending: false })
+    if (goalFilter) blocksQ = blocksQ.eq('goal', goalFilter)
+    const { data: blocksData } = await blocksQ
     const summaries = (blocksData ?? []) as BlockSummary[]
     setAllBlocks(summaries)
 
-    const { data: activeBlock } = await supabase
+    let activeQ = supabase
       .from('blocks')
       .select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))')
       .eq('athlete_id', athlete.id)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single()
+    if (goalFilter) activeQ = activeQ.eq('goal', goalFilter)
+    const { data: activeBlock } = await activeQ.single()
 
     if (activeBlock) {
       activeBlock.weeks?.sort((a: Week, b: Week) => a.week_number - b.week_number)
@@ -982,6 +971,7 @@ export function AthletePanel({
       start_date: today.toISOString().split('T')[0],
       end_date: endDate.toISOString().split('T')[0],
       status: 'active',
+      ...(goalFilter ? { goal: goalFilter } : {}),
     }).select('id, name, status, start_date, end_date').single()
     if (data) {
       setAllBlocks(bs => [data as BlockSummary, ...bs])
@@ -1002,6 +992,7 @@ export function AthletePanel({
       start_date: today.toISOString().split('T')[0],
       end_date: endDate.toISOString().split('T')[0],
       status: 'active',
+      ...(goalFilter ? { goal: goalFilter } : {}),
     }).select('id, name, status, start_date, end_date').single()
     if (!nb) { setSaving(false); return }
     for (let wi = 0; wi < (block.weeks?.length ?? 0); wi++) {

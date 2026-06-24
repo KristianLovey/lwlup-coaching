@@ -340,7 +340,7 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
             {section === 'tim' && <TimSection athletes={athletes} onSaved={loadAthletes} />}
             {section === 'treneri' && <TreneriSection athletes={athletes} coaches={coaches} assignments={assignments} setAssignments={setAssignments} onRoleChange={loadAthletes} />}
             {section === 'natjecanja' && <CompetitionsManager />}
-            {section === 'predlosci' && <PredlosciSection athletes={athletes} adminId={adminId} />}
+            {section === 'predlosci' && <PredlosciSection athletes={athletes} adminId={adminId} exercises={exercises} />}
             {section === 'obavijesti' && <ObavijestiSection athletes={athletes} adminId={adminId} />}
           </div>
         </main>
@@ -648,12 +648,13 @@ async function postApi(path: string, body: unknown) {
   return res.json().catch(() => ({}))
 }
 
-function PredlosciSection({ athletes, adminId }: { athletes: AthleteProfile[]; adminId: string }) {
+function PredlosciSection({ athletes, adminId, exercises }: { athletes: AthleteProfile[]; adminId: string; exercises: Exercise[] }) {
   const [templates, setTemplates] = useState<{ id: string; name: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [importOpen, setImportOpen] = useState(false)
   const [copyId, setCopyId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [buildMode, setBuildMode] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -672,14 +673,31 @@ function PredlosciSection({ athletes, adminId }: { athletes: AthleteProfile[]; a
     setBusy(false); setCopyId(null)
   }
 
+  // Build mode: full block editor scoped to template blocks
+  const adminProfile: AthleteProfile = { id: adminId, full_name: 'Predlošci blokova', email: '', role: 'admin', created_at: '' }
+
+  if (buildMode) {
+    return (
+      <AthletePanel
+        athlete={adminProfile}
+        exercises={exercises}
+        allAthletes={athletes}
+        goalFilter="__template__"
+        onBack={() => { setBuildMode(false); load() }}
+        onRefresh={() => {}}
+      />
+    )
+  }
+
   return (
     <div>
       <div className="toolbar">
-        <div className="eyebrow" style={{ flex: 1 }}>Ideje blokova — spremi dobar blok i kopiraj ga u bilo kojeg liftera</div>
-        <button className="btn-a accent" onClick={() => setImportOpen(true)}><Plus size={14} /> Spremi blok kao predložak</button>
+        <div className="eyebrow" style={{ flex: 1 }}>Ideje blokova — kreiraj predloške i kopiraj ih u bilo kojeg liftera</div>
+        <button className="btn-a" style={{ marginRight: 8 }} onClick={() => setImportOpen(true)}><Plus size={14} /> Uvezi iz liftera</button>
+        <button className="btn-a accent" onClick={() => setBuildMode(true)}><Plus size={14} /> Kreiraj predložak</button>
       </div>
       {loading ? <div className="os-empty"><Loader2 size={18} className="os-spin" /></div>
-        : templates.length === 0 ? <div className="os-empty">Nema spremljenih predložaka. Klikni „Spremi blok kao predložak".</div>
+        : templates.length === 0 ? <div className="os-empty">Nema spremljenih predložaka. Klikni „Kreiraj predložak".</div>
         : (
           <div className="lifter-grid os-stagger">
             {templates.map(t => (
@@ -690,6 +708,7 @@ function PredlosciSection({ athletes, adminId }: { athletes: AthleteProfile[]; a
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button className="btn-a" style={{ flex: 1, padding: '8px 10px', fontSize: 11 }} onClick={() => setCopyId(t.id)}><Copy size={13} /> Kopiraj</button>
+                  <button className="btn-a" style={{ padding: '8px 10px', fontSize: 11 }} onClick={() => setBuildMode(true)}><FolderOpen size={13} /> Uredi</button>
                   <button className="icon-sm danger" onClick={() => delTemplate(t.id)} title="Obriši"><Trash2 size={14} /></button>
                 </div>
               </div>

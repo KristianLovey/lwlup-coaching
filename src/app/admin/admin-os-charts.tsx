@@ -226,12 +226,12 @@ export function Donut({ pct, label, sub, size = 170, stroke = 16, accent = true 
   )
 }
 
-export function StrengthRadar({ balance }: { balance: { benchSquat: number; totalSquat: number; deadliftSquat: number } }) {
+export function StrengthRadar({ balance }: { balance: { sqTotal: number; bpTotal: number; dlTotal: number } }) {
   const w = 260, h = 220, cx = w / 2, cy = h / 2 + 6, R = 78
   const axes = [
-    { label: 'Bench/Squat', val: balance.benchSquat, ang: -90, max: 120 },
-    { label: 'Total/Squat', val: balance.totalSquat, ang: 30, max: 280 },
-    { label: 'Deadlift/Squat', val: balance.deadliftSquat, ang: 150, max: 150 },
+    { label: 'SQ/Total', val: balance.sqTotal, ang: -90, max: 50 },
+    { label: 'DL/Total', val: balance.dlTotal, ang: 30, max: 50 },
+    { label: 'BP/Total', val: balance.bpTotal, ang: 150, max: 50 },
   ]
   const pt = (ang: number, frac: number): [number, number] => {
     const a = (ang * Math.PI) / 180

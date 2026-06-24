@@ -2148,7 +2148,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
               onCopyWorkoutToWeek={onCopyWorkoutToWeek ? (targetWeekId) => onCopyWorkoutToWeek(w.id, targetWeekId) : undefined} />
           ))}
           {isAdmin && (
-            <button onClick={handleAddWorkout} className="add-btn">
+            <button onClick={handleAddWorkout} className="add-btn" style={{ fontFamily: 'inherit' }}>
               <Plus size={11} /> DODAJ DAN TRENINGA
             </button>
           )}

@@ -208,9 +208,9 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
       latestWb: wb[0] ?? null, latestNut: nut[0] ?? null, nutHistory: nut, bw, profile,
       blocks, nextComp: comps[0] ?? null, comps, doneDates, plannedDates,
       balance: {
-        benchSquat: bestE1.sq ? Math.round((bestE1.bp / bestE1.sq) * 100) : 0,
-        deadliftSquat: bestE1.sq ? Math.round((bestE1.dl / bestE1.sq) * 100) : 0,
-        totalSquat: bestE1.sq ? Math.round((curTotal / bestE1.sq) * 100) : 0,
+        sqTotal: curTotal ? Math.round((bestE1.sq / curTotal) * 100) : 0,
+        bpTotal: curTotal ? Math.round((bestE1.bp / curTotal) * 100) : 0,
+        dlTotal: curTotal ? Math.round((bestE1.dl / curTotal) * 100) : 0,
       },
     }
   }, [raw])
@@ -494,14 +494,11 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
         <Card id="balance" title="Balans snage">
           {!data.bestE1.sq ? <div className="os-empty">Nema dovoljno e1RM podataka</div> : (
             <>
-              <div style={{ textAlign: 'center', marginBottom: 4 }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Bench / Squat</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, letterSpacing: '-0.03em' }}>{data.balance.benchSquat}%</div>
-              </div>
               <StrengthRadar balance={data.balance} />
-              <div className="readout" style={{ gridTemplateColumns: '1fr 1fr' }}>
-                <div className="cell"><div className="k">Deadlift / Squat</div><div className="v">{data.balance.deadliftSquat}%</div></div>
-                <div className="cell"><div className="k">Total / Squat</div><div className="v">{data.balance.totalSquat}%</div></div>
+              <div className="readout" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+                <div className="cell"><div className="k">SQ / Total</div><div className="v">{data.balance.sqTotal}%</div></div>
+                <div className="cell"><div className="k">BP / Total</div><div className="v">{data.balance.bpTotal}%</div></div>
+                <div className="cell"><div className="k">DL / Total</div><div className="v">{data.balance.dlTotal}%</div></div>
               </div>
             </>
           )}
