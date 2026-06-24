@@ -273,102 +273,137 @@ export function AthleteOverview({ athlete, onBack, onGoTraining }: {
     </div>
   )
 
-  return (
-    <div style={{ padding: '24px 32px', maxWidth: '1100px', margin: '0 auto', paddingBottom: '60px' }}>
+  const roleColor = athlete.role === 'admin' ? '#ef4444' : athlete.role === 'trener' ? '#fbbf24' : '#4ade80'
 
-      <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: FM, padding: '0 0 16px', marginBottom: '4px' }}>
-        <ChevronLeft size={13} /> NATRAG
+  return (
+    <div style={{ padding: '20px 28px', maxWidth: '1140px', margin: '0 auto', paddingBottom: '60px' }}>
+
+      <button onClick={onBack}
+        style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', cursor: 'pointer', fontSize: '0.58rem', letterSpacing: '0.2em', fontFamily: FM, padding: '0 0 18px', transition: 'color 0.15s' }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#fff' }}
+        onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.28)' }}>
+        <ChevronLeft size={12} /> NATRAG
       </button>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
-        <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '2px solid rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 900, color: '#f0f0f0', fontFamily: FM, flexShrink: 0 }}>{initials}</div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#f0f0f0', fontFamily: FD, lineHeight: 1 }}>{athlete.full_name}</div>
-          <div style={{ fontSize: '0.55rem', color: athlete.role === 'trener' ? '#fbbf24' : '#4ade80', letterSpacing: '0.2em', marginTop: '4px', fontFamily: FM }}>{(athlete.role ?? 'lifter').toUpperCase()}</div>
+      {/* ── Hero header ── */}
+      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '22px 24px', marginBottom: '0', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' as const }}>
+        <div style={{ width: '68px', height: '68px', borderRadius: '50%', background: roleColor + '18', border: `2px solid ${roleColor}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', fontWeight: 900, color: '#f0f0f0', fontFamily: FD, flexShrink: 0 }}>{initials}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '1.85rem', fontWeight: 900, color: '#fff', fontFamily: FD, lineHeight: 1, letterSpacing: '-0.02em' }}>{athlete.full_name}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px', flexWrap: 'wrap' as const }}>
+            <span style={{ fontSize: '0.47rem', letterSpacing: '0.3em', color: roleColor, fontFamily: FM, fontWeight: 700, background: roleColor + '15', padding: '3px 8px', borderRadius: '4px', border: `1px solid ${roleColor}40` }}>{(athlete.role ?? 'LIFTER').toUpperCase()}</span>
+            {athlete.email && <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.28)', fontFamily: FM }}>{athlete.email}</span>}
+          </div>
+        </div>
+        <div style={{ display: 'flex', background: '#060609', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', overflow: 'hidden', flexShrink: 0 }}>
+          {[
+            { label: 'SQ', val: e1rms.sq, color: '#a78bfa' },
+            { label: 'BP', val: e1rms.bp, color: '#f472b6' },
+            { label: 'DL', val: e1rms.dl, color: '#fb923c' },
+          ].map((s, i) => (
+            <div key={s.label} style={{ padding: '14px 20px', textAlign: 'center', borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+              <div style={{ fontSize: '0.41rem', letterSpacing: '0.3em', color: s.color + '80', fontFamily: FM, fontWeight: 700, marginBottom: '6px' }}>{s.label}</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: s.val ? s.color : 'rgba(255,255,255,0.12)', fontFamily: FD, lineHeight: 1 }}>{s.val ?? '—'}</div>
+              {s.val && <div style={{ fontSize: '0.41rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, marginTop: '3px' }}>kg e1RM</div>}
+            </div>
+          ))}
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '2px', marginBottom: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: '10px', padding: '3px', overflowX: 'auto' as const }}>
+      {/* ── Tab bar — underline style ── */}
+      <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '24px', overflowX: 'auto' as const }}>
         {([['opcenito','OPĆENITO'],['detaljno','DETALJNO'],['planiranje','PLANIRANJE'],['meetday','MEET DAY'],['prioriteti','PRIORITETI'],['trening','UREĐIVANJE TRENINGA']] as const).map(([id, label]) => (
           <button key={id} onClick={() => id === 'trening' ? onGoTraining() : setTab(id as 'opcenito'|'detaljno'|'meetday'|'prioriteti'|'planiranje')}
-            style={{ flex: 1, padding: '8px 6px', background: tab === id ? 'rgba(255,255,255,0.1)' : 'transparent', border: tab === id ? '1px solid rgba(255,255,255,0.18)' : '1px solid transparent', borderRadius: '7px', cursor: 'pointer', fontSize: '0.55rem', fontFamily: FM, fontWeight: tab === id ? 700 : 400, color: tab === id ? '#ffffff' : 'rgba(255,255,255,0.35)', transition: 'all 0.15s', letterSpacing: '0.04em', whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            style={{ padding: '14px 18px', background: 'transparent', border: 'none', borderBottom: tab === id ? '2px solid #fff' : '2px solid transparent', cursor: 'pointer', fontSize: '0.52rem', fontFamily: FM, fontWeight: tab === id ? 700 : 400, color: tab === id ? '#fff' : 'rgba(255,255,255,0.28)', transition: 'all 0.15s', letterSpacing: '0.08em', whiteSpace: 'nowrap' as const, flexShrink: 0, marginBottom: '-1px' }}>
             {label}
           </button>
         ))}
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.2em', fontFamily: FM }}>
-          <Loader2 size={18} style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '60px 0', color: 'rgba(255,255,255,0.2)' }}>
+          <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+          <span style={{ fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: FM }}>UČITAVANJE...</span>
         </div>
       ) : tab === 'opcenito' ? (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '8px' }}>
+          {/* Today stats — horizontal strip */}
+          <div style={{ display: 'flex', background: '#09090f', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden', marginBottom: '10px' }}>
             {[
-              { label: 'BW',       val: todayBw !== '—' ? `${todayBw}kg` : '—',    color: '#a78bfa' },
-              { label: 'KALORIJE', val: todayCal !== '—' ? `${todayCal}` : '—',    color: '#f59e0b' },
-              { label: 'VODA',     val: todayWater !== '—' ? `${todayWater}L` : '—', color: '#38bdf8' },
-            ].map(s => (
-              <div key={s.label} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '10px', padding: '12px 10px', textAlign: 'center' }}>
-                <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px', fontFamily: FM }}>{s.label}</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: s.color, fontFamily: FD }}>{s.val}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '12px' }}>
-            {[
+              { label: 'BW',     val: todayBw !== '—' ? `${todayBw}kg` : '—',      color: '#a78bfa' },
+              { label: 'KCAL',   val: todayCal !== '—' ? `${todayCal}` : '—',       color: '#f59e0b' },
+              { label: 'VODA',   val: todayWater !== '—' ? `${todayWater}L` : '—',  color: '#38bdf8' },
               { label: 'SAN',    val: todaySleep !== '—' ? `${todaySleep}h` : '—',  color: '#60a5fa' },
-              { label: 'STRES',  val: todayStress !== '—' ? `${todayStress}/10` : '—', color: (todayStress !== '—' && Number(todayStress) > 7) ? '#f87171' : (todayStress !== '—' && Number(todayStress) > 4) ? '#f59e0b' : '#4ade80' },
+              { label: 'STRES',  val: todayStress !== '—' ? `${todayStress}/10` : '—', color: todayStress !== '—' && Number(todayStress) > 7 ? '#f87171' : todayStress !== '—' && Number(todayStress) > 4 ? '#f59e0b' : '#4ade80' },
               { label: 'SUPLEM.', val: todaySuppsCount > 0 ? `${todaySuppsCount}×` : '—', color: '#10b981' },
-            ].map(s => (
-              <div key={s.label} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
-                <div style={{ fontSize: '0.44rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.25)', marginBottom: '5px', fontFamily: FM }}>{s.label}</div>
-                <div style={{ fontSize: '1rem', fontWeight: 900, color: s.color, fontFamily: FD }}>{s.val}</div>
+            ].map((s, i) => (
+              <div key={s.label} style={{ flex: 1, padding: '18px 6px', textAlign: 'center', borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                <div style={{ fontSize: '0.41rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.22)', fontFamily: FM, fontWeight: 700, marginBottom: '8px' }}>{s.label}</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: 900, color: s.val === '—' ? 'rgba(255,255,255,0.1)' : s.color, fontFamily: FD, lineHeight: 1 }}>{s.val}</div>
               </div>
             ))}
           </div>
 
-          <FreqGrid />
-
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontSize: '0.45rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginBottom: '8px' }}>ESTIMATED 1RM (top set)</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-              {[
-                { label: 'SQ', val: e1rms.sq, color: '#a78bfa' },
-                { label: 'BP', val: e1rms.bp, color: '#f472b6' },
-                { label: 'DL', val: e1rms.dl, color: '#fb923c' },
-              ].map(s => (
-                <div key={s.label} style={{ background: 'var(--surface-1)', border: `1px solid ${s.val ? s.color + '30' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', padding: '14px 10px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px', fontFamily: FM }}>{s.label}</div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: s.val ? s.color : 'rgba(255,255,255,0.15)', fontFamily: FD }}>{s.val ?? '—'}</div>
-                  {s.val && <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginTop: '2px' }}>kg e1RM</div>}
-                </div>
+          {/* 7-day activity grid */}
+          <div style={{ background: '#09090f', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '16px 18px', marginBottom: '10px' }}>
+            <div style={{ fontSize: '0.44rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.2)', fontFamily: FM, fontWeight: 700, marginBottom: '14px' }}>AKTIVNOST OVAJ TJEDAN</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '52px repeat(7, 1fr)', gap: '3px', marginBottom: '6px' }}>
+              <div />
+              {orderedLabels.map((d, i) => (
+                <div key={i} style={{ textAlign: 'center', fontSize: '0.47rem', color: weekDates[i] === todayStr ? '#fff' : 'rgba(255,255,255,0.25)', fontFamily: FM, fontWeight: weekDates[i] === todayStr ? 800 : 600 }}>{d}</div>
               ))}
             </div>
+            {[
+              { label: 'Trening', check: hasWo,    color: '#4ade80' },
+              { label: 'BW',      check: hasBw,    color: '#a78bfa' },
+              { label: 'Kcal',    check: hasCal,   color: '#f59e0b' },
+              { label: 'Voda',    check: hasWater, color: '#38bdf8' },
+              { label: 'WB',      check: hasWb,    color: '#8b5cf6' },
+            ].map(row => (
+              <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '52px repeat(7, 1fr)', gap: '3px', marginBottom: '3px', alignItems: 'center' }}>
+                <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.28)', fontFamily: FM }}>{row.label}</div>
+                {weekDates.map((d: string, i: number) => {
+                  const ok = row.check(d)
+                  const isToday = weekDates[i] === todayStr
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: '24px', height: '24px', borderRadius: '7px', background: ok ? row.color + '22' : 'transparent', border: ok ? `1px solid ${row.color}55` : `1px solid ${isToday ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {ok && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: row.color, boxShadow: `0 0 5px ${row.color}80` }} />}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
           </div>
 
+          {/* Recent competitions */}
           <Section title="ZADNJA NATJECANJA" open={compOpen} onToggle={() => setCompOpen(v => !v)} accent="#22c55e">
             {Object.keys(meetsByComp).length === 0 ? (
               <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema podataka</div>
-            ) : Object.entries(meetsByComp).slice(0, 3).map(([key, attempts]) => {
+            ) : Object.entries(meetsByComp).slice(0, 5).map(([key, attempts]) => {
                 const squat = attempts.find((a: any) => a.lift === 'squat')
                 const bench = attempts.find((a: any) => a.lift === 'bench')
-                const dl = attempts.find((a: any) => a.lift === 'deadlift')
-                const compName = attempts[0]?.competition?.name ?? key
+                const dl    = attempts.find((a: any) => a.lift === 'deadlift')
+                const compName = attempts[0]?.competition?.name
                 const compDate = attempts[0]?.competition?.date ?? attempts[0]?.meet_date
-                const bestSq = squat ? [squat.attempt1_actual, squat.attempt2_actual, squat.attempt3_actual].filter((v: any, i: number) => v && [squat.attempt1_good, squat.attempt2_good, squat.attempt3_good][i]).pop() : null
-                const bestBe = bench ? [bench.attempt1_actual, bench.attempt2_actual, bench.attempt3_actual].filter((v: any, i: number) => v && [bench.attempt1_good, bench.attempt2_good, bench.attempt3_good][i]).pop() : null
-                const bestDl = dl ? [dl.attempt1_actual, dl.attempt2_actual, dl.attempt3_actual].filter((v: any, i: number) => v && [dl.attempt1_good, dl.attempt2_good, dl.attempt3_good][i]).pop() : null
-                const total = (bestSq ?? 0) + (bestBe ?? 0) + (bestDl ?? 0)
+                const pickBest = (r: any) => r ? ([r.attempt3_actual, r.attempt2_actual, r.attempt1_actual].find((v: any) => v != null) ?? null) : null
+                const bestSq = pickBest(squat)
+                const bestBe = pickBest(bench)
+                const bestDl = pickBest(dl)
+                const total = (Number(bestSq) || 0) + (Number(bestBe) || 0) + (Number(bestDl) || 0)
+                if (!compName && bestSq == null && bestBe == null && bestDl == null) return null
                 return (
-                  <div key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px', marginBottom: '10px' }}>
-                    <div style={{ fontSize: '0.65rem', color: '#86efac', fontFamily: FM, fontWeight: 700, marginBottom: '2px' }}>{compName}</div>
-                    <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM, marginBottom: '8px' }}>{compDate}</div>
+                  <div key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '0.78rem', color: '#f0f0f0', fontFamily: FM, fontWeight: 700 }}>{compName ?? compDate}</span>
+                      {compName && <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>{compDate}</span>}
+                    </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-                      {[['SQ', bestSq], ['BP', bestBe], ['DL', bestDl], ['TOTAL', total || null]].map(([label, val]) => (
-                        <div key={String(label)} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '6px', padding: '6px 4px', textAlign: 'center' }}>
-                          <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', marginBottom: '3px', fontFamily: FM }}>{label}</div>
-                          <div style={{ fontSize: '0.82rem', color: label === 'TOTAL' ? '#22c55e' : '#e0e0f0', fontFamily: FD, fontWeight: 700 }}>{val ?? '—'}</div>
+                      {([['SQ', bestSq, '#a78bfa'], ['BP', bestBe, '#f472b6'], ['DL', bestDl, '#fb923c'], ['TOTAL', total || null, '#22c55e']] as const).map(([label, val, color]) => (
+                        <div key={label} style={{ background: val ? color + '10' : 'rgba(255,255,255,0.03)', border: `1px solid ${val ? color + '30' : 'rgba(255,255,255,0.05)'}`, borderRadius: '8px', padding: '8px 4px', textAlign: 'center' }}>
+                          <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', marginBottom: '4px', fontFamily: FM }}>{label}</div>
+                          <div style={{ fontSize: '0.96rem', color: val ? color : 'rgba(255,255,255,0.15)', fontFamily: FD, fontWeight: 800 }}>{val ?? '—'}</div>
                         </div>
                       ))}
                     </div>
