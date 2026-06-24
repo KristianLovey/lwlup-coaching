@@ -1324,8 +1324,9 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
 
       const { data: weData } = await supabase
         .from('workout_exercises')
-        .select('id, workouts!inner(day_name, weeks!inner(week_number))')
+        .select('id, workouts!inner(day_name, athlete_id, weeks!inner(week_number))')
         .eq('exercise_id', we.exercise_id)
+        .eq('workouts.athlete_id', userId)
         .eq('workouts.weeks.week_number', targetWeek)
 
       if (!weData || weData.length === 0) {

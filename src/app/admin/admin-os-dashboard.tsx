@@ -50,7 +50,7 @@ function fillSeries(weeks: string[], perWeek: Record<string, number>): number[] 
 }
 
 type Best = { e1: number; date: string; name: string; day: string; kg: number; reps: number; rpe: number | null }
-type Raw = { workouts: any[]; bw: { date: string; weight_kg: number }[]; wb: any[]; nut: any[]; meets: any[]; blocks: any[]; comps: any[]; profile: any | null }
+type Raw = { workouts: any[]; bw: { date: string; weight_kg: number }[]; wb: any[]; nut: any[]; meets: any[]; blocks: any[]; comps: any[]; profile: any | null; phases: any[]; compSel: any | null }
 
 export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
   athleteId: string; athleteName: string; cards: DashCards; setCard: (id: CardId, patch: Partial<CardState>) => void
@@ -64,7 +64,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
 
   const load = useCallback(async () => {
     const today = new Date().toISOString().slice(0, 10)
-    const [woRes, bwRes, wbRes, nutRes, meetRes, blkRes, compRes, profRes] = await Promise.all([
+    const [woRes, bwRes, wbRes, nutRes, meetRes, blkRes, compRes, profRes, phaseRes, compSelRes] = await Promise.all([
       supabase.from('workouts')
         .select('id, workout_date, completed, day_name, workout_exercises(id, exercise:exercises(category, name), set_logs(weight_kg, reps, rpe, completed, is_top_set))')
         .eq('athlete_id', athleteId).order('workout_date', { ascending: true }).limit(500),
@@ -76,11 +76,15 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
       supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', athleteId).order('start_date', { ascending: true }).limit(60),
       supabase.from('competitions').select('name, date, location').gte('date', today).order('date', { ascending: true }).limit(5),
       supabase.from('lifters').select('current_squat_1rm, current_bench_1rm, current_deadlift_1rm, body_weight, weight_class').eq('id', athleteId).single(),
+      supabase.from('athlete_training_phases').select('id, label, start_date, end_date, color').eq('athlete_id', athleteId).order('start_date', { ascending: true }),
+      supabase.from('athlete_competition_selection').select('competition:competitions(name, date, location)').eq('athlete_id', athleteId).maybeSingle(),
     ])
+    const compSelComp = (compSelRes.data as any)?.competition ?? null
     setRaw({
       workouts: woRes.data ?? [], bw: (bwRes.data ?? []) as { date: string; weight_kg: number }[],
       wb: wbRes.data ?? [], nut: nutRes.data ?? [], meets: meetRes.data ?? [],
       blocks: blkRes.data ?? [], comps: compRes.data ?? [], profile: profRes.data ?? null,
+      phases: phaseRes.data ?? [], compSel: compSelComp,
     })
     setLoading(false)
   }, [athleteId])
@@ -101,7 +105,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
 
   const data = useMemo(() => {
     if (!raw) return null
-    const { workouts, bw, wb, nut, meets, blocks, comps, profile } = raw
+    const { workouts, bw, wb, nut, meets, blocks, comps, profile, phases, compSel } = raw
     // training days for the calendar: any day with a completed workout or a completed set
     const doneDates = new Set<string>()
     const plannedDates = new Set<string>()
@@ -206,7 +210,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
       doneWo, totalWo, firstDate, lastDate, curTotal, curBw, ton7, ton7ByCat,
       predicted, predBy, latestMeet: meets[0]?.meet_date ?? null,
       latestWb: wb[0] ?? null, latestNut: nut[0] ?? null, nutHistory: nut, bw, profile,
-      blocks, nextComp: comps[0] ?? null, comps, doneDates, plannedDates,
+      blocks, nextComp: compSel ?? comps[0] ?? null, comps, doneDates, plannedDates, phases, compSel,
       balance: {
         sqTotal: curTotal ? Math.round((bestE1.sq / curTotal) * 100) : 0,
         bpTotal: curTotal ? Math.round((bestE1.bp / curTotal) * 100) : 0,
@@ -396,25 +400,54 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em' }}>{monthNames[m]} {y}</span>
                     <button className="ctrl icon" style={{ padding: 6 }} onClick={() => setCalM(({ y, m }) => m === 11 ? { y: y + 1, m: 0 } : { y, m: m + 1 })}><ChevronDown size={14} style={{ transform: 'rotate(-90deg)' }} /></button>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3 }}>
-                    {['P', 'U', 'S', 'Č', 'P', 'S', 'N'].map((d, i) => <div key={i} style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-faint)', padding: '2px 0' }}>{d}</div>)}
-                    {Array.from({ length: firstDow }).map((_, i) => <div key={'e' + i} />)}
-                    {Array.from({ length: daysIn }).map((_, i) => {
-                      const day = i + 1
-                      const ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-                      const done = data.doneDates.has(ds), planned = data.plannedDates.has(ds), isToday = ds === todayStr
-                      return (
-                        <div key={day} style={{ aspectRatio: '1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, position: 'relative', background: done ? 'rgba(34,197,94,0.16)' : planned ? 'var(--surface-2)' : 'transparent', border: isToday ? '1px solid var(--accent)' : '1px solid transparent', color: done ? '#4ade80' : planned ? 'var(--text-dim)' : 'var(--text-faint)' }}>
-                          {day}
-                          {done && <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#4ade80', marginTop: 1 }} />}
+                  {(() => {
+                    const phasesForDate = (ds: string) => (data.phases as any[]).filter(ph => ds >= ph.start_date && ds <= ph.end_date)
+                    const compDate = data.compSel?.date ?? null
+                    // collect unique phases visible this month for legend
+                    const visiblePhases = new Map<string, { label: string; color: string }>()
+                    for (let i = 1; i <= daysIn; i++) {
+                      const ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
+                      phasesForDate(ds).forEach((ph: any) => { if (!visiblePhases.has(ph.id)) visiblePhases.set(ph.id, { label: ph.label, color: ph.color }) })
+                    }
+                    return (
+                      <>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3 }}>
+                          {['P', 'U', 'S', 'Č', 'P', 'S', 'N'].map((d, i) => <div key={i} style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-faint)', padding: '2px 0' }}>{d}</div>)}
+                          {Array.from({ length: firstDow }).map((_, i) => <div key={'e' + i} />)}
+                          {Array.from({ length: daysIn }).map((_, i) => {
+                            const day = i + 1
+                            const ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                            const done = data.doneDates.has(ds), planned = data.plannedDates.has(ds), isToday = ds === todayStr
+                            const dayPhases = phasesForDate(ds)
+                            const topPhase = dayPhases[0] ?? null
+                            const isComp = ds === compDate
+                            return (
+                              <div key={day} style={{ aspectRatio: '1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, position: 'relative', background: done ? 'rgba(34,197,94,0.16)' : planned ? 'var(--surface-2)' : 'transparent', border: isComp ? '1.5px solid #f59e0b' : isToday ? '1px solid var(--accent)' : topPhase ? `1px solid ${topPhase.color}55` : '1px solid transparent', color: done ? '#4ade80' : planned ? 'var(--text-dim)' : 'var(--text-faint)', boxShadow: topPhase ? `inset 0 0 0 1000px ${topPhase.color}12` : undefined }}>
+                                {day}
+                                {isComp
+                                  ? <span style={{ fontSize: 7, marginTop: 1 }}>🏆</span>
+                                  : done
+                                    ? <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#4ade80', marginTop: 1 }} />
+                                    : topPhase
+                                      ? <span style={{ width: 4, height: 4, borderRadius: '50%', background: topPhase.color, marginTop: 1, opacity: 0.7 }} />
+                                      : null}
+                              </div>
+                            )
+                          })}
                         </div>
-                      )
-                    })}
-                  </div>
-                  <div style={{ display: 'flex', gap: 14, marginTop: 10, flexWrap: 'wrap' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(34,197,94,0.6)' }} /> odrađeno</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--surface-3)' }} /> planirano</span>
-                  </div>
+                        <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(34,197,94,0.6)' }} /> odrađeno</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--surface-3)' }} /> planirano</span>
+                          {[...visiblePhases.values()].map((ph, i) => (
+                            <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: ph.color }} /> {ph.label}</span>
+                          ))}
+                          {compDate && `${y}-${String(m + 1).padStart(2, '0')}` === compDate.slice(0, 7) && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 10, color: '#f59e0b' }}>🏆 {data.compSel?.name}</span>
+                          )}
+                        </div>
+                      </>
+                    )
+                  })()}
                 </div>
               </div>
             )
