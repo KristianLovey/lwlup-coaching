@@ -212,7 +212,9 @@ export function CompetitionsManager() {
         .comp-results-grid input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .comp-results-grid input { -moz-appearance: textfield; }
         @media (max-width: 600px) {
-          .comp-header-row { padding: 12px !important; }
+          .comp-header-row { padding: 12px !important; flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
+          .comp-info-block { width: 100%; }
+          .comp-actions-block { width: 100%; display: flex !important; flex-wrap: wrap; gap: 8px; }
           .comp-athletes-grid { grid-template-columns: 1fr !important; }
           .comp-results-grid { grid-template-columns: repeat(5, 1fr) !important; }
           .comp-new-form-grid { grid-template-columns: 1fr !important; }
@@ -239,10 +241,10 @@ export function CompetitionsManager() {
 
             {/* Header row */}
             <div className="comp-header-row" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="comp-info-block" style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                   <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: STATUS_COLORS[comp.status], flexShrink: 0 }} />
-                  <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{comp.name}</span>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)' }}>{comp.name}</span>
                   <span style={{ fontSize: '0.55rem', color: STATUS_COLORS[comp.status], letterSpacing: '0.2em', fontWeight: 700, flexShrink: 0 }}>{STATUS_LABELS[comp.status]}</span>
                 </div>
                 <div className="comp-meta-row" style={{ display: 'flex', gap: '12px', paddingLeft: '15px', flexWrap: 'wrap' }}>
@@ -253,7 +255,7 @@ export function CompetitionsManager() {
               </div>
 
               {/* Actions row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <div className="comp-actions-block" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                 {/* Status quick-change */}
                 <select value={comp.status} onChange={e => updateComp(comp.id, { status: e.target.value as Competition['status'] })}
                   style={{ background: '#0d0d10', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '6px 8px', fontSize: '0.6rem', fontFamily: 'var(--fm)', cursor: 'pointer', outline: 'none', letterSpacing: '0.1em', maxWidth: '100px' }}>
