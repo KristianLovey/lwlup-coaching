@@ -133,10 +133,8 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
     <>
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
-        height: 'calc(80px + env(safe-area-inset-top))',
-        paddingTop: 'env(safe-area-inset-top)',
-        paddingLeft: 'clamp(20px,5vw,60px)',
-        paddingRight: 'clamp(20px,5vw,60px)',
+        height: '80px',
+        padding: '0 clamp(20px,5vw,60px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         background: solid || menuOpen ? 'rgba(5,5,5,0.98)' : 'transparent',
         borderBottom: solid || menuOpen ? '1px solid rgba(255,255,255,0.08)' : '1px solid transparent',
@@ -200,7 +198,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
       </nav>
 
       {/* Mobile menu */}
-      <div style={{
+      <div className="nav-mobile-menu" style={{
         position: 'fixed', top: '64px', left: 0, right: 0, bottom: 0, zIndex: 199,
         background: '#050505', display: 'flex', flexDirection: 'column',
         padding: '32px 24px 60px', overflowY: 'auto',
@@ -303,7 +301,9 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
         .nav-cta-primary:hover  { background:#000 !important; color:#fff !important; border-color:rgba(255,255,255,0.5) !important; }
         .nav-cta-secondary:hover { background:rgba(255,255,255,0.08) !important; border-color:rgba(255,255,255,0.6) !important; }
         @media (min-width: 769px) { .nav-desktop { display:flex !important; } .nav-hamburger { display:none !important; } }
-        @media (max-width: 768px) { nav { padding-left:20px !important; padding-right:20px !important; height:calc(64px + env(safe-area-inset-top)) !important; padding-top:env(safe-area-inset-top) !important; } .nav-desktop { display:none !important; } .nav-hamburger { display:flex !important; } }
+        @media (max-width: 768px) { nav { padding:0 20px !important; height:64px !important; } .nav-desktop { display:none !important; } .nav-hamburger { display:flex !important; } }
+        :root.is-native nav { top: env(safe-area-inset-top) !important; }
+        :root.is-native .nav-mobile-menu { top: calc(64px + env(safe-area-inset-top)) !important; }
       `}</style>
     </>
   )

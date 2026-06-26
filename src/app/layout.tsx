@@ -3,6 +3,7 @@ import { Space_Grotesk, Bricolage_Grotesque, JetBrains_Mono } from 'next/font/go
 import './globals.css'
 import { LanguageProvider } from '@/context/LanguageContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { CapacitorDetect } from '@/app/components/CapacitorDetect'
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -71,6 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={spaceGrotesk.className}>
+        <CapacitorDetect />
         <LanguageProvider>
           <ErrorBoundary label="App">{children}</ErrorBoundary>
         </LanguageProvider>
