@@ -302,8 +302,8 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
         .nav-cta-secondary:hover { background:rgba(255,255,255,0.08) !important; border-color:rgba(255,255,255,0.6) !important; }
         @media (min-width: 769px) { .nav-desktop { display:flex !important; } .nav-hamburger { display:none !important; } }
         @media (max-width: 768px) { nav { padding:0 20px !important; height:64px !important; } .nav-desktop { display:none !important; } .nav-hamburger { display:flex !important; } }
-        :root.is-native nav { top: env(safe-area-inset-top) !important; }
-        :root.is-native .nav-mobile-menu { top: calc(64px + env(safe-area-inset-top)) !important; }
+        :root.is-native nav { top: 0 !important; height: calc(56px + env(safe-area-inset-top)) !important; padding-top: env(safe-area-inset-top) !important; background: #050505 !important; backdrop-filter: none !important; }
+        :root.is-native .nav-mobile-menu { top: calc(56px + env(safe-area-inset-top)) !important; }
       `}</style>
     </>
   )
