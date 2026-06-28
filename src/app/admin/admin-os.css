@@ -672,7 +672,10 @@
   /* clip any residual horizontal bleed so cards never shift off-screen */
   .lwl-admin-os { overflow-x: hidden; }
   .lwl-admin-os .os-section { max-width: 100%; }
-  .lwl-admin-os .card { max-width: 100%; }
+  /* clip inner elements to the card so no frame/border bleeds past the rounded edge.
+     overflow-x:clip (not hidden) keeps vertical free and lets inner scroll areas
+     like the month table keep their own horizontal scroll. */
+  .lwl-admin-os .card { max-width: 100%; overflow-x: clip; }
 }
 @media (max-width: 520px) {
   .lwl-admin-os .main { padding: 14px 10px 64px; }
