@@ -60,7 +60,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
   const [lift, setLift] = useState<LiftK>('sq')
   const [volLift, setVolLift] = useState<'all' | LiftK>('all')
   const [exp, setExp] = useState<'total' | 'predicted' | 'compliance' | 'bw' | 'tonnage' | null>(null)
-  const [calM, setCalM] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
+  const [planYear, setPlanYear] = useState(() => new Date().getFullYear())
 
   const DASH_CACHE_TTL = 90_000 // 90 s
   const dashCacheKey = `adminos:dash:${athleteId}`
@@ -401,109 +401,93 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
 
       {/* Plan blokova — timeline + countdown + kalendar */}
       <div className="grid c1">
-        <Card id="blockplan" title="Plan blokova & kalendar">
+        <Card id="blockplan" title="Plan blokova">
           {(() => {
-            const STC: Record<string, string> = { completed: 'var(--text-muted)', active: '#22c55e', planned: 'var(--text-muted)' }
-            const STL: Record<string, string> = { completed: 'ZAVRŠENO', active: 'AKTIVAN', planned: 'ZAVRŠENO' }
-            const todayStr = new Date().toISOString().slice(0, 10)
             const nc = data.nextComp
             const daysTo = nc ? Math.max(0, Math.ceil((new Date(nc.date + 'T12:00:00').getTime() - Date.now()) / 86400000)) : null
-            const { y, m } = calM
-            const monthNames = ['Siječanj', 'Veljača', 'Ožujak', 'Travanj', 'Svibanj', 'Lipanj', 'Srpanj', 'Kolovoz', 'Rujan', 'Listopad', 'Studeni', 'Prosinac']
-            const firstDow = (new Date(y, m, 1).getDay() + 6) % 7
-            const daysIn = new Date(y, m + 1, 0).getDate()
+            const now = new Date(); const curMonth = now.getMonth(), curYear = now.getFullYear()
+            type PRow = { id: string; label: string; color: string; startM: number; endM: number }
+            const rows: PRow[] = ((data.phases as any[]).map((ph) => {
+              const s = new Date(ph.start_date + 'T12:00:00'), e = new Date(ph.end_date + 'T12:00:00')
+              const sy = s.getFullYear(), ey = e.getFullYear()
+              if (planYear < sy || planYear > ey) return null
+              return { id: ph.id, label: ph.label, color: ph.color, startM: planYear > sy ? 0 : s.getMonth(), endM: planYear < ey ? 11 : e.getMonth() }
+            }).filter(Boolean)) as PRow[]
+            const legend = Array.from(new Map((data.phases as any[]).map((p) => [p.label + p.color, { label: p.label as string, color: p.color as string }])).values())
+            const compInYear = data.compSel?.date && Number(data.compSel.date.slice(0, 4)) === planYear
+              ? { month: Number(data.compSel.date.slice(5, 7)) - 1, name: data.compSel.name as string } : null
             return (
-              <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 24 }} className="bp-grid">
-                {/* left: blocks timeline + next comp */}
-                <div>
-                  {nc && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 14px', marginBottom: 14, borderRadius: 12, background: 'var(--accent-soft)', border: '1px solid var(--accent-glow)' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--accent)' }}>Sljedeće natjecanje</div>
-                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nc.name}</div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{fmtDate(nc.date)}{nc.location ? ` · ${nc.location}` : ''}</div>
-                      </div>
-                      <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: 'var(--accent)', lineHeight: 1 }}>{daysTo}</div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)' }}>DANA</div>
-                      </div>
+              <div>
+                {nc && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 14px', marginBottom: 16, borderRadius: 12, background: 'var(--accent-soft)', border: '1px solid var(--accent-glow)' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--accent)' }}>Sljedeće natjecanje</div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nc.name}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{fmtDate(nc.date)}{nc.location ? ` · ${nc.location}` : ''}</div>
                     </div>
-                  )}
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>Blokovi</div>
-                  {data.blocks.length === 0 ? <div className="os-empty" style={{ padding: 20 }}>Nema blokova</div> : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {data.blocks.map((b: any) => {
-                        const isNow = b.start_date <= todayStr && todayStr <= b.end_date
-                        const st = b.status === 'active' ? 'active' : 'completed'
-                        return (
-                          <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, border: `1px solid ${isNow ? 'var(--border-strong)' : 'var(--border)'}`, background: isNow ? 'var(--surface-2)' : 'transparent' }}>
-                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: STC[st] ?? 'var(--text-muted)', flexShrink: 0 }} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</div>
-                              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{fmtDate(b.start_date)} – {fmtDate(b.end_date)}</div>
-                            </div>
-                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: STC[st], flexShrink: 0 }}>{STL[st] ?? st}</span>
-                          </div>
-                        )
+                    <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: 'var(--accent)', lineHeight: 1 }}>{daysTo}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)' }}>DANA</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Year navigator — pomak lijevo/desno po godinama */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 16 }}>
+                  <button className="ctrl icon" style={{ padding: 6 }} onClick={() => setPlanYear((yy) => yy - 1)} aria-label="Prethodna godina"><ChevronDown size={16} style={{ transform: 'rotate(90deg)' }} /></button>
+                  <div style={{ textAlign: 'center', minWidth: 76 }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Godina</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24, letterSpacing: '-0.02em', lineHeight: 1.1 }}>{planYear}</div>
+                  </div>
+                  <button className="ctrl icon" style={{ padding: 6 }} onClick={() => setPlanYear((yy) => yy + 1)} aria-label="Sljedeća godina"><ChevronDown size={16} style={{ transform: 'rotate(-90deg)' }} /></button>
+                </div>
+
+                {/* Month table — stupci = mjeseci, obojeni redovi = blokovi */}
+                <div style={{ overflowX: 'auto' }}>
+                  <div style={{ minWidth: 540 }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 6 }}>Mjesec</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12,1fr)', gap: 4, marginBottom: 8 }}>
+                      {Array.from({ length: 12 }).map((_, mi) => {
+                        const here = mi === curMonth && planYear === curYear
+                        return <div key={mi} style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, padding: '5px 0', borderRadius: 6, color: here ? 'var(--accent)' : 'var(--text-muted)', background: here ? 'var(--accent-soft)' : 'var(--surface-1)' }}>{mi + 1}</div>
                       })}
                     </div>
-                  )}
-                </div>
-                {/* right: month calendar of training days */}
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <button className="ctrl icon" style={{ padding: 6 }} onClick={() => setCalM(({ y, m }) => m === 0 ? { y: y - 1, m: 11 } : { y, m: m - 1 })}><ChevronDown size={14} style={{ transform: 'rotate(90deg)' }} /></button>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em' }}>{monthNames[m]} {y}</span>
-                    <button className="ctrl icon" style={{ padding: 6 }} onClick={() => setCalM(({ y, m }) => m === 11 ? { y: y + 1, m: 0 } : { y, m: m + 1 })}><ChevronDown size={14} style={{ transform: 'rotate(-90deg)' }} /></button>
+                    {rows.length === 0 && !compInYear ? (
+                      <div className="os-empty" style={{ padding: 22 }}>Nema blokova u {planYear}.</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {rows.map((r) => (
+                          <div key={r.id} style={{ display: 'grid', gridTemplateColumns: 'repeat(12,1fr)', gap: 4 }}>
+                            {Array.from({ length: 12 }).map((_, mi) => {
+                              const active = mi >= r.startM && mi <= r.endM
+                              return <div key={mi} title={r.label} style={{ height: 22, borderRadius: 6, background: active ? r.color : 'var(--surface-1)', opacity: active ? 1 : 0.45, boxShadow: active ? 'inset 0 1px 0 rgba(255,255,255,0.18)' : undefined }} />
+                            })}
+                          </div>
+                        ))}
+                        {compInYear && (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12,1fr)', gap: 4, marginTop: 2 }}>
+                            {Array.from({ length: 12 }).map((_, mi) => (
+                              <div key={mi} style={{ height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>{mi === compInYear.month ? '🏆' : ''}</div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {(() => {
-                    const phasesForDate = (ds: string) => (data.phases as any[]).filter(ph => ds >= ph.start_date && ds <= ph.end_date)
-                    const compDate = data.compSel?.date ?? null
-                    // collect unique phases visible this month for legend
-                    const visiblePhases = new Map<string, { label: string; color: string }>()
-                    for (let i = 1; i <= daysIn; i++) {
-                      const ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
-                      phasesForDate(ds).forEach((ph: any) => { if (!visiblePhases.has(ph.id)) visiblePhases.set(ph.id, { label: ph.label, color: ph.color }) })
-                    }
-                    return (
-                      <>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3 }}>
-                          {['P', 'U', 'S', 'Č', 'P', 'S', 'N'].map((d, i) => <div key={i} style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-faint)', padding: '2px 0' }}>{d}</div>)}
-                          {Array.from({ length: firstDow }).map((_, i) => <div key={'e' + i} />)}
-                          {Array.from({ length: daysIn }).map((_, i) => {
-                            const day = i + 1
-                            const ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-                            const done = data.doneDates.has(ds), planned = data.plannedDates.has(ds), isToday = ds === todayStr
-                            const dayPhases = phasesForDate(ds)
-                            const topPhase = dayPhases[0] ?? null
-                            const isComp = ds === compDate
-                            return (
-                              <div key={day} style={{ aspectRatio: '1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, position: 'relative', background: done ? 'rgba(34,197,94,0.16)' : planned ? 'var(--surface-2)' : 'transparent', border: isComp ? '1.5px solid #f59e0b' : isToday ? '1px solid var(--accent)' : topPhase ? `1px solid ${topPhase.color}55` : '1px solid transparent', color: done ? '#4ade80' : planned ? 'var(--text-dim)' : 'var(--text-faint)', boxShadow: topPhase ? `inset 0 0 0 1000px ${topPhase.color}12` : undefined }}>
-                                {day}
-                                {isComp
-                                  ? <span style={{ fontSize: 7, marginTop: 1 }}>🏆</span>
-                                  : done
-                                    ? <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#4ade80', marginTop: 1 }} />
-                                    : topPhase
-                                      ? <span style={{ width: 4, height: 4, borderRadius: '50%', background: topPhase.color, marginTop: 1, opacity: 0.7 }} />
-                                      : null}
-                              </div>
-                            )
-                          })}
-                        </div>
-                        <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(34,197,94,0.6)' }} /> odrađeno</span>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--surface-3)' }} /> planirano</span>
-                          {[...visiblePhases.values()].map((ph, i) => (
-                            <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: ph.color }} /> {ph.label}</span>
-                          ))}
-                          {compDate && `${y}-${String(m + 1).padStart(2, '0')}` === compDate.slice(0, 7) && (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 10, color: '#f59e0b' }}>🏆 {data.compSel?.name}</span>
-                          )}
-                        </div>
-                      </>
-                    )
-                  })()}
+                </div>
+
+                {/* Legenda — boja + ime */}
+                <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+                  {legend.length === 0 && !compInYear ? (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-faint)' }}>Označi blokove s bojom u planiranju liftera.</span>
+                  ) : legend.map((l, i) => (
+                    <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-dim)' }}>
+                      <span style={{ width: 12, height: 12, borderRadius: 3, background: l.color, flexShrink: 0, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15)' }} /> {l.label}
+                    </span>
+                  ))}
+                  {compInYear && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f59e0b' }}>🏆 {compInYear.name}</span>
+                  )}
                 </div>
               </div>
             )
