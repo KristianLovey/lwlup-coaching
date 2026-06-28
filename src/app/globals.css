@@ -18,15 +18,15 @@
   --border-normal:  rgba(255,255,255,0.16);
   --border-subtle:  rgba(255,255,255,0.1);
 
-  /* Layered surfaces — dark gray-blue tone, depth via value steps */
-  --bg-0: #0b0d13;   /* page / sections base (gray-blue) */
-  --bg-1: #0f1118;   /* alternating section */
-  --surface-1: #16181e; /* cards / frames (clear step above bg) */
-  --surface-2: #1e2128; /* card headers / hover */
+  /* Layered surfaces — neutral gray-black, depth via value steps */
+  --bg-0: #0e0e0e;   /* page / sections base (gray-black) */
+  --bg-1: #121212;   /* alternating section */
+  --surface-1: #181818; /* cards / frames (clear step above bg) */
+  --surface-2: #1f1f1f; /* card headers / hover */
 }
 
 html { scroll-behavior: smooth; font-size: 110%; }
-body { margin: 0; background: #0b0d13; color: #fff; }
+body { margin: 0; background: #0e0e0e; color: #fff; }
 ::selection { background: #fff; color: #000; }
 
 /* ── Global typography bumps ─────────────────────────────────────

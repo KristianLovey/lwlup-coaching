@@ -124,12 +124,12 @@ function PortraitModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
 }) {
   const { t } = useLanguage()
   return (
-    <div className="bt-modal bt-modal-portrait" style={{ width: '100%', maxWidth: '1000px', background: '#0f1118', border: '1px solid rgba(255,255,255,0.12)', display: 'grid', gridTemplateColumns: '1fr 380px', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.8)', animation: 'slideUp 0.45s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
+    <div className="bt-modal bt-modal-portrait" style={{ width: '100%', maxWidth: '1000px', background: '#121212', border: '1px solid rgba(255,255,255,0.12)', display: 'grid', gridTemplateColumns: '1fr 380px', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.8)', animation: 'slideUp 0.45s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
       onClick={e => e.stopPropagation()}>
       <div style={{ position: 'relative', background: '#000', overflowY: 'auto' }}>
         <Image src={LIFT_DETAILS[lift].img} alt={lift} width={1000} height={1500} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} sizes="(max-width: 768px) 100vw, 620px" />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 55%, rgba(0,0,0,0.92) 100%)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, transparent 65%, #0f1118 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, transparent 65%, #121212 100%)' }} />
         {LIFT_DETAILS[lift].points.map((p, i) => (
           <div key={i} style={{ position: 'absolute', top: p.top, left: p.left, transform: 'translate(-50%, -50%)', zIndex: 3 }}
             onMouseEnter={() => setHoveredHotspot(i)} onMouseLeave={() => setHoveredHotspot(null)}
@@ -158,7 +158,7 @@ function LandscapeModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
 }) {
   const { t } = useLanguage()
   return (
-    <div className="bt-modal bt-modal-landscape" style={{ width: '100%', maxWidth: '900px', background: '#0f1118', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.8)', animation: 'slideUp 0.45s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
+    <div className="bt-modal bt-modal-landscape" style={{ width: '100%', maxWidth: '900px', background: '#121212', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.8)', animation: 'slideUp 0.45s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
       onClick={e => e.stopPropagation()}>
       <div style={{ position: 'relative', background: '#000', flexShrink: 0 }}>
         <Image src={LIFT_DETAILS[lift].img} alt={lift} width={1200} height={900} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} sizes="(max-width: 768px) 100vw, 900px" />
@@ -204,7 +204,7 @@ export default function BigThree() {
 
   return (
     <>
-      <section id="info" style={{ padding: 'clamp(60px,10vw,150px) 0 clamp(60px,8vw,120px)', background: '#0b0d13', overflow: 'hidden' }}>
+      <section id="info" style={{ padding: 'clamp(60px,10vw,150px) 0 clamp(60px,8vw,120px)', background: '#0e0e0e', overflow: 'hidden' }}>
         <div ref={ref} style={{
           maxWidth: '1400px', margin: '0 auto', padding: '0 clamp(20px,5vw,60px)',
           opacity: visible ? 1 : 0,
@@ -259,7 +259,7 @@ export default function BigThree() {
               const { meta } = LIFT_DETAILS[lift]
               return (
                 <div key={lift} onClick={() => setActiveLift(lift)} className="bt-card"
-                  style={{ display: 'grid', gridTemplateColumns: '80px 1fr 340px', alignItems: 'stretch', background: '#0f1118', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', overflow: 'hidden', position: 'relative' }}>
+                  style={{ display: 'grid', gridTemplateColumns: '80px 1fr 340px', alignItems: 'stretch', background: '#121212', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', overflow: 'hidden', position: 'relative' }}>
                   <div className="bt-num-col" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)', padding: 'clamp(32px,4vw,48px) 0' }}>
                     <span style={{ fontFamily: 'var(--fd)', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.2)', writingMode: 'vertical-rl', transform: 'rotate(180deg)', transition: 'color 0.3s' }}>{meta.num}</span>
                   </div>
@@ -286,7 +286,7 @@ export default function BigThree() {
                   </div>
                   <div className="bt-img-col" style={{ position: 'relative', overflow: 'hidden' }}>
                     <Image src={LIFT_DETAILS[lift].img} alt={lift} fill quality={65} className="bt-img" style={{ objectFit: 'cover', objectPosition: lift === 'BENCH PRESS' ? 'center 30%' : 'center top', transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 100vw, 340px" />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #0f1118 0%, rgba(10,10,10,0.1) 40%, transparent 100%)' }} />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #121212 0%, rgba(10,10,10,0.1) 40%, transparent 100%)' }} />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%)' }} />
                     <div style={{ position: 'absolute', bottom: '24px', right: '24px', fontFamily: 'var(--fd)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.35em', color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase' }}>{lift}</div>
                   </div>
@@ -320,7 +320,7 @@ export default function BigThree() {
 
         /* ── Card hover ── */
         .bt-card { transition: border-color 0.3s, background 0.3s; }
-        .bt-card:hover { border-color: rgba(255,255,255,0.2) !important; background: #14161d !important; }
+        .bt-card:hover { border-color: rgba(255,255,255,0.2) !important; background: #161616 !important; }
         .bt-card:hover .bt-img { transform: scale(1.05); }
         .bt-card:hover .bt-explore-line { width: 50px !important; }
         .bt-card:hover .bt-num-col span { color: rgba(255,255,255,0.5) !important; }
