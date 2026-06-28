@@ -86,6 +86,10 @@
 }
 
 /* ── LEFT NAV ── */
+/* Reset the global marketing rule `nav { height:64px; padding:0 20px }` (globals.css,
+   @media max-width:768px) which otherwise crams the admin `<nav class="nav-items">`
+   groups into 64px and overlaps their items. Scoped + !important beats the global. */
+.lwl-admin-os nav { height: auto !important; padding: 0 !important; }
 .lwl-admin-os .nav {
   position: sticky;
   top: 0;
