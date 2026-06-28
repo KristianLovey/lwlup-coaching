@@ -752,7 +752,12 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
 
   // Typing: only update the input (single scoped render) + a synchronous ref.
   // logs/DB stay OFF the keystroke path → no re-render cascade, no input lag.
-  const editField = (setNum: number, field: keyof SetLog, raw: string) => {
+  // Decimal fields: turn a typed comma into a dot instantly (hr keyboards use ",")
+  const normRaw = (field: keyof SetLog, raw: string): string =>
+    (field === 'weight_kg' || field === 'rpe') ? raw.replace(',', '.') : raw
+
+  const editField = (setNum: number, field: keyof SetLog, rawIn: string) => {
+    const raw = normRaw(field, rawIn)
     const key = `${setNum}_${String(field)}`
     valsRef.current[key] = raw
     setLocalVals(v => ({ ...v, [key]: raw }))
@@ -762,7 +767,8 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   }
 
   // Blur: persist immediately and push the summary up to the parent.
-  const flushField = (setNum: number, field: keyof SetLog, raw: string) => {
+  const flushField = (setNum: number, field: keyof SetLog, rawIn: string) => {
+    const raw = normRaw(field, rawIn)
     const key = `${setNum}_${String(field)}`
     valsRef.current[key] = raw
     clearTimeout(debounceTimers.current[key])
@@ -1073,7 +1079,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                   </div>
                 ) : (
                   <input
-                    type="number" step="2.5" inputMode="decimal"
+                    type="text" inputMode="decimal"
                     value={localVals[`${log.set_number}_weight_kg`] ?? ''}
                     onChange={e => editField(log.set_number, 'weight_kg', e.target.value)}
                     onFocus={e => { focusedKey.current = `${log.set_number}_weight_kg`; e.target.style.borderBottomColor = 'rgba(255,255,255,0.5)' }}
@@ -1105,7 +1111,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                   </div>
                 )}
                 <input
-                  type="number" step="0.5" min="1" max="10" inputMode="decimal"
+                  type="text" inputMode="decimal"
                   value={localVals[`${log.set_number}_rpe`] ?? ''}
                   onChange={e => editField(log.set_number, 'rpe', e.target.value)}
                   onFocus={e => { focusedKey.current = `${log.set_number}_rpe`; e.target.style.borderBottomColor = 'rgba(250,204,21,0.7)' }}
@@ -1230,9 +1236,10 @@ function AdminPlanCell({ value, placeholder, type, color, onSave }: {
   useEffect(() => { if (editing) ref.current?.focus() }, [editing])
   useEffect(() => { setVal(String(value ?? '')) }, [value])
   const commit = () => { setEditing(false); onSave(val) }
+  const isNum = type === 'number'
   if (editing) return (
-    <input ref={ref} type={type} value={val}
-      onChange={e => setVal(e.target.value)}
+    <input ref={ref} type={isNum ? 'text' : type} inputMode={isNum ? 'decimal' : undefined} value={val}
+      onChange={e => setVal(isNum ? e.target.value.replace(',', '.') : e.target.value)}
       onBlur={commit}
       onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
       style={{ width: '52px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${color}66`, borderRadius: '5px', color, padding: '3px 6px', fontSize: '1rem', fontWeight: 800, outline: 'none', fontFamily: 'var(--fm)', textAlign: 'center', boxSizing: 'border-box' }}
