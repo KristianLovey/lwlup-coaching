@@ -8,15 +8,21 @@
      Koristimo ove varijable umjesto hardcoded rgba vrijednosti
      da je lako mijenjati "brightness" cijele stranice odjednom  */
   --text-primary:   rgba(255,255,255,1);
-  --text-secondary: rgba(255,255,255,0.75);
-  --text-muted:     rgba(255,255,255,0.5);
-  --text-faint:     rgba(255,255,255,0.3);
-  --text-ghost:     rgba(255,255,255,0.15);
+  --text-secondary: rgba(255,255,255,0.85);
+  --text-muted:     rgba(255,255,255,0.64);
+  --text-faint:     rgba(255,255,255,0.45);
+  --text-ghost:     rgba(255,255,255,0.2);
 
-  /* Border shades */
-  --border-bright:  rgba(255,255,255,0.18);
-  --border-normal:  rgba(255,255,255,0.1);
-  --border-subtle:  rgba(255,255,255,0.06);
+  /* Border shades — bumped for clearer frame/background separation */
+  --border-bright:  rgba(255,255,255,0.24);
+  --border-normal:  rgba(255,255,255,0.16);
+  --border-subtle:  rgba(255,255,255,0.1);
+
+  /* Layered surfaces — depth comes from value steps, not faint borders */
+  --bg-0: #08080a;   /* page / sections base */
+  --bg-1: #101013;   /* alternating section */
+  --surface-1: #161619; /* cards / frames (clear step above bg) */
+  --surface-2: #1d1d21; /* card headers / hover */
 }
 
 html { scroll-behavior: smooth; font-size: 110%; }

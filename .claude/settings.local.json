@@ -16,7 +16,8 @@
       "mcp__claude_ai_Supabase__apply_migration",
       "mcp__claude_ai_Supabase__execute_sql",
       "Bash(curl -s http://localhost:3000 -o /dev/null -w \"%{http_code}\")",
-      "Bash(grep -n \"style.*{.*\\\\`\\\\|<style\\\\|className.*mobile\\\\|media\\\\|@media\" /Users/kristianlovey/Documents/lwlup/src/app/training/training-hub.tsx)"
+      "Bash(grep -n \"style.*{.*\\\\`\\\\|<style\\\\|className.*mobile\\\\|media\\\\|@media\" /Users/kristianlovey/Documents/lwlup/src/app/training/training-hub.tsx)",
+      "Bash(git commit -am 'Home: vise kontrasta uz mracnu temu \\(stepenaste pozadine, jaci rubovi/tekst\\) *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\User\\OneDrive - fer.hr\\Desktop\\LiftAI\\lwlup-coaching\\public\\slike"

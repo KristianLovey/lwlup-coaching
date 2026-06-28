@@ -119,7 +119,7 @@ function FounderRow({ founder, index }: { founder: FounderData; index: number })
       <div className="founder-img-wrap">
         <Image src={founder.img} alt={founder.name} fill className="founder-img"
           style={{ objectFit: 'cover', objectPosition: 'top center', filter: 'brightness(0.85) grayscale(0.15)', transition: 'transform 0.8s' }} sizes="50vw" />
-        <div style={{ position: 'absolute', inset: 0, background: imgLeft ? 'linear-gradient(to bottom right, transparent 65%, #0a0a0a 100%)' : 'linear-gradient(to bottom left, transparent 65%, #0a0a0a 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: imgLeft ? 'linear-gradient(to bottom right, transparent 65%, #101013 100%)' : 'linear-gradient(to bottom left, transparent 65%, #101013 100%)' }} />
         <div style={{ position: 'absolute', bottom: '20px', left: imgLeft ? '24px' : 'auto', right: !imgLeft ? '24px' : 'auto', fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,6vw,6rem)', fontWeight: 800, color: 'rgba(255,255,255,0.06)', lineHeight: 1, userSelect: 'none' }}>
           0{index + 1}
         </div>
@@ -201,7 +201,7 @@ export default function Landing() {
   }
 
   return (
-    <div style={{ background: '#050505', color: '#fff', overflowX: 'hidden', fontFamily: 'var(--fm)', position: 'relative' }}>
+    <div style={{ background: '#08080a', color: '#fff', overflowX: 'hidden', fontFamily: 'var(--fm)', position: 'relative' }}>
       <div className="star-field" />
       <NetworkCanvas />
       <Navbar variant="solid" />
@@ -217,7 +217,7 @@ export default function Landing() {
           </div>
         ))}
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, transparent 0%, rgba(5,5,5,0.5) 100%)', zIndex: 1 }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 60%, #050505 100%)', zIndex: 1 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 60%, #08080a 100%)', zIndex: 1 }} />
 
         {/* Main content — starts below navbar with breathing room */}
         <div style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '0 clamp(20px,5vw,60px)', paddingTop: 'clamp(90px,16vh,160px)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }} className="hero-content">
@@ -245,7 +245,7 @@ export default function Landing() {
               </Link>
               <Link href="/training" style={{ textDecoration: 'none', flex: 1, display: 'flex', minHeight: '44px' }}>
                 <button className="btn-secondary-cta" style={{ width: '100%', padding: '14px 24px', background: 'rgba(255,255,255,0.03)', color: '#fff', border: '1px solid rgba(255,255,255,0.22)', fontSize: 'clamp(0.58rem, 1.6vw, 0.72rem)', fontWeight: 600, letterSpacing: '0.2em', cursor: 'pointer', fontFamily: 'var(--fm)', display: 'block', whiteSpace: 'nowrap' as const, transition: 'all 0.25s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.7)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.13)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.7)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.transform = 'translateY(0)' }}>
                   {t('home.hero.cta2')}
                 </button>
@@ -273,11 +273,11 @@ export default function Landing() {
       </section>
 
       {/* ══ STATS ═════════════════════════════════════════════════ */}
-      <section style={{ background: '#050505', position: 'relative', zIndex: 10 }}>
-        <div ref={statsReveal.ref} style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderTop: '1px solid rgba(255,255,255,0.1)' }} className="stats-grid">
+      <section style={{ background: '#08080a', position: 'relative', zIndex: 10 }}>
+        <div ref={statsReveal.ref} style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderTop: '1px solid rgba(255,255,255,0.16)' }} className="stats-grid">
           {STATS.map((s, i) => (
             <div key={i} className="stat-card"
-              style={{ padding: 'clamp(40px,6vw,80px) clamp(16px,3vw,40px)', textAlign: 'center', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.1)' : 'none', cursor: 'pointer', opacity: statsReveal.visible ? 1 : 0, transform: statsReveal.visible ? 'none' : 'translateY(30px)', transition: `opacity 0.7s ${i * 0.1}s, transform 0.7s ${i * 0.1}s, background 0.4s, border-color 0.4s` }}>
+              style={{ padding: 'clamp(40px,6vw,80px) clamp(16px,3vw,40px)', textAlign: 'center', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.16)' : 'none', cursor: 'pointer', opacity: statsReveal.visible ? 1 : 0, transform: statsReveal.visible ? 'none' : 'translateY(30px)', transition: `opacity 0.7s ${i * 0.1}s, transform 0.7s ${i * 0.1}s, background 0.4s, border-color 0.4s` }}>
               <div className="stat-icon" style={{ color: 'rgba(255,255,255,0.2)', marginBottom: '16px', display: 'flex', justifyContent: 'center', transition: 'color 0.4s' }}>{s.icon}</div>
               <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,6vw,4.5rem)', lineHeight: 1, marginBottom: '10px' }}>{s.val}</div>
               <div style={{ fontSize: 'clamp(0.5rem,1.5vw,0.65rem)', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.6)', transition: 'color 0.4s' }}>{s.label}</div>
@@ -291,7 +291,7 @@ export default function Landing() {
 
 
       {/* ══ KATEGORIJE ═══════════════════════════════════════════ */}
-      <section id="kategorije" style={{ background: '#050505', borderTop: '1px solid rgba(255,255,255,0.06)', padding: 'clamp(80px,12vw,140px) clamp(20px,5vw,60px)' }}>
+      <section id="kategorije" style={{ background: '#08080a', borderTop: '1px solid rgba(255,255,255,0.06)', padding: 'clamp(80px,12vw,140px) clamp(20px,5vw,60px)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
           {/* Header */}
@@ -312,13 +312,13 @@ export default function Landing() {
           <div style={{ marginBottom: 'clamp(48px,7vw,80px)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
               <span style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.cats.age')}</span>
-              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.13)' }} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }} className="age-cats-grid">
               {AGE_CATS.map((cat, i) => (
-                <div key={i} style={{ position: 'relative', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '4px', padding: '22px 20px', background: 'rgba(255,255,255,0.025)', overflow: 'hidden', transition: 'border-color 0.25s, background 0.25s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.22)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.09)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.025)' }}>
+                <div key={i} style={{ position: 'relative', border: '1px solid rgba(255,255,255,0.16)', borderRadius: '4px', padding: '22px 20px', background: '#161619', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)', overflow: 'hidden', transition: 'border-color 0.25s, background 0.25s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.28)'; (e.currentTarget as HTMLDivElement).style.background = '#1d1d21' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.16)'; (e.currentTarget as HTMLDivElement).style.background = '#161619' }}>
                   <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '10px' }}>{String(i + 1).padStart(2, '0')}</div>
                   <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1rem,2vw,1.25rem)', letterSpacing: '0.03em', color: '#fff', marginBottom: '8px' }}>{t(cat.key)}</div>
                   <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.08em' }}>{cat.age} {t('home.cats.years')}</div>
@@ -332,15 +332,15 @@ export default function Landing() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
               <span style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 700 }}>TEŽINSKE KATEGORIJE</span>
-              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.13)' }} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }} className="weight-cats-grid">
               {[
                 { label: t('home.cats.men'),   cats: ['-59','-66','-74','-83','-93','-105','-120','+120'] },
                 { label: t('home.cats.women'), cats: ['-47','-52','-57','-63','-69','-76','-84','+84'] },
               ].map(g => (
-                <div key={g.label} style={{ border: '1px solid rgba(255,255,255,0.09)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ padding: '16px 24px', background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div key={g.label} style={{ border: '1px solid rgba(255,255,255,0.16)', borderRadius: '4px', overflow: 'hidden', background: '#121215', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+                  <div style={{ padding: '16px 24px', background: '#1d1d21', borderBottom: '1px solid rgba(255,255,255,0.13)', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '5px', height: '5px', background: 'rgba(255,255,255,0.7)', flexShrink: 0 }} />
                     <span style={{ fontSize: '0.58rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{g.label}</span>
                   </div>
@@ -360,7 +360,7 @@ export default function Landing() {
           </div>
 
           {/* Footer note */}
-          <div style={{ marginTop: 'clamp(32px,5vw,48px)', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ marginTop: 'clamp(32px,5vw,48px)', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.13)', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: '4px', height: '4px', background: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
             <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.14em', fontFamily: 'var(--fm)' }}>
               {t('home.cats.note')}
@@ -405,7 +405,7 @@ export default function Landing() {
       
 
       {/* ══ FOUNDERS ══════════════════════════════════════════════ */}
-      <section id="coach" style={{ background: '#0a0a0a', borderTop: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+      <section id="coach" style={{ background: '#101013', borderTop: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: 'clamp(60px,10vw,100px) clamp(20px,5vw,60px) clamp(40px,6vw,60px)' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' }}>
             <div>
@@ -429,7 +429,7 @@ export default function Landing() {
       </section>
 
       {/* ══ SYSTEM ════════════════════════════════════════════════ */}
-      <section id="system" style={{ background: '#050505', padding: 'clamp(80px,12vw,150px) clamp(20px,5vw,60px)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <section id="system" style={{ background: '#08080a', padding: 'clamp(80px,12vw,150px) clamp(20px,5vw,60px)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <div ref={systemReveal.ref} style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ marginBottom: 'clamp(48px,8vw,88px)', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
@@ -440,7 +440,7 @@ export default function Landing() {
           </div>
           <div className="features-grid">
             {FEATURES.map((f, i) => (
-              <div key={i} className="feature-card" style={{ background: '#0a0a0a', padding: 'clamp(28px,3.5vw,44px) clamp(20px,3vw,32px)', border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none', transition: '0.4s cubic-bezier(.16,1,.3,1)', position: 'relative', overflow: 'hidden', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(40px)', transitionDelay: `${i * 0.08}s`, transitionDuration: '0.7s' }}>
+              <div key={i} className="feature-card" style={{ background: '#101013', padding: 'clamp(28px,3.5vw,44px) clamp(20px,3vw,32px)', border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none', transition: '0.4s cubic-bezier(.16,1,.3,1)', position: 'relative', overflow: 'hidden', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(40px)', transitionDelay: `${i * 0.08}s`, transitionDuration: '0.7s' }}>
                 {/* Top border */}
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'rgba(255,255,255,0.18)' }} />
                 {/* Number */}
@@ -502,7 +502,7 @@ export default function Landing() {
           background: #000 !important;
           color: #fff !important;
           transform: translateY(-2px);
-          box-shadow: 0 8px 32px rgba(255,255,255,0.1);
+          box-shadow: 0 8px 32px rgba(255,255,255,0.16);
         }
         .btn-secondary-cta:hover {
           border-color: rgba(255,255,255,0.7) !important;
@@ -549,7 +549,7 @@ export default function Landing() {
         .founder-img-wrap  { position: relative; overflow: hidden; min-height: 400px; }
         .founder-text-wrap {
           padding: clamp(40px,7vw,80px) clamp(24px,5vw,72px);
-          background: #0a0a0a;
+          background: #101013;
           display: flex; flex-direction: column; justify-content: center;
           position: relative; overflow: hidden;
           border-left: 1px solid rgba(255,255,255,0.07);
@@ -564,8 +564,8 @@ export default function Landing() {
         /* ══ KEYFRAMES ════════════════════════════════════════════ */
         @keyframes slowZoom { from { transform: scale(1); } to { transform: scale(1.08); } }
         @keyframes textGlow {
-          0%,100% { filter: drop-shadow(0 0 40px rgba(255,255,255,0.08)); }
-          50%      { filter: drop-shadow(0 0 60px rgba(255,255,255,0.2)) drop-shadow(0 0 120px rgba(255,255,255,0.1)); }
+          0%,100% { filter: drop-shadow(0 0 40px rgba(255,255,255,0.13)); }
+          50%      { filter: drop-shadow(0 0 60px rgba(255,255,255,0.2)) drop-shadow(0 0 120px rgba(255,255,255,0.16)); }
         }
 
         /* ══ MOBILE ═══════════════════════════════════════════════ */
@@ -588,8 +588,8 @@ export default function Landing() {
           .features-grid   { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
           .stats-grid      { grid-template-columns: 1fr 1fr !important; }
           .stats-grid > div:nth-child(2) { border-right: none !important; }
-          .stats-grid > div:nth-child(3) { border-top: 1px solid rgba(255,255,255,0.1); }
-          .stats-grid > div:nth-child(4) { border-top: 1px solid rgba(255,255,255,0.1); border-right: none !important; }
+          .stats-grid > div:nth-child(3) { border-top: 1px solid rgba(255,255,255,0.16); }
+          .stats-grid > div:nth-child(4) { border-top: 1px solid rgba(255,255,255,0.16); border-right: none !important; }
         }
         @media (max-width: 480px) {
           .features-grid { grid-template-columns: 1fr !important; }
