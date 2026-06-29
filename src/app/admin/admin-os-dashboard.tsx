@@ -292,6 +292,24 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
   const doneDates = doneSess.map(s => fmtDate(s.date))
   const doneLast = doneSeries[doneSeries.length - 1] ?? 0
   const donePrev = doneSeries[Math.max(0, doneSeries.length - 2)] ?? doneLast
+  // Block bands: label each session by the block its date falls in (gaps between
+  // blocks are naturally ignored — points are evenly spaced by session, not by date).
+  const BLOCK_COLORS = ['#22c55e', '#6b8cff', '#f59e0b', '#a78bfa', '#ef4444', '#14b8a6']
+  const blockColor = new Map<string, string>()
+  ;(data.blocks as any[]).forEach((b, i) => blockColor.set(b.id, BLOCK_COLORS[i % BLOCK_COLORS.length]))
+  const blockSegments = (sessions: { date: string }[]) => {
+    const findB = (d: string) => (data.blocks as any[]).find(b => b.start_date && b.end_date && d >= b.start_date && d <= b.end_date) ?? null
+    const segs: { s: number; e: number; label: string; color: string }[] = []
+    let cur: { id: string | null; s: number; e: number; label: string; color: string } | null = null
+    sessions.forEach((ss, i) => {
+      const b = findB(ss.date); const id = b?.id ?? null
+      if (!cur || cur.id !== id) { cur = { id, s: i, e: i, label: b?.name ?? '', color: b ? (blockColor.get(b.id) ?? '#6b8cff') : 'transparent' }; segs.push(cur) }
+      else cur.e = i
+    })
+    return segs.filter(g => g.label)
+  }
+  const e1Segments = blockSegments(sess)
+  const doneSegments = blockSegments(doneSess)
 
   // volume (by lift / variation)
   const vol = cards.volume
@@ -513,7 +531,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
                 </div>
                 {e1Series.length < 2
                   ? <div className="os-empty" style={{ padding: '28px 0' }}>Premalo comp setova s RPE ≥ 5</div>
-                  : <LineChart data={e1Series} dates={e1Dates} labels={e1Dates.length > 2 ? [e1Dates[0], e1Dates[e1Dates.length - 1]] : e1Dates} height={170} />}
+                  : <LineChart data={e1Series} dates={e1Dates} segments={e1Segments} height={185} />}
               </div>
               {/* Chart 2 — actual performed weight */}
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 18 }}>
@@ -525,7 +543,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
                 </div>
                 {doneSeries.length < 2
                   ? <div className="os-empty" style={{ padding: '28px 0' }}>Premalo comp setova s RPE ≥ 5</div>
-                  : <LineChart data={doneSeries} dates={doneDates} labels={doneDates.length > 2 ? [doneDates[0], doneDates[doneDates.length - 1]] : doneDates} accent height={170} />}
+                  : <LineChart data={doneSeries} dates={doneDates} segments={doneSegments} accent height={185} />}
               </div>
             </div>
           )}

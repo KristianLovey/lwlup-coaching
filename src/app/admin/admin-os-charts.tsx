@@ -36,8 +36,9 @@ export function Spark({ data, accent = false, height = 56 }: { data: number[]; a
   )
 }
 
-export function LineChart({ data, labels, dates, accent = false, height = 220, valueSuffix = '', unit = 'kg' }: {
+export function LineChart({ data, labels, dates, accent = false, height = 220, valueSuffix = '', unit = 'kg', segments }: {
   data: number[]; labels?: string[]; dates?: string[]; accent?: boolean; height?: number; valueSuffix?: string; unit?: string
+  segments?: { s: number; e: number; label: string; color: string }[]
 }) {
   const w = 640, h = height, padL = 36, padR = 16, padT = 16, padB = 28
   const gid = useId().replace(/:/g, '')
@@ -70,6 +71,16 @@ export function LineChart({ data, labels, dates, accent = false, height = 220, v
             <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
         </defs>
+        {segments && segments.map((seg, k) => {
+          const leftX = seg.s <= 0 ? 0 : (X(seg.s - 1) + X(seg.s)) / 2
+          const rightX = seg.e >= data.length - 1 ? w : (X(seg.e) + X(seg.e + 1)) / 2
+          return (
+            <g key={'seg' + k}>
+              <rect x={leftX} y={padT} width={Math.max(0, rightX - leftX)} height={h - padT - padB} fill={seg.color} opacity={0.08} />
+              {seg.s > 0 && <line x1={leftX} y1={padT} x2={leftX} y2={h - padB} stroke={seg.color} strokeWidth="1" strokeDasharray="3 3" opacity="0.55" vectorEffect="non-scaling-stroke" />}
+            </g>
+          )
+        })}
         {Array.from({ length: ticks + 1 }).map((_, i) => {
           const v = min + (range * i) / ticks
           const y = Y(v)
@@ -100,6 +111,14 @@ export function LineChart({ data, labels, dates, accent = false, height = 220, v
           <text key={i} x={X(i * Math.floor((data.length - 1) / Math.max(1, labels.length - 1)))} y={h - 8} textAnchor="middle" className="chart-axis">{l}</text>
         ))}
       </svg>
+      {segments && segments.map((seg, k) => {
+        const leftX = seg.s <= 0 ? 0 : (X(seg.s - 1) + X(seg.s)) / 2
+        const rightX = seg.e >= data.length - 1 ? w : (X(seg.e) + X(seg.e + 1)) / 2
+        const cx = (leftX + rightX) / 2
+        return (
+          <div key={'sl' + k} style={{ position: 'absolute', left: `${(cx / w) * 100}%`, bottom: 4, transform: 'translateX(-50%)', pointerEvents: 'none', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.06em', fontWeight: 700, color: seg.color, whiteSpace: 'nowrap', maxWidth: `${((rightX - leftX) / w) * 100}%`, overflow: 'hidden', textOverflow: 'ellipsis' }}>{seg.label}</div>
+        )
+      })}
       {hi != null && (
         <div style={{ position: 'absolute', left: `${(X(hi) / w) * 100}%`, top: 2, transform: `translateX(${hi > data.length / 2 ? '-100%' : '0'})`, pointerEvents: 'none', background: 'var(--surface-3)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '5px 9px', whiteSpace: 'nowrap', boxShadow: '0 6px 20px rgba(0,0,0,0.5)' }}>
           {dates?.[hi] && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-muted)' }}>{dates[hi]}</div>}
