@@ -36,9 +36,10 @@ export function Spark({ data, accent = false, height = 56 }: { data: number[]; a
   )
 }
 
-export function LineChart({ data, labels, dates, accent = false, height = 220, valueSuffix = '', unit = 'kg', segments }: {
-  data: number[]; labels?: string[]; dates?: string[]; accent?: boolean; height?: number; valueSuffix?: string; unit?: string
+export function LineChart({ data, labels, dates, accent = false, height = 220, valueSuffix = '', valuePrefix = '', unit = 'kg', segments, meta }: {
+  data: number[]; labels?: string[]; dates?: string[]; accent?: boolean; height?: number; valueSuffix?: string; valuePrefix?: string; unit?: string
   segments?: { s: number; e: number; label: string; color: string }[]
+  meta?: { kg: number; reps: number; rpe: number | null }[]
 }) {
   const w = 640, h = height, padL = 50, padR = 14, padT = 18, padB = 16
   const gid = useId().replace(/:/g, '')
@@ -121,7 +122,12 @@ export function LineChart({ data, labels, dates, accent = false, height = 220, v
       {hi != null && (
         <div style={{ position: 'absolute', left: `${(X(hi) / w) * 100}%`, top: 2, transform: `translateX(${hi > data.length / 2 ? '-100%' : '0'})`, pointerEvents: 'none', background: 'var(--surface-3)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '5px 9px', whiteSpace: 'nowrap', boxShadow: '0 6px 20px rgba(0,0,0,0.5)' }}>
           {dates?.[hi] && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-muted)' }}>{dates[hi]}</div>}
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14 }}>{data[hi]}{valueSuffix}<span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 2 }}>{unit}</span></div>
+          {meta?.[hi] && (
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-dim)', margin: '2px 0 1px' }}>
+              {meta[hi].kg} × {meta[hi].reps}{meta[hi].rpe != null ? ` @ ${meta[hi].rpe}` : ''}
+            </div>
+          )}
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14 }}>{valuePrefix}{data[hi]}{valueSuffix}<span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 2 }}>{unit}</span></div>
         </div>
       )}
     </div>

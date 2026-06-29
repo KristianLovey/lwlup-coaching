@@ -139,9 +139,10 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
     }
 
     const weekSet = new Set<string>()
+    type SetMeta = { kg: number; reps: number; rpe: number | null }
     const e1: Record<LiftK, Record<string, number>> = { sq: {}, bp: {}, dl: {} }
-    const dayE1: Record<LiftK, Record<string, number>> = { sq: {}, bp: {}, dl: {} }
-    const dayDone: Record<LiftK, Record<string, number>> = { sq: {}, bp: {}, dl: {} }
+    const dayE1: Record<LiftK, Record<string, { e1: number } & SetMeta>> = { sq: {}, bp: {}, dl: {} }
+    const dayDone: Record<LiftK, Record<string, SetMeta>> = { sq: {}, bp: {}, dl: {} }
     const volByWeek: Record<string, number> = {}
     const rpeByWeek: Record<string, number[]> = {}
     const compByWeek: Record<string, { done: number; total: number }> = {}
@@ -185,24 +186,21 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
             if (e > 0) {
               if (!e1[lk][wk] || e > e1[lk][wk]) e1[lk][wk] = e
               if (e > bestE1[lk]) { bestE1[lk] = e; bestSrc[lk] = { e1: e, date: workoutDate, name: nm, day: '', kg, reps, rpe: s.rpe ?? null } }
-              if (isComp && (!dayE1[lk][workoutDate] || e > dayE1[lk][workoutDate])) dayE1[lk][workoutDate] = e
+              if (isComp && (!dayE1[lk][workoutDate] || e > dayE1[lk][workoutDate].e1)) dayE1[lk][workoutDate] = { e1: e, kg, reps, rpe: s.rpe ?? null }
             }
             // "odrađeno": heaviest actual weight lifted on the comp lift that day
-            if (isComp && (!dayDone[lk][workoutDate] || kg > dayDone[lk][workoutDate])) dayDone[lk][workoutDate] = kg
+            if (isComp && (!dayDone[lk][workoutDate] || kg > dayDone[lk][workoutDate].kg)) dayDone[lk][workoutDate] = { kg, reps, rpe: s.rpe ?? null }
           }
         }
       }
     }
-    const e1Sessions: Record<LiftK, { date: string; e1: number }[]> = {
-      sq: Object.entries(dayE1.sq).map(([date, v]) => ({ date, e1: v })).sort((a, b) => a.date.localeCompare(b.date)),
-      bp: Object.entries(dayE1.bp).map(([date, v]) => ({ date, e1: v })).sort((a, b) => a.date.localeCompare(b.date)),
-      dl: Object.entries(dayE1.dl).map(([date, v]) => ({ date, e1: v })).sort((a, b) => a.date.localeCompare(b.date)),
-    }
-    const doneSessions: Record<LiftK, { date: string; e1: number }[]> = {
-      sq: Object.entries(dayDone.sq).map(([date, v]) => ({ date, e1: v })).sort((a, b) => a.date.localeCompare(b.date)),
-      bp: Object.entries(dayDone.bp).map(([date, v]) => ({ date, e1: v })).sort((a, b) => a.date.localeCompare(b.date)),
-      dl: Object.entries(dayDone.dl).map(([date, v]) => ({ date, e1: v })).sort((a, b) => a.date.localeCompare(b.date)),
-    }
+    type Sess = { date: string; e1: number; kg: number; reps: number; rpe: number | null }
+    const mkSess = (rec: Record<string, { e1: number } & SetMeta>): Sess[] =>
+      Object.entries(rec).map(([date, v]) => ({ date, e1: v.e1, kg: v.kg, reps: v.reps, rpe: v.rpe })).sort((a, b) => a.date.localeCompare(b.date))
+    const e1Sessions: Record<LiftK, Sess[]> = { sq: mkSess(dayE1.sq), bp: mkSess(dayE1.bp), dl: mkSess(dayE1.dl) }
+    const mkDone = (rec: Record<string, SetMeta>): Sess[] =>
+      Object.entries(rec).map(([date, v]) => ({ date, e1: v.kg, kg: v.kg, reps: v.reps, rpe: v.rpe })).sort((a, b) => a.date.localeCompare(b.date))
+    const doneSessions: Record<LiftK, Sess[]> = { sq: mkDone(dayDone.sq), bp: mkDone(dayDone.bp), dl: mkDone(dayDone.dl) }
     const weeks = [...weekSet].sort()
     const bwByWeek: Record<string, number> = {}
     for (const r of bw) bwByWeek[weekKey(r.date)] = Number(r.weight_kg)
@@ -275,21 +273,24 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
   // progress (by session dates) — competition lifts only, RPE >= 5
   const pr = cards.progress
   const cut = Date.now() - pr.range * 7 * 86400000
-  const windowSess = (all: { date: string; e1: number }[]) => {
+  const windowSess = <T extends { date: string }>(all: T[]): T[] => {
     let s = all.filter(x => new Date(x.date + 'T12:00:00').getTime() >= cut)
     if (s.length < 2) s = all.slice(-Math.max(2, Math.min(all.length, 8)))
     return s
   }
+  const toMeta = (arr: { kg: number; reps: number; rpe: number | null }[]) => arr.map(s => ({ kg: s.kg, reps: s.reps, rpe: s.rpe }))
   // estimated 1RM series
   const sess = windowSess(data.e1Sessions[lift])
   const e1Series = sess.map(s => s.e1)
   const e1Dates = sess.map(s => fmtDate(s.date))
+  const e1Meta = toMeta(sess)
   const e1Last = e1Series[e1Series.length - 1] ?? 0
   const e1Prev = e1Series[Math.max(0, e1Series.length - 2)] ?? e1Last
   // actual performed weight series
   const doneSess = windowSess(data.doneSessions[lift])
   const doneSeries = doneSess.map(s => s.e1)
   const doneDates = doneSess.map(s => fmtDate(s.date))
+  const doneMeta = toMeta(doneSess)
   const doneLast = doneSeries[doneSeries.length - 1] ?? 0
   const donePrev = doneSeries[Math.max(0, doneSeries.length - 2)] ?? doneLast
   // Block bands: label each session by the block its date falls in (gaps between
@@ -531,7 +532,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
                 </div>
                 {e1Series.length < 2
                   ? <div className="os-empty" style={{ padding: '28px 0' }}>Premalo comp setova s RPE ≥ 5</div>
-                  : <LineChart data={e1Series} dates={e1Dates} segments={e1Segments} height={185} />}
+                  : <LineChart data={e1Series} dates={e1Dates} segments={e1Segments} meta={e1Meta} valuePrefix="≈ " height={185} />}
               </div>
               {/* Chart 2 — actual performed weight */}
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 18 }}>
@@ -543,7 +544,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
                 </div>
                 {doneSeries.length < 2
                   ? <div className="os-empty" style={{ padding: '28px 0' }}>Premalo comp setova s RPE ≥ 5</div>
-                  : <LineChart data={doneSeries} dates={doneDates} segments={doneSegments} accent height={185} />}
+                  : <LineChart data={doneSeries} dates={doneDates} segments={doneSegments} meta={doneMeta} accent height={185} />}
               </div>
             </div>
           )}
