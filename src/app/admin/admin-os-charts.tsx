@@ -76,8 +76,10 @@ export function LineChart({ data, labels, dates, accent = false, height = 220, v
           const rightX = seg.e >= data.length - 1 ? w : (X(seg.e) + X(seg.e + 1)) / 2
           return (
             <g key={'seg' + k}>
-              <rect x={leftX} y={padT} width={Math.max(0, rightX - leftX)} height={h - padT - padB} fill={seg.color} opacity={0.08} />
-              {seg.s > 0 && <line x1={leftX} y1={padT} x2={leftX} y2={h - padB} stroke={seg.color} strokeWidth="1" strokeDasharray="3 3" opacity="0.55" vectorEffect="non-scaling-stroke" />}
+              <rect x={leftX} y={padT} width={Math.max(0, rightX - leftX)} height={h - padT - padB} fill={seg.color} opacity={0.06} />
+              {/* colored top accent across the band */}
+              <line x1={leftX + 1} y1={padT} x2={rightX - 1} y2={padT} stroke={seg.color} strokeWidth="2" opacity="0.8" vectorEffect="non-scaling-stroke" />
+              {seg.s > 0 && <line x1={leftX} y1={padT} x2={leftX} y2={h - padB} stroke={seg.color} strokeWidth="1" strokeDasharray="3 3" opacity="0.5" vectorEffect="non-scaling-stroke" />}
             </g>
           )
         })}
@@ -116,7 +118,9 @@ export function LineChart({ data, labels, dates, accent = false, height = 220, v
         const rightX = seg.e >= data.length - 1 ? w : (X(seg.e) + X(seg.e + 1)) / 2
         const cx = (leftX + rightX) / 2
         return (
-          <div key={'sl' + k} style={{ position: 'absolute', left: `${(cx / w) * 100}%`, bottom: 4, transform: 'translateX(-50%)', pointerEvents: 'none', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.06em', fontWeight: 700, color: seg.color, whiteSpace: 'nowrap', maxWidth: `${((rightX - leftX) / w) * 100}%`, overflow: 'hidden', textOverflow: 'ellipsis' }}>{seg.label}</div>
+          <div key={'sl' + k} style={{ position: 'absolute', left: `${(cx / w) * 100}%`, bottom: 5, transform: 'translateX(-50%)', pointerEvents: 'none', maxWidth: `${((rightX - leftX) / w) * 100}%` }}>
+            <span style={{ display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: 8.5, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: seg.color, background: `color-mix(in srgb, ${seg.color} 16%, var(--surface-1))`, border: `1px solid color-mix(in srgb, ${seg.color} 45%, transparent)`, borderRadius: 5, padding: '2px 7px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{seg.label}</span>
+          </div>
         )
       })}
       {hi != null && (
