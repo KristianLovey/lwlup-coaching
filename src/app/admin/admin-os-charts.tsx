@@ -40,7 +40,7 @@ export function LineChart({ data, labels, dates, accent = false, height = 220, v
   data: number[]; labels?: string[]; dates?: string[]; accent?: boolean; height?: number; valueSuffix?: string; unit?: string
   segments?: { s: number; e: number; label: string; color: string }[]
 }) {
-  const w = 640, h = height, padL = 36, padR = 16, padT = 16, padB = 28
+  const w = 640, h = height, padL = 50, padR = 14, padT = 18, padB = 16
   const gid = useId().replace(/:/g, '')
   const [hi, setHi] = useState<number | null>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -54,6 +54,7 @@ export function LineChart({ data, labels, dates, accent = false, height = 220, v
   const color = accent ? 'var(--accent)' : 'var(--text)'
   const ticks = 4
   const last = data[data.length - 1]
+  const tickVals = Array.from({ length: ticks + 1 }, (_, i) => min + (range * i) / ticks)
   const onMove = (clientX: number) => {
     const el = wrapRef.current; if (!el) return
     const r = el.getBoundingClientRect()
@@ -64,35 +65,27 @@ export function LineChart({ data, labels, dates, accent = false, height = 220, v
     <div ref={wrapRef} style={{ position: 'relative', touchAction: 'none' }}
       onMouseMove={e => onMove(e.clientX)} onMouseLeave={() => setHi(null)}
       onTouchStart={e => onMove(e.touches[0].clientX)} onTouchMove={e => onMove(e.touches[0].clientX)} onTouchEnd={() => setHi(null)}>
-      <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" width="100%" height={h}>
+      <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" width="100%" height={h} style={{ display: 'block' }}>
         <defs>
           <linearGradient id={'lg' + gid} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.16" />
+            <stop offset="0%" stopColor={color} stopOpacity="0.22" />
             <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
         </defs>
+        {/* block bands — faint fill + dashed boundary (label rendered as HTML chip below) */}
         {segments && segments.map((seg, k) => {
-          const leftX = seg.s <= 0 ? 0 : (X(seg.s - 1) + X(seg.s)) / 2
-          const rightX = seg.e >= data.length - 1 ? w : (X(seg.e) + X(seg.e + 1)) / 2
+          const leftX = seg.s <= 0 ? padL : (X(seg.s - 1) + X(seg.s)) / 2
+          const rightX = seg.e >= data.length - 1 ? w - padR : (X(seg.e) + X(seg.e + 1)) / 2
           return (
             <g key={'seg' + k}>
-              <rect x={leftX} y={padT} width={Math.max(0, rightX - leftX)} height={h - padT - padB} fill={seg.color} opacity={0.06} />
-              {/* colored top accent across the band */}
-              <line x1={leftX + 1} y1={padT} x2={rightX - 1} y2={padT} stroke={seg.color} strokeWidth="2" opacity="0.8" vectorEffect="non-scaling-stroke" />
+              <rect x={leftX} y={padT} width={Math.max(0, rightX - leftX)} height={h - padT - padB} fill={seg.color} opacity={0.07} />
               {seg.s > 0 && <line x1={leftX} y1={padT} x2={leftX} y2={h - padB} stroke={seg.color} strokeWidth="1" strokeDasharray="3 3" opacity="0.5" vectorEffect="non-scaling-stroke" />}
             </g>
           )
         })}
-        {Array.from({ length: ticks + 1 }).map((_, i) => {
-          const v = min + (range * i) / ticks
-          const y = Y(v)
-          return (
-            <g key={i}>
-              <line x1={padL} y1={y} x2={w - padR} y2={y} stroke="var(--border)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-              <text x={padL - 8} y={y + 3} textAnchor="end" className="chart-axis">{Math.round(v)}</text>
-            </g>
-          )
-        })}
+        {tickVals.map((v, i) => (
+          <line key={i} x1={padL} y1={Y(v)} x2={w - padR} y2={Y(v)} stroke="var(--border)" strokeWidth="1" vectorEffect="non-scaling-stroke" opacity={i === 0 ? 0.9 : 0.55} />
+        ))}
         <path d={area} fill={`url(#lg${gid})`} stroke="none" />
         <path d={line} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         {hi != null ? (
@@ -102,17 +95,19 @@ export function LineChart({ data, labels, dates, accent = false, height = 220, v
           </>
         ) : (
           <>
-            <line x1={X(data.length - 1)} y1={padT} x2={X(data.length - 1)} y2={h - padB} stroke={color} strokeWidth="1" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" opacity="0.5" />
+            <line x1={X(data.length - 1)} y1={padT} x2={X(data.length - 1)} y2={h - padB} stroke={color} strokeWidth="1" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" opacity="0.45" />
             <circle cx={X(data.length - 1)} cy={Y(last)} r="4.5" fill="var(--bg)" stroke={color} strokeWidth="2.5" />
-            <g transform={`translate(${X(data.length - 1) - 4}, ${Y(last) - 12})`}>
-              <text textAnchor="end" className="chart-endlabel" fill={color}>{last}{valueSuffix}</text>
-            </g>
           </>
         )}
-        {labels && labels.map((l, i) => (
-          <text key={i} x={X(i * Math.floor((data.length - 1) / Math.max(1, labels.length - 1)))} y={h - 8} textAnchor="middle" className="chart-axis">{l}</text>
-        ))}
       </svg>
+      {/* y-axis labels as HTML — crisp, never stretched/overflowing (vertical is 1:1 px) */}
+      {tickVals.map((v, i) => (
+        <div key={'yl' + i} style={{ position: 'absolute', left: 0, width: `${(padL / w) * 100}%`, top: Y(v), transform: 'translateY(-50%)', textAlign: 'right', paddingRight: 9, boxSizing: 'border-box', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', pointerEvents: 'none' }}>{Math.round(v)}</div>
+      ))}
+      {labels && labels.map((l, i) => {
+        const idx = i * Math.floor((data.length - 1) / Math.max(1, labels.length - 1))
+        return <div key={'xl' + i} style={{ position: 'absolute', left: `${(X(idx) / w) * 100}%`, bottom: 0, transform: 'translateX(-50%)', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-faint)', whiteSpace: 'nowrap', pointerEvents: 'none' }}>{l}</div>
+      })}
       {segments && segments.map((seg, k) => {
         const leftX = seg.s <= 0 ? 0 : (X(seg.s - 1) + X(seg.s)) / 2
         const rightX = seg.e >= data.length - 1 ? w : (X(seg.e) + X(seg.e + 1)) / 2
