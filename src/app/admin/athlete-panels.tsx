@@ -241,7 +241,9 @@ export function AthleteOverview({ athlete, onGoTraining }: {
   const hasBw      = (d: string) => bwLogs.some(l => l.date === d)
   const hasWater   = (d: string) => waterLogs.some(l => String(l.log_date).slice(0, 10) === d)
   const hasCal     = (d: string) => nutLogs.some(l => l.date === d)
-  const hasWo      = (d: string) => workoutLogs.some(l => l.workout_date === d && (l.completed || (l.workout_exercises ?? []).some((we: any) => (we.set_logs ?? []).some((s: any) => s.completed))))
+  // Activity uses the manually-entered completion_date (actual day done), falling back to the planned workout_date
+  const woActualDate = (l: any) => (l.completion_date ? String(l.completion_date).slice(0, 10) : l.workout_date)
+  const hasWo      = (d: string) => workoutLogs.some(l => woActualDate(l) === d && (l.completed || (l.workout_exercises ?? []).some((we: any) => (we.set_logs ?? []).some((s: any) => s.completed))))
   const hasWb      = (d: string) => wbLogs.some((l: any) => String(l.log_date).slice(0, 10) === d)
 
   const FreqGrid = () => (

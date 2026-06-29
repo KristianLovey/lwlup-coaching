@@ -378,9 +378,8 @@ export default function TrainingPage() {
     setSaving(false)
   }, [userId])
   const updateWorkout = useCallback(async (workoutId: string, data: Partial<Workout>) => {
+    // completion_date is entered manually in the day footer — no longer auto-stamped on complete
     const payload: Partial<Workout> = { ...data }
-    if (data.completed === true)  payload.completion_date = new Date().toISOString()
-    if (data.completed === false) payload.completion_date = null
     setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => wo.id === workoutId ? { ...wo, ...payload } : wo) })) } : b)
     await supabase.from('workouts').update(payload).eq('id', workoutId)
   }, [])

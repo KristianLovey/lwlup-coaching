@@ -1774,11 +1774,11 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
               <div style={{ fontSize: '1rem', fontWeight: 900, color: workout.completed ? '#86efac' : '#f0f0ff', fontFamily: 'var(--fd)', letterSpacing: '0.02em', textTransform: 'uppercase' as const }}>
                 <EditableField value={workout.day_name} placeholder="DAN TRENINGA" onSave={v => onUpdateWorkout(workout.id, { day_name: v })} />
               </div>
-              {workout.completed && workout.completion_date && (
+              {workout.completion_date && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
                   <CalendarDays size={9} color="rgba(134,239,172,0.5)" />
                   <span style={{ fontSize: '0.5rem', color: 'rgba(134,239,172,0.55)', fontFamily: 'var(--fm)', letterSpacing: '0.1em' }}>
-                    {new Date(workout.completion_date).toLocaleString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    {new Date(workout.completion_date).toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                   </span>
                 </div>
               )}
@@ -1926,14 +1926,24 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
               </div>
             ))}
 
-            {/* Add vježbu + bilješka footer */}
-            <div className="ex-table-footer" style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: '10px', alignItems: 'flex-start', background: 'rgba(0,0,0,0.15)' }}>
+            {/* Add vježbu + datum odrađeno + bilješka footer */}
+            <div className="ex-table-footer" style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: '10px', alignItems: 'flex-start', background: 'rgba(0,0,0,0.15)', flexWrap: 'wrap' as const }}>
               {isAdmin && (
                 <button onClick={() => setShowPicker(true)} className="add-btn" style={{ flex: 'none' }}>
                   <Plus size={11} /> DODAJ VJEŽBU
                 </button>
               )}
-              <div style={{ flex: 1, borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '12px' }}>
+              {/* Manual completion date — what shows in the activity table */}
+              <div style={{ flexShrink: 0 }}>
+                <div style={{ fontSize: '0.48rem', color: '#444', letterSpacing: '0.22em', marginBottom: '4px' }}>DATUM ODRAĐENO</div>
+                <input
+                  type="date"
+                  value={workout.completion_date ? String(workout.completion_date).slice(0, 10) : ''}
+                  onChange={e => onUpdateWorkout(workout.id, { completion_date: e.target.value ? `${e.target.value}T12:00:00` : null })}
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.72rem', padding: '5px 8px', outline: 'none', colorScheme: 'dark' as const }}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 140, borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '12px' }}>
                 <div style={{ fontSize: '0.48rem', color: '#444', letterSpacing: '0.22em', marginBottom: '4px' }}>BILJEŠKA DANA</div>
                 <EditableField value={workout.notes} placeholder="Dodaj bilješku..." onSave={v => onUpdateWorkout(workout.id, { notes: v || null })} />
               </div>
