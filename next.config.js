@@ -1,8 +1,18 @@
 // TODO Sentry: npm install @sentry/nextjs, pa dodaj DSN u .env.local i odkomentiraj
 // const { withSentryConfig } = require('@sentry/nextjs')
 
+// Sigurnosni headeri za sve rute (clickjacking, MIME sniffing, referrer, HSTS)
+const securityHeaders = [
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
+  { key: 'Strict-Transport-Security', value: 'max-age=15552000; includeSubDomains' },
+]
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  poweredByHeader: false,
   allowedDevOrigins: ['http://10.206.1.175:3000'],
   images: {
     formats: ['image/avif', 'image/webp'],
@@ -16,6 +26,11 @@ const nextConfig = {
   },
   async headers() {
     return [
+      {
+        // Sigurnosni headeri — sve rute
+        source: '/(.*)',
+        headers: securityHeaders,
+      },
       {
         // Originalne slike u /slike/ — immutable (mijenjaju se rijetko)
         source: '/slike/(.*)',

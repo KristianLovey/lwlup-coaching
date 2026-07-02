@@ -467,7 +467,7 @@ function LifteriSection({ athletes, search, setSearch, onPick, onAdded, onDelete
         })}
         {list.length === 0 && <div className="os-empty">Nema rezultata.</div>}
       </div>
-      {showAdd && <AddLifterModal onClose={() => setShowAdd(false)} onAdded={() => { setShowAdd(false); onAdded() }} adminId={adminId} />}
+      {showAdd && <AddLifterModal onClose={() => setShowAdd(false)} onAdded={onAdded} adminId={adminId} />}
       {confirmId && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.8)', display: 'grid', placeItems: 'center', padding: 24 }} onClick={() => setConfirmId(null)}>
           <div className="card" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()}>
@@ -503,7 +503,9 @@ function AddLifterModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
       })
       const json = await res.json()
       if (!res.ok) { setErr(json.error ?? 'Greška.'); return }
-      setOk(`${name} dodan!`); setTimeout(onAdded, 700)
+      // Lozinka se generira nasumično po korisniku — prikaži je adminu jednokratno
+      setOk(json.password ? `${name} dodan! Lozinka: ${json.password}` : `${name} dodan!`)
+      onAdded()
     } catch (e) { setErr((e as Error).message) } finally { setBusy(false) }
   }
   return (
@@ -520,10 +522,15 @@ function AddLifterModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
           </div>
           <div className="field" style={{ maxWidth: 140 }}><label>Deadlift</label><input value={dl} onChange={e => setDl(e.target.value)} /></div>
           {err && <div style={{ color: 'var(--accent)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>{err}</div>}
-          {ok && <div style={{ color: '#6fcf7e', fontSize: 12, fontFamily: 'var(--font-mono)' }}>{ok}</div>}
+          {ok && (
+            <div style={{ color: '#6fcf7e', fontSize: 12, fontFamily: 'var(--font-mono)', userSelect: 'text', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, padding: '10px 12px', lineHeight: 1.6 }}>
+              {ok}
+              <div style={{ color: 'var(--text-muted)', fontSize: 10, marginTop: 4 }}>Prepiši lozinku prije zatvaranja — prikazuje se samo jednom.</div>
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 6 }}>
-            <button className="btn-a" onClick={onClose}>Odustani</button>
-            <button className="btn-a accent" onClick={submit} disabled={busy}>{busy ? 'Dodajem…' : 'Dodaj'}</button>
+            <button className="btn-a" onClick={onClose}>{ok ? 'Zatvori' : 'Odustani'}</button>
+            {!ok && <button className="btn-a accent" onClick={submit} disabled={busy}>{busy ? 'Dodajem…' : 'Dodaj'}</button>}
           </div>
         </div>
       </div>

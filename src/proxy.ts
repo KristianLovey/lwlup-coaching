@@ -17,10 +17,6 @@ export async function proxy(request: NextRequest) {
             request.cookies.set(name, value)
           )
           supabaseResponse = NextResponse.next({ request })
-          // Preserve existing response headers/cookies before adding new ones
-          request.headers.forEach((value, key) => {
-            supabaseResponse.headers.set(key, value)
-          })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -46,8 +42,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // ── /admin — samo admin rola ────────────────────────────────────
-  if (request.nextUrl.pathname.startsWith('/admin')) {
+  // ── /admin i /trainer — role-gated ──────────────────────────────
+  const path = request.nextUrl.pathname
+  const isAdminPath = path.startsWith('/admin')
+  const isTrainerPath = path.startsWith('/trainer')
+  if (isAdminPath || isTrainerPath) {
     // Nije prijavljen → /auth
     if (!user) {
       const url = request.nextUrl.clone()
@@ -62,8 +61,9 @@ export async function proxy(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    // Nije admin → 403 stranica
-    if (!profile || profile.role !== 'admin') {
+    const role = profile?.role
+    const allowed = isAdminPath ? role === 'admin' : (role === 'admin' || role === 'trener')
+    if (!allowed) {
       const url = request.nextUrl.clone()
       url.pathname = '/403'
       return NextResponse.redirect(url)

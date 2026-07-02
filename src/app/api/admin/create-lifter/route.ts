@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { randomBytes } from 'crypto'
 
 // Supabase Admin client - NIKAD ne izlaži SUPABASE_SERVICE_ROLE_KEY na frontendu
 const adminClient = createClient(
@@ -33,9 +34,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email i ime su obavezni' }, { status: 400 })
     }
 
+    // Nasumična lozinka po korisniku — vraća se adminu jednokratno u odgovoru.
+    // (Fiksna default lozinka u kodu = svatko tko vidi repo zna lozinku svih novih računa.)
+    const password = 'Lwl-' + randomBytes(9).toString('base64url')
+
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
-      password: 'LwlupChange123!',
+      password,
       email_confirm: true,
       user_metadata: { full_name: fullName },
     })
@@ -55,7 +60,7 @@ export async function POST(req: NextRequest) {
 
     if (profileError) console.error('profile upsert error:', profileError.message)
 
-    return NextResponse.json({ userId: newUser.user.id, email, fullName })
+    return NextResponse.json({ userId: newUser.user.id, email, fullName, password })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
