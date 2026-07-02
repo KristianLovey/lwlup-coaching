@@ -489,17 +489,19 @@ function LifteriSection({ athletes, search, setSearch, onPick, onAdded, onDelete
 function AddLifterModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => void; adminId: string }) {
   const [email, setEmail] = useState(''), [name, setName] = useState(''), [cat, setCat] = useState('')
   const [sq, setSq] = useState(''), [bp, setBp] = useState(''), [dl, setDl] = useState('')
+  const [pass, setPass] = useState('')
   const [busy, setBusy] = useState(false), [err, setErr] = useState(''), [ok, setOk] = useState('')
   const submit = async () => {
     setErr(''); setOk('')
     if (!email || !name) { setErr('Email i ime su obavezni.'); return }
+    if (pass && pass.length < 8) { setErr('Lozinka mora imati barem 8 znakova.'); return }
     setBusy(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/admin/create-lifter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ email, fullName: name, category: cat || undefined, squat: sq || undefined, bench: bp || undefined, deadlift: dl || undefined }),
+        body: JSON.stringify({ email, fullName: name, category: cat || undefined, squat: sq || undefined, bench: bp || undefined, deadlift: dl || undefined, password: pass || undefined }),
       })
       const json = await res.json()
       if (!res.ok) { setErr(json.error ?? 'Greška.'); return }
@@ -521,6 +523,7 @@ function AddLifterModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
             <div className="field"><label>Bench</label><input value={bp} onChange={e => setBp(e.target.value)} /></div>
           </div>
           <div className="field" style={{ maxWidth: 140 }}><label>Deadlift</label><input value={dl} onChange={e => setDl(e.target.value)} /></div>
+          <div className="field"><label>Lozinka (min. 8 znakova)</label><input type="text" value={pass} onChange={e => setPass(e.target.value)} placeholder="prazno = generiraj automatski" autoComplete="new-password" /></div>
           {err && <div style={{ color: 'var(--accent)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>{err}</div>}
           {ok && (
             <div style={{ color: '#6fcf7e', fontSize: 12, fontFamily: 'var(--font-mono)', userSelect: 'text', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, padding: '10px 12px', lineHeight: 1.6 }}>

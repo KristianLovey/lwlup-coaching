@@ -29,14 +29,19 @@ export async function POST(req: NextRequest) {
     }
 
     // Kreiraj liftera
-    const { email, fullName, category, squat, bench, deadlift } = await req.json()
+    const { email, fullName, category, squat, bench, deadlift, password: customPassword } = await req.json()
     if (!email || !fullName) {
       return NextResponse.json({ error: 'Email i ime su obavezni' }, { status: 400 })
     }
+    if (customPassword != null && customPassword !== '' && (typeof customPassword !== 'string' || customPassword.length < 8)) {
+      return NextResponse.json({ error: 'Lozinka mora imati barem 8 znakova' }, { status: 400 })
+    }
 
-    // Nasumična lozinka po korisniku — vraća se adminu jednokratno u odgovoru.
+    // Admin može upisati lozinku; prazno polje → nasumična po korisniku.
     // (Fiksna default lozinka u kodu = svatko tko vidi repo zna lozinku svih novih računa.)
-    const password = 'Lwl-' + randomBytes(9).toString('base64url')
+    const password = (typeof customPassword === 'string' && customPassword.length >= 8)
+      ? customPassword
+      : 'Lwl-' + randomBytes(9).toString('base64url')
 
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
