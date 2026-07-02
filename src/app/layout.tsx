@@ -58,7 +58,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="hr" className={`${spaceGrotesk.variable} ${bricolage.variable} ${jetbrainsMono.variable}`}>
       <head>
-        {/* dns-prefetch only for Supabase */}
+        {/* preconnect: uspostavi DNS+TCP+TLS prema Supabaseu prije prvog API poziva */}
+        <link rel="preconnect" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" />
         <script
           type="application/ld+json"
