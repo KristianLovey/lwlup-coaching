@@ -82,13 +82,14 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
   const [planYear, setPlanYear] = useState(() => new Date().getFullYear())
 
   const DASH_CACHE_TTL = 90_000 // 90 s
-  const dashCacheKey = `adminos:dash:${athleteId}`
+  // v2: set_logs sada nose i block_id (week → block) — stari cache nema taj oblik
+  const dashCacheKey = `adminos:dash:v2:${athleteId}`
 
   const load = useCallback(async (background = false) => {
     // Serve stale cache immediately so UI renders before network
     if (!background) {
       try {
-        const c = JSON.parse(localStorage.getItem(`adminos:dash:${athleteId}`) ?? 'null')
+        const c = JSON.parse(localStorage.getItem(dashCacheKey) ?? 'null')
         if (c?.ts && Date.now() - c.ts < DASH_CACHE_TTL && c.raw) {
           setRaw(c.raw); setLoading(false)
           // Refresh in background so next view is still fresh
@@ -106,7 +107,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
         .select('id, workout_date, completed, day_name')
         .eq('athlete_id', athleteId).order('workout_date', { ascending: true }).limit(500),
       supabase.from('set_logs')
-        .select('weight_kg, reps, rpe, is_top_set, workout_exercises!inner(exercise:exercises(name,category), workouts!inner(workout_date))')
+        .select('weight_kg, reps, rpe, is_top_set, workout_exercises!inner(exercise:exercises(name,category), workouts!inner(workout_date, weeks(block_id)))')
         .eq('athlete_id', athleteId).eq('completed', true)
         .order('id', { ascending: true }).limit(6000),
       supabase.from('pr_logs').select('date, weight_kg').eq('athlete_id', athleteId)
@@ -128,9 +129,9 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
       phases: phaseRes.data ?? [], compSel: compSelComp,
     }
     setRaw(next)
-    try { localStorage.setItem(`adminos:dash:${athleteId}`, JSON.stringify({ ts: Date.now(), raw: next })) } catch {}
+    try { localStorage.setItem(dashCacheKey, JSON.stringify({ ts: Date.now(), raw: next })) } catch {}
     setLoading(false)
-  }, [athleteId])
+  }, [athleteId, dashCacheKey])
 
   useEffect(() => { setLoading(true); load(false) }, [load])
 
@@ -158,7 +159,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
     }
 
     const weekSet = new Set<string>()
-    type SetMeta = { kg: number; reps: number; rpe: number | null }
+    type SetMeta = { kg: number; reps: number; rpe: number | null; blockId: string | null }
     const e1: Record<LiftK, Record<string, number>> = { sq: {}, bp: {}, dl: {} }
     const dayE1: Record<LiftK, Record<string, { e1: number } & SetMeta>> = { sq: {}, bp: {}, dl: {} }
     const dayDone: Record<LiftK, Record<string, SetMeta>> = { sq: {}, bp: {}, dl: {} }
@@ -184,6 +185,8 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
       const wo = we?.workouts
       const workoutDate: string = wo?.workout_date ?? ''
       if (!workoutDate) continue
+      // Blok kojem sesija stvarno pripada (workout → week → block), ne po datumima
+      const blockId: string | null = wo?.weeks?.block_id ?? null
       const cat: string = we?.exercise?.category ?? ''
       const nm: string = we?.exercise?.name ?? cat
       const lk = liftKey(cat)
@@ -205,20 +208,20 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
             if (e > 0) {
               if (!e1[lk][wk] || e > e1[lk][wk]) e1[lk][wk] = e
               if (e > bestE1[lk]) { bestE1[lk] = e; bestSrc[lk] = { e1: e, date: workoutDate, name: nm, day: '', kg, reps, rpe: s.rpe ?? null } }
-              if (isComp && (!dayE1[lk][workoutDate] || e > dayE1[lk][workoutDate].e1)) dayE1[lk][workoutDate] = { e1: e, kg, reps, rpe: s.rpe ?? null }
+              if (isComp && (!dayE1[lk][workoutDate] || e > dayE1[lk][workoutDate].e1)) dayE1[lk][workoutDate] = { e1: e, kg, reps, rpe: s.rpe ?? null, blockId }
             }
             // "odrađeno": heaviest actual weight lifted on the comp lift that day
-            if (isComp && (!dayDone[lk][workoutDate] || kg > dayDone[lk][workoutDate].kg)) dayDone[lk][workoutDate] = { kg, reps, rpe: s.rpe ?? null }
+            if (isComp && (!dayDone[lk][workoutDate] || kg > dayDone[lk][workoutDate].kg)) dayDone[lk][workoutDate] = { kg, reps, rpe: s.rpe ?? null, blockId }
           }
         }
       }
     }
-    type Sess = { date: string; e1: number; kg: number; reps: number; rpe: number | null }
+    type Sess = { date: string; e1: number; kg: number; reps: number; rpe: number | null; blockId: string | null }
     const mkSess = (rec: Record<string, { e1: number } & SetMeta>): Sess[] =>
-      Object.entries(rec).map(([date, v]) => ({ date, e1: v.e1, kg: v.kg, reps: v.reps, rpe: v.rpe })).sort((a, b) => a.date.localeCompare(b.date))
+      Object.entries(rec).map(([date, v]) => ({ date, e1: v.e1, kg: v.kg, reps: v.reps, rpe: v.rpe, blockId: v.blockId })).sort((a, b) => a.date.localeCompare(b.date))
     const e1Sessions: Record<LiftK, Sess[]> = { sq: mkSess(dayE1.sq), bp: mkSess(dayE1.bp), dl: mkSess(dayE1.dl) }
     const mkDone = (rec: Record<string, SetMeta>): Sess[] =>
-      Object.entries(rec).map(([date, v]) => ({ date, e1: v.kg, kg: v.kg, reps: v.reps, rpe: v.rpe })).sort((a, b) => a.date.localeCompare(b.date))
+      Object.entries(rec).map(([date, v]) => ({ date, e1: v.kg, kg: v.kg, reps: v.reps, rpe: v.rpe, blockId: v.blockId })).sort((a, b) => a.date.localeCompare(b.date))
     const doneSessions: Record<LiftK, Sess[]> = { sq: mkDone(dayDone.sq), bp: mkDone(dayDone.bp), dl: mkDone(dayDone.dl) }
     const weeks = [...weekSet].sort()
     const bwByWeek: Record<string, number> = {}
@@ -290,17 +293,20 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
   const bwSparkE = data.bw.map(r => Number(r.weight_kg))
 
   // progress (by session dates) — competition lifts only, RPE >= 5
-  // Prozor = zadnjih N blokova (ne kalendarski tjedni): cutoff je start_date
-  // N-tog bloka od kraja, među blokovima koji su već počeli.
+  // Prozor = zadnjih N blokova. Sesija pripada bloku preko workout → week → block
+  // (ne po datumskim rasponima blokova — oni se znaju preklapati).
   const pr = cards.progress
   const nBlocks = normBlockRange(pr.range)
-  const todayStr = new Date().toISOString().slice(0, 10)
-  const startedBlocks = (data.blocks as any[]).filter(b => b.start_date && b.start_date <= todayStr)
-  const blockCut = nBlocks > 0 && startedBlocks.length > nBlocks
-    ? startedBlocks[startedBlocks.length - nBlocks].start_date as string
-    : null
-  const windowSess = <T extends { date: string }>(all: T[]): T[] => {
-    let s = blockCut ? all.filter(x => x.date >= blockCut) : all
+  const orderedBlockIds: string[] = []
+  for (const s of [...data.e1Sessions[lift], ...data.doneSessions[lift]].sort((a, b) => a.date.localeCompare(b.date))) {
+    if (!s.blockId) continue
+    const i = orderedBlockIds.indexOf(s.blockId)
+    if (i !== -1) orderedBlockIds.splice(i, 1)
+    orderedBlockIds.push(s.blockId) // poredak po zadnjem pojavljivanju
+  }
+  const allowedBlocks = nBlocks > 0 ? new Set(orderedBlockIds.slice(-nBlocks)) : null
+  const windowSess = <T extends { blockId: string | null }>(all: T[]): T[] => {
+    let s = allowedBlocks ? all.filter(x => x.blockId != null && allowedBlocks.has(x.blockId)) : all
     if (s.length < 2) s = all.slice(-Math.max(2, Math.min(all.length, 8)))
     return s
   }
@@ -319,18 +325,18 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
   const doneMeta = toMeta(doneSess)
   const doneLast = doneSeries[doneSeries.length - 1] ?? 0
   const donePrev = doneSeries[Math.max(0, doneSeries.length - 2)] ?? doneLast
-  // Block bands: label each session by the block its date falls in (gaps between
-  // blocks are naturally ignored — points are evenly spaced by session, not by date).
+  // Block bands: label each session by the block it actually belongs to (via blockId).
+  // Points are evenly spaced by session, not by date, so gaps between blocks are ignored.
   const BLOCK_COLORS = ['#22c55e', '#6b8cff', '#f59e0b', '#a78bfa', '#ef4444', '#14b8a6']
   const blockColor = new Map<string, string>()
-  ;(data.blocks as any[]).forEach((b, i) => blockColor.set(b.id, BLOCK_COLORS[i % BLOCK_COLORS.length]))
-  const blockSegments = (sessions: { date: string }[]) => {
-    const findB = (d: string) => (data.blocks as any[]).find(b => b.start_date && b.end_date && d >= b.start_date && d <= b.end_date) ?? null
+  const blockName = new Map<string, string>()
+  ;(data.blocks as any[]).forEach((b, i) => { blockColor.set(b.id, BLOCK_COLORS[i % BLOCK_COLORS.length]); blockName.set(b.id, b.name ?? '') })
+  const blockSegments = (sessions: { blockId: string | null }[]) => {
     const segs: { s: number; e: number; label: string; color: string }[] = []
     let cur: { id: string | null; s: number; e: number; label: string; color: string } | null = null
     sessions.forEach((ss, i) => {
-      const b = findB(ss.date); const id = b?.id ?? null
-      if (!cur || cur.id !== id) { cur = { id, s: i, e: i, label: b?.name ?? '', color: b ? (blockColor.get(b.id) ?? '#6b8cff') : 'transparent' }; segs.push(cur) }
+      const id = ss.blockId
+      if (!cur || cur.id !== id) { cur = { id, s: i, e: i, label: id ? (blockName.get(id) ?? '') : '', color: id ? (blockColor.get(id) ?? '#6b8cff') : 'transparent' }; segs.push(cur) }
       else cur.e = i
     })
     return segs.filter(g => g.label)
