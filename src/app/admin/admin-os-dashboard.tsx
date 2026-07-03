@@ -24,8 +24,27 @@ export const CARD_META: { id: CardId; label: string; series: boolean }[] = [
 ]
 export function defaultCards(): DashCards {
   const o = {} as DashCards
-  CARD_META.forEach(c => { o[c.id] = { hidden: false, collapsed: false, range: c.id === 'bodyweight' ? 8 : 12 } })
+  CARD_META.forEach(c => { o[c.id] = { hidden: false, collapsed: false, range: c.id === 'progress' ? 0 : c.id === 'bodyweight' ? 8 : 12 } })
   return o
+}
+
+// Progress card: range = broj zadnjih blokova (0 = svi). Stare spremljene
+// vrijednosti u tjednima (8/12) normaliziraju se na "svi blokovi".
+const BLOCK_RANGE_OPTS = [1, 2, 3, 4]
+const normBlockRange = (n: number) => BLOCK_RANGE_OPTS.includes(n) ? n : 0
+
+function RangeSelect({ id, value, onChange }: { id: CardId; value: number; onChange: (n: number) => void }) {
+  const byBlocks = id === 'progress'
+  return (
+    <div className="range-select">
+      <select value={byBlocks ? normBlockRange(value) : value} onChange={e => onChange(Number(e.target.value))}>
+        {byBlocks
+          ? <><option value={1}>1 blok</option><option value={2}>2 bloka</option><option value={3}>3 bloka</option><option value={4}>4 bloka</option><option value={0}>Svi blokovi</option></>
+          : <><option value={4}>4 tj.</option><option value={8}>8 tj.</option><option value={12}>12 tj.</option></>}
+      </select>
+      <span className="rs-caret"><ChevronDown size={11} /></span>
+    </div>
+  )
 }
 
 type LiftK = 'sq' | 'bp' | 'dl'
@@ -271,10 +290,17 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
   const bwSparkE = data.bw.map(r => Number(r.weight_kg))
 
   // progress (by session dates) — competition lifts only, RPE >= 5
+  // Prozor = zadnjih N blokova (ne kalendarski tjedni): cutoff je start_date
+  // N-tog bloka od kraja, među blokovima koji su već počeli.
   const pr = cards.progress
-  const cut = Date.now() - pr.range * 7 * 86400000
+  const nBlocks = normBlockRange(pr.range)
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const startedBlocks = (data.blocks as any[]).filter(b => b.start_date && b.start_date <= todayStr)
+  const blockCut = nBlocks > 0 && startedBlocks.length > nBlocks
+    ? startedBlocks[startedBlocks.length - nBlocks].start_date as string
+    : null
   const windowSess = <T extends { date: string }>(all: T[]): T[] => {
-    let s = all.filter(x => new Date(x.date + 'T12:00:00').getTime() >= cut)
+    let s = blockCut ? all.filter(x => x.date >= blockCut) : all
     if (s.length < 2) s = all.slice(-Math.max(2, Math.min(all.length, 8)))
     return s
   }
@@ -347,12 +373,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
     )
   }
   const RangeSel = ({ id }: { id: CardId }) => (
-    <div className="range-select">
-      <select value={cards[id].range} onChange={e => setCard(id, { range: Number(e.target.value) })}>
-        <option value={4}>4 tj.</option><option value={8}>8 tj.</option><option value={12}>12 tj.</option>
-      </select>
-      <span className="rs-caret"><ChevronDown size={11} /></span>
-    </div>
+    <RangeSelect id={id} value={cards[id].range} onChange={n => setCard(id, { range: n })} />
   )
 
   const toggleExp = (k: typeof exp) => setExp(p => p === k ? null : k)
@@ -714,7 +735,7 @@ export function SettingsDrawer({ open, onClose, cards, setCard, onReset }: {
                     </button>
                     <span className="sd-card-name">{c.label}</span>
                     {c.series
-                      ? <div className="range-select"><select value={st.range} onChange={e => setCard(c.id, { range: Number(e.target.value) })}><option value={4}>4 tj.</option><option value={8}>8 tj.</option><option value={12}>12 tj.</option></select><span className="rs-caret"><ChevronDown size={11} /></span></div>
+                      ? <RangeSelect id={c.id} value={st.range} onChange={n => setCard(c.id, { range: n })} />
                       : <span className="sd-na">—</span>}
                     <button className="sd-min" onClick={() => setCard(c.id, { collapsed: !st.collapsed })} title={st.collapsed ? 'Proširi' : 'Minimiziraj'}>
                       {st.collapsed ? <Plus size={13} /> : <Minus size={13} />}

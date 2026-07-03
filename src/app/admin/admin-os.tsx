@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutGrid, Users, Dumbbell, Trophy, Bell, Search, Plus, Check, Send,
   Loader2, PanelLeft, PanelRight, ChevronRight, ChevronLeft, ChevronDown, Settings, Trash2, LogOut, AlertCircle, SlidersHorizontal,
-  User, Activity, Menu, FolderOpen, Copy,
+  User, Activity, Menu, FolderOpen, Copy, Eye, EyeOff,
 } from 'lucide-react'
 import type { AthleteProfile } from './athlete-panels'
 import type { Block, Exercise } from '../training/types'
@@ -345,7 +345,7 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
                     ))
                 : <LifteriSection athletes={athletes} search={search} setSearch={setSearch} onPick={manageAthlete} onAdded={loadAthletes} onDelete={deleteUser} adminId={adminId} />
             )}
-            {section === 'tim' && <TimSection athletes={athletes} onSaved={loadAthletes} />}
+            {section === 'tim' && <TimSection />}
             {section === 'treneri' && <TreneriSection athletes={athletes} coaches={coaches} assignments={assignments} setAssignments={setAssignments} onRoleChange={loadAthletes} />}
             {section === 'natjecanja' && <CompetitionsManager />}
             {section === 'predlosci' && <PredlosciSection athletes={athletes} adminId={adminId} exercises={exercises} />}
@@ -541,67 +541,81 @@ function AddLifterModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
   )
 }
 
-// ── Tim (1RM stats, real, profiles) ──
-function TimSection({ athletes, onSaved }: { athletes: AthleteProfile[]; onSaved: () => void }) {
-  const [stats, setStats] = useState<Record<string, { sq: string; bp: string; dl: string; bw: string; wc: string; sex: string }>>({})
+// ── Tim (javna statistika tima — svi članovi iz lwlup_members) ──
+type TeamMember = {
+  id: string; name: string; nickname: string | null; is_active: boolean
+  category: string; squat: string; bench: string; deadlift: string; total: string; glp: string
+}
+const numStr = (v: unknown) => (v == null || v === '' ? '' : String(Number(v)))
+
+function TimSection() {
+  const [members, setMembers] = useState<TeamMember[]>([])
+  const [loading, setLoading] = useState(true)
   const [savedId, setSavedId] = useState<string | null>(null)
-  const ids = athletes.map(a => a.id).join(',')
 
-  useEffect(() => {
-    if (!athletes.length) return
-    supabase.from('lifters')
-      .select('id, current_squat_1rm, current_bench_1rm, current_deadlift_1rm, body_weight, weight_class, sex')
-      .in('id', athletes.map(a => a.id))
-      .then(({ data }) => {
-        const m: Record<string, { sq: string; bp: string; dl: string; bw: string; wc: string; sex: string }> = {}
-        for (const p of (data ?? [])) m[p.id] = {
-          sq: String(p.current_squat_1rm ?? ''), bp: String(p.current_bench_1rm ?? ''), dl: String(p.current_deadlift_1rm ?? ''),
-          bw: String(p.body_weight ?? ''), wc: p.weight_class ?? '', sex: p.sex ?? 'male',
-        }
-        setStats(m)
-      })
-  }, [ids]) // eslint-disable-line react-hooks/exhaustive-deps
+  const load = useCallback(async () => {
+    const { data } = await supabase.from('lwlup_members')
+      .select('id, name, nickname, category, squat, bench, deadlift, total, glp, is_active, display_order')
+      .order('display_order', { ascending: true }).order('name', { ascending: true })
+    setMembers((data ?? []).map((m: any) => ({
+      id: m.id, name: m.name ?? '', nickname: m.nickname ?? null, is_active: m.is_active !== false,
+      category: m.category ?? '', squat: numStr(m.squat), bench: numStr(m.bench),
+      deadlift: numStr(m.deadlift), total: numStr(m.total), glp: numStr(m.glp),
+    })))
+    setLoading(false)
+  }, [])
+  useEffect(() => { load() }, [load])
 
-  const dbField: Record<string, string> = { sq: 'current_squat_1rm', bp: 'current_bench_1rm', dl: 'current_deadlift_1rm', bw: 'body_weight', wc: 'weight_class', sex: 'sex' }
-  const save = async (id: string, field: string, val: string) => {
-    const isNum = ['sq', 'bp', 'dl', 'bw'].includes(field)
-    await supabase.from('lifters').update({ [dbField[field]]: val === '' ? null : (isNum ? parseFloat(val) : val) }).eq('id', id)
+  const save = async (id: string, field: keyof TeamMember, val: string) => {
+    const value = field === 'category' ? val : (val === '' ? null : parseFloat(val))
+    const { error } = await supabase.from('lwlup_members')
+      .update({ [field]: value, updated_at: new Date().toISOString() }).eq('id', id)
+    if (error) { alert(`Greška pri spremanju: ${error.message}`); return }
     setSavedId(id); setTimeout(() => setSavedId(s => s === id ? null : s), 1400)
-    onSaved()
   }
-  const set = (id: string, field: string, val: string) => setStats(p => ({ ...p, [id]: { ...(p[id] ?? { sq: '', bp: '', dl: '', bw: '', wc: '', sex: 'male' }), [field]: val } }))
+  const set = (id: string, field: keyof TeamMember, val: string) => setMembers(ms => ms.map(m => m.id === id ? { ...m, [field]: val } : m))
+  const toggleActive = async (m: TeamMember) => {
+    const next = !m.is_active
+    setMembers(ms => ms.map(x => x.id === m.id ? { ...x, is_active: next } : x))
+    const { error } = await supabase.from('lwlup_members')
+      .update({ is_active: next, updated_at: new Date().toISOString() }).eq('id', m.id)
+    if (error) { alert(`Greška: ${error.message}`); setMembers(ms => ms.map(x => x.id === m.id ? { ...x, is_active: !next } : x)) }
+  }
+
+  if (loading) return <div className="os-empty" style={{ display: 'flex', justifyContent: 'center' }}><Loader2 size={20} className="os-spin" /></div>
 
   return (
     <div>
-      <div className="eyebrow" style={{ marginBottom: 20 }}>Statistike tima — uredi 1RM, kategoriju i tjelesnu težinu</div>
-      <div className="edit-grid">
-        {athletes.map(a => {
-          const s = stats[a.id] ?? { sq: '', bp: '', dl: '', bw: '', wc: '', sex: 'male' }
-          return (
-            <div className="edit-card" key={a.id}>
+      <div className="eyebrow" style={{ marginBottom: 20 }}>Statistike tima — svi članovi s javne /team stranice (lwlup_members): kategorija, liftovi, total i GLP</div>
+      {members.length === 0 ? <div className="os-empty">Nema članova tima. Dodaj ih na javnoj stranici tima.</div> : (
+        <div className="edit-grid">
+          {members.map(m => (
+            <div className="edit-card" key={m.id} style={m.is_active ? undefined : { opacity: 0.55 }}>
               <div className="ec-head">
-                <div className="a-avatar">{initials(a.full_name)}</div>
-                <div><div className="nm">{a.full_name}</div><div className="sub">{(a.role ?? 'lifter').toUpperCase()}</div></div>
-                <span className={'saved-flash' + (savedId === a.id ? ' show' : '')} style={{ marginLeft: 'auto' }}><Check size={11} /> Spremljeno</span>
+                <div className="a-avatar">{initials(m.name)}</div>
+                <div>
+                  <div className="nm">{m.name}</div>
+                  <div className="sub">{m.nickname ? `"${m.nickname.toUpperCase()}"` : 'ČLAN TIMA'}{m.is_active ? '' : ' · SKRIVEN'}</div>
+                </div>
+                <span className={'saved-flash' + (savedId === m.id ? ' show' : '')} style={{ marginLeft: 'auto' }}><Check size={11} /> Spremljeno</span>
+                <button className="icon-sm" onClick={() => toggleActive(m)} title={m.is_active ? 'Sakrij s javne stranice' : 'Prikaži na javnoj stranici'}>
+                  {m.is_active ? <Eye size={14} /> : <EyeOff size={14} />}
+                </button>
               </div>
               <div className="field-row" style={{ marginBottom: 10 }}>
-                <div className="field"><label>Spol</label>
-                  <select value={s.sex} onChange={e => { set(a.id, 'sex', e.target.value); save(a.id, 'sex', e.target.value) }}>
-                    <option value="male">M</option><option value="female">Ž</option>
-                  </select>
-                </div>
-                <div className="field"><label>Kategorija</label><input value={s.wc} onChange={e => set(a.id, 'wc', e.target.value)} onBlur={e => save(a.id, 'wc', e.target.value)} placeholder="-83" /></div>
-                <div className="field"><label>Tjel. težina</label><input value={s.bw} onChange={e => set(a.id, 'bw', e.target.value)} onBlur={e => save(a.id, 'bw', e.target.value)} /></div>
+                <div className="field"><label>Kategorija</label><input value={m.category} onChange={e => set(m.id, 'category', e.target.value)} onBlur={e => save(m.id, 'category', e.target.value)} placeholder="M-93" /></div>
+                <div className="field"><label>Total</label><input value={m.total} onChange={e => set(m.id, 'total', e.target.value)} onBlur={e => save(m.id, 'total', e.target.value)} /></div>
+                <div className="field"><label>GLP</label><input value={m.glp} onChange={e => set(m.id, 'glp', e.target.value)} onBlur={e => save(m.id, 'glp', e.target.value)} /></div>
               </div>
               <div className="field-row">
-                <div className="field"><label>Squat 1RM</label><input value={s.sq} onChange={e => set(a.id, 'sq', e.target.value)} onBlur={e => save(a.id, 'sq', e.target.value)} /></div>
-                <div className="field"><label>Bench 1RM</label><input value={s.bp} onChange={e => set(a.id, 'bp', e.target.value)} onBlur={e => save(a.id, 'bp', e.target.value)} /></div>
-                <div className="field"><label>Deadlift 1RM</label><input value={s.dl} onChange={e => set(a.id, 'dl', e.target.value)} onBlur={e => save(a.id, 'dl', e.target.value)} /></div>
+                <div className="field"><label>Squat</label><input value={m.squat} onChange={e => set(m.id, 'squat', e.target.value)} onBlur={e => save(m.id, 'squat', e.target.value)} /></div>
+                <div className="field"><label>Bench</label><input value={m.bench} onChange={e => set(m.id, 'bench', e.target.value)} onBlur={e => save(m.id, 'bench', e.target.value)} /></div>
+                <div className="field"><label>Deadlift</label><input value={m.deadlift} onChange={e => set(m.id, 'deadlift', e.target.value)} onBlur={e => save(m.id, 'deadlift', e.target.value)} /></div>
               </div>
             </div>
-          )
-        })}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -683,12 +697,15 @@ function PredlosciSection({ athletes, adminId, exercises }: { athletes: AthleteP
 
   const delTemplate = async (id: string) => {
     if (!confirm('Obrisati ovaj predložak?')) return
-    await postApi('/api/admin/delete-block', { blockId: id }); load()
+    const res = await postApi('/api/admin/delete-block', { blockId: id })
+    if (res?.error) alert(`Greška pri brisanju: ${res.error}`)
+    load()
   }
   const copyToLifter = async (templateId: string, athleteId: string, name: string) => {
     setBusy(true)
-    await postApi('/api/admin/copy-block', { sourceBlockId: templateId, targetAthleteId: athleteId, name, asTemplate: false })
+    const res = await postApi('/api/admin/copy-block', { sourceBlockId: templateId, targetAthleteId: athleteId, name, asTemplate: false })
     setBusy(false); setCopyId(null)
+    if (res?.error) alert(`Greška pri kopiranju: ${res.error}`)
   }
 
   // Build mode: full block editor scoped to template blocks
@@ -764,14 +781,20 @@ function ImportTemplateModal({ athletes, adminId, onClose, onDone }: { athletes:
   const [busy, setBusy] = useState(false)
   useEffect(() => {
     if (!athleteId) { setBlocks([]); return }
-    supabase.from('blocks').select('id, name').eq('athlete_id', athleteId).neq('goal', '__template__').order('created_at', { ascending: false })
+    // NB: .neq('goal','__template__') bi izbacio i blokove s goal = NULL (SQL NULL semantika),
+    // a praktički svi blokovi imaju goal NULL — zato .or s is.null
+    supabase.from('blocks').select('id, name').eq('athlete_id', athleteId)
+      .or('goal.is.null,goal.neq.__template__')
+      .order('created_at', { ascending: false })
       .then(({ data }) => setBlocks((data ?? []) as { id: string; name: string }[]))
   }, [athleteId])
   const save = async (blockId: string, name: string) => {
     setBusy(true)
     // template is owned by the admin so it never pollutes a lifter's plan
-    await postApi('/api/admin/copy-block', { sourceBlockId: blockId, targetAthleteId: adminId, name, asTemplate: true })
-    setBusy(false); onDone()
+    const res = await postApi('/api/admin/copy-block', { sourceBlockId: blockId, targetAthleteId: adminId, name, asTemplate: true })
+    setBusy(false)
+    if (res?.error) { alert(`Greška pri spremanju predloška: ${res.error}`); return }
+    onDone()
   }
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.8)', display: 'grid', placeItems: 'center', padding: 24 }} onClick={onClose}>

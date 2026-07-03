@@ -972,13 +972,14 @@ export function AthletePanel({
       await supabase.from('blocks').update({ status: 'planned' }).eq('id', block.id)
       setAllBlocks(bs => bs.map(b => b.id === block.id ? { ...b, status: 'planned' } : b))
     }
-    const { data } = await supabase.from('blocks').insert({
+    const { data, error } = await supabase.from('blocks').insert({
       athlete_id: athlete.id, name: name.trim(),
       start_date: today.toISOString().split('T')[0],
       end_date: endDate.toISOString().split('T')[0],
       status: 'active',
       ...(goalFilter ? { goal: goalFilter } : {}),
     }).select('id, name, status, start_date, end_date').single()
+    if (error) alert(`Greška pri kreiranju bloka: ${error.message}`)
     if (data) {
       setAllBlocks(bs => [data as BlockSummary, ...bs])
       setBlock({ ...data, weeks: [] } as unknown as Block)
