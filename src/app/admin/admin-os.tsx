@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutGrid, Users, Dumbbell, Trophy, Bell, Search, Plus, Check, Send,
   Loader2, PanelLeft, PanelRight, ChevronRight, ChevronLeft, ChevronDown, Settings, Trash2, LogOut, AlertCircle, SlidersHorizontal,
-  User, Activity, Menu, FolderOpen, Copy, Eye, EyeOff,
+  User, Activity, Menu, FolderOpen, Copy, Eye, EyeOff, KeyRound,
 } from 'lucide-react'
 import type { AthleteProfile } from './athlete-panels'
 import type { Block, Exercise } from '../training/types'
@@ -436,6 +436,7 @@ function LifteriSection({ athletes, search, setSearch, onPick, onAdded, onDelete
   const [showAdd, setShowAdd] = useState(false)
   const [manage, setManage] = useState(false)
   const [confirmId, setConfirmId] = useState<string | null>(null)
+  const [resetId, setResetId] = useState<string | null>(null)
   const list = athletes.filter(a => a.full_name?.toLowerCase().includes(search.toLowerCase()))
   return (
     <div>
@@ -455,8 +456,12 @@ function LifteriSection({ athletes, search, setSearch, onPick, onAdded, onDelete
           return (
             <div className="lifter-cell" key={a.id} onClick={() => !manage && onPick(a.id)} style={{ position: 'relative', cursor: manage ? 'default' : 'pointer' }}>
               {manage && a.role !== 'admin' && (
-                <button className="icon-sm danger" onClick={e => { e.stopPropagation(); setConfirmId(a.id) }}
-                  style={{ position: 'absolute', top: 10, right: 10 }} title="Obriši korisnika"><Trash2 size={14} /></button>
+                <>
+                  <button className="icon-sm danger" onClick={e => { e.stopPropagation(); setConfirmId(a.id) }}
+                    style={{ position: 'absolute', top: 10, right: 10 }} title="Obriši korisnika"><Trash2 size={14} /></button>
+                  <button className="icon-sm" onClick={e => { e.stopPropagation(); setResetId(a.id) }}
+                    style={{ position: 'absolute', top: 10, right: 44 }} title="Promijeni lozinku"><KeyRound size={14} /></button>
+                </>
               )}
               <div className="circle">{initials(a.full_name)}<span className={'sdot ' + (active ? 'on-track' : 'monitor')} /></div>
               <div className="n">{a.full_name}</div>
@@ -468,6 +473,7 @@ function LifteriSection({ athletes, search, setSearch, onPick, onAdded, onDelete
         {list.length === 0 && <div className="os-empty">Nema rezultata.</div>}
       </div>
       {showAdd && <AddLifterModal onClose={() => setShowAdd(false)} onAdded={onAdded} adminId={adminId} />}
+      {resetId && <ResetPasswordModal athlete={athletes.find(a => a.id === resetId)!} onClose={() => setResetId(null)} />}
       {confirmId && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.8)', display: 'grid', placeItems: 'center', padding: 24 }} onClick={() => setConfirmId(null)}>
           <div className="card" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()}>
@@ -534,6 +540,48 @@ function AddLifterModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 6 }}>
             <button className="btn-a" onClick={onClose}>{ok ? 'Zatvori' : 'Odustani'}</button>
             {!ok && <button className="btn-a accent" onClick={submit} disabled={busy}>{busy ? 'Dodajem…' : 'Dodaj'}</button>}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ResetPasswordModal({ athlete, onClose }: { athlete: AthleteProfile; onClose: () => void }) {
+  const [pass, setPass] = useState('')
+  const [busy, setBusy] = useState(false), [err, setErr] = useState(''), [ok, setOk] = useState('')
+  const submit = async () => {
+    setErr('')
+    if (pass && pass.length < 8) { setErr('Lozinka mora imati barem 8 znakova.'); return }
+    setBusy(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ userId: athlete.id, password: pass || undefined }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setErr(json.error ?? 'Greška.'); return }
+      setOk(`Nova lozinka za ${athlete.full_name}: ${json.password}`)
+    } catch (e) { setErr((e as Error).message) } finally { setBusy(false) }
+  }
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.8)', display: 'grid', placeItems: 'center', padding: 24 }} onClick={onClose}>
+      <div className="card" style={{ width: '100%', maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+        <div className="card-head"><span className="t">Promijeni lozinku — {athlete.full_name}</span></div>
+        <div style={{ display: 'grid', gap: 10 }}>
+          <div className="field"><label>Nova lozinka (min. 8 znakova)</label><input type="text" value={pass} onChange={e => setPass(e.target.value)} placeholder="prazno = generiraj automatski" autoComplete="new-password" /></div>
+          {err && <div style={{ color: 'var(--accent)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>{err}</div>}
+          {ok && (
+            <div style={{ color: '#6fcf7e', fontSize: 12, fontFamily: 'var(--font-mono)', userSelect: 'text', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, padding: '10px 12px', lineHeight: 1.6 }}>
+              {ok}
+              <div style={{ color: 'var(--text-muted)', fontSize: 10, marginTop: 4 }}>Prepiši lozinku prije zatvaranja — prikazuje se samo jednom.</div>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 6 }}>
+            <button className="btn-a" onClick={onClose}>{ok ? 'Zatvori' : 'Odustani'}</button>
+            {!ok && <button className="btn-a accent" onClick={submit} disabled={busy}>{busy ? 'Mijenjam…' : 'Promijeni'}</button>}
           </div>
         </div>
       </div>
