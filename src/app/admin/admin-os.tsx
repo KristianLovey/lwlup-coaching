@@ -14,6 +14,7 @@ import {
   LayoutGrid, Users, Dumbbell, Trophy, Bell, Search, Plus, Check, Send,
   Loader2, PanelLeft, PanelRight, ChevronRight, ChevronLeft, ChevronDown, Settings, Trash2, LogOut, AlertCircle, SlidersHorizontal,
   User, Activity, Menu, FolderOpen, Copy, Eye, EyeOff, KeyRound,
+  Calendar, FileText, Pencil, ClipboardList, Target, Scale, Droplets, Utensils,
 } from 'lucide-react'
 import type { AthleteProfile } from './athlete-panels'
 import type { Block, Exercise } from '../training/types'
@@ -28,12 +29,44 @@ const SectionLoader = () => (
 const AthleteOverview = dynamic(() => import('./athlete-panels').then(m => ({ default: m.AthleteOverview })), { ssr: false, loading: SectionLoader })
 const AthletePanel = dynamic(() => import('./athlete-panels').then(m => ({ default: m.AthletePanel })), { ssr: false, loading: SectionLoader })
 const CompetitionsManager = dynamic(() => import('./competitions-manager').then(m => ({ default: m.CompetitionsManager })), { ssr: false, loading: SectionLoader })
+const NotesSection = dynamic(() => import('./athlete-sections').then(m => ({ default: m.NotesSection })), { ssr: false, loading: SectionLoader })
+const BwSection = dynamic(() => import('./athlete-sections').then(m => ({ default: m.BwSection })), { ssr: false, loading: SectionLoader })
+const WaterSection = dynamic(() => import('./athlete-sections').then(m => ({ default: m.WaterSection })), { ssr: false, loading: SectionLoader })
+const NutritionSection = dynamic(() => import('./athlete-sections').then(m => ({ default: m.NutritionSection })), { ssr: false, loading: SectionLoader })
+const WellbeingSection = dynamic(() => import('./athlete-sections').then(m => ({ default: m.WellbeingSection })), { ssr: false, loading: SectionLoader })
 
-type Section = 'dashboard' | 'lifteri' | 'tim' | 'treneri' | 'natjecanja' | 'obavijesti' | 'predlosci'
+type Section =
+  | 'dashboard' | 'planiranje' | 'biljeske' | 'upis' | 'pregled' | 'prioriteti' | 'meet'
+  | 'bw' | 'tekucina' | 'prehrana' | 'wellbeing'
+  | 'lifteri' | 'tim' | 'treneri' | 'natjecanja' | 'obavijesti' | 'predlosci'
 type Coach = AthleteProfile
 
-const NAV: { id: Section; label: string; icon: React.ReactNode }[] = [
-  { id: 'dashboard',  label: 'Dashboard',  icon: <LayoutGrid size={19} /> },
+// Sekcije vezane uz odabranog liftera (hijerarhija po želji trenera)
+const LIFTER_SECTIONS: Section[] = ['dashboard', 'planiranje', 'biljeske', 'upis', 'pregled', 'prioriteti', 'meet', 'bw', 'tekucina', 'prehrana', 'wellbeing']
+
+const LIFTER_NAV: { group: string; items: { id: Section; label: string; icon: React.ReactNode }[] }[] = [
+  { group: 'Pregled', items: [
+    { id: 'dashboard',  label: 'Dashboard',           icon: <LayoutGrid size={19} /> },
+  ] },
+  { group: 'Trening', items: [
+    { id: 'planiranje', label: 'Planiranje blokova',  icon: <Calendar size={19} /> },
+    { id: 'biljeske',   label: 'Bilješke',            icon: <FileText size={19} /> },
+    { id: 'upis',       label: 'Upisivanje treninga', icon: <Pencil size={19} /> },
+    { id: 'pregled',    label: 'Pregled treninga',    icon: <ClipboardList size={19} /> },
+  ] },
+  { group: 'Natjecanje', items: [
+    { id: 'prioriteti', label: 'Prioriteti',          icon: <Target size={19} /> },
+    { id: 'meet',       label: 'Meet attempts',       icon: <Trophy size={19} /> },
+  ] },
+  { group: 'Zdravlje', items: [
+    { id: 'bw',         label: 'Tjelesna težina',     icon: <Scale size={19} /> },
+    { id: 'tekucina',   label: 'Unos tekućine',       icon: <Droplets size={19} /> },
+    { id: 'prehrana',   label: 'Prehrana i kalorije', icon: <Utensils size={19} /> },
+    { id: 'wellbeing',  label: 'Wellbeing',           icon: <Activity size={19} /> },
+  ] },
+]
+
+const ADMIN_NAV: { id: Section; label: string; icon: React.ReactNode }[] = [
   { id: 'lifteri',    label: 'Lifteri',    icon: <Users size={19} /> },
   { id: 'predlosci',  label: 'Predlošci',  icon: <FolderOpen size={19} /> },
   { id: 'tim',        label: 'Tim',        icon: <Dumbbell size={19} /> },
@@ -235,10 +268,14 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
 
   const sectionTitle: Record<Section, string> = {
     dashboard: selected ? selected.full_name : 'Athlete Dashboard',
+    planiranje: 'Planiranje blokova', biljeske: 'Bilješke', upis: 'Upisivanje treninga',
+    pregled: 'Pregled treninga', prioriteti: 'Prioriteti', meet: 'Meet attempts',
+    bw: 'Tjelesna težina', tekucina: 'Unos tekućine', prehrana: 'Prehrana i kalorije', wellbeing: 'Wellbeing',
     lifteri: 'Upravljanje liferima', tim: 'Statistika tima',
     treneri: 'Treneri & role', natjecanja: 'Natjecanja', obavijesti: 'Obavijesti',
     predlosci: 'Predlošci blokova',
   }
+  const isLifterSection = LIFTER_SECTIONS.includes(section)
 
   return (
     <div className={shellClass}>
@@ -250,9 +287,36 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
             <div className="txt">LWL UP<small>{isTrener ? 'TRENER · OS' : 'ADMIN · OS'}</small></div>
             <button className="nav-collapse" onClick={() => setNavCollapsed(v => !v)} aria-label="Skupi izbornik"><PanelLeft size={18} /></button>
           </div>
+          {/* ── Odabir liftera — sve sekcije ispod odnose se na njega ── */}
+          {!navCollapsed && (
+            <div style={{ padding: '2px 14px 6px' }}>
+              <div className="nav-section" style={{ paddingLeft: 0 }}>Lifter</div>
+              <div className="os-select" style={{ width: '100%' }}>
+                <select value={selectedId ?? ''} onChange={e => { setSelectedId(e.target.value || null); setNavMobileOpen(false) }} style={{ width: '100%', minWidth: 0 }}>
+                  <option value="">— odaberi liftera —</option>
+                  {athletes.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
+                </select>
+                <span className="cr"><ChevronDown size={14} /></span>
+              </div>
+            </div>
+          )}
+          {/* ── Sekcije liftera, grupirane (razdjelnice = kategorije) ── */}
+          {LIFTER_NAV.map(g => (
+            <div key={g.group}>
+              <div className="nav-section">{g.group}</div>
+              <nav className="nav-items">
+                {g.items.map(n => (
+                  <button key={n.id} className={'nav-item' + (section === n.id && !settingsOpen ? ' active' : '')} onClick={() => { setSection(n.id); setSettingsOpen(false); setNavMobileOpen(false) }} title={n.label}>
+                    <span className="ico">{n.icon}</span>
+                    <span className="nav-label">{n.label}</span>
+                  </button>
+                ))}
+              </nav>
+            </div>
+          ))}
           <div className="nav-section">Upravljanje</div>
           <nav className="nav-items">
-            {(isTrener ? NAV.filter(n => n.id === 'dashboard' || n.id === 'lifteri' || n.id === 'obavijesti') : NAV).map(n => (
+            {(isTrener ? ADMIN_NAV.filter(n => n.id === 'lifteri' || n.id === 'obavijesti') : ADMIN_NAV).map(n => (
               <button key={n.id} className={'nav-item' + (section === n.id && !settingsOpen ? ' active' : '')} onClick={() => { setSection(n.id); setSettingsOpen(false); setNavMobileOpen(false); if (n.id === 'lifteri') setLifteriManaging(false) }} title={n.label}>
                 <span className="ico">{n.icon}</span>
                 <span className="nav-label">{n.label}</span>
@@ -313,9 +377,11 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
               <h1>
                 {section === 'dashboard' && selected
                   ? <>{selected.full_name} <span className="dim">· {(selected.role ?? 'lifter').toUpperCase()}</span></>
-                  : (section === 'lifteri' && lifteriManaging && selected)
-                    ? <>{selected.full_name} <span className="dim">· {(selected.role ?? 'lifter').toUpperCase()}</span></>
-                    : sectionTitle[section]}
+                  : (isLifterSection && section !== 'dashboard' && selected)
+                    ? <>{sectionTitle[section]} <span className="dim">· {selected.full_name}</span></>
+                    : (section === 'lifteri' && lifteriManaging && selected)
+                      ? <>{selected.full_name} <span className="dim">· {(selected.role ?? 'lifter').toUpperCase()}</span></>
+                      : sectionTitle[section]}
               </h1>
             </div>
            </div>
@@ -330,9 +396,23 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
           <div className="os-section" key={`${section}-${lifteriManaging}-${view}-${selectedId ?? 'none'}`}>
             {section === 'dashboard' && (
               selected
-                ? <AthleteDashboard athleteId={selected.id} athleteName={selected.full_name} cards={cards} setCard={setCard} />
+                ? <AthleteDashboard athleteId={selected.id} athleteName={selected.full_name} cards={cards} setCard={setCard} onViewAllTraining={() => setSection('pregled')} />
                 : <DashboardSummary athletes={athletes} totalAthletes={athletes.length} activeBlocks={activeBlocks} totalBlocks={totalBlocks} onPick={pickAthlete} />
             )}
+            {/* ── Sekcije liftera iz sidebara — zahtijevaju odabranog liftera ── */}
+            {isLifterSection && section !== 'dashboard' && !selected && (
+              <div className="os-empty" style={{ padding: 60 }}>Odaberi liftera u izborniku gore lijevo.</div>
+            )}
+            {section === 'planiranje' && selected && <AthleteOverview athlete={selected} onGoTraining={() => setSection('upis')} fixedTab="planiranje" />}
+            {section === 'biljeske' && selected && <NotesSection athleteId={selected.id} adminId={adminId} />}
+            {section === 'upis' && selected && <AthletePanel athlete={selected} exercises={exercises} allAthletes={athletes} onBack={() => setSection('dashboard')} onRefresh={loadAthletes} />}
+            {section === 'pregled' && selected && <AthleteOverview athlete={selected} onGoTraining={() => setSection('upis')} fixedTab="detaljno" />}
+            {section === 'prioriteti' && selected && <AthleteOverview athlete={selected} onGoTraining={() => setSection('upis')} fixedTab="prioriteti" />}
+            {section === 'meet' && selected && <AthleteOverview athlete={selected} onGoTraining={() => setSection('upis')} fixedTab="meetday" />}
+            {section === 'bw' && selected && <BwSection athleteId={selected.id} />}
+            {section === 'tekucina' && selected && <WaterSection athleteId={selected.id} />}
+            {section === 'prehrana' && selected && <NutritionSection athleteId={selected.id} />}
+            {section === 'wellbeing' && selected && <WellbeingSection athleteId={selected.id} />}
             {section === 'lifteri' && (
               (lifteriManaging && selected)
                 ? (view === 'training'

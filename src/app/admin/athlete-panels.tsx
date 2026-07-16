@@ -43,11 +43,14 @@ export type AthleteProfile = {
 
 
 // ── Athlete Overview ───────────────────────────────────────────────
-export function AthleteOverview({ athlete, onGoTraining }: {
+export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
   athlete: AthleteProfile; onBack?: () => void; onGoTraining: () => void
+  // fixedTab: prikaži samo jedan tab bez tab bara — sekcije u novom sidebaru
+  fixedTab?: 'opcenito' | 'detaljno' | 'meetday' | 'prioriteti' | 'planiranje'
 }) {
   const initials = athlete.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
-  const [tab, setTab] = useState<'opcenito' | 'detaljno' | 'meetday' | 'prioriteti' | 'planiranje'>('opcenito')
+  const [tab, setTab] = useState<'opcenito' | 'detaljno' | 'meetday' | 'prioriteti' | 'planiranje'>(fixedTab ?? 'opcenito')
+  useEffect(() => { if (fixedTab) setTab(fixedTab) }, [fixedTab])
   const [bwLogs, setBwLogs] = useState<any[]>([])
   const [nutLogs, setNutLogs] = useState<any[]>([])
   const [waterLogs, setWaterLogs] = useState<any[]>([])
@@ -312,15 +315,17 @@ export function AthleteOverview({ athlete, onGoTraining }: {
         </div>
       </div>
 
-      {/* ── Tab bar — underline style ── */}
-      <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '24px', overflowX: 'auto' as const }}>
-        {([['opcenito','OPĆENITO'],['detaljno','DETALJNO'],['planiranje','PLANIRANJE'],['meetday','MEET DAY'],['prioriteti','PRIORITETI'],['trening','UREĐIVANJE TRENINGA']] as const).map(([id, label]) => (
-          <button key={id} onClick={() => id === 'trening' ? onGoTraining() : setTab(id as 'opcenito'|'detaljno'|'meetday'|'prioriteti'|'planiranje')}
-            style={{ padding: '14px 18px', background: 'transparent', border: 'none', borderBottom: tab === id ? '2px solid #fff' : '2px solid transparent', cursor: 'pointer', fontSize: '0.52rem', fontFamily: FM, fontWeight: tab === id ? 700 : 400, color: tab === id ? '#fff' : 'rgba(255,255,255,0.28)', transition: 'all 0.15s', letterSpacing: '0.08em', whiteSpace: 'nowrap' as const, flexShrink: 0, marginBottom: '-1px' }}>
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* ── Tab bar — underline style (skriven kad je sekcija fiksirana kroz sidebar) ── */}
+      {!fixedTab && (
+        <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '24px', overflowX: 'auto' as const }}>
+          {([['opcenito','OPĆENITO'],['detaljno','DETALJNO'],['planiranje','PLANIRANJE'],['meetday','MEET DAY'],['prioriteti','PRIORITETI'],['trening','UREĐIVANJE TRENINGA']] as const).map(([id, label]) => (
+            <button key={id} onClick={() => id === 'trening' ? onGoTraining() : setTab(id as 'opcenito'|'detaljno'|'meetday'|'prioriteti'|'planiranje')}
+              style={{ padding: '14px 18px', background: 'transparent', border: 'none', borderBottom: tab === id ? '2px solid #fff' : '2px solid transparent', cursor: 'pointer', fontSize: '0.52rem', fontFamily: FM, fontWeight: tab === id ? 700 : 400, color: tab === id ? '#fff' : 'rgba(255,255,255,0.28)', transition: 'all 0.15s', letterSpacing: '0.08em', whiteSpace: 'nowrap' as const, flexShrink: 0, marginBottom: '-1px' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '60px 0', color: 'rgba(255,255,255,0.2)' }}>

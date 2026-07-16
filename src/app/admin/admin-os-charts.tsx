@@ -195,6 +195,120 @@ export function MultiLineChart({ series, dates, height = 240 }: {
   )
 }
 
+// Stacked bar chart — tjedni volumen u stvarnim kg, tooltip s točnim brojkama,
+// ukupna vrijednost iznad stupca, blok-trake kao u LineChartu.
+export function StackedBarChart({ series, dates, segments, height = 240 }: {
+  series: { name: string; data: number[] }[]
+  dates?: string[]
+  segments?: { s: number; e: number; label: string; color: string }[]
+  height?: number
+}) {
+  const w = 640, h = height, padL = 46, padR = 12, padT = 22, padB = 26
+  const [hi, setHi] = useState<number | null>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const n = Math.max(0, ...series.map(s => s.data.length))
+  const totals = Array.from({ length: n }, (_, i) => series.reduce((a, s) => a + (s.data[i] ?? 0), 0))
+  if (!series.length || n === 0 || totals.every(t => t <= 0)) return <div className="os-empty">Nema podataka za odabir</div>
+  const max = Math.max(...totals) * 1.12 || 1
+  const bw = (w - padL - padR) / n
+  const Xc = (i: number) => padL + i * bw + bw / 2
+  const Y = (v: number) => h - padB - (v / max) * (h - padT - padB)
+  const colored = series.map((s, i) => ({ ...s, color: SERIES_COLORS[i % SERIES_COLORS.length] }))
+  const fmt = (v: number) => Math.round(v).toLocaleString('hr')
+  const onMove = (clientX: number) => {
+    const el = wrapRef.current; if (!el) return
+    const r = el.getBoundingClientRect()
+    setHi(Math.max(0, Math.min(n - 1, Math.floor(((clientX - r.left) / r.width) * n))))
+  }
+  return (
+    <div>
+      <div ref={wrapRef} style={{ position: 'relative', touchAction: 'none' }}
+        onMouseMove={e => onMove(e.clientX)} onMouseLeave={() => setHi(null)}
+        onTouchStart={e => onMove(e.touches[0].clientX)} onTouchMove={e => onMove(e.touches[0].clientX)} onTouchEnd={() => setHi(null)}>
+        <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" width="100%" height={h} style={{ display: 'block' }}>
+          {/* blok-trake u pozadini */}
+          {segments && segments.map((seg, k) => {
+            const leftX = padL + seg.s * bw
+            const rightX = padL + (seg.e + 1) * bw
+            return (
+              <g key={'seg' + k}>
+                <rect x={leftX} y={padT} width={Math.max(0, rightX - leftX)} height={h - padT - padB} fill={seg.color} opacity={0.07} />
+                {seg.s > 0 && <line x1={leftX} y1={padT} x2={leftX} y2={h - padB} stroke={seg.color} strokeWidth="1" strokeDasharray="3 3" opacity="0.5" vectorEffect="non-scaling-stroke" />}
+              </g>
+            )
+          })}
+          {Array.from({ length: 5 }).map((_, i) => {
+            const v = (max * i) / 4, y = Y(v)
+            return <line key={'g' + i} x1={padL} y1={y} x2={w - padR} y2={y} stroke="var(--border)" strokeWidth="1" vectorEffect="non-scaling-stroke" opacity={i === 0 ? 0.9 : 0.5} />
+          })}
+          {Array.from({ length: n }).map((_, i) => {
+            let acc = 0
+            return (
+              <g key={'b' + i} opacity={hi == null || hi === i ? 1 : 0.45} style={{ transition: 'opacity 0.15s' }}>
+                {colored.map(s => {
+                  const v = s.data[i] ?? 0
+                  if (v <= 0) return null
+                  const y0 = Y(acc), y1 = Y(acc + v)
+                  acc += v
+                  return <rect key={s.name} x={padL + i * bw + bw * 0.19} y={y1} width={bw * 0.62} height={Math.max(0.5, y0 - y1)} fill={s.color} rx="2" />
+                })}
+              </g>
+            )
+          })}
+        </svg>
+        {/* ukupno iznad stupca (HTML — čitko na svakoj širini) */}
+        {n <= 14 && totals.map((t, i) => t > 0 ? (
+          <div key={'t' + i} style={{ position: 'absolute', left: `${(Xc(i) / w) * 100}%`, top: `calc(${(Y(t) / h) * 100}% - 15px)`, transform: 'translateX(-50%)', fontFamily: 'var(--font-mono)', fontSize: 8.5, fontWeight: 700, color: 'var(--text-dim)', whiteSpace: 'nowrap', pointerEvents: 'none' }}>{fmt(t)}</div>
+        ) : null)}
+        {/* y-os */}
+        {Array.from({ length: 5 }).map((_, i) => {
+          const v = (max * i) / 4
+          return <div key={'yl' + i} style={{ position: 'absolute', left: 0, width: `${(padL / w) * 100}%`, top: `${(Y(v) / h) * 100}%`, transform: 'translateY(-50%)', textAlign: 'right', paddingRight: 8, boxSizing: 'border-box', fontFamily: 'var(--font-mono)', fontSize: 9.5, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', pointerEvents: 'none' }}>{fmt(v)}</div>
+        })}
+        {/* x-os datumi tjedana */}
+        {dates && dates.map((d, i) => (
+          n <= 14 || i % Math.ceil(n / 8) === 0
+            ? <div key={'xl' + i} style={{ position: 'absolute', left: `${(Xc(i) / w) * 100}%`, bottom: segments?.length ? 16 : 0, transform: 'translateX(-50%)', fontFamily: 'var(--font-mono)', fontSize: 8.5, color: 'var(--text-faint)', whiteSpace: 'nowrap', pointerEvents: 'none' }}>{d}</div>
+            : null
+        ))}
+        {/* blok pilule ispod */}
+        {segments && segments.map((seg, k) => {
+          const cx = padL + ((seg.s + seg.e + 1) / 2) * bw
+          return (
+            <div key={'sl' + k} style={{ position: 'absolute', left: `${(cx / w) * 100}%`, bottom: 0, transform: 'translateX(-50%)', pointerEvents: 'none', maxWidth: `${(((seg.e - seg.s + 1) * bw) / w) * 100}%` }}>
+              <span style={{ display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: 8.5, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: seg.color, background: `color-mix(in srgb, ${seg.color} 16%, var(--surface-1))`, border: `1px solid color-mix(in srgb, ${seg.color} 45%, transparent)`, borderRadius: 5, padding: '1px 6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{seg.label}</span>
+            </div>
+          )
+        })}
+        {hi != null && totals[hi] > 0 && (
+          <div style={{ position: 'absolute', left: `${(Xc(hi) / w) * 100}%`, top: 2, transform: `translateX(${hi > n / 2 ? '-100%' : '0'})`, pointerEvents: 'none', background: 'var(--surface-3)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '6px 9px', whiteSpace: 'nowrap', boxShadow: '0 6px 20px rgba(0,0,0,0.5)', zIndex: 2 }}>
+            {dates?.[hi] && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 3 }}>tjedan {dates[hi]}</div>}
+            {colored.filter(s => (s.data[hi] ?? 0) > 0).map(s => (
+              <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+                <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />
+                <span style={{ color: 'var(--text-dim)', flex: 1, marginRight: 8 }}>{s.name}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{fmt(s.data[hi])} kg</span>
+              </div>
+            ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, borderTop: '1px solid var(--border)', marginTop: 4, paddingTop: 3, fontSize: 11 }}>
+              <span style={{ color: 'var(--text-muted)' }}>Ukupno</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800 }}>{fmt(totals[hi])} kg</span>
+            </div>
+          </div>
+        )}
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', marginTop: 10 }}>
+        {colored.map(s => (
+          <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: s.color, flexShrink: 0 }} />
+            <span style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{s.name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function VolumeBars({ volume, rpe, labels }: { volume: number[]; rpe: number[]; labels?: string[] }) {
   const w = 640, h = 220, padL = 30, padR = 30, padT = 16, padB = 28
   if (!volume || volume.length === 0) return <div className="os-empty">Nema podataka o volumenu</div>

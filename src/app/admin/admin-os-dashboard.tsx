@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Minus, Plus, ChevronDown, X, RotateCcw, Eye, EyeOff } from 'lucide-react'
-import { Spark, LineChart, MultiLineChart, Donut, StrengthRadar, MetricBar } from './admin-os-charts'
+import { Spark, LineChart, StackedBarChart, Donut, StrengthRadar, MetricBar } from './admin-os-charts'
 import { estimate1RM } from '../training/training-setplan'
 
 const supabase = createClient()
@@ -15,7 +15,7 @@ export type DashCards = Record<CardId, CardState>
 export const CARD_META: { id: CardId; label: string; series: boolean }[] = [
   { id: 'blockplan',  label: 'Plan blokova',       series: false },
   { id: 'progress',   label: 'Pregled napretka',   series: true },
-  { id: 'compliance', label: 'Trening compliance',  series: false },
+  { id: 'compliance', label: 'Zadnji treninzi',      series: false },
   { id: 'volume',     label: 'Volumen & intenzitet', series: true },
   { id: 'bodyweight', label: 'Trend težine',        series: true },
   { id: 'recovery',   label: 'Oporavak',            series: false },
@@ -71,14 +71,15 @@ function fillSeries(weeks: string[], perWeek: Record<string, number>): number[] 
 type Best = { e1: number; date: string; name: string; day: string; kg: number; reps: number; rpe: number | null }
 type Raw = { workouts: any[]; sets: any[]; bw: { date: string; weight_kg: number }[]; wb: any[]; nut: any[]; meets: any[]; blocks: any[]; comps: any[]; profile: any | null; phases: any[]; compSel: any | null }
 
-export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
+export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onViewAllTraining }: {
   athleteId: string; athleteName: string; cards: DashCards; setCard: (id: CardId, patch: Partial<CardState>) => void
+  onViewAllTraining?: () => void
 }) {
   const [raw, setRaw] = useState<Raw | null>(null)
   const [loading, setLoading] = useState(true)
   const [lift, setLift] = useState<LiftK>('sq')
   const [volLift, setVolLift] = useState<'all' | LiftK>('all')
-  const [exp, setExp] = useState<'total' | 'predicted' | 'compliance' | 'bw' | 'tonnage' | null>(null)
+  const [exp, setExp] = useState<'total' | 'predicted' | 'compliance' | 'bw' | 'daysout' | null>(null)
   const [planYear, setPlanYear] = useState(() => new Date().getFullYear())
 
   const DASH_CACHE_TTL = 90_000 // 90 s
@@ -163,6 +164,10 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
     const e1: Record<LiftK, Record<string, number>> = { sq: {}, bp: {}, dl: {} }
     const dayE1: Record<LiftK, Record<string, { e1: number } & SetMeta>> = { sq: {}, bp: {}, dl: {} }
     const dayDone: Record<LiftK, Record<string, SetMeta>> = { sq: {}, bp: {}, dl: {} }
+    type TopSet = { date: string; e1: number } & SetMeta
+    const topE1: Record<LiftK, TopSet[]> = { sq: [], bp: [], dl: [] }
+    const topDone: Record<LiftK, TopSet[]> = { sq: [], bp: [], dl: [] }
+    const tonWeekBlock: Record<string, Record<string, number>> = {}
     const volByWeek: Record<string, number> = {}
     const rpeByWeek: Record<string, number[]> = {}
     const compByWeek: Record<string, { done: number; total: number }> = {}
@@ -199,19 +204,24 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
         if (lk) {
           volMain[lk][wk] = (volMain[lk][wk] ?? 0) + ton
           const vv = (volVar[lk][nm] ??= {}); vv[wk] = (vv[wk] ?? 0) + ton
+          // tjedan → blok: najveća tonaža u tjednu odlučuje kojem bloku tjedan pripada
+          if (blockId) { const tb = (tonWeekBlock[wk] ??= {}); tb[blockId] = (tb[blockId] ?? 0) + ton }
+          // competition main lift only (exclude variations) — for the progress charts
+          const isComp = cat === 'Squat' || cat === 'Bench' || cat === 'Deadlift'
           // e1RM estimation is only valid for RPE >= 5 — ignore lighter/easier sets entirely
           const validRpe = s.rpe != null && Number(s.rpe) >= 5
-          if (validRpe) {
-            // competition main lift only (exclude variations) — for the progress charts
-            const isComp = cat === 'Squat' || cat === 'Bench' || cat === 'Deadlift'
-            const e = estimate1RM(kg, reps, s.rpe) ?? 0
-            if (e > 0) {
-              if (!e1[lk][wk] || e > e1[lk][wk]) e1[lk][wk] = e
-              if (e > bestE1[lk]) { bestE1[lk] = e; bestSrc[lk] = { e1: e, date: workoutDate, name: nm, day: '', kg, reps, rpe: s.rpe ?? null } }
-              if (isComp && (!dayE1[lk][workoutDate] || e > dayE1[lk][workoutDate].e1)) dayE1[lk][workoutDate] = { e1: e, kg, reps, rpe: s.rpe ?? null, blockId }
-            }
-            // "odrađeno": heaviest actual weight lifted on the comp lift that day
-            if (isComp && (!dayDone[lk][workoutDate] || kg > dayDone[lk][workoutDate].kg)) dayDone[lk][workoutDate] = { kg, reps, rpe: s.rpe ?? null, blockId }
+          const e = validRpe ? (estimate1RM(kg, reps, s.rpe) ?? 0) : 0
+          if (e > 0) {
+            if (!e1[lk][wk] || e > e1[lk][wk]) e1[lk][wk] = e
+            if (e > bestE1[lk]) { bestE1[lk] = e; bestSrc[lk] = { e1: e, date: workoutDate, name: nm, day: '', kg, reps, rpe: s.rpe ?? null } }
+            if (isComp && (!dayE1[lk][workoutDate] || e > dayE1[lk][workoutDate].e1)) dayE1[lk][workoutDate] = { e1: e, kg, reps, rpe: s.rpe ?? null, blockId }
+          }
+          // "odrađeno": heaviest actual weight lifted on the comp lift that day
+          if (isComp && validRpe && (!dayDone[lk][workoutDate] || kg > dayDone[lk][workoutDate].kg)) dayDone[lk][workoutDate] = { kg, reps, rpe: s.rpe ?? null, blockId }
+          // Zahtjev trenera: u graf ulazi SVAKI set označen kao top set (glavni liftovi)
+          if (isComp && (s as any).is_top_set) {
+            topDone[lk].push({ date: workoutDate, e1: kg, kg, reps, rpe: s.rpe ?? null, blockId })
+            if (e > 0) topE1[lk].push({ date: workoutDate, e1: e, kg, reps, rpe: s.rpe ?? null, blockId })
           }
         }
       }
@@ -219,10 +229,21 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
     type Sess = { date: string; e1: number; kg: number; reps: number; rpe: number | null; blockId: string | null }
     const mkSess = (rec: Record<string, { e1: number } & SetMeta>): Sess[] =>
       Object.entries(rec).map(([date, v]) => ({ date, e1: v.e1, kg: v.kg, reps: v.reps, rpe: v.rpe, blockId: v.blockId })).sort((a, b) => a.date.localeCompare(b.date))
-    const e1Sessions: Record<LiftK, Sess[]> = { sq: mkSess(dayE1.sq), bp: mkSess(dayE1.bp), dl: mkSess(dayE1.dl) }
     const mkDone = (rec: Record<string, SetMeta>): Sess[] =>
       Object.entries(rec).map(([date, v]) => ({ date, e1: v.kg, kg: v.kg, reps: v.reps, rpe: v.rpe, blockId: v.blockId })).sort((a, b) => a.date.localeCompare(b.date))
-    const doneSessions: Record<LiftK, Sess[]> = { sq: mkDone(dayDone.sq), bp: mkDone(dayDone.bp), dl: mkDone(dayDone.dl) }
+    // Graf prikazuje svaki označeni TOP SET; fallback na najbolji set po danu
+    // za liftere koji top setove ne označavaju.
+    const sortD = (a: Sess, b: Sess) => a.date.localeCompare(b.date)
+    const e1Sessions: Record<LiftK, Sess[]> = {
+      sq: topE1.sq.length ? [...topE1.sq].sort(sortD) : mkSess(dayE1.sq),
+      bp: topE1.bp.length ? [...topE1.bp].sort(sortD) : mkSess(dayE1.bp),
+      dl: topE1.dl.length ? [...topE1.dl].sort(sortD) : mkSess(dayE1.dl),
+    }
+    const doneSessions: Record<LiftK, Sess[]> = {
+      sq: topDone.sq.length ? [...topDone.sq].sort(sortD) : mkDone(dayDone.sq),
+      bp: topDone.bp.length ? [...topDone.bp].sort(sortD) : mkDone(dayDone.bp),
+      dl: topDone.dl.length ? [...topDone.dl].sort(sortD) : mkDone(dayDone.dl),
+    }
     const weeks = [...weekSet].sort()
     const bwByWeek: Record<string, number> = {}
     for (const r of bw) bwByWeek[weekKey(r.date)] = Number(r.weight_kg)
@@ -241,17 +262,12 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
     const blockWeeks = [...new Set(blockWo.map((w: any) => weekKey(w.workout_date)))].sort()
     const firstDate = blockWo[0]?.workout_date, lastDate = blockWo[blockWo.length - 1]?.workout_date
 
-    // tonnage last 7 days + by muscle group — use flat sets
-    const ago7Str = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10)
-    let ton7 = 0
-    const ton7ByCat: Record<string, number> = {}
-    for (const s of sets) {
-      const workoutDate: string = (s as any).workout_exercises?.workouts?.workout_date ?? ''
-      if (workoutDate >= ago7Str) {
-        const cat = (s as any).workout_exercises?.exercise?.category ?? 'Ostalo'
-        const kg = Number(s.weight_kg), reps = parseFloat(String(s.reps ?? ''))
-        if (kg > 0 && reps > 0) { ton7 += kg * reps; ton7ByCat[cat] = (ton7ByCat[cat] ?? 0) + kg * reps }
-      }
+    // tjedan → dominantni blok (za blok-trake na grafu volumena)
+    const blockByWeek: Record<string, string> = {}
+    for (const [wk, m] of Object.entries(tonWeekBlock)) {
+      let bestB: string | null = null, bv = 0
+      for (const [bid, v] of Object.entries(m)) if (v > bv) { bv = v; bestB = bid }
+      if (bestB) blockByWeek[wk] = bestB
     }
 
     // predicted total from latest meet's attempts
@@ -273,7 +289,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
     return {
       weeks, e1Sessions, doneSessions, bestE1, bestSrc, volByWeek, rpeByWeek, totalE1Week, bwByWeek, volMain, volVar,
       complianceSeries, complianceOverall: totalWo ? Math.round((doneWo / totalWo) * 100) : 0,
-      doneWo, totalWo, firstDate, lastDate, blockWeeks, curTotal, curBw, ton7, ton7ByCat,
+      doneWo, totalWo, firstDate, lastDate, blockWeeks, curTotal, curBw, blockByWeek,
       predicted, predBy, latestMeet: meets[0]?.meet_date ?? null,
       latestWb: wb[0] ?? null, latestNut: nut[0] ?? null, nutHistory: nut, bw, profile,
       blocks, nextComp: compSel ?? null, comps: [], doneDates, plannedDates, phases, compSel,
@@ -289,8 +305,8 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
 
   const rangeWeeks = (n: number, arr: string[]) => arr.slice(Math.max(0, arr.length - n))
   const totalSpark = fillSeries(data.weeks, data.totalE1Week)
-  const volSpark = data.weeks.map(w => Math.round((data.volByWeek[w] ?? 0) / 100))
   const bwSparkE = data.bw.map(r => Number(r.weight_kg))
+  const daysOut = data.nextComp?.date ? Math.max(0, Math.ceil((new Date(data.nextComp.date + 'T12:00:00').getTime() - Date.now()) / 86400000)) : null
 
   // progress (by session dates) — competition lifts only, RPE >= 5
   // Prozor = zadnjih N blokova. Sesija pripada bloku preko workout → week → block
@@ -344,15 +360,26 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
   const e1Segments = blockSegments(sess)
   const doneSegments = blockSegments(doneSess)
 
-  // volume (by lift / variation)
+  // volume (by lift / variation) — stvarni kilogrami po tjednu, ne ×100
   const vol = cards.volume
   const volWeeks = rangeWeeks(vol.range, data.weeks)
   const volDates = volWeeks.map(w => fmtDate(w))
   const volSeries = volLift === 'all'
-    ? (['sq', 'bp', 'dl'] as LiftK[]).map(lk => ({ name: liftNames[lk], data: volWeeks.map(w => Math.round((data.volMain[lk][w] ?? 0) / 100 * 10) / 10) }))
+    ? (['sq', 'bp', 'dl'] as LiftK[]).map(lk => ({ name: liftNames[lk], data: volWeeks.map(w => Math.round(data.volMain[lk][w] ?? 0)) }))
     : Object.entries(data.volVar[volLift])
-        .map(([name, byW]) => ({ name, total: Object.values(byW).reduce((a, b) => a + b, 0), data: volWeeks.map(w => Math.round((byW[w] ?? 0) / 100 * 10) / 10) }))
+        .map(([name, byW]) => ({ name, total: Object.values(byW).reduce((a, b) => a + b, 0), data: volWeeks.map(w => Math.round(byW[w] ?? 0)) }))
         .sort((a, b) => b.total - a.total).slice(0, 6).map(({ name, data }) => ({ name, data }))
+  // blok-trake po tjednima (isti stil kao na grafu 1RM)
+  const volSegments = (() => {
+    const segs: { s: number; e: number; label: string; color: string }[] = []
+    let cur: { id: string | null; s: number; e: number; label: string; color: string } | null = null
+    volWeeks.forEach((w, i) => {
+      const id = data.blockByWeek[w] ?? null
+      if (!cur || cur.id !== id) { cur = { id, s: i, e: i, label: id ? (blockName.get(id) ?? '') : '', color: id ? (blockColor.get(id) ?? '#6b8cff') : 'transparent' }; segs.push(cur) }
+      else cur.e = i
+    })
+    return segs.filter(g => g.label)
+  })()
 
   // bodyweight (by actual entries)
   const bwC = cards.bodyweight
@@ -386,71 +413,49 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
 
   return (
     <div>
-      {/* KPI strip — clickable to expand source */}
-      <div className="kpi-strip" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(168px, 1fr))' }}>
-        <KpiCard label="Trenutni total" num={data.curTotal || '—'} unit={data.curTotal ? 'kg' : ''} sub="najbolji e1RM zbroj" data={totalSpark} open={exp === 'total'} onClick={() => toggleExp('total')} />
-        <KpiCard label="Predviđeni total" num={data.predicted || '—'} unit={data.predicted ? 'kg' : ''} sub={data.latestMeet ? `meet ${fmtDate(data.latestMeet)}` : 'nema meeta'} data={[]} accent open={exp === 'predicted'} onClick={() => toggleExp('predicted')} />
-        <KpiCard label="Compliance" num={data.totalWo ? data.complianceOverall : '—'} unit={data.totalWo ? '%' : ''} sub={`${data.doneWo}/${data.totalWo} odrađenih treninga`} data={data.complianceSeries} open={exp === 'compliance'} onClick={() => toggleExp('compliance')} />
-        <KpiCard label="Tjelesna težina" num={data.curBw ?? '—'} unit={data.curBw ? 'kg' : ''} sub={data.bw.length ? `zadnji: ${fmtDate(data.bw[data.bw.length - 1].date)}` : '—'} data={bwSparkE} open={exp === 'bw'} onClick={() => toggleExp('bw')} />
-        <KpiCard label="Tonaža · 7d" num={data.ton7 ? Math.round(data.ton7).toLocaleString('hr') : '—'} unit={data.ton7 ? 'kg' : ''} sub="zadnjih 7 dana" data={volSpark} accent open={exp === 'tonnage'} onClick={() => toggleExp('tonnage')} />
+      {/* KPI strip — klik otvara detalje unutar kartice (ne u zasebnom panelu) */}
+      <div className="kpi-strip" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(168px, 1fr))', alignItems: 'start' }}>
+        <KpiCard label="Trenutni total" num={data.curTotal || '—'} unit={data.curTotal ? 'kg' : ''} sub="najbolji e1RM zbroj" data={totalSpark} open={exp === 'total'} onClick={() => toggleExp('total')}
+          detail={<>
+            {(['sq', 'bp', 'dl'] as LiftK[]).map(lk => { const b = data.bestSrc[lk]; return (
+              <div key={lk} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '5px 0', borderBottom: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                <span style={{ color: 'var(--text-muted)' }}>{liftNames[lk]}</span>
+                {b ? <span style={{ color: 'var(--text-dim)', textAlign: 'right' }}>{b.reps}×{b.kg}{b.rpe ? `@${b.rpe}` : ''} → <b style={{ color: 'var(--text)' }}>{b.e1} kg</b></span> : <span style={{ color: 'var(--text-faint)' }}>—</span>}
+              </div>) })}
+          </>} />
+        <KpiCard label="Predviđeni total" num={data.predicted || '—'} unit={data.predicted ? 'kg' : ''} sub={data.latestMeet ? `meet ${fmtDate(data.latestMeet)}` : 'nema meeta'} data={[]} accent open={exp === 'predicted'} onClick={() => toggleExp('predicted')}
+          detail={data.predicted ? <>
+            {(['sq', 'bp', 'dl'] as LiftK[]).map(lk => (
+              <div key={lk} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                <span style={{ color: 'var(--text-muted)' }}>{liftNames[lk]}</span><span style={{ fontWeight: 700 }}>{data.predBy[lk] || '—'} kg</span>
+              </div>))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0 0', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+              <span style={{ color: 'var(--text-muted)' }}>Projekcija</span><span style={{ fontWeight: 800, color: 'var(--accent)' }}>{data.predicted} kg</span>
+            </div>
+          </> : <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>Nema unesenih pokušaja za meet. Unesi ih u MEET DAY.</div>} />
+        <KpiCard label="Compliance" num={data.totalWo ? data.complianceOverall : '—'} unit={data.totalWo ? '%' : ''} sub={`${data.doneWo}/${data.totalWo} odrađenih treninga`} data={data.complianceSeries} open={exp === 'compliance'} onClick={() => toggleExp('compliance')}
+          detail={<p style={{ color: 'var(--text-dim)', fontSize: 12, lineHeight: 1.6, margin: 0 }}>
+            <b style={{ color: 'var(--text)' }}>{data.doneWo}</b> od <b style={{ color: 'var(--text)' }}>{data.totalWo}</b> treninga odrađeno
+            {data.firstDate && data.lastDate ? <> · <b style={{ color: 'var(--text)' }}>{fmtDate(data.firstDate)} – {fmtDate(data.lastDate)}</b></> : ''} ({data.blockWeeks.length} {data.blockWeeks.length === 1 ? 'tjedan' : 'tjedana'})
+          </p>} />
+        <KpiCard label="Tjelesna težina" num={data.curBw ?? '—'} unit={data.curBw ? 'kg' : ''} sub={data.bw.length ? `zadnji: ${fmtDate(data.bw[data.bw.length - 1].date)}` : '—'} data={bwSparkE} open={exp === 'bw'} onClick={() => toggleExp('bw')}
+          detail={data.bw.length ? <div style={{ maxHeight: 190, overflowY: 'auto' }}>
+            {[...data.bw].reverse().slice(0, 20).map((r, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                <span style={{ color: 'var(--text-muted)' }}>{fmtDate(r.date)}</span><span style={{ fontWeight: 700 }}>{r.weight_kg} kg</span>
+              </div>))}
+          </div> : <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Nema unosa težine</div>} />
+        <KpiCard label="Days out" num={daysOut ?? '—'} unit={daysOut != null ? 'dana' : ''} sub={data.nextComp ? `${data.nextComp.name}` : 'nema odabranog natjecanja'} data={[]} accent open={exp === 'daysout'} onClick={() => toggleExp('daysout')}
+          detail={data.nextComp ? <div style={{ fontSize: 12, lineHeight: 1.7 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13 }}>{data.nextComp.name}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{fmtDate(data.nextComp.date)}{data.nextComp.location ? ` · ${data.nextComp.location}` : ''}</div>
+          </div> : <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Odaberi natjecanje lifteru u planiranju.</div>} />
       </div>
-
-      {/* KPI detail panel */}
-      {exp && (
-        <div className="card os-fade" style={{ marginBottom: 14 }}>
-          {exp === 'total' && (
-            <><div className="card-head"><span className="t">Trenutni total — izvor (najbolji e1RM po liftu)</span></div>
-              <div className="rec-rows">
-                {(['sq', 'bp', 'dl'] as LiftK[]).map(lk => { const b = data.bestSrc[lk]; return (
-                  <div className="compliance-row" key={lk} style={{ alignItems: 'flex-start' }}>
-                    <span className="k" style={{ minWidth: 64 }}>{liftNames[lk]}</span>
-                    {b ? <span style={{ flex: 1, textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-dim)' }}>{b.name} · {b.reps}×{b.kg}kg{b.rpe ? ` @RPE${b.rpe}` : ''} · {fmtDate(b.date)}{b.day ? ` (${b.day})` : ''} → <b style={{ color: 'var(--text)' }}>{b.e1}kg e1RM</b></span> : <span className="v" style={{ color: 'var(--text-faint)' }}>—</span>}
-                  </div>) })}
-                <div className="compliance-row" style={{ borderTop: '1px solid var(--border)', paddingTop: 10 }}><span className="k">Total</span><span className="v" style={{ color: 'var(--accent)' }}>{data.curTotal} kg</span></div>
-              </div></>
-          )}
-          {exp === 'predicted' && (
-            <><div className="card-head"><span className="t">Predviđeni total — odabrani pokušaji (zadnji meet)</span></div>
-              {data.predicted ? <div className="rec-rows">
-                {(['sq', 'bp', 'dl'] as LiftK[]).map(lk => (
-                  <div className="compliance-row" key={lk}><span className="k">{liftNames[lk]}</span><span className="v">{data.predBy[lk] || '—'}<small> kg</small></span></div>
-                ))}
-                <div className="compliance-row" style={{ borderTop: '1px solid var(--border)', paddingTop: 10 }}><span className="k">Projekcija</span><span className="v" style={{ color: 'var(--accent)' }}>{data.predicted} kg</span></div>
-              </div> : <div className="os-empty">Nema unesenih pokušaja za meet. Unesi ih u MEET DAY.</div>}</>
-          )}
-          {exp === 'compliance' && (
-            <><div className="card-head"><span className="t">Compliance — odrađeni treninzi</span></div>
-              <p style={{ color: 'var(--text-dim)', fontSize: 13, lineHeight: 1.6, margin: '0 0 4px' }}>
-                <b style={{ color: 'var(--text)' }}>{data.doneWo}</b> od <b style={{ color: 'var(--text)' }}>{data.totalWo}</b> zadanih treninga označeno kao odrađeno
-                {data.firstDate && data.lastDate ? <> u periodu <b style={{ color: 'var(--text)' }}>{fmtDate(data.firstDate)} – {fmtDate(data.lastDate)}</b></> : ''} ({data.weeks.length} tjedana).
-              </p></>
-          )}
-          {exp === 'bw' && (
-            <><div className="card-head"><span className="t">Tjelesna težina — unosi</span></div>
-              {data.bw.length ? <div style={{ display: 'flex', flexDirection: 'column', gap: 0, maxHeight: 240, overflowY: 'auto' }}>
-                {[...data.bw].reverse().slice(0, 30).map((r, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 13 }}>
-                    <span style={{ color: 'var(--text-muted)' }}>{fmtDate(r.date)}</span><span style={{ fontWeight: 700 }}>{r.weight_kg} kg</span>
-                  </div>))}
-              </div> : <div className="os-empty">Nema unosa težine</div>}</>
-          )}
-          {exp === 'tonnage' && (
-            <><div className="card-head"><span className="t">Tonaža (7 dana) — po mišićnim skupinama</span></div>
-              {Object.keys(data.ton7ByCat).length ? <div className="rec-rows">
-                {Object.entries(data.ton7ByCat).sort((a, b) => b[1] - a[1]).map(([cat, t]) => (
-                  <div className="rec-row" key={cat}><span className="k">{cat}</span><span className="val">{Math.round(t).toLocaleString('hr')}</span><MetricBar value={t} max={Math.max(...Object.values(data.ton7ByCat))} /></div>
-                ))}
-              </div> : <div className="os-empty">Nema podataka u zadnjih 7 dana</div>}</>
-          )}
-        </div>
-      )}
 
       {/* Plan blokova — timeline + countdown + kalendar */}
       <div className="grid c1">
         <Card id="blockplan" title="Plan blokova">
           {(() => {
-            const nc = data.nextComp
-            const daysTo = nc ? Math.max(0, Math.ceil((new Date(nc.date + 'T12:00:00').getTime() - Date.now()) / 86400000)) : null
             const now = new Date(); const curMonth = now.getMonth(), curYear = now.getFullYear()
             type PRow = { id: string; label: string; color: string; startM: number; endM: number }
             const rows: PRow[] = ((data.phases as any[]).map((ph) => {
@@ -459,25 +464,10 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
               if (planYear < sy || planYear > ey) return null
               return { id: ph.id, label: ph.label, color: ph.color, startM: planYear > sy ? 0 : s.getMonth(), endM: planYear < ey ? 11 : e.getMonth() }
             }).filter(Boolean)) as PRow[]
-            const legend = Array.from(new Map((data.phases as any[]).map((p) => [p.label + p.color, { label: p.label as string, color: p.color as string }])).values())
             const compInYear = data.compSel?.date && Number(data.compSel.date.slice(0, 4)) === planYear
               ? { month: Number(data.compSel.date.slice(5, 7)) - 1, name: data.compSel.name as string } : null
             return (
               <div>
-                {nc && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 14px', marginBottom: 16, borderRadius: 12, background: 'var(--accent-soft)', border: '1px solid var(--accent-glow)' }}>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--accent)' }}>Sljedeće natjecanje</div>
-                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nc.name}</div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{fmtDate(nc.date)}{nc.location ? ` · ${nc.location}` : ''}</div>
-                    </div>
-                    <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: 'var(--accent)', lineHeight: 1 }}>{daysTo}</div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)' }}>DANA</div>
-                    </div>
-                  </div>
-                )}
-
                 {/* Year navigator — pomak lijevo/desno po godinama */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 16 }}>
                   <button className="ctrl icon" style={{ padding: 6 }} onClick={() => setPlanYear((yy) => yy - 1)} aria-label="Prethodna godina"><ChevronDown size={16} style={{ transform: 'rotate(90deg)' }} /></button>
@@ -503,17 +493,19 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {rows.map((r) => (
-                          <div key={r.id} style={{ display: 'grid', gridTemplateColumns: 'repeat(12,1fr)', gap: 4 }}>
+                          <div key={r.id} style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(12,1fr)', gap: 4 }}>
                             {Array.from({ length: 12 }).map((_, mi) => {
                               const active = mi >= r.startM && mi <= r.endM
                               return <div key={mi} title={r.label} style={{ height: 22, borderRadius: 6, background: active ? r.color : 'var(--surface-1)', opacity: active ? 1 : 0.45, boxShadow: active ? 'inset 0 1px 0 rgba(255,255,255,0.18)' : undefined }} />
                             })}
+                            {/* ime bloka ispisano u samoj traci (legenda maknuta) */}
+                            <div style={{ position: 'absolute', left: `calc(${(r.startM / 12) * 100}% + 8px)`, top: '50%', transform: 'translateY(-50%)', maxWidth: `calc(${((r.endM - r.startM + 1) / 12) * 100}% - 14px)`, fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.85)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', pointerEvents: 'none' }}>{r.label}</div>
                           </div>
                         ))}
                         {compInYear && (
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12,1fr)', gap: 4, marginTop: 2 }}>
                             {Array.from({ length: 12 }).map((_, mi) => (
-                              <div key={mi} style={{ height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>{mi === compInYear.month ? '🏆' : ''}</div>
+                              <div key={mi} title={mi === compInYear.month ? compInYear.name : undefined} style={{ height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>{mi === compInYear.month ? '🏆' : ''}</div>
                             ))}
                           </div>
                         )}
@@ -522,19 +514,9 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
                   </div>
                 </div>
 
-                {/* Legenda — boja + ime */}
-                <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-                  {legend.length === 0 && !compInYear ? (
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-faint)' }}>Označi blokove s bojom u planiranju liftera.</span>
-                  ) : legend.map((l, i) => (
-                    <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-dim)' }}>
-                      <span style={{ width: 12, height: 12, borderRadius: 3, background: l.color, flexShrink: 0, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15)' }} /> {l.label}
-                    </span>
-                  ))}
-                  {compInYear && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f59e0b' }}>🏆 {compInYear.name}</span>
-                  )}
-                </div>
+                {compInYear && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f59e0b' }}>🏆 {compInYear.name}</div>
+                )}
               </div>
             )
           })()}
@@ -555,7 +537,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Procijenjeni 1RM</span>
                   <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 32, letterSpacing: '-0.04em' }}>{e1Last}<span style={{ fontSize: 14, color: 'var(--text-dim)', fontWeight: 500, marginLeft: 4 }}>kg</span></span>
                   {e1Last - e1Prev !== 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>{e1Last - e1Prev > 0 ? '+' : ''}{e1Last - e1Prev} <span style={{ color: 'var(--text-muted)' }}>zadnji</span></span>}
-                  <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{sess.length} sesija</span>
+                  <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{sess.length} setova</span>
                 </div>
                 {e1Series.length < 2
                   ? <div className="os-empty" style={{ padding: '28px 0' }}>Premalo comp setova s RPE ≥ 5</div>
@@ -567,7 +549,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Odrađeno · najteži set</span>
                   <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 32, letterSpacing: '-0.04em' }}>{doneLast}<span style={{ fontSize: 14, color: 'var(--text-dim)', fontWeight: 500, marginLeft: 4 }}>kg</span></span>
                   {doneLast - donePrev !== 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>{doneLast - donePrev > 0 ? '+' : ''}{doneLast - donePrev} <span style={{ color: 'var(--text-muted)' }}>zadnji</span></span>}
-                  <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{doneSess.length} sesija</span>
+                  <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{doneSess.length} setova</span>
                 </div>
                 {doneSeries.length < 2
                   ? <div className="os-empty" style={{ padding: '28px 0' }}>Premalo comp setova s RPE ≥ 5</div>
@@ -577,15 +559,8 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
           )}
         </Card>
 
-        <Card id="compliance" title="Trening compliance">
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 24, alignItems: 'center' }}>
-            <Donut pct={data.complianceOverall} label={data.complianceOverall + '%'} sub="Odrađeno" size={150} stroke={14} />
-            <div className="compliance-rows">
-              <div className="compliance-row"><span className="k">Odrađeni treninzi</span><span className="v">{data.doneWo}<small> / {data.totalWo}</small></span></div>
-              <div className="compliance-row"><span className="k">Tjedana</span><span className="v">{data.blockWeeks.length}</span></div>
-              <div className="compliance-row"><span className="k">Period</span><span className="v" style={{ fontSize: 13 }}>{data.firstDate ? fmtDate(data.firstDate) : '—'}{data.lastDate ? `–${fmtDate(data.lastDate)}` : ''}</span></div>
-            </div>
-          </div>
+        <Card id="compliance" title="Zadnji treninzi">
+          <RecentTraining athleteId={athleteId} onViewAll={onViewAllTraining} />
         </Card>
       </div>
 
@@ -596,8 +571,8 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard }: {
             <button className={volLift === 'all' ? 'on' : ''} onClick={() => setVolLift('all')}>SVE</button>
             {(['sq', 'bp', 'dl'] as LiftK[]).map(k => <button key={k} className={volLift === k ? 'on' : ''} onClick={() => setVolLift(k)}>{liftNames[k]}</button>)}
           </div><RangeSel id="volume" /></>}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 6 }}>TONAŽA (×100 kg) · {volLift === 'all' ? 'glavni liftovi' : `${liftNames[volLift]} varijacije`}</div>
-          <MultiLineChart series={volSeries} dates={volDates} height={230} />
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 6 }}>TONAŽA (kg) · po tjednu · {volLift === 'all' ? 'glavni liftovi' : `${liftNames[volLift]} varijacije`}</div>
+          <StackedBarChart series={volSeries} dates={volDates} segments={volSegments} height={250} />
         </Card>
 
         <Card id="bodyweight" title="Trend tjelesne težine" head={<RangeSel id="bodyweight" />}>
@@ -703,14 +678,64 @@ function MacroCard({ data, cards, setCard }: { data: any; cards: DashCards; setC
   )
 }
 
-function KpiCard({ label, num, unit, sub, data, accent, open, onClick }: { label: string; num: number | string; unit: string; sub: string; data: number[]; accent?: boolean; open?: boolean; onClick?: () => void }) {
+// Zadnji odrađeni treninzi — što je lifter stvarno upisao (zamjena za compliance karticu)
+function RecentTraining({ athleteId, onViewAll }: { athleteId: string; onViewAll?: () => void }) {
+  const [rows, setRows] = useState<any[] | null>(null)
+  useEffect(() => {
+    let alive = true
+    supabase.from('workouts')
+      .select('id, workout_date, day_name, workout_exercises(id, exercise_order, exercise:exercises(name), set_logs(set_number, weight_kg, reps, rpe, completed, is_top_set))')
+      .eq('athlete_id', athleteId).eq('completed', true)
+      .order('workout_date', { ascending: false }).limit(5)
+      .then(({ data }) => { if (alive) setRows(data ?? []) })
+    return () => { alive = false }
+  }, [athleteId])
+  if (!rows) return <div className="os-empty" style={{ display: 'flex', justifyContent: 'center' }}><Loader2 size={16} className="os-spin" /></div>
+  if (!rows.length) return <div className="os-empty">Nema odrađenih treninga</div>
   return (
-    <button className="kpi" onClick={onClick} style={{ textAlign: 'left', cursor: onClick ? 'pointer' : 'default', borderColor: open ? 'var(--border-strong)' : undefined }}>
-      <div className="top"><span className="label">{label}</span>{onClick && <ChevronDown size={13} style={{ color: 'var(--text-muted)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />}</div>
-      <div className="num">{num}<span className="unit">{unit}</span></div>
-      <div className={'delta ' + (accent ? 'up' : 'flat')}>{sub}</div>
-      {data.length > 1 && <div className="spark-slot"><Spark data={data} accent={accent} height={40} /></div>}
-    </button>
+    <div>
+      <div style={{ maxHeight: 420, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, paddingRight: 2 }}>
+        {rows.map((wo: any) => (
+          <div key={wo.id} style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '11px 13px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13 }}>{wo.day_name || 'Trening'}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--text-muted)', marginLeft: 'auto' }}>{fmtDate(wo.workout_date)}</span>
+            </div>
+            {[...(wo.workout_exercises ?? [])].sort((a: any, b: any) => a.exercise_order - b.exercise_order).map((we: any) => {
+              const done = [...(we.set_logs ?? [])].filter((sl: any) => sl.completed).sort((a: any, b: any) => a.set_number - b.set_number)
+              if (!done.length) return null
+              return (
+                <div key={we.id} style={{ display: 'flex', gap: 10, padding: '4px 0', borderTop: '1px solid var(--border)', fontSize: 12 }}>
+                  <span style={{ color: 'var(--text-dim)', flex: '0 0 38%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{we.exercise?.name ?? '—'}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', flex: 1, textAlign: 'right', overflowWrap: 'anywhere' }}>
+                    {done.map((sl: any) => `${Number(sl.weight_kg)}×${sl.reps}${sl.rpe ? `@${sl.rpe}` : ''}${sl.is_top_set ? '★' : ''}`).join('  ')}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+      {onViewAll && (
+        <button className="btn-a" style={{ marginTop: 12, width: '100%', justifyContent: 'center' }} onClick={onViewAll}>
+          Prikaži sve treninge <ChevronDown size={13} style={{ transform: 'rotate(-90deg)' }} />
+        </button>
+      )}
+    </div>
+  )
+}
+
+function KpiCard({ label, num, unit, sub, data, accent, open, onClick, detail }: { label: string; num: number | string; unit: string; sub: string; data: number[]; accent?: boolean; open?: boolean; onClick?: () => void; detail?: React.ReactNode }) {
+  return (
+    <div className="kpi" style={{ textAlign: 'left', borderColor: open ? 'var(--border-strong)' : undefined }}>
+      <div onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }} role="button">
+        <div className="top"><span className="label">{label}</span>{onClick && <ChevronDown size={13} style={{ color: 'var(--text-muted)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />}</div>
+        <div className="num">{num}<span className="unit">{unit}</span></div>
+        <div className={'delta ' + (accent ? 'up' : 'flat')}>{sub}</div>
+        {data.length > 1 && <div className="spark-slot"><Spark data={data} accent={accent} height={40} /></div>}
+      </div>
+      {open && detail && <div className="os-fade" style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 8 }}>{detail}</div>}
+    </div>
   )
 }
 
