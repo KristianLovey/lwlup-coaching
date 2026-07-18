@@ -50,12 +50,13 @@ const LIFTER_NAV: { group: string; items: { id: Section; label: string; icon: Re
   ] },
   { group: 'Trening', items: [
     { id: 'planiranje', label: 'Planiranje blokova',  icon: <Calendar size={19} /> },
+    { id: 'predlosci',  label: 'Predlošci',           icon: <FolderOpen size={19} /> },
+    { id: 'prioriteti', label: 'Prioriteti',          icon: <Target size={19} /> },
     { id: 'biljeske',   label: 'Bilješke',            icon: <FileText size={19} /> },
     { id: 'upis',       label: 'Upisivanje treninga', icon: <Pencil size={19} /> },
     { id: 'pregled',    label: 'Pregled treninga',    icon: <ClipboardList size={19} /> },
   ] },
   { group: 'Natjecanje', items: [
-    { id: 'prioriteti', label: 'Prioriteti',          icon: <Target size={19} /> },
     { id: 'meet',       label: 'Meet attempts',       icon: <Trophy size={19} /> },
   ] },
   { group: 'Zdravlje', items: [
@@ -68,7 +69,6 @@ const LIFTER_NAV: { group: string; items: { id: Section; label: string; icon: Re
 
 const ADMIN_NAV: { id: Section; label: string; icon: React.ReactNode }[] = [
   { id: 'lifteri',    label: 'Lifteri',    icon: <Users size={19} /> },
-  { id: 'predlosci',  label: 'Predlošci',  icon: <FolderOpen size={19} /> },
   { id: 'tim',        label: 'Tim',        icon: <Dumbbell size={19} /> },
   { id: 'treneri',    label: 'Treneri',    icon: <Users size={19} /> },
   { id: 'natjecanja', label: 'Natjecanja', icon: <Trophy size={19} /> },

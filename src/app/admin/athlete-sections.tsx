@@ -4,7 +4,7 @@
 // Sve čitaju stvarne podatke koje lifter upisuje u /training.
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Plus, Trash2 } from 'lucide-react'
+import { Loader2, Plus, Trash2, ChevronDown } from 'lucide-react'
 import { LineChart } from './admin-os-charts'
 
 const supabase = createClient()
@@ -22,18 +22,20 @@ const Loading = () => <div className="os-empty" style={{ display: 'flex', justif
 // ── Bilješke (athlete_notes — bilješke trenera/admina o lifteru) ──
 export function NotesSection({ athleteId, adminId }: { athleteId: string; adminId: string }) {
   const { rows, reload } = useRows(
-    async () => (await supabase.from('athlete_notes').select('id, content, created_at, admin_id').eq('athlete_id', athleteId).order('created_at', { ascending: false }).limit(200)).data ?? [],
+    async () => (await supabase.from('athlete_notes').select('id, title, content, created_at, admin_id').eq('athlete_id', athleteId).order('created_at', { ascending: false }).limit(200)).data ?? [],
     [athleteId]
   )
+  const [title, setTitle] = useState('')
   const [txt, setTxt] = useState('')
   const [busy, setBusy] = useState(false)
+  const [openId, setOpenId] = useState<string | null>(null)
   const add = async () => {
-    if (!txt.trim()) return
+    if (!title.trim() || !txt.trim()) return
     setBusy(true)
-    const { error } = await supabase.from('athlete_notes').insert({ athlete_id: athleteId, admin_id: adminId, content: txt.trim() })
+    const { error } = await supabase.from('athlete_notes').insert({ athlete_id: athleteId, admin_id: adminId, title: title.trim(), content: txt.trim() })
     setBusy(false)
     if (error) { alert(`Greška pri spremanju bilješke: ${error.message}`); return }
-    setTxt(''); reload()
+    setTitle(''); setTxt(''); reload()
   }
   const del = async (id: string) => {
     if (!confirm('Obrisati bilješku?')) return
@@ -41,29 +43,42 @@ export function NotesSection({ athleteId, adminId }: { athleteId: string; adminI
     if (error) { alert(`Greška: ${error.message}`); return }
     reload()
   }
+  // stare bilješke bez naslova: prva linija sadržaja kao naslov
+  const noteTitle = (n: any) => n.title || String(n.content ?? '').split('\n')[0].slice(0, 60) || 'Bilješka'
   return (
     <div className="grid c1">
       <div className="card">
         <div className="card-head"><span className="t">Nova bilješka</span></div>
+        <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Naslov bilješke"
+          style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', padding: '11px 14px', fontSize: 14, fontWeight: 600, outline: 'none', marginBottom: 8, boxSizing: 'border-box' }} />
         <textarea value={txt} onChange={e => setTxt(e.target.value)} placeholder="Zapiši opažanje o lifteru — tehnika, plan, dogovor s treninga…"
-          style={{ width: '100%', minHeight: 90, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', padding: '12px 14px', fontSize: 14, resize: 'vertical', outline: 'none' }} />
+          style={{ width: '100%', minHeight: 90, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', padding: '12px 14px', fontSize: 14, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-          <button className="btn-a accent" disabled={busy || !txt.trim()} onClick={add}><Plus size={14} /> {busy ? 'Spremam…' : 'Spremi bilješku'}</button>
+          <button className="btn-a accent" disabled={busy || !title.trim() || !txt.trim()} onClick={add}><Plus size={14} /> {busy ? 'Spremam…' : 'Spremi bilješku'}</button>
         </div>
       </div>
       <div className="card">
         <div className="card-head"><span className="t">Bilješke</span></div>
         {!rows ? <Loading /> : rows.length === 0 ? <div className="os-empty">Nema bilješki. Zapiši prvu iznad.</div> : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {rows.map((n: any) => (
-              <div key={n.id} style={{ display: 'flex', gap: 12, padding: '12px 2px', borderTop: '1px solid var(--border)', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{n.content}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>{fmtDate(String(n.created_at).slice(0, 10))}</div>
+            {rows.map((n: any) => {
+              const open = openId === n.id
+              return (
+                <div key={n.id} style={{ borderTop: '1px solid var(--border)' }}>
+                  {/* zatvoreno: samo naslov + datum — klik otvara sadržaj */}
+                  <div onClick={() => setOpenId(open ? null : n.id)} role="button"
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 2px', cursor: 'pointer' }}>
+                    <ChevronDown size={14} style={{ color: 'var(--text-muted)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
+                    <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{noteTitle(n)}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>{fmtDate(String(n.created_at).slice(0, 10))}</span>
+                    <button className="icon-sm danger" onClick={e => { e.stopPropagation(); del(n.id) }} title="Obriši bilješku"><Trash2 size={14} /></button>
+                  </div>
+                  {open && (
+                    <div style={{ padding: '0 2px 14px 28px', fontSize: 14, lineHeight: 1.65, whiteSpace: 'pre-wrap', color: 'var(--text-dim)' }}>{n.content}</div>
+                  )}
                 </div>
-                <button className="icon-sm danger" onClick={() => del(n.id)} title="Obriši bilješku"><Trash2 size={14} /></button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

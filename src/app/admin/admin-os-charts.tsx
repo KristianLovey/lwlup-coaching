@@ -39,7 +39,7 @@ export function Spark({ data, accent = false, height = 56 }: { data: number[]; a
 export function LineChart({ data, labels, dates, accent = false, height = 220, valueSuffix = '', valuePrefix = '', unit = 'kg', segments, meta }: {
   data: number[]; labels?: string[]; dates?: string[]; accent?: boolean; height?: number; valueSuffix?: string; valuePrefix?: string; unit?: string
   segments?: { s: number; e: number; label: string; color: string }[]
-  meta?: { kg: number; reps: number; rpe: number | null }[]
+  meta?: { kg: number; reps: number; rpe: number | null; week?: number | null; day?: string | null }[]
 }) {
   const w = 640, h = height, padL = 50, padR = 14, padT = 18, padB = 16
   const gid = useId().replace(/:/g, '')
@@ -122,6 +122,11 @@ export function LineChart({ data, labels, dates, accent = false, height = 220, v
       {hi != null && (
         <div style={{ position: 'absolute', left: `${(X(hi) / w) * 100}%`, top: 2, transform: `translateX(${hi > data.length / 2 ? '-100%' : '0'})`, pointerEvents: 'none', background: 'var(--surface-3)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '5px 9px', whiteSpace: 'nowrap', boxShadow: '0 6px 20px rgba(0,0,0,0.5)' }}>
           {dates?.[hi] && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-muted)' }}>{dates[hi]}</div>}
+          {meta?.[hi] && (meta[hi].week != null || meta[hi].day) && (
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: 'var(--accent)', marginTop: 1 }}>
+              {meta[hi].week != null ? `WEEK ${meta[hi].week}` : ''}{meta[hi].week != null && meta[hi].day ? ' · ' : ''}{meta[hi].day ?? ''}
+            </div>
+          )}
           {meta?.[hi] && (
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-dim)', margin: '2px 0 1px' }}>
               {meta[hi].kg} × {meta[hi].reps}{meta[hi].rpe != null ? ` @ ${meta[hi].rpe}` : ''}
@@ -197,10 +202,11 @@ export function MultiLineChart({ series, dates, height = 240 }: {
 
 // Stacked bar chart — tjedni volumen u stvarnim kg, tooltip s točnim brojkama,
 // ukupna vrijednost iznad stupca, blok-trake kao u LineChartu.
-export function StackedBarChart({ series, dates, segments, height = 240 }: {
+export function StackedBarChart({ series, dates, segments, weekNos, height = 240 }: {
   series: { name: string; data: number[] }[]
   dates?: string[]
   segments?: { s: number; e: number; label: string; color: string }[]
+  weekNos?: (number | null)[]
   height?: number
 }) {
   const w = 640, h = height, padL = 46, padR = 12, padT = 22, padB = 26
@@ -282,7 +288,7 @@ export function StackedBarChart({ series, dates, segments, height = 240 }: {
         })}
         {hi != null && totals[hi] > 0 && (
           <div style={{ position: 'absolute', left: `${(Xc(hi) / w) * 100}%`, top: 2, transform: `translateX(${hi > n / 2 ? '-100%' : '0'})`, pointerEvents: 'none', background: 'var(--surface-3)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '6px 9px', whiteSpace: 'nowrap', boxShadow: '0 6px 20px rgba(0,0,0,0.5)', zIndex: 2 }}>
-            {dates?.[hi] && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 3 }}>tjedan {dates[hi]}</div>}
+            {dates?.[hi] && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 3 }}>tjedan {dates[hi]}{weekNos?.[hi] != null ? <span style={{ color: 'var(--accent)' }}> · WEEK {weekNos[hi]}</span> : null}</div>}
             {colored.filter(s => (s.data[hi] ?? 0) > 0).map(s => (
               <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
                 <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />
@@ -364,12 +370,16 @@ export function Donut({ pct, label, sub, size = 170, stroke = 16, accent = true 
   )
 }
 
-export function StrengthRadar({ balance }: { balance: { sqTotal: number; bpTotal: number; dlTotal: number } }) {
-  const w = 260, h = 220, cx = w / 2, cy = h / 2 + 6, R = 78
+export function StrengthRadar({ balance, e1 }: {
+  balance: { sqTotal: number; bpTotal: number; dlTotal: number }
+  // e1RM po liftu — ispisuje se na kutu trokuta uz ime lifta
+  e1?: { sq: number; bp: number; dl: number }
+}) {
+  const w = 300, h = 234, cx = w / 2, cy = h / 2 + 8, R = 72
   const axes = [
-    { label: 'SQ/Total', val: balance.sqTotal, ang: -90, max: 50 },
-    { label: 'DL/Total', val: balance.dlTotal, ang: 30, max: 50 },
-    { label: 'BP/Total', val: balance.bpTotal, ang: 150, max: 50 },
+    { name: 'Squat',    e1v: e1?.sq, val: balance.sqTotal, ang: -90, max: 50 },
+    { name: 'Deadlift', e1v: e1?.dl, val: balance.dlTotal, ang: 30, max: 50 },
+    { name: 'Bench',    e1v: e1?.bp, val: balance.bpTotal, ang: 150, max: 50 },
   ]
   const pt = (ang: number, frac: number): [number, number] => {
     const a = (ang * Math.PI) / 180
@@ -383,6 +393,18 @@ export function StrengthRadar({ balance }: { balance: { sqTotal: number; bpTotal
       {axes.map((a, i) => { const [x, y] = pt(a.ang, 1); return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="var(--border)" strokeWidth="1" /> })}
       <polygon points={poly} fill="var(--accent-soft)" stroke="var(--accent)" strokeWidth="2" />
       {axes.map((a, i) => { const [x, y] = pt(a.ang, Math.min(1, a.val / a.max)); return <circle key={i} cx={x} cy={y} r="3" fill="var(--accent)" /> })}
+      {/* kut trokuta: ime lifta + procijenjeni 1RM */}
+      {axes.map((a, i) => {
+        const [x, y] = pt(a.ang, 1.16)
+        const anchor = a.ang === -90 ? 'middle' : a.ang === 30 ? 'start' : 'end'
+        const dy = a.ang === -90 ? -12 : 4
+        return (
+          <text key={'lb' + i} x={x} y={y + dy} textAnchor={anchor} style={{ fontFamily: 'var(--font-mono)' }}>
+            <tspan x={x} style={{ fontSize: 9, letterSpacing: '0.12em', fill: 'var(--text-muted)', fontWeight: 700 }}>{a.name.toUpperCase()}</tspan>
+            <tspan x={x} dy={13} style={{ fontSize: 13, fontWeight: 800, fill: a.e1v ? 'var(--text)' : 'var(--text-faint)' }}>{a.e1v ? `${a.e1v} kg` : '—'}</tspan>
+          </text>
+        )
+      })}
     </svg>
   )
 }

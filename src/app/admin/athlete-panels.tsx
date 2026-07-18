@@ -697,6 +697,8 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
         <PlaningTab
           phases={phases}
           competitionSel={competitionSel}
+          athleteId={athlete.id}
+          onCompetitionChange={setCompetitionSel}
           newPhaseLabel={newPhaseLabel} setNewPhaseLabel={setNewPhaseLabel}
           newPhaseStart={newPhaseStart} setNewPhaseStart={setNewPhaseStart}
           newPhaseEnd={newPhaseEnd} setNewPhaseEnd={setNewPhaseEnd}
@@ -713,9 +715,11 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
 }
 
 // ── Planning phases tab ─────────────────────────────────────────────
-function PlaningTab({ phases, competitionSel, newPhaseLabel, setNewPhaseLabel, newPhaseStart, setNewPhaseStart, newPhaseEnd, setNewPhaseEnd, newPhaseColor, setNewPhaseColor, savingPhase, onAdd, onDelete, PHASE_COLORS, FM }: {
+function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, newPhaseLabel, setNewPhaseLabel, newPhaseStart, setNewPhaseStart, newPhaseEnd, setNewPhaseEnd, newPhaseColor, setNewPhaseColor, savingPhase, onAdd, onDelete, PHASE_COLORS, FM }: {
   phases: TrainingPhase[]
   competitionSel: { name: string; date: string; location?: string } | null
+  athleteId: string
+  onCompetitionChange: (c: { name: string; date: string; location?: string } | null) => void
   newPhaseLabel: string; setNewPhaseLabel: (v: string) => void
   newPhaseStart: string; setNewPhaseStart: (v: string) => void
   newPhaseEnd: string; setNewPhaseEnd: (v: string) => void
@@ -727,6 +731,29 @@ function PlaningTab({ phases, competitionSel, newPhaseLabel, setNewPhaseLabel, n
   FM: string
 }) {
   const [calViewDate, setCalViewDate] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
+  // Dodavanje natjecanja u plan (Walterov zahtjev) — odabir iz postojećih natjecanja
+  const [comps, setComps] = useState<{ id: string; name: string; date: string; location: string | null }[]>([])
+  const [selCompId, setSelCompId] = useState('')
+  const [savingComp, setSavingComp] = useState(false)
+  useEffect(() => {
+    supabase.from('competitions').select('id, name, date, location').order('date', { ascending: true })
+      .then(({ data }) => setComps((data ?? []) as any[]))
+    supabase.from('athlete_competition_selection').select('competition_id').eq('athlete_id', athleteId).maybeSingle()
+      .then(({ data }) => setSelCompId((data as any)?.competition_id ?? ''))
+  }, [athleteId])
+  const pickComp = async (id: string) => {
+    setSavingComp(true); setSelCompId(id)
+    if (!id) {
+      const { error } = await supabase.from('athlete_competition_selection').delete().eq('athlete_id', athleteId)
+      if (error) alert(`Greška: ${error.message}`); else onCompetitionChange(null)
+    } else {
+      const { error } = await supabase.from('athlete_competition_selection').upsert({ athlete_id: athleteId, competition_id: id }, { onConflict: 'athlete_id' })
+      const c = comps.find(x => x.id === id)
+      if (error) alert(`Greška pri spremanju natjecanja: ${error.message}`)
+      else if (c) onCompetitionChange({ name: c.name, date: c.date, location: c.location ?? undefined })
+    }
+    setSavingComp(false)
+  }
   const monthNames = ['Siječanj','Veljača','Ožujak','Travanj','Svibanj','Lipanj','Srpanj','Kolovoz','Rujan','Listopad','Studeni','Prosinac']
   const { y, m } = calViewDate
   const firstDay = new Date(y, m, 1)
@@ -826,17 +853,29 @@ function PlaningTab({ phases, competitionSel, newPhaseLabel, setNewPhaseLabel, n
         )}
       </div>
 
-      {/* Competition selection display */}
-      {competitionSel && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: '8px', borderLeft: '3px solid #fbbf24', marginBottom: '12px' }}>
-          <Trophy size={14} color="#fbbf24" />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f0f0f0', fontFamily: FM }}>{competitionSel.name}</div>
-            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM, marginTop: '2px' }}>{formatDate(competitionSel.date)}{competitionSel.location ? ` · ${competitionSel.location}` : ''}</div>
+      {/* Natjecanje u planu — odabir + prikaz */}
+      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
+        <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontFamily: FM, fontWeight: 700, marginBottom: '12px' }}>NATJECANJE U PLANU</div>
+        {competitionSel && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: '8px', borderLeft: '3px solid #fbbf24', marginBottom: '10px' }}>
+            <Trophy size={14} color="#fbbf24" />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f0f0f0', fontFamily: FM }}>{competitionSel.name}</div>
+              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM, marginTop: '2px' }}>{formatDate(competitionSel.date)}{competitionSel.location ? ` · ${competitionSel.location}` : ''}</div>
+            </div>
+            <button onClick={() => pickComp('')} disabled={savingComp} title="Makni natjecanje iz plana"
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', padding: '4px', display: 'flex' }}>
+              <Trash2 size={13} />
+            </button>
           </div>
-          <span style={{ fontSize: '0.48rem', letterSpacing: '0.2em', color: '#fbbf24', fontFamily: FM, fontWeight: 700 }}>NATJECANJE</span>
-        </div>
-      )}
+        )}
+        <select value={selCompId} onChange={e => pickComp(e.target.value)} disabled={savingComp}
+          style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '9px 12px', fontSize: '0.8rem', outline: 'none', fontFamily: FM, borderRadius: '8px', boxSizing: 'border-box' as const }}>
+          <option value="">— odaberi natjecanje —</option>
+          {comps.map(c => <option key={c.id} value={c.id}>{c.name} · {formatDate(c.date)}{c.location ? ` · ${c.location}` : ''}</option>)}
+        </select>
+        <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginTop: '8px' }}>Nova natjecanja dodaju se u sekciji Natjecanja; ovdje ih pridružuješ lifteru.</div>
+      </div>
 
       {/* Add phase form */}
       <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px' }}>

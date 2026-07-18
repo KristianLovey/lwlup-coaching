@@ -1256,15 +1256,16 @@ function AdminPlanCell({ value, placeholder, type, color, onSave }: {
 // ─── EXERCISE ROW ─────────────────────────────────────────────────
 // isAdmin=true  → edits planned_ + target_rpe + coach_note + delete
 // isAdmin=false → reads planned_, edits actual_ + actual_note + completed
-export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelete }: {
+export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId, onUpdate, onDelete }: {
   we: WorkoutExercise; isAdmin: boolean; userId: string; weekNumber?: number
+  dayName?: string | null; blockId?: string
   onUpdate: (id: string, data: Partial<WorkoutExercise>) => void
   onDelete: (id: string) => void
 }) {
   const [expanded, setExpanded]     = useState(false)
   const [setsOpen, setSetsOpen]     = useState(false)
   const [showHistory, setShowHistory]   = useState(false)
-  const [historyLogs, setHistoryLogs]   = useState<{ dayName: string; logs: any[] }[]>([])
+  const [historyWeeks, setHistoryWeeks] = useState<{ week: number; logs: any[] }[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [rmOpen, setRmOpen] = useState(false)
   type RmRow = { w: number; r: number; rpe: number | null; e: number }
@@ -1322,28 +1323,23 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
     if (historyLoading) return
     setHistoryLoading(true)
     try {
-      const targetWeek = weekNumber ? weekNumber - 1 : null
-      if (!targetWeek || targetWeek < 1) {
-        setHistoryLogs([])
-        setHistoryLoading(false)
-        return
-      }
-
-      const { data: weData } = await supabase
+      // Povijest ISTOG dana bloka kroz sve prijašnje tjedne (W1, W2, …),
+      // ne svih dana — ista varijacija na drugom danu se ne miješa.
+      let q = supabase
         .from('workout_exercises')
-        .select('id, workouts!inner(day_name, athlete_id, weeks!inner(week_number))')
+        .select('id, workouts!inner(day_name, athlete_id, weeks!inner(week_number, block_id))')
         .eq('exercise_id', we.exercise_id)
         .eq('workouts.athlete_id', userId)
-        .eq('workouts.weeks.week_number', targetWeek)
+      if (blockId) q = q.eq('workouts.weeks.block_id', blockId)
+      if (dayName) q = q.eq('workouts.day_name', dayName)
+      if (weekNumber) q = q.lt('workouts.weeks.week_number', weekNumber)
+      const { data: weData } = await q
 
       if (!weData || weData.length === 0) {
-        setHistoryLogs([])
-        setHistoryLoading(false)
-        return
+        setHistoryWeeks([]); setHistoryLoading(false); return
       }
 
       const weIds = weData.map((r: any) => r.id)
-
       const { data } = await supabase
         .from('set_logs')
         .select('workout_exercise_id, set_number, weight_kg, reps, rpe, completed')
@@ -1351,17 +1347,17 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
         .in('workout_exercise_id', weIds)
         .order('set_number')
 
-      const grouped: { dayName: string; logs: any[] }[] = []
-      for (const weRow of weData) {
-        const logsForThis = (data ?? []).filter((l: any) => l.workout_exercise_id === weRow.id)
-        if (logsForThis.length > 0) {
-          grouped.push({ dayName: (weRow as any).workouts?.day_name ?? 'Dan', logs: logsForThis })
-        }
-      }
-      setHistoryLogs(grouped)
+      const grouped = weData
+        .map((r: any) => ({
+          week: r.workouts?.weeks?.week_number ?? 0,
+          logs: (data ?? []).filter((l: any) => l.workout_exercise_id === r.id),
+        }))
+        .filter(g => g.logs.length > 0)
+        .sort((a, b) => a.week - b.week)
+      setHistoryWeeks(grouped)
     } catch (e) {
       console.error('loadHistory error:', e)
-      setHistoryLogs([])
+      setHistoryWeeks([])
     }
     setHistoryLoading(false)
   }
@@ -1517,38 +1513,46 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
         })()
       )}
 
-      {/* ── History panel (prošli tjedan) ── */}
+      {/* ── History panel — isti dan bloka kroz tjedne (W1, W2, …) + % skok po seriji ── */}
       {showHistory && (
         <div style={{ background: '#060606', borderBottom: '1px solid rgba(255,255,255,0.06)', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '12px 16px', animation: 'fadeUp 0.18s ease' }}>
-          <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '8px' }}>PROŠLI TJEDAN — {we.exercise?.name}</div>
+          <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '8px' }}>
+            POVIJEST — {we.exercise?.name}{dayName ? ` · ${dayName.toUpperCase()}` : ''}
+          </div>
           {historyLoading ? (
             <div style={{ fontSize: '0.7rem', color: '#444', display: 'flex', alignItems: 'center', gap: '6px' }}><Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> Učitavanje...</div>
-          ) : historyLogs.length === 0 ? (
-            <div style={{ fontSize: '0.7rem', color: '#333', fontFamily: 'var(--fm)' }}>Nema podataka za prošli tjedan.</div>
+          ) : historyWeeks.length === 0 ? (
+            <div style={{ fontSize: '0.7rem', color: '#333', fontFamily: 'var(--fm)' }}>Nema povijesti za ovaj dan u prijašnjim tjednima bloka.</div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {historyLogs.map((group, gi) => (
-                <div key={gi}>
-                  {historyLogs.length > 1 && (
-                    <div style={{ fontSize: '0.42rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '4px', textTransform: 'uppercase' as const }}>
-                      {group.dayName}
-                    </div>
-                  )}
-                  <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr 1fr', gap: '0', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '6px', overflow: 'hidden' }}>
-                    {['SET','KG','REPS','RPE'].map(h => (
-                      <div key={h} style={{ padding: '5px 10px', background: 'rgba(0,0,0,0.3)', fontSize: '0.38rem', letterSpacing: '0.2em', color: '#444', fontWeight: 700, fontFamily: 'var(--fm)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</div>
-                    ))}
-                    {group.logs.map((l: any, i: number) => (
-                      [
-                        <div key={`s${i}`} style={{ padding: '7px 10px', fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', fontWeight: 800, fontFamily: 'var(--fd)', borderBottom: i < group.logs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>S{l.set_number}</div>,
-                        <div key={`kg${i}`} style={{ padding: '7px 10px', fontSize: '0.78rem', color: 'rgba(255,255,255,0.75)', fontWeight: 700, borderBottom: i < group.logs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>{l.weight_kg ?? '—'}</div>,
-                        <div key={`r${i}`} style={{ padding: '7px 10px', fontSize: '0.78rem', color: '#94a3b8', borderBottom: i < group.logs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>{l.reps ?? '—'}</div>,
-                        <div key={`rpe${i}`} style={{ padding: '7px 10px', fontSize: '0.78rem', color: '#fbbf24', borderBottom: i < group.logs.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>{l.rpe ?? '—'}</div>,
-                      ]
-                    ))}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '8px' }}>
+              {historyWeeks.map((group, gi) => {
+                const prev = gi > 0 ? historyWeeks[gi - 1] : null
+                return (
+                  <div key={group.week} style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', overflow: 'hidden', background: 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.05)', fontSize: '0.5rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.65)', fontWeight: 800, fontFamily: 'var(--fm)' }}>WEEK {group.week}</div>
+                    {group.logs.map((l: any, i: number) => {
+                      // % skok naspram ISTE serije prošlog tjedna
+                      const prevSet = prev?.logs.find((p: any) => p.set_number === l.set_number)
+                      const pct = prevSet?.weight_kg && l.weight_kg
+                        ? ((Number(l.weight_kg) - Number(prevSet.weight_kg)) / Number(prevSet.weight_kg)) * 100
+                        : null
+                      return (
+                        <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: '6px', padding: '5px 10px', borderTop: '1px solid rgba(255,255,255,0.04)', fontFamily: 'var(--fm)' }}>
+                          <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', fontWeight: 800, flexShrink: 0 }}>S{l.set_number}</span>
+                          <span style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>{l.weight_kg ?? '—'}</span>
+                          <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>×{l.reps ?? '—'}</span>
+                          {l.rpe != null && <span style={{ fontSize: '0.58rem', color: '#fbbf24' }}>@{l.rpe}</span>}
+                          {pct != null && (
+                            <span style={{ marginLeft: 'auto', fontSize: '0.56rem', fontWeight: 800, color: pct > 0 ? '#4ade80' : pct < 0 ? '#f87171' : 'rgba(255,255,255,0.3)' }}>
+                              {pct > 0 ? '+' : ''}{pct.toFixed(1)}%
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
@@ -1615,8 +1619,8 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, onUpdate, onDelet
 }
 
 // ─── WORKOUT CARD — editorial style ──────────────────────────────
-export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onCopyWorkout, onMoveWorkout, isFirst, isLast, allWeeks, onCopyWorkoutToWeek }: {
-  workout: Workout; exercises: Exercise[]; isAdmin: boolean; userId: string; weekNumber?: number
+export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, blockId, onUpdateWorkout, onDeleteWorkout, onAddExercise, onUpdateExercise, onDeleteExercise, onCopyWorkout, onMoveWorkout, isFirst, isLast, allWeeks, onCopyWorkoutToWeek }: {
+  workout: Workout; exercises: Exercise[]; isAdmin: boolean; userId: string; weekNumber?: number; blockId?: string
   onUpdateWorkout: (id: string, data: Partial<Workout>) => void
   onDeleteWorkout: (id: string) => void
   onAddExercise: (workoutId: string, ex: Exercise) => void
@@ -1898,7 +1902,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, o
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                  <ExerciseRow key={we.id} we={we} isAdmin={isAdmin} userId={userId} weekNumber={weekNumber} onUpdate={handleUpdateExercise} onDelete={onDeleteExercise} />
+                  <ExerciseRow key={we.id} we={we} isAdmin={isAdmin} userId={userId} weekNumber={weekNumber} dayName={workout.day_name} blockId={blockId} onUpdate={handleUpdateExercise} onDelete={onDeleteExercise} />
                 </div>
                 {isAdmin && (
                   <div
@@ -2156,7 +2160,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
       {open && (
         <div style={{ padding: '22px 14px 14px', background: '#080808' }}>
           {[...(week.workouts ?? [])].sort((a, b) => a.workout_date.localeCompare(b.workout_date)).map((w, i, arr) => (
-            <WorkoutCard key={w.id} workout={w} exercises={exercises} isAdmin={isAdmin} userId={userId} weekNumber={week.week_number}
+            <WorkoutCard key={w.id} workout={w} exercises={exercises} isAdmin={isAdmin} userId={userId} weekNumber={week.week_number} blockId={week.block_id}
               onUpdateWorkout={onUpdateWorkout} onDeleteWorkout={onDeleteWorkout}
               onAddExercise={onAddExercise} onUpdateExercise={onUpdateExercise} onDeleteExercise={onDeleteExercise}
               onCopyWorkout={onCopyWorkout ? () => onCopyWorkout(w.id) : undefined}

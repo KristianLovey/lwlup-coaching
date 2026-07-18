@@ -3,13 +3,13 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Minus, Plus, ChevronDown, X, RotateCcw, Eye, EyeOff } from 'lucide-react'
-import { Spark, LineChart, StackedBarChart, Donut, StrengthRadar, MetricBar } from './admin-os-charts'
+import { Spark, LineChart, StackedBarChart, Donut, StrengthRadar } from './admin-os-charts'
 import { estimate1RM } from '../training/training-setplan'
 
 const supabase = createClient()
 
 // ── Card settings model ──
-export type CardId = 'blockplan' | 'progress' | 'compliance' | 'volume' | 'bodyweight' | 'recovery' | 'balance' | 'macro'
+export type CardId = 'blockplan' | 'progress' | 'compliance' | 'volume' | 'bodyweight' | 'recovery' | 'balance' | 'macro' | 'water'
 export type CardState = { hidden: boolean; collapsed: boolean; range: number }
 export type DashCards = Record<CardId, CardState>
 export const CARD_META: { id: CardId; label: string; series: boolean }[] = [
@@ -21,6 +21,7 @@ export const CARD_META: { id: CardId; label: string; series: boolean }[] = [
   { id: 'recovery',   label: 'Oporavak',            series: false },
   { id: 'balance',    label: 'Balans snage',        series: false },
   { id: 'macro',      label: 'Makro & aktivnost',   series: false },
+  { id: 'water',      label: 'Unos tekućine',       series: false },
 ]
 export function defaultCards(): DashCards {
   const o = {} as DashCards
@@ -69,7 +70,7 @@ function fillSeries(weeks: string[], perWeek: Record<string, number>): number[] 
 }
 
 type Best = { e1: number; date: string; name: string; day: string; kg: number; reps: number; rpe: number | null }
-type Raw = { workouts: any[]; sets: any[]; bw: { date: string; weight_kg: number }[]; wb: any[]; nut: any[]; meets: any[]; blocks: any[]; comps: any[]; profile: any | null; phases: any[]; compSel: any | null }
+type Raw = { workouts: any[]; sets: any[]; bw: { date: string; weight_kg: number }[]; wb: any[]; water: { log_date: string; amount_ml: number }[]; nut: any[]; meets: any[]; blocks: any[]; comps: any[]; profile: any | null; phases: any[]; compSel: any | null }
 
 export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onViewAllTraining }: {
   athleteId: string; athleteName: string; cards: DashCards; setCard: (id: CardId, patch: Partial<CardState>) => void
@@ -83,8 +84,8 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
   const [planYear, setPlanYear] = useState(() => new Date().getFullYear())
 
   const DASH_CACHE_TTL = 90_000 // 90 s
-  // v2: set_logs sada nose i block_id (week → block) — stari cache nema taj oblik
-  const dashCacheKey = `adminos:dash:v2:${athleteId}`
+  // v3: setovi nose block_id + week_number + day_name; dodani water logovi
+  const dashCacheKey = `adminos:dash:v3:${athleteId}`
 
   const load = useCallback(async (background = false) => {
     // Serve stale cache immediately so UI renders before network
@@ -103,17 +104,18 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
     // Two lean workouts queries instead of one huge nested query:
     // A) just dates+completion (for calendar/compliance) — tiny payload
     // B) flat set_logs join (for e1RM/volume charts) — no workout_exercises nesting
-    const [woRes, setsRes, bwRes, wbRes, nutRes, meetRes, blkRes, profRes, phaseRes, compSelRes] = await Promise.all([
+    const [woRes, setsRes, bwRes, wbRes, waterRes, nutRes, meetRes, blkRes, profRes, phaseRes, compSelRes] = await Promise.all([
       supabase.from('workouts')
         .select('id, workout_date, completed, day_name')
         .eq('athlete_id', athleteId).order('workout_date', { ascending: true }).limit(500),
       supabase.from('set_logs')
-        .select('weight_kg, reps, rpe, is_top_set, workout_exercises!inner(exercise:exercises(name,category), workouts!inner(workout_date, weeks(block_id)))')
+        .select('weight_kg, reps, rpe, is_top_set, workout_exercises!inner(exercise:exercises(name,category), workouts!inner(workout_date, day_name, weeks(block_id, week_number)))')
         .eq('athlete_id', athleteId).eq('completed', true)
         .order('id', { ascending: true }).limit(6000),
       supabase.from('pr_logs').select('date, weight_kg').eq('athlete_id', athleteId)
         .eq('lift', 'other').eq('notes', 'Tjelesna težina').order('date', { ascending: true }).limit(400),
-      supabase.from('wellbeing_logs').select('*').eq('user_id', athleteId).order('log_date', { ascending: false }).limit(14),
+      supabase.from('wellbeing_logs').select('*').eq('user_id', athleteId).order('log_date', { ascending: false }).limit(60),
+      supabase.from('water_logs').select('log_date, amount_ml').eq('user_id', athleteId).order('log_date', { ascending: false }).limit(120),
       supabase.from('nutrition_logs').select('*').eq('user_id', athleteId).order('date', { ascending: false }).limit(90),
       supabase.from('meet_attempts').select('lift, meet_date, competition_id, attempt1_max, attempt1_actual, attempt2_max, attempt2_actual, attempt3_max, attempt3_actual').eq('athlete_id', athleteId).order('meet_date', { ascending: false }).limit(30),
       supabase.from('blocks').select('id, name, status, start_date, end_date').eq('athlete_id', athleteId).order('start_date', { ascending: true }).limit(60),
@@ -125,7 +127,8 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
     const next: Raw = {
       workouts: woRes.data ?? [], sets: setsRes.data ?? [],
       bw: (bwRes.data ?? []) as { date: string; weight_kg: number }[],
-      wb: wbRes.data ?? [], nut: nutRes.data ?? [], meets: meetRes.data ?? [],
+      wb: wbRes.data ?? [], water: (waterRes.data ?? []) as { log_date: string; amount_ml: number }[],
+      nut: nutRes.data ?? [], meets: meetRes.data ?? [],
       blocks: blkRes.data ?? [], comps: [], profile: profRes.data ?? null,
       phases: phaseRes.data ?? [], compSel: compSelComp,
     }
@@ -150,7 +153,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
 
   const data = useMemo(() => {
     if (!raw) return null
-    const { workouts, sets, bw, wb, nut, meets, blocks, profile, phases, compSel } = raw
+    const { workouts, sets, bw, wb, water, nut, meets, blocks, profile, phases, compSel } = raw
     // Calendar: use flat workouts (date + completed only)
     const doneDates = new Set<string>()
     const plannedDates = new Set<string>()
@@ -160,7 +163,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
     }
 
     const weekSet = new Set<string>()
-    type SetMeta = { kg: number; reps: number; rpe: number | null; blockId: string | null }
+    type SetMeta = { kg: number; reps: number; rpe: number | null; blockId: string | null; week: number | null; day: string | null }
     const e1: Record<LiftK, Record<string, number>> = { sq: {}, bp: {}, dl: {} }
     const dayE1: Record<LiftK, Record<string, { e1: number } & SetMeta>> = { sq: {}, bp: {}, dl: {} }
     const dayDone: Record<LiftK, Record<string, SetMeta>> = { sq: {}, bp: {}, dl: {} }
@@ -192,6 +195,8 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
       if (!workoutDate) continue
       // Blok kojem sesija stvarno pripada (workout → week → block), ne po datumima
       const blockId: string | null = wo?.weeks?.block_id ?? null
+      const weekNo: number | null = wo?.weeks?.week_number ?? null
+      const dayNm: string | null = wo?.day_name ?? null
       const cat: string = we?.exercise?.category ?? ''
       const nm: string = we?.exercise?.name ?? cat
       const lk = liftKey(cat)
@@ -205,7 +210,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
           volMain[lk][wk] = (volMain[lk][wk] ?? 0) + ton
           const vv = (volVar[lk][nm] ??= {}); vv[wk] = (vv[wk] ?? 0) + ton
           // tjedan → blok: najveća tonaža u tjednu odlučuje kojem bloku tjedan pripada
-          if (blockId) { const tb = (tonWeekBlock[wk] ??= {}); tb[blockId] = (tb[blockId] ?? 0) + ton }
+          if (blockId) { const tb = (tonWeekBlock[wk] ??= {}); tb[`${blockId}|${weekNo ?? ''}`] = (tb[`${blockId}|${weekNo ?? ''}`] ?? 0) + ton }
           // competition main lift only (exclude variations) — for the progress charts
           const isComp = cat === 'Squat' || cat === 'Bench' || cat === 'Deadlift'
           // e1RM estimation is only valid for RPE >= 5 — ignore lighter/easier sets entirely
@@ -214,23 +219,23 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
           if (e > 0) {
             if (!e1[lk][wk] || e > e1[lk][wk]) e1[lk][wk] = e
             if (e > bestE1[lk]) { bestE1[lk] = e; bestSrc[lk] = { e1: e, date: workoutDate, name: nm, day: '', kg, reps, rpe: s.rpe ?? null } }
-            if (isComp && (!dayE1[lk][workoutDate] || e > dayE1[lk][workoutDate].e1)) dayE1[lk][workoutDate] = { e1: e, kg, reps, rpe: s.rpe ?? null, blockId }
+            if (isComp && (!dayE1[lk][workoutDate] || e > dayE1[lk][workoutDate].e1)) dayE1[lk][workoutDate] = { e1: e, kg, reps, rpe: s.rpe ?? null, blockId, week: weekNo, day: dayNm }
           }
           // "odrađeno": heaviest actual weight lifted on the comp lift that day
-          if (isComp && validRpe && (!dayDone[lk][workoutDate] || kg > dayDone[lk][workoutDate].kg)) dayDone[lk][workoutDate] = { kg, reps, rpe: s.rpe ?? null, blockId }
+          if (isComp && validRpe && (!dayDone[lk][workoutDate] || kg > dayDone[lk][workoutDate].kg)) dayDone[lk][workoutDate] = { kg, reps, rpe: s.rpe ?? null, blockId, week: weekNo, day: dayNm }
           // Zahtjev trenera: u graf ulazi SVAKI set označen kao top set (glavni liftovi)
           if (isComp && (s as any).is_top_set) {
-            topDone[lk].push({ date: workoutDate, e1: kg, kg, reps, rpe: s.rpe ?? null, blockId })
-            if (e > 0) topE1[lk].push({ date: workoutDate, e1: e, kg, reps, rpe: s.rpe ?? null, blockId })
+            topDone[lk].push({ date: workoutDate, e1: kg, kg, reps, rpe: s.rpe ?? null, blockId, week: weekNo, day: dayNm })
+            if (e > 0) topE1[lk].push({ date: workoutDate, e1: e, kg, reps, rpe: s.rpe ?? null, blockId, week: weekNo, day: dayNm })
           }
         }
       }
     }
-    type Sess = { date: string; e1: number; kg: number; reps: number; rpe: number | null; blockId: string | null }
+    type Sess = { date: string; e1: number; kg: number; reps: number; rpe: number | null; blockId: string | null; week: number | null; day: string | null }
     const mkSess = (rec: Record<string, { e1: number } & SetMeta>): Sess[] =>
-      Object.entries(rec).map(([date, v]) => ({ date, e1: v.e1, kg: v.kg, reps: v.reps, rpe: v.rpe, blockId: v.blockId })).sort((a, b) => a.date.localeCompare(b.date))
+      Object.entries(rec).map(([date, v]) => ({ date, e1: v.e1, kg: v.kg, reps: v.reps, rpe: v.rpe, blockId: v.blockId, week: v.week, day: v.day })).sort((a, b) => a.date.localeCompare(b.date))
     const mkDone = (rec: Record<string, SetMeta>): Sess[] =>
-      Object.entries(rec).map(([date, v]) => ({ date, e1: v.kg, kg: v.kg, reps: v.reps, rpe: v.rpe, blockId: v.blockId })).sort((a, b) => a.date.localeCompare(b.date))
+      Object.entries(rec).map(([date, v]) => ({ date, e1: v.kg, kg: v.kg, reps: v.reps, rpe: v.rpe, blockId: v.blockId, week: v.week, day: v.day })).sort((a, b) => a.date.localeCompare(b.date))
     // Graf prikazuje svaki označeni TOP SET; fallback na najbolji set po danu
     // za liftere koji top setove ne označavaju.
     const sortD = (a: Sess, b: Sess) => a.date.localeCompare(b.date)
@@ -262,12 +267,17 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
     const blockWeeks = [...new Set(blockWo.map((w: any) => weekKey(w.workout_date)))].sort()
     const firstDate = blockWo[0]?.workout_date, lastDate = blockWo[blockWo.length - 1]?.workout_date
 
-    // tjedan → dominantni blok (za blok-trake na grafu volumena)
+    // tjedan → dominantni blok + week broj bloka (za trake i tooltip na grafu volumena)
     const blockByWeek: Record<string, string> = {}
+    const weekNoByWeek: Record<string, number> = {}
     for (const [wk, m] of Object.entries(tonWeekBlock)) {
-      let bestB: string | null = null, bv = 0
-      for (const [bid, v] of Object.entries(m)) if (v > bv) { bv = v; bestB = bid }
-      if (bestB) blockByWeek[wk] = bestB
+      let bestK: string | null = null, bv = 0
+      for (const [k, v] of Object.entries(m)) if (v > bv) { bv = v; bestK = k }
+      if (bestK) {
+        const [bid, wn] = bestK.split('|')
+        blockByWeek[wk] = bid
+        if (wn) weekNoByWeek[wk] = Number(wn)
+      }
     }
 
     // predicted total from latest meet's attempts
@@ -289,7 +299,8 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
     return {
       weeks, e1Sessions, doneSessions, bestE1, bestSrc, volByWeek, rpeByWeek, totalE1Week, bwByWeek, volMain, volVar,
       complianceSeries, complianceOverall: totalWo ? Math.round((doneWo / totalWo) * 100) : 0,
-      doneWo, totalWo, firstDate, lastDate, blockWeeks, curTotal, curBw, blockByWeek,
+      doneWo, totalWo, firstDate, lastDate, blockWeeks, curTotal, curBw, blockByWeek, weekNoByWeek,
+      wbHistory: [...wb].reverse(), waterLogs: water,
       predicted, predBy, latestMeet: meets[0]?.meet_date ?? null,
       latestWb: wb[0] ?? null, latestNut: nut[0] ?? null, nutHistory: nut, bw, profile,
       blocks, nextComp: compSel ?? null, comps: [], doneDates, plannedDates, phases, compSel,
@@ -326,7 +337,8 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
     if (s.length < 2) s = all.slice(-Math.max(2, Math.min(all.length, 8)))
     return s
   }
-  const toMeta = (arr: { kg: number; reps: number; rpe: number | null }[]) => arr.map(s => ({ kg: s.kg, reps: s.reps, rpe: s.rpe }))
+  const toMeta = (arr: { kg: number; reps: number; rpe: number | null; week?: number | null; day?: string | null }[]) =>
+    arr.map(s => ({ kg: s.kg, reps: s.reps, rpe: s.rpe, week: s.week ?? null, day: s.day ?? null }))
   // estimated 1RM series
   const sess = windowSess(data.e1Sessions[lift])
   const e1Series = sess.map(s => s.e1)
@@ -572,7 +584,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
             {(['sq', 'bp', 'dl'] as LiftK[]).map(k => <button key={k} className={volLift === k ? 'on' : ''} onClick={() => setVolLift(k)}>{liftNames[k]}</button>)}
           </div><RangeSel id="volume" /></>}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 6 }}>TONAŽA (kg) · po tjednu · {volLift === 'all' ? 'glavni liftovi' : `${liftNames[volLift]} varijacije`}</div>
-          <StackedBarChart series={volSeries} dates={volDates} segments={volSegments} height={250} />
+          <StackedBarChart series={volSeries} dates={volDates} segments={volSegments} weekNos={volWeeks.map(w => data.weekNoByWeek[w] ?? null)} height={250} />
         </Card>
 
         <Card id="bodyweight" title="Trend tjelesne težine" head={<RangeSel id="bodyweight" />}>
@@ -590,16 +602,40 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
 
       {/* row 3: recovery | balance */}
       <div className="grid c2">
-        <Card id="recovery" title="Oporavak · zadnji unos">
-          {!data.latestWb ? <div className="os-empty">Nema wellbeing unosa</div> : (
-            <div className="rec-rows">
-              {[
-                { k: 'San (h)', v: data.latestWb.sleep_hours, max: 12 },
-                { k: 'Stres', v: data.latestWb.stress_level, max: 10 },
-                { k: 'Kofein (mg)', v: data.latestWb.caffeine_mg, max: 400 },
-              ].filter(r => r.v != null).map((r, i) => (
-                <div className="rec-row" key={i}><span className="k">{r.k}</span><span className="val">{r.v}</span><MetricBar value={Number(r.v)} max={r.max} /></div>
-              ))}
+        <Card id="recovery" title="Oporavak">
+          {!data.wbHistory.length ? <div className="os-empty">Nema wellbeing unosa</div> : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {([
+                { k: 'San (h)', field: 'sleep_hours', max: 12 },
+                { k: 'Stres (1–10)', field: 'stress_level', max: 10 },
+                { k: 'Kofein (mg)', field: 'caffeine_mg', max: Math.max(400, ...data.wbHistory.map((r: any) => Number(r.caffeine_mg) || 0)) },
+              ] as const).map(v => {
+                const rows = data.wbHistory.slice(-21) as any[]
+                const latest = [...rows].reverse().find(r => r[v.field] != null)
+                return (
+                  <div key={v.field}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{v.k}</span>
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16 }}>{latest?.[v.field] ?? '—'}</span>
+                    </div>
+                    {/* stupci obojani po bloku kojem datum pripada */}
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 52 }}>
+                      {rows.map((r: any, i: number) => {
+                        const val = Number(r[v.field] ?? 0)
+                        const bid = data.blockByWeek[weekKey(r.log_date)]
+                        const color = bid ? (blockColor.get(bid) ?? 'var(--text-dim)') : 'var(--text-dim)'
+                        return (
+                          <div key={i} title={`${fmtDate(r.log_date)} · ${r[v.field] ?? '—'}${bid ? ` · ${blockName.get(bid) ?? ''}` : ''}`}
+                            style={{ flex: 1, height: `${val ? Math.max(8, (val / v.max) * 100) : 4}%`, background: val ? color : 'var(--surface-3)', opacity: val ? 0.9 : 0.5, borderRadius: 3, minWidth: 3 }} />
+                        )
+                      })}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3, fontFamily: 'var(--font-mono)', fontSize: 8.5, color: 'var(--text-faint)' }}>
+                      <span>{fmtDate(rows[0].log_date)}</span><span>{fmtDate(rows[rows.length - 1].log_date)}</span>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </Card>
@@ -607,8 +643,9 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
         <Card id="balance" title="Balans snage">
           {!data.bestE1.sq ? <div className="os-empty">Nema dovoljno e1RM podataka</div> : (
             <>
-              <StrengthRadar balance={data.balance} />
-              <div className="readout" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+              <StrengthRadar balance={data.balance} e1={data.bestE1} />
+              <div className="readout" style={{ gridTemplateColumns: '1.2fr 1fr 1fr 1fr' }}>
+                <div className="cell"><div className="k">Total</div><div className="v" style={{ color: 'var(--accent)' }}>{data.curTotal}<small> kg</small></div></div>
                 <div className="cell"><div className="k">SQ / Total</div><div className="v">{data.balance.sqTotal}%</div></div>
                 <div className="cell"><div className="k">BP / Total</div><div className="v">{data.balance.bpTotal}%</div></div>
                 <div className="cell"><div className="k">DL / Total</div><div className="v">{data.balance.dlTotal}%</div></div>
@@ -618,9 +655,37 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
         </Card>
       </div>
 
-      {/* row 4: macro & activity (+ history) */}
-      <div className="grid c1">
+      {/* row 4: macro & activity | water */}
+      <div className="grid c2">
         <MacroCard data={data} cards={cards} setCard={setCard} />
+        <Card id="water" title="Unos tekućine">
+          {(() => {
+            const byDay: Record<string, number> = {}
+            for (const r of data.waterLogs as any[]) byDay[r.log_date] = (byDay[r.log_date] ?? 0) + Number(r.amount_ml)
+            const days = Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0])).slice(-14)
+            if (!days.length) return <div className="os-empty">Nema unosa tekućine</div>
+            const maxMl = Math.max(...days.map(([, ml]) => ml), 3000)
+            const avg = days.reduce((s, [, ml]) => s + ml, 0) / days.length
+            const todayMl = byDay[new Date().toISOString().slice(0, 10)] ?? 0
+            return (
+              <>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 130 }}>
+                  {days.map(([d, ml]) => (
+                    <div key={d} title={`${fmtDate(d)} · ${(ml / 1000).toFixed(1)} L`}
+                      style={{ flex: 1, height: `${Math.max(6, (ml / maxMl) * 100)}%`, background: '#38bdf8', opacity: 0.85, borderRadius: 4 }} />
+                  ))}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-faint)' }}>
+                  <span>{fmtDate(days[0][0])}</span><span>{fmtDate(days[days.length - 1][0])}</span>
+                </div>
+                <div className="readout" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                  <div className="cell"><div className="k">Danas</div><div className="v">{(todayMl / 1000).toFixed(1)}<small> L</small></div></div>
+                  <div className="cell"><div className="k">Prosjek · {days.length}d</div><div className="v">{(avg / 1000).toFixed(1)}<small> L</small></div></div>
+                </div>
+              </>
+            )
+          })()}
+        </Card>
       </div>
     </div>
   )
@@ -732,7 +797,10 @@ function KpiCard({ label, num, unit, sub, data, accent, open, onClick, detail }:
         <div className="top"><span className="label">{label}</span>{onClick && <ChevronDown size={13} style={{ color: 'var(--text-muted)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />}</div>
         <div className="num">{num}<span className="unit">{unit}</span></div>
         <div className={'delta ' + (accent ? 'up' : 'flat')}>{sub}</div>
-        {data.length > 1 && <div className="spark-slot"><Spark data={data} accent={accent} height={40} /></div>}
+        {/* sve KPI kartice iste visine — prazan slot kad nema sparklinea */}
+        {data.length > 1
+          ? <div className="spark-slot"><Spark data={data} accent={accent} height={40} /></div>
+          : <div className="spark-slot" style={{ height: 40 }} />}
       </div>
       {open && detail && <div className="os-fade" style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 8 }}>{detail}</div>}
     </div>
