@@ -288,7 +288,7 @@ export function StackedBarChart({ series, dates, segments, weekNos, height = 240
         })}
         {hi != null && totals[hi] > 0 && (
           <div style={{ position: 'absolute', left: `${(Xc(hi) / w) * 100}%`, top: 2, transform: `translateX(${hi > n / 2 ? '-100%' : '0'})`, pointerEvents: 'none', background: 'var(--surface-3)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '6px 9px', whiteSpace: 'nowrap', boxShadow: '0 6px 20px rgba(0,0,0,0.5)', zIndex: 2 }}>
-            {dates?.[hi] && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 3 }}>tjedan {dates[hi]}{weekNos?.[hi] != null ? <span style={{ color: 'var(--accent)' }}> · WEEK {weekNos[hi]}</span> : null}</div>}
+            {dates?.[hi] && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 3 }}>tjedan {dates[hi]}{(weekNos && weekNos[hi] != null) ? <span style={{ color: 'var(--accent)' }}> · WEEK {weekNos[hi]}</span> : null}</div>}
             {colored.filter(s => (s.data[hi] ?? 0) > 0).map(s => (
               <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
                 <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />

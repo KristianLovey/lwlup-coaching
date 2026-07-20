@@ -17,7 +17,12 @@ description: Development workflow and automation for this project - verification
    ```
    npx -y esbuild src/…/file.tsx --loader:.tsx=tsx --jsx=automatic --outfile=<scratchpad>/check.js
    ```
-   (više fajlova: `--outdir`). Ovo hvata sintaksu, NE tipove — TS greške uhvatit će tek Vercel build.
+   (više fajlova: `--outdir`). Ovo hvata sintaksu, NE tipove — TS greške uhvatit će tek Vercel build (`npm run build`).
+   **Zato ručno auditiraj tipove nakon svake izmjene** — najčešće greške koje esbuild propušta a `next build` ruši:
+   - novi prop dodan u **tip** ali NE i u **destrukturiranje** `{ ...props }` → "Cannot find name 'x'". Uvijek dodaj na OBA mjesta.
+   - `obj?.[i] != null` NE narrowa `obj` → kasniji `obj[i]` je "possibly undefined". Koristi `obj && obj[i] != null`.
+   - novi `data.*` field korišten u JSX-u ali ne vraćen iz `useMemo`/loadera.
+   - `strict` je uključen, ali `noUnusedLocals` NIJE — neiskorišteni importi/varijable ne ruše build.
 2. **Pretpostavke o podacima** — provjeri SQL-om kroz Supabase MCP (`execute_sql`) da podaci stvarno izgledaju kako kod očekuje (NULL-ovi, preklapanja, prazne tablice).
 3. **RLS** — svaki novi upit/embed s klijenta provjeri protiv politika (admin I trener putanja). Vidi skill `database`.
 4. **Cache ključevi** — ako se promijenio oblik podataka koji se kešira u localStorage, **bumpaj verziju ključa**. Postojeći ključevi:

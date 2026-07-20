@@ -722,7 +722,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
 }
 
 // ── Planning phases tab ─────────────────────────────────────────────
-function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, newPhaseLabel, setNewPhaseLabel, newPhaseStart, setNewPhaseStart, newPhaseEnd, setNewPhaseEnd, newPhaseColor, setNewPhaseColor, savingPhase, onAdd, onDelete, PHASE_COLORS, FM }: {
+function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, newPhaseLabel, setNewPhaseLabel, newPhaseStart, setNewPhaseStart, newPhaseEnd, setNewPhaseEnd, newPhaseColor, setNewPhaseColor, savingPhase, onAdd, onDelete, onUpdate, PHASE_COLORS, FM }: {
   phases: TrainingPhase[]
   competitionSel: { name: string; date: string; location?: string } | null
   athleteId: string
