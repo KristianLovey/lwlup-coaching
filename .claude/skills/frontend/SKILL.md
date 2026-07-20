@@ -54,7 +54,7 @@ setState(optimistički s tmpId)
 const json = await fetch('/api/…')
 json.data ? zamijeni tmpId stvarnim redom : ukloni tmpId (rollback)
 ```
-
+ 
 **4. Realtime s debounceom** — kanal po entitetu, ping s 600 ms debounceom, obavezan cleanup:
 ```ts
 const ch = supabase.channel(`dash-rt-${id}`)
