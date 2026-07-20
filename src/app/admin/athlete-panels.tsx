@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
-  Plus, Trash2, ChevronDown, Check,
+  Plus, Trash2, ChevronDown, Check, Pencil,
   Loader2,
   FolderOpen, Copy,
   ChevronLeft, Trophy,
@@ -194,6 +194,12 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
     if (data) setPhases(p => [...p, data as TrainingPhase].sort((a, b) => a.start_date.localeCompare(b.start_date)))
     setNewPhaseLabel(''); setNewPhaseStart(''); setNewPhaseEnd(''); setNewPhaseColor('#818cf8')
     setSavingPhase(false)
+  }
+
+  const updatePhase = async (id: string, patch: Partial<TrainingPhase>) => {
+    const { error } = await supabase.from('athlete_training_phases').update(patch).eq('id', id)
+    if (error) { alert(`Greška pri spremanju faze: ${error.message}`); return }
+    setPhases(p => p.map(ph => ph.id === id ? { ...ph, ...patch } : ph).sort((a, b) => a.start_date.localeCompare(b.start_date)))
   }
 
   const deletePhase = async (id: string) => {
@@ -706,6 +712,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
           savingPhase={savingPhase}
           onAdd={addPhase}
           onDelete={deletePhase}
+          onUpdate={updatePhase}
           PHASE_COLORS={PHASE_COLORS}
           FM={FM}
         />
@@ -727,9 +734,17 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
   savingPhase: boolean
   onAdd: () => void
   onDelete: (id: string) => void
+  onUpdate: (id: string, patch: Partial<TrainingPhase>) => void
   PHASE_COLORS: string[]
   FM: string
 }) {
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editLabel, setEditLabel] = useState('')
+  const [editStart, setEditStart] = useState('')
+  const [editEnd, setEditEnd] = useState('')
+  const [editColor, setEditColor] = useState('')
+  const startEdit = (ph: TrainingPhase) => { setEditId(ph.id); setEditLabel(ph.label); setEditStart(ph.start_date); setEditEnd(ph.end_date); setEditColor(ph.color) }
+  const saveEdit = () => { if (editId) { onUpdate(editId, { label: editLabel.trim(), start_date: editStart, end_date: editEnd, color: editColor }); setEditId(null) } }
   const [calViewDate, setCalViewDate] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
   // Dodavanje natjecanja u plan (Walterov zahtjev) — odabir iz postojećih natjecanja
   const [comps, setComps] = useState<{ id: string; name: string; date: string; location: string | null }[]>([])
@@ -835,12 +850,37 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
           <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema unesenih faza</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {phases.map(ph => (
+            {phases.map(ph => editId === ph.id ? (
+              // Inline edit — bez brisanja i ponovnog dodavanja
+              <div key={ph.id} style={{ padding: '12px', background: `${editColor}12`, border: `1px solid ${editColor}45`, borderRadius: '8px', borderLeft: `3px solid ${editColor}` }}>
+                <input value={editLabel} onChange={e => setEditLabel(e.target.value)} placeholder="Naziv faze"
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', fontSize: '0.82rem', outline: 'none', fontFamily: FM, borderRadius: '6px', boxSizing: 'border-box', marginBottom: '8px' }} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                  <input type="date" value={editStart} onChange={e => setEditStart(e.target.value)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '7px 9px', fontSize: '0.76rem', outline: 'none', fontFamily: FM, borderRadius: '6px', boxSizing: 'border-box', colorScheme: 'dark' }} />
+                  <input type="date" value={editEnd} onChange={e => setEditEnd(e.target.value)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '7px 9px', fontSize: '0.76rem', outline: 'none', fontFamily: FM, borderRadius: '6px', boxSizing: 'border-box', colorScheme: 'dark' }} />
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                  {PHASE_COLORS.map(c => (
+                    <button key={c} onClick={() => setEditColor(c)} style={{ width: '22px', height: '22px', borderRadius: '50%', background: c, border: editColor === c ? '3px solid #fff' : '2px solid transparent', cursor: 'pointer', flexShrink: 0 }} />
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <button onClick={() => setEditId(null)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', padding: '7px 14px', fontSize: '0.62rem', letterSpacing: '0.15em', fontFamily: FM, fontWeight: 700, borderRadius: '6px', cursor: 'pointer' }}>ODUSTANI</button>
+                  <button onClick={saveEdit} disabled={!editLabel.trim() || !editStart || !editEnd} style={{ background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.4)', color: '#4ade80', padding: '7px 14px', fontSize: '0.62rem', letterSpacing: '0.15em', fontFamily: FM, fontWeight: 700, borderRadius: '6px', cursor: 'pointer' }}>SPREMI</button>
+                </div>
+              </div>
+            ) : (
               <div key={ph.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: `${ph.color}10`, border: `1px solid ${ph.color}30`, borderRadius: '8px', borderLeft: `3px solid ${ph.color}` }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f0f0f0', fontFamily: FM }}>{ph.label}</div>
                   <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM, marginTop: '2px' }}>{formatDate(ph.start_date)} → {formatDate(ph.end_date)}</div>
                 </div>
+                <button onClick={() => startEdit(ph)} title="Uredi fazu"
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', padding: '4px', display: 'flex', alignItems: 'center', borderRadius: '4px' }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#a5b4fc' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.25)' }}>
+                  <Pencil size={12} />
+                </button>
                 <button onClick={() => onDelete(ph.id)}
                   style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '4px', display: 'flex', alignItems: 'center', borderRadius: '4px', transition: 'all 0.15s' }}
                   onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)' }}

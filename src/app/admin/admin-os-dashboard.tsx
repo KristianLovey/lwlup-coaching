@@ -468,19 +468,40 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
       <div className="grid c1">
         <Card id="blockplan" title="Plan blokova">
           {(() => {
-            const now = new Date(); const curMonth = now.getMonth(), curYear = now.getFullYear()
-            type PRow = { id: string; label: string; color: string; startM: number; endM: number }
-            const rows: PRow[] = ((data.phases as any[]).map((ph) => {
-              const s = new Date(ph.start_date + 'T12:00:00'), e = new Date(ph.end_date + 'T12:00:00')
-              const sy = s.getFullYear(), ey = e.getFullYear()
-              if (planYear < sy || planYear > ey) return null
-              return { id: ph.id, label: ph.label, color: ph.color, startM: planYear > sy ? 0 : s.getMonth(), endM: planYear < ey ? 11 : e.getMonth() }
-            }).filter(Boolean)) as PRow[]
-            const compInYear = data.compSel?.date && Number(data.compSel.date.slice(0, 4)) === planYear
-              ? { month: Number(data.compSel.date.slice(5, 7)) - 1, name: data.compSel.name as string } : null
+            const now = new Date(); const curYear = now.getFullYear()
+            // Godišnji timeline: pozicija po DANU u godini (ne po mjesecu) → cijela
+            // godina stane u jedan red, tanke crte označavaju početak svakog tjedna.
+            const yStart = new Date(planYear, 0, 1).getTime()
+            const yEnd = new Date(planYear + 1, 0, 1).getTime()
+            const span = yEnd - yStart
+            const fracOf = (t: number) => Math.max(0, Math.min(1, (t - yStart) / span))
+            const monthNames = ['Sij','Velj','Ožu','Tra','Svi','Lip','Srp','Kol','Ruj','Lis','Stu','Pro']
+            const shortDate = (d: string) => { const p = d.split('-'); return p.length === 3 ? `${+p[2]}.${+p[1]}.` : d }
+
+            type Bar = { id: string; label: string; color: string; l: number; w: number; start: string; end: string }
+            const bars: Bar[] = ((data.phases as any[]).map((ph) => {
+              const s = new Date(ph.start_date + 'T12:00:00').getTime(), e = new Date(ph.end_date + 'T12:00:00').getTime()
+              if (e < yStart || s > yEnd) return null
+              const l = fracOf(s), r = fracOf(e)
+              return { id: ph.id, label: ph.label, color: ph.color, l, w: Math.max(0.012, r - l), start: ph.start_date, end: ph.end_date }
+            }).filter(Boolean) as Bar[]).sort((a, b) => a.l - b.l)
+
+            // Greedy raspored u trake (lanes) — blokovi koji se ne preklapaju dijele red
+            const lanes: Bar[][] = []
+            for (const b of bars) {
+              let placed = false
+              for (const lane of lanes) {
+                if (lane[lane.length - 1].l + lane[lane.length - 1].w <= b.l + 0.001) { lane.push(b); placed = true; break }
+              }
+              if (!placed) lanes.push([b])
+            }
+            const compFrac = data.compSel?.date && Number(data.compSel.date.slice(0, 4)) === planYear
+              ? { frac: fracOf(new Date(data.compSel.date + 'T12:00:00').getTime()), name: data.compSel.name as string, date: data.compSel.date as string } : null
+            const todayFrac = planYear === curYear ? fracOf(now.getTime()) : null
+
             return (
               <div>
-                {/* Year navigator — pomak lijevo/desno po godinama */}
+                {/* Year navigator */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 16 }}>
                   <button className="ctrl icon" style={{ padding: 6 }} onClick={() => setPlanYear((yy) => yy - 1)} aria-label="Prethodna godina"><ChevronDown size={16} style={{ transform: 'rotate(90deg)' }} /></button>
                   <div style={{ textAlign: 'center', minWidth: 76 }}>
@@ -490,44 +511,61 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
                   <button className="ctrl icon" style={{ padding: 6 }} onClick={() => setPlanYear((yy) => yy + 1)} aria-label="Sljedeća godina"><ChevronDown size={16} style={{ transform: 'rotate(-90deg)' }} /></button>
                 </div>
 
-                {/* Month table — stupci = mjeseci, obojeni redovi = blokovi */}
-                <div style={{ overflowX: 'auto' }}>
-                  <div style={{ minWidth: 540 }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 6 }}>Mjesec</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12,1fr)', gap: 4, marginBottom: 8 }}>
-                      {Array.from({ length: 12 }).map((_, mi) => {
-                        const here = mi === curMonth && planYear === curYear
-                        return <div key={mi} style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, padding: '5px 0', borderRadius: 6, color: here ? 'var(--accent)' : 'var(--text-muted)', background: here ? 'var(--accent-soft)' : 'var(--surface-1)' }}>{mi + 1}</div>
-                      })}
-                    </div>
-                    {rows.length === 0 && !compInYear ? (
-                      <div className="os-empty" style={{ padding: 22 }}>Nema blokova u {planYear}.</div>
+                <div style={{ position: 'relative' }}>
+                  {/* Mjeseci */}
+                  <div style={{ position: 'relative', height: 16, marginBottom: 4 }}>
+                    {monthNames.map((mn, mi) => (
+                      <div key={mi} style={{ position: 'absolute', left: `${fracOf(new Date(planYear, mi, 1).getTime()) * 100}%`, fontFamily: 'var(--font-mono)', fontSize: 8.5, fontWeight: 700, color: mi === now.getMonth() && planYear === curYear ? 'var(--accent)' : 'var(--text-muted)', paddingLeft: 3 }}>{mn}</div>
+                    ))}
+                  </div>
+
+                  {/* Timeline tijelo s tjednim crtama */}
+                  <div style={{ position: 'relative', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', padding: '6px 0' }}>
+                    {/* tjedne crte (svaki ponedjeljak) */}
+                    {(() => {
+                      const lines: React.ReactNode[] = []
+                      const d = new Date(planYear, 0, 1)
+                      d.setDate(d.getDate() + ((8 - d.getDay()) % 7)) // prvi ponedjeljak
+                      let k = 0
+                      while (d.getFullYear() === planYear) {
+                        const isMonthStart = d.getDate() <= 7
+                        lines.push(<div key={k++} style={{ position: 'absolute', top: 0, bottom: 0, left: `${fracOf(d.getTime()) * 100}%`, width: 1, background: isMonthStart ? 'var(--border-strong)' : 'var(--border)', opacity: isMonthStart ? 0.9 : 0.5 }} />)
+                        d.setDate(d.getDate() + 7)
+                      }
+                      return lines
+                    })()}
+                    {todayFrac != null && <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${todayFrac * 100}%`, width: 2, background: 'var(--accent)', opacity: 0.7, zIndex: 3 }} />}
+
+                    {bars.length === 0 && !compFrac ? (
+                      <div className="os-empty" style={{ padding: 18 }}>Nema blokova u {planYear}.</div>
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {rows.map((r) => (
-                          <div key={r.id} style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(12,1fr)', gap: 4 }}>
-                            {Array.from({ length: 12 }).map((_, mi) => {
-                              const active = mi >= r.startM && mi <= r.endM
-                              return <div key={mi} title={r.label} style={{ height: 22, borderRadius: 6, background: active ? r.color : 'var(--surface-1)', opacity: active ? 1 : 0.45, boxShadow: active ? 'inset 0 1px 0 rgba(255,255,255,0.18)' : undefined }} />
-                            })}
-                            {/* ime bloka ispisano u samoj traci (legenda maknuta) */}
-                            <div style={{ position: 'absolute', left: `calc(${(r.startM / 12) * 100}% + 8px)`, top: '50%', transform: 'translateY(-50%)', maxWidth: `calc(${((r.endM - r.startM + 1) / 12) * 100}% - 14px)`, fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.85)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', pointerEvents: 'none' }}>{r.label}</div>
-                          </div>
-                        ))}
-                        {compInYear && (
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12,1fr)', gap: 4, marginTop: 2 }}>
-                            {Array.from({ length: 12 }).map((_, mi) => (
-                              <div key={mi} title={mi === compInYear.month ? compInYear.name : undefined} style={{ height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>{mi === compInYear.month ? '🏆' : ''}</div>
+                      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {lanes.map((lane, li) => (
+                          <div key={li} style={{ position: 'relative', height: 26 }}>
+                            {lane.map(b => (
+                              <div key={b.id} title={`${b.label} · ${shortDate(b.start)} – ${shortDate(b.end)}`}
+                                style={{ position: 'absolute', left: `${b.l * 100}%`, width: `${b.w * 100}%`, top: 0, height: 26, background: b.color, borderRadius: 5, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', overflow: 'hidden', zIndex: 2 }}>
+                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.7)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', padding: '0 6px' }}>{b.label}</span>
+                              </div>
+                            ))}
+                            {/* datum početka i kraja svakog bloka u traci */}
+                            {lane.map(b => (
+                              <div key={b.id + '-d'} style={{ position: 'absolute', left: `${b.l * 100}%`, width: `${b.w * 100}%`, top: 26, display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 7.5, color: 'var(--text-faint)', pointerEvents: 'none' }}>
+                                <span>{shortDate(b.start)}</span><span>{shortDate(b.end)}</span>
+                              </div>
                             ))}
                           </div>
+                        ))}
+                        {compFrac && (
+                          <div style={{ position: 'absolute', left: `calc(${compFrac.frac * 100}% - 7px)`, top: -2, fontSize: 13, zIndex: 4 }} title={`${compFrac.name} · ${shortDate(compFrac.date)}`}>🏆</div>
                         )}
                       </div>
                     )}
                   </div>
                 </div>
 
-                {compInYear && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f59e0b' }}>🏆 {compInYear.name}</div>
+                {compFrac && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 16, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f59e0b' }}>🏆 {compFrac.name} · {shortDate(compFrac.date)}</div>
                 )}
               </div>
             )
@@ -603,41 +641,51 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
       {/* row 3: recovery | balance */}
       <div className="grid c2">
         <Card id="recovery" title="Oporavak">
-          {!data.wbHistory.length ? <div className="os-empty">Nema wellbeing unosa</div> : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {([
-                { k: 'San (h)', field: 'sleep_hours', max: 12 },
-                { k: 'Stres (1–10)', field: 'stress_level', max: 10 },
-                { k: 'Kofein (mg)', field: 'caffeine_mg', max: Math.max(400, ...data.wbHistory.map((r: any) => Number(r.caffeine_mg) || 0)) },
-              ] as const).map(v => {
-                const rows = data.wbHistory.slice(-21) as any[]
-                const latest = [...rows].reverse().find(r => r[v.field] != null)
-                return (
-                  <div key={v.field}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{v.k}</span>
-                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16 }}>{latest?.[v.field] ?? '—'}</span>
+          {!data.wbHistory.length ? <div className="os-empty">Nema wellbeing unosa</div> : (() => {
+            // zajednička os datuma — zadnjih 14 unosa, kronološki
+            const rows = (data.wbHistory.slice(-14) as any[])
+            const colorFor = (d: string) => { const bid = data.blockByWeek[weekKey(d)]; return bid ? (blockColor.get(bid) ?? 'var(--text-dim)') : 'var(--text-dim)' }
+            const nameFor = (d: string) => { const bid = data.blockByWeek[weekKey(d)]; return bid ? (blockName.get(bid) ?? '') : '' }
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {([
+                  { k: 'San', unit: 'h', field: 'sleep_hours', max: 12 },
+                  { k: 'Stres', unit: '/10', field: 'stress_level', max: 10 },
+                  { k: 'Kofein', unit: 'mg', field: 'caffeine_mg', max: Math.max(400, ...rows.map((r: any) => Number(r.caffeine_mg) || 0)) },
+                ] as const).map(v => {
+                  const latest = [...rows].reverse().find(r => r[v.field] != null)
+                  return (
+                    <div key={v.field}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{v.k} <span style={{ color: 'var(--text-faint)' }}>({v.unit})</span></span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15 }}>{latest?.[v.field] ?? '—'}<span style={{ fontSize: 9, color: 'var(--text-dim)', marginLeft: 2 }}>{v.unit}</span></span>
+                      </div>
+                      {/* stupci — širi, s razmakom, vrijednost iznad, boja po bloku */}
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 46 }}>
+                        {rows.map((r: any, i: number) => {
+                          const val = Number(r[v.field] ?? 0)
+                          const has = r[v.field] != null
+                          return (
+                            <div key={i} title={`${fmtDate(r.log_date)} · ${v.k}: ${r[v.field] ?? '—'}${nameFor(r.log_date) ? ` · ${nameFor(r.log_date)}` : ''}`}
+                              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+                              {has && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-dim)', marginBottom: 2 }}>{r[v.field]}</span>}
+                              <div style={{ width: '100%', height: `${has ? Math.max(10, (val / v.max) * 100) : 3}%`, background: has ? colorFor(r.log_date) : 'var(--surface-3)', opacity: has ? 0.9 : 0.4, borderRadius: '3px 3px 0 0' }} />
+                            </div>
+                          )
+                        })}
+                      </div>
+                      {/* datum ispod SVAKOG stupca (dd.mm.) — jasno koji je dan koji */}
+                      <div style={{ display: 'flex', gap: 4, marginTop: 3 }}>
+                        {rows.map((r: any, i: number) => (
+                          <span key={i} style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>{fmtDate(r.log_date)}</span>
+                        ))}
+                      </div>
                     </div>
-                    {/* stupci obojani po bloku kojem datum pripada */}
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 52 }}>
-                      {rows.map((r: any, i: number) => {
-                        const val = Number(r[v.field] ?? 0)
-                        const bid = data.blockByWeek[weekKey(r.log_date)]
-                        const color = bid ? (blockColor.get(bid) ?? 'var(--text-dim)') : 'var(--text-dim)'
-                        return (
-                          <div key={i} title={`${fmtDate(r.log_date)} · ${r[v.field] ?? '—'}${bid ? ` · ${blockName.get(bid) ?? ''}` : ''}`}
-                            style={{ flex: 1, height: `${val ? Math.max(8, (val / v.max) * 100) : 4}%`, background: val ? color : 'var(--surface-3)', opacity: val ? 0.9 : 0.5, borderRadius: 3, minWidth: 3 }} />
-                        )
-                      })}
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3, fontFamily: 'var(--font-mono)', fontSize: 8.5, color: 'var(--text-faint)' }}>
-                      <span>{fmtDate(rows[0].log_date)}</span><span>{fmtDate(rows[rows.length - 1].log_date)}</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+                  )
+                })}
+              </div>
+            )
+          })()}
         </Card>
 
         <Card id="balance" title="Balans snage">

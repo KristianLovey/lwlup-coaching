@@ -1323,12 +1323,14 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
     if (historyLoading) return
     setHistoryLoading(true)
     try {
-      // Povijest ISTOG dana bloka kroz sve prijašnje tjedne (W1, W2, …),
-      // ne svih dana — ista varijacija na drugom danu se ne miješa.
+      // Povijest ISTOG dana bloka kroz prijašnje tjedne (W1, W2, …), vezano na
+      // POZICIJU vježbe u danu (exercise_order) — ako u istom danu ima npr. 2
+      // odvojena deadlifta, svaki se prati zasebno po svojoj poziciji, ne miješaju se.
       let q = supabase
         .from('workout_exercises')
-        .select('id, workouts!inner(day_name, athlete_id, weeks!inner(week_number, block_id))')
+        .select('id, exercise_order, workouts!inner(day_name, athlete_id, weeks!inner(week_number, block_id))')
         .eq('exercise_id', we.exercise_id)
+        .eq('exercise_order', we.exercise_order)
         .eq('workouts.athlete_id', userId)
       if (blockId) q = q.eq('workouts.weeks.block_id', blockId)
       if (dayName) q = q.eq('workouts.day_name', dayName)
@@ -1347,10 +1349,11 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
         .in('workout_exercise_id', weIds)
         .order('set_number')
 
+      // jedan tjedan = jedna instanca; setovi poredani po set_number (raspored kao u bloku)
       const grouped = weData
         .map((r: any) => ({
           week: r.workouts?.weeks?.week_number ?? 0,
-          logs: (data ?? []).filter((l: any) => l.workout_exercise_id === r.id),
+          logs: (data ?? []).filter((l: any) => l.workout_exercise_id === r.id).sort((a: any, b: any) => a.set_number - b.set_number),
         }))
         .filter(g => g.logs.length > 0)
         .sort((a, b) => a.week - b.week)

@@ -4,7 +4,7 @@
 // Sve čitaju stvarne podatke koje lifter upisuje u /training.
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Plus, Trash2, ChevronDown } from 'lucide-react'
+import { Loader2, Plus, Trash2, ChevronDown, Pencil, Check } from 'lucide-react'
 import { LineChart } from './admin-os-charts'
 
 const supabase = createClient()
@@ -29,6 +29,9 @@ export function NotesSection({ athleteId, adminId }: { athleteId: string; adminI
   const [txt, setTxt] = useState('')
   const [busy, setBusy] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editTxt, setEditTxt] = useState('')
   const add = async () => {
     if (!title.trim() || !txt.trim()) return
     setBusy(true)
@@ -36,6 +39,13 @@ export function NotesSection({ athleteId, adminId }: { athleteId: string; adminI
     setBusy(false)
     if (error) { alert(`Greška pri spremanju bilješke: ${error.message}`); return }
     setTitle(''); setTxt(''); reload()
+  }
+  const startEdit = (n: any) => { setEditId(n.id); setEditTitle(n.title ?? ''); setEditTxt(n.content ?? '') }
+  const saveEdit = async () => {
+    if (!editId) return
+    const { error } = await supabase.from('athlete_notes').update({ title: editTitle.trim() || null, content: editTxt.trim() }).eq('id', editId)
+    if (error) { alert(`Greška pri spremanju: ${error.message}`); return }
+    setEditId(null); reload()
   }
   const del = async (id: string) => {
     if (!confirm('Obrisati bilješku?')) return
@@ -63,6 +73,18 @@ export function NotesSection({ athleteId, adminId }: { athleteId: string; adminI
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {rows.map((n: any) => {
               const open = openId === n.id
+              if (editId === n.id) return (
+                <div key={n.id} style={{ borderTop: '1px solid var(--border)', padding: '12px 2px' }}>
+                  <input value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="Naslov bilješke"
+                    style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', padding: '9px 12px', fontSize: 14, fontWeight: 600, outline: 'none', marginBottom: 8, boxSizing: 'border-box' }} />
+                  <textarea value={editTxt} onChange={e => setEditTxt(e.target.value)}
+                    style={{ width: '100%', minHeight: 80, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', padding: '10px 12px', fontSize: 14, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+                    <button className="btn-a" onClick={() => setEditId(null)}>Odustani</button>
+                    <button className="btn-a accent" disabled={!editTxt.trim()} onClick={saveEdit}><Check size={13} /> Spremi</button>
+                  </div>
+                </div>
+              )
               return (
                 <div key={n.id} style={{ borderTop: '1px solid var(--border)' }}>
                   {/* zatvoreno: samo naslov + datum — klik otvara sadržaj */}
@@ -71,6 +93,7 @@ export function NotesSection({ athleteId, adminId }: { athleteId: string; adminI
                     <ChevronDown size={14} style={{ color: 'var(--text-muted)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
                     <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{noteTitle(n)}</span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>{fmtDate(String(n.created_at).slice(0, 10))}</span>
+                    <button className="icon-sm" onClick={e => { e.stopPropagation(); startEdit(n) }} title="Uredi bilješku"><Pencil size={13} /></button>
                     <button className="icon-sm danger" onClick={e => { e.stopPropagation(); del(n.id) }} title="Obriši bilješku"><Trash2 size={14} /></button>
                   </div>
                   {open && (
