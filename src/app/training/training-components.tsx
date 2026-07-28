@@ -1014,29 +1014,26 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     <div>
       {/* Single header row */}
       <div className={`set-log-header ${gridClass}`} style={{ display: 'grid', background: 'rgba(0,0,0,0.25)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-        <div style={{ ...cellStyle, justifyContent: 'flex-start', padding: '6px 14px' }}>
-          <span style={{ fontSize: '0.4rem', color: '#444', letterSpacing: '0.25em', fontWeight: 700, fontFamily: 'var(--fm)' }}>SET</span>
+        <div style={{ ...cellStyle, justifyContent: 'flex-start', padding: '6px 10px' }}>
+          <span className="slh-lbl" style={{ color: '#666', letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)' }}>SET</span>
         </div>
-        <div style={{ ...cellStyle, padding: '6px 0' }}>
-          <span style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
+        <div style={{ ...cellStyle, padding: '6px 2px' }}>
+          <span className="slh-lbl" style={{ color: 'rgba(255,255,255,0.6)', letterSpacing: '0.14em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
             KG{we.planned_weight_kg ? ` · ${we.planned_weight_kg}` : ''}
           </span>
-          {we.planned_weight_kg && (
-            <span style={{ fontSize: '0.36rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', letterSpacing: '0.08em', marginLeft: '3px', fontStyle: 'italic' }}>avg.</span>
-          )}
         </div>
-        <div style={{ ...cellStyle, padding: '6px 0' }}>
-          <span style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.38)', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
+        <div style={{ ...cellStyle, padding: '6px 2px' }}>
+          <span className="slh-lbl" style={{ color: 'rgba(255,255,255,0.6)', letterSpacing: '0.14em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
             REPS{we.planned_reps ? ` · ${we.planned_reps}` : ''}
           </span>
         </div>
-        <div className="slr-rpe" style={{ ...cellStyle, padding: '6px 0' }}>
-          <span style={{ fontSize: '0.4rem', color: '#facc15', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
+        <div className="slr-rpe" style={{ ...cellStyle, padding: '6px 2px' }}>
+          <span className="slh-lbl" style={{ color: '#facc15', letterSpacing: '0.14em', fontWeight: 700, fontFamily: 'var(--fm)' }}>
             RPE{targetRpe ? ` · ${targetRpe}` : ''}
           </span>
         </div>
         <div style={{ ...cellStyle, padding: '6px 0', borderRight: isAdmin ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
-          <span style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)' }}>{isAdmin ? 'TOP' : '○'}</span>
+          <span className="slh-lbl" style={{ color: 'rgba(255,255,255,0.35)', letterSpacing: '0.14em', fontWeight: 700, fontFamily: 'var(--fm)' }}>{isAdmin ? 'TOP' : '○'}</span>
         </div>
         {isAdmin && (
           <div style={{ ...cellStyle, padding: '6px 0', borderRight: 'none' }} title="Backoff">
@@ -1219,18 +1216,29 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
         )
       })}
       <style>{`
-        .slg-admin  { grid-template-columns: 42px minmax(0,0.9fr) minmax(0,0.66fr) 80px 32px 32px; }
-        .slg-lifter { grid-template-columns: 46px minmax(0,1fr) minmax(0,0.78fr) 88px 48px; }
+        /* Every flexible column needs a real px floor — a 0 minimum lets some
+           Android WebViews collapse the REPS column to zero width entirely. */
+        .slg-admin  { grid-template-columns: 42px minmax(58px,0.9fr) minmax(50px,0.66fr) 80px 32px 32px; }
+        .slg-lifter { grid-template-columns: 46px minmax(64px,1fr) minmax(56px,0.78fr) 88px 48px; }
         .set-log-row input::placeholder { color: rgba(255,255,255,0.28); font-style: italic; letter-spacing: 0.05em; }
+        /* Header labels: 9px floor — Android WebViews render sub-8px text unreliably */
+        .slh-lbl { font-size: 9px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .set-done-btn { -webkit-tap-highlight-color: transparent; }
         .set-done-btn:active > div { transform: scale(0.88); background: rgba(34,197,94,0.15) !important; }
         .set-done-btn[disabled]:active > div { transform: none; background: transparent !important; }
         @media (max-width: 540px) {
-          .slg-lifter { grid-template-columns: 36px minmax(0,1fr) minmax(0,0.66fr) 54px 44px; }
-          .slg-admin  { grid-template-columns: 32px minmax(0,1fr) minmax(0,0.66fr) 50px 28px 28px; }
+          .slg-lifter { grid-template-columns: 34px minmax(56px,1fr) minmax(48px,0.72fr) 52px 42px; }
+          .slg-admin  { grid-template-columns: 30px minmax(50px,1fr) minmax(44px,0.7fr) 48px 26px 26px; }
           /* Compress so every column fits one row — !important beats inline padding */
           .set-log-row > div, .set-log-header > div { padding-left: 3px !important; padding-right: 3px !important; min-width: 0; }
           .set-log-row input { font-size: 0.9rem !important; padding-left: 1px !important; padding-right: 1px !important; min-width: 0; }
+        }
+        @media (max-width: 380px) {
+          .slg-lifter { grid-template-columns: 30px minmax(50px,1fr) minmax(44px,0.72fr) 46px 38px; }
+          .slg-admin  { grid-template-columns: 28px minmax(46px,1fr) minmax(40px,0.7fr) 44px 24px 24px; }
+          .set-log-row > div, .set-log-header > div { padding-left: 2px !important; padding-right: 2px !important; }
+          .set-log-row input { font-size: 0.82rem !important; }
+          .slh-lbl { font-size: 8px; letter-spacing: 0.06em !important; }
         }
       `}</style>
     </div>
