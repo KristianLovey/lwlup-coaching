@@ -1095,12 +1095,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
               </div>
 
               {/* REPS input */}
-              <div style={{ ...cellStyle, padding: '6px 10px', flexDirection: 'column', gap: '2px', alignItems: 'stretch', justifyContent: 'center' }}>
-                {we.planned_reps != null && (
-                  <div style={{ fontSize: '0.44rem', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.06em', textAlign: 'center', lineHeight: 1 }}>
-                    ×{we.planned_reps}
-                  </div>
-                )}
+              <div style={{ ...cellStyle, padding: '6px 10px' }}>
                 <input
                   type="text" inputMode="numeric"
                   value={localVals[`${log.set_number}_reps`] ?? ''}
@@ -1223,7 +1218,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
               resolve wrongly, handing all free space to the first column. */
         .slg-admin  { grid-template-columns: 42px minmax(58px,4fr) minmax(50px,3fr) 80px 32px 32px; }
         .slg-lifter { grid-template-columns: 46px minmax(64px,4fr) minmax(56px,3fr) 88px 48px; }
-        .set-log-row input::placeholder { color: rgba(255,255,255,0.28); font-style: italic; letter-spacing: 0.05em; }
+        .set-log-row input::placeholder { color: rgba(255,255,255,0.28); font-style: italic; letter-spacing: 0.05em; font-size: 0.7rem; }
         /* Header labels: 9px floor — Android WebViews render sub-8px text unreliably */
         .slh-lbl { font-size: 9px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .set-done-btn { -webkit-tap-highlight-color: transparent; }
