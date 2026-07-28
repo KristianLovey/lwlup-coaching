@@ -760,9 +760,9 @@ export default function TrainingPage() {
         input[type=number] { -moz-appearance:textfield; }
 
         @media (max-width:480px) { .set-log-header, .set-log-row { grid-template-columns:44px 1fr 1fr 64px 36px !important; } }
+        /* ≤360px: zadrži SVE stupce (uklj. REPS) — samo ih stisni da stanu u jedan red */
         @media (max-width:360px) {
-          .set-log-header > *:nth-child(3), .set-log-row > *:nth-child(3) { display:none !important; }
-          .set-log-header, .set-log-row { grid-template-columns:44px 1fr 64px 36px !important; }
+          .set-log-header, .set-log-row { grid-template-columns:32px 1fr 1fr 46px 30px !important; }
         }
         @media (max-width:480px) { .ex-table-footer { flex-direction:column !important; gap:8px !important; } }
         @media (max-width:480px) { .nav-home-text { display:none !important; } }
