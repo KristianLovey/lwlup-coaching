@@ -890,12 +890,19 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       ...(isAdmin ? {} : { _completedSets: after.filter(l => l.completed).length, _totalSets: after.length }),
     })
 
-    // persist live values + completion (only changed fields)
-    const writes: [string, unknown][] = [['completed', nowDone]]
-    if (liveW !== s.weight_kg) writes.push(['weight_kg', liveW])
-    if (liveR !== s.reps) writes.push(['reps', liveR])
-    if (liveE !== s.rpe) writes.push(['rpe', liveE])
-    for (const [f, v] of writes) { if (isAdmin) upsertViaApi(setNum, f, v); else upsertDirect(setNum, f, v) }
+    // persist live values + completion — single atomic upsert reduces mobile network failures
+    const updates: Record<string, unknown> = { completed: nowDone }
+    if (liveW !== s.weight_kg) updates.weight_kg = liveW
+    if (liveR !== s.reps) updates.reps = liveR
+    if (liveE !== s.rpe) updates.rpe = liveE
+    if (!isAdmin) {
+      supabase.from('set_logs').upsert(
+        { workout_exercise_id: we.id, athlete_id: userId, set_number: setNum, ...updates },
+        { onConflict: 'workout_exercise_id,set_number' },
+      ).then(({ error }) => { if (error) console.error('markSetDone save failed', error) })
+    } else {
+      for (const [f, v] of Object.entries(updates)) upsertViaApi(setNum, f, v)
+    }
   }
 
   const toggleTopSet = (setNum: number) => {
@@ -1091,7 +1098,12 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
               </div>
 
               {/* REPS input */}
-              <div style={{ ...cellStyle, padding: '10px 12px' }}>
+              <div style={{ ...cellStyle, padding: '6px 10px', flexDirection: 'column', gap: '2px', alignItems: 'stretch', justifyContent: 'center' }}>
+                {we.planned_reps != null && (
+                  <div style={{ fontSize: '0.44rem', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.06em', textAlign: 'center', lineHeight: 1 }}>
+                    ×{we.planned_reps}
+                  </div>
+                )}
                 <input
                   type="text" inputMode="numeric"
                   value={localVals[`${log.set_number}_reps`] ?? ''}
@@ -1209,7 +1221,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       <style>{`
         .slg-admin  { grid-template-columns: 42px minmax(0,0.9fr) minmax(0,0.66fr) 80px 32px 32px; }
         .slg-lifter { grid-template-columns: 46px minmax(0,1fr) minmax(0,0.78fr) 88px 48px; }
-        .set-log-row input::placeholder { color: rgba(255,255,255,0.22); font-style: italic; font-size: 0.62rem; letter-spacing: 0.05em; }
+        .set-log-row input::placeholder { color: rgba(255,255,255,0.28); font-style: italic; letter-spacing: 0.05em; }
         .set-done-btn { -webkit-tap-highlight-color: transparent; }
         .set-done-btn:active > div { transform: scale(0.88); background: rgba(34,197,94,0.15) !important; }
         .set-done-btn[disabled]:active > div { transform: none; background: transparent !important; }

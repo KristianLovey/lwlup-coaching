@@ -539,19 +539,20 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
                     {bars.length === 0 && !compFrac ? (
                       <div className="os-empty" style={{ padding: 18 }}>Nema blokova u {planYear}.</div>
                     ) : (
-                      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {lanes.map((lane, li) => (
-                          <div key={li} style={{ position: 'relative', height: 26 }}>
+                          <div key={li} style={{ position: 'relative', height: 40 }}>
                             {lane.map(b => (
                               <div key={b.id} title={`${b.label} · ${shortDate(b.start)} – ${shortDate(b.end)}`}
                                 style={{ position: 'absolute', left: `${b.l * 100}%`, width: `${b.w * 100}%`, top: 0, height: 26, background: b.color, borderRadius: 5, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', overflow: 'hidden', zIndex: 2 }}>
                                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.7)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', padding: '0 6px' }}>{b.label}</span>
                               </div>
                             ))}
-                            {/* datum početka i kraja svakog bloka u traci */}
+                            {/* datum početka i kraja — inside the 40px lane height */}
                             {lane.map(b => (
-                              <div key={b.id + '-d'} style={{ position: 'absolute', left: `${b.l * 100}%`, width: `${b.w * 100}%`, top: 26, display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 7.5, color: 'var(--text-faint)', pointerEvents: 'none' }}>
-                                <span>{shortDate(b.start)}</span><span>{shortDate(b.end)}</span>
+                              <div key={b.id + '-d'} style={{ position: 'absolute', left: `${b.l * 100}%`, width: `${b.w * 100}%`, top: 28, display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', pointerEvents: 'none', overflow: 'hidden' }}>
+                                <span style={{ whiteSpace: 'nowrap' }}>{shortDate(b.start)}</span>
+                                {b.w > 0.07 && <span style={{ whiteSpace: 'nowrap' }}>{shortDate(b.end)}</span>}
                               </div>
                             ))}
                           </div>
