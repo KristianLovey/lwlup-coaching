@@ -1216,10 +1216,13 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
         )
       })}
       <style>{`
-        /* Every flexible column needs a real px floor — a 0 minimum lets some
-           Android WebViews collapse the REPS column to zero width entirely. */
-        .slg-admin  { grid-template-columns: 42px minmax(58px,0.9fr) minmax(50px,0.66fr) 80px 32px 32px; }
-        .slg-lifter { grid-template-columns: 46px minmax(64px,1fr) minmax(56px,0.78fr) 88px 48px; }
+        /* Two rules keep the REPS column alive on old Android WebViews:
+           1. a real px floor — a 0 minimum lets the column collapse to nothing;
+           2. integer fr values — flex factors below 1 (0.78fr, 0.66fr) hit a
+              separate track-sizing path in the spec that older Blink builds
+              resolve wrongly, handing all free space to the first column. */
+        .slg-admin  { grid-template-columns: 42px minmax(58px,4fr) minmax(50px,3fr) 80px 32px 32px; }
+        .slg-lifter { grid-template-columns: 46px minmax(64px,4fr) minmax(56px,3fr) 88px 48px; }
         .set-log-row input::placeholder { color: rgba(255,255,255,0.28); font-style: italic; letter-spacing: 0.05em; }
         /* Header labels: 9px floor — Android WebViews render sub-8px text unreliably */
         .slh-lbl { font-size: 9px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1227,15 +1230,15 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
         .set-done-btn:active > div { transform: scale(0.88); background: rgba(34,197,94,0.15) !important; }
         .set-done-btn[disabled]:active > div { transform: none; background: transparent !important; }
         @media (max-width: 540px) {
-          .slg-lifter { grid-template-columns: 34px minmax(56px,1fr) minmax(48px,0.72fr) 52px 42px; }
-          .slg-admin  { grid-template-columns: 30px minmax(50px,1fr) minmax(44px,0.7fr) 48px 26px 26px; }
+          .slg-lifter { grid-template-columns: 34px minmax(56px,4fr) minmax(48px,3fr) 52px 42px; }
+          .slg-admin  { grid-template-columns: 30px minmax(50px,4fr) minmax(44px,3fr) 48px 26px 26px; }
           /* Compress so every column fits one row — !important beats inline padding */
           .set-log-row > div, .set-log-header > div { padding-left: 3px !important; padding-right: 3px !important; min-width: 0; }
           .set-log-row input { font-size: 0.9rem !important; padding-left: 1px !important; padding-right: 1px !important; min-width: 0; }
         }
         @media (max-width: 380px) {
-          .slg-lifter { grid-template-columns: 30px minmax(50px,1fr) minmax(44px,0.72fr) 46px 38px; }
-          .slg-admin  { grid-template-columns: 28px minmax(46px,1fr) minmax(40px,0.7fr) 44px 24px 24px; }
+          .slg-lifter { grid-template-columns: 30px minmax(50px,4fr) minmax(44px,3fr) 46px 38px; }
+          .slg-admin  { grid-template-columns: 28px minmax(46px,4fr) minmax(40px,3fr) 44px 24px 24px; }
           .set-log-row > div, .set-log-header > div { padding-left: 2px !important; padding-right: 2px !important; }
           .set-log-row input { font-size: 0.82rem !important; }
           .slh-lbl { font-size: 8px; letter-spacing: 0.06em !important; }
