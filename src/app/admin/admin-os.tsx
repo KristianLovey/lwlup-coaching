@@ -138,7 +138,8 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
   const loadAthletes = useCallback(async (knownUserId?: string) => {
     let scopedIds: string[] | null = null
     if (isTrener) {
-      const uid = knownUserId ?? (await supabase.auth.getUser()).data.user?.id ?? ''
+      // getSession je lokalno (bez mrežnog poziva) — brže od getUser
+      const uid = knownUserId ?? (await supabase.auth.getSession()).data.session?.user?.id ?? ''
       const { data: asg } = await supabase.from('coach_assignments').select('lifter_id').eq('coach_id', uid)
       scopedIds = (asg ?? []).map((a: any) => a.lifter_id)
       if (scopedIds.length === 0) { setAthletes([]); setCoaches([]); return }
@@ -172,9 +173,7 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
 
   useEffect(() => {
     const init = async () => {
-      setLoading(true)
-
-      // Serve stale athletes immediately so the UI isn't empty while loading
+      // 1. Instant render iz keša — lista i vježbe se pokažu prije ijednog mrežnog poziva
       try {
         const cached = JSON.parse(localStorage.getItem(ATHLETES_CACHE_KEY) ?? 'null')
         if (cached?.ts && Date.now() - cached.ts < ATHLETES_CACHE_TTL && cached.withBlocks?.length > 0) {
@@ -183,9 +182,15 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
           setAssignments(cached.map ?? {})
         }
       } catch {}
+      try {
+        const ec = JSON.parse(localStorage.getItem('adminos:exercises:v1') ?? 'null')
+        if (ec?.ts && Date.now() - ec.ts < 30 * 60_000 && ec.data?.length > 0) setExercises(ec.data)
+      } catch {}
 
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        // 2. Korisnik iz lokalne sesije (bez mreže); getUser samo kao rezerva
+        let user = (await supabase.auth.getSession()).data.session?.user ?? null
+        if (!user) user = (await supabase.auth.getUser()).data.user ?? null
         if (!user) { setError('Nisi prijavljen/a.'); setLoading(false); return }
         setAdminId(user.id)
 
@@ -195,12 +200,12 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
         if (savedId)  setSelectedId(savedId)
         if (savedSec) setSection(savedSec)
 
-        // Serve cached exercises immediately (they change rarely)
-        const EX_CACHE_KEY = 'adminos:exercises:v1', EX_CACHE_TTL = 30 * 60_000
-        try {
-          const ec = JSON.parse(localStorage.getItem(EX_CACHE_KEY) ?? 'null')
-          if (ec?.ts && Date.now() - ec.ts < EX_CACHE_TTL && ec.data?.length > 0) setExercises(ec.data)
-        } catch {}
+        // 3. Shell se smije prikazati odmah — sadržaj ima vlastite loadere.
+        //    (proxy je već autorizirao pristup na serveru; role-check ispod je dodatna zaštita.)
+        setLoading(false)
+
+        // 4. Sve mrežno paralelno, ništa ne blokira shell
+        loadAthletes(user.id) // u pozadini — puni listu kad stigne
 
         const [profileRes, exRes, compRes] = await Promise.all([
           supabase.from('lifters').select('full_name, role').eq('id', user.id).single(),
@@ -209,20 +214,18 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
         ])
 
         const profile = profileRes.data
-        if (!profile) { setError('Profil ne postoji.'); setLoading(false); return }
+        if (!profile) { setError('Profil ne postoji.'); return }
         const allowed = isTrener ? (profile.role === 'trener' || profile.role === 'admin') : profile.role === 'admin'
-        if (!allowed) { setError(`Pristup odbijen — rola "${profile.role}".`); setLoading(false); return }
+        if (!allowed) { setError(`Pristup odbijen — rola "${profile.role}".`); return }
         setAdminName(profile.full_name ?? (isTrener ? 'Trener' : 'Admin'))
         const exData = exRes.data ?? []
         setExercises(exData)
         try { localStorage.setItem('adminos:exercises:v1', JSON.stringify({ ts: Date.now(), data: exData })) } catch {}
         setCompCount(compRes.count ?? 0)
-
-        // Athletes load after profile check passes (still parallel with rendering)
-        await loadAthletes(user.id)
       } catch (e) {
         setError(`Greška: ${(e as Error)?.message ?? String(e)}`)
-      } finally { setLoading(false) }
+        setLoading(false)
+      }
     }
     init()
   }, [loadAthletes, ATHLETES_CACHE_KEY, ATHLETES_CACHE_TTL])

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Plus, Check, FolderOpen, ChevronDown, X, Menu } from 'lucide-react'
+import { Loader2, Plus, Check, FolderOpen, ChevronDown, ChevronRight, X, Menu } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { Block, BlockSummary, Week, Exercise, WorkoutExercise, Workout } from './types'
 import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-components'
@@ -116,7 +116,15 @@ export default function TrainingPage() {
         setExercises(exData ?? [])
         setAllBlocks((ab ?? []) as BlockSummary[])
 
-        const blockData = rawBlock
+        // Fallback: nema bloka sa statusom 'active' (npr. plan kopiran iz predloška ostaje
+        // 'planned') → prikaži najnoviji blok koji lifter ima, da uvijek nešto vidi.
+        let blockData = rawBlock
+        if (!blockData && (ab?.length ?? 0) > 0) {
+          const { data: fb } = await supabase.from('blocks')
+            .select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(id, name, category, notes))))')
+            .eq('id', (ab as BlockSummary[])[0].id).maybeSingle()
+          blockData = fb
+        }
         if (blockData?.weeks) {
           blockData.weeks.sort((a: Week, b: Week) => a.week_number - b.week_number)
           blockData.weeks.forEach((w: Week) => {
@@ -478,10 +486,36 @@ export default function TrainingPage() {
             {!loading && !block && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: '14px' }}>
                 <div style={{ fontFamily: 'var(--font-bg, var(--fm))', fontSize: '3.5rem', opacity: 0.1, lineHeight: 1 }}>—</div>
-                <div style={{ fontSize: '0.68rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700 }}>NEMA AKTIVNOG PROGRAMA</div>
-                <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.22)', fontFamily: 'var(--fm)', textAlign: 'center', maxWidth: '300px', lineHeight: 1.6 }}>
-                  Tvoj trener još nije kreirao program. Javi se treneru za više informacija.
-                </div>
+                {allBlocks.length > 0 ? (
+                  <>
+                    <div style={{ fontSize: '0.68rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700 }}>ODABERI SVOJ BLOK</div>
+                    <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', textAlign: 'center', maxWidth: '320px', lineHeight: 1.6, marginBottom: '6px' }}>
+                      Klikni blok koji želiš trenirati.
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '340px' }}>
+                      {allBlocks.map((b: BlockSummary) => (
+                        <button key={b.id} onClick={() => switchBlock(b.id)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 18px', borderRadius: '14px', background: '#111111', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', textAlign: 'left' as const, transition: 'all 0.15s' }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.28)' }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)' }}>
+                          <FolderOpen size={16} color="rgba(255,255,255,0.35)" style={{ flexShrink: 0 }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--font-bg, var(--fm))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{b.name}</div>
+                            <div style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', letterSpacing: '0.08em', marginTop: '2px' }}>{b.status === 'active' ? 'AKTIVAN' : b.status === 'completed' ? 'ZAVRŠEN' : 'PLANIRAN'}</div>
+                          </div>
+                          <ChevronRight size={15} color="rgba(255,255,255,0.25)" style={{ flexShrink: 0 }} />
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: '0.68rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700 }}>NEMA AKTIVNOG PROGRAMA</div>
+                    <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.22)', fontFamily: 'var(--fm)', textAlign: 'center', maxWidth: '300px', lineHeight: 1.6 }}>
+                      Tvoj trener još nije kreirao program. Javi se treneru za više informacija.
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
