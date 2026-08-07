@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
 import BigThree from '@/app/components/big_three'
+import { RotateCw } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 
 
@@ -110,40 +111,60 @@ function useReveal() {
   return { ref, visible }
 }
 
-function FounderRow({ founder, index }: { founder: FounderData; index: number }) {
+function FounderCard({ founder, index, hint, backLabel }: { founder: FounderData; index: number; hint: string; backLabel: string }) {
   const { ref, visible } = useReveal()
-  const imgLeft = founder.imgLeft
+  const [flipped, setFlipped] = useState(false)
   return (
-    <div ref={ref} className={`founder-row${imgLeft ? '' : ' founder-row-reverse'}`}
+    <div ref={ref} className="founder-flip"
       style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(30px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)', transitionDelay: `${index * 0.1}s` }}>
-      <div className="founder-img-wrap">
-        <Image src={founder.img} alt={founder.name} fill className="founder-img"
-          style={{ objectFit: 'cover', objectPosition: 'top center', filter: 'brightness(0.85) grayscale(0.15)', transition: 'transform 0.8s' }} sizes="50vw" />
-        <div style={{ position: 'absolute', inset: 0, background: imgLeft ? 'linear-gradient(to bottom right, transparent 65%, #121212 100%)' : 'linear-gradient(to bottom left, transparent 65%, #121212 100%)' }} />
-        <div style={{ position: 'absolute', bottom: '20px', left: imgLeft ? '24px' : 'auto', right: !imgLeft ? '24px' : 'auto', fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,6vw,6rem)', fontWeight: 800, color: 'rgba(255,255,255,0.06)', lineHeight: 1, userSelect: 'none' }}>
-          0{index + 1}
-        </div>
-      </div>
-      <div className="founder-text-wrap">
-        <div style={{ position: 'absolute', top: '-10px', right: imgLeft ? '16px' : 'auto', left: !imgLeft ? '16px' : 'auto', fontFamily: 'var(--fd)', fontSize: 'clamp(6rem,12vw,14rem)', fontWeight: 800, color: 'rgba(255,255,255,0.025)', lineHeight: 1, userSelect: 'none', pointerEvents: 'none' }}>
-          0{index + 1}
-        </div>
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.48)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>{founder.role}</div>
-          <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.8rem, 3.5vw, 3.2rem)', lineHeight: 0.92, marginBottom: founder.nickname ? '8px' : '24px', letterSpacing: '-0.01em' }}>{founder.name}</h2>
-          {founder.nickname && <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.48)', letterSpacing: '0.15em', marginBottom: '24px', fontStyle: 'italic' }}>"{founder.nickname}"</div>}
-          <div style={{ width: '36px', height: '2px', background: '#fff', marginBottom: '24px', opacity: 0.7 }} />
-          <p style={{ color: 'rgba(255,255,255,0.62)', lineHeight: 1.85, fontSize: '0.92rem', marginBottom: '28px', maxWidth: '460px' }}>{founder.bio}</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {founder.achievements.map((item, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', color: 'rgba(255,255,255,0.7)' }}>
-                <div style={{ width: '4px', height: '4px', background: '#fff', flexShrink: 0, marginTop: '8px', opacity: 0.4 }} />
-                <span style={{ fontSize: '0.85rem', lineHeight: 1.5 }}>{item}</span>
+      <button className="founder-flip-btn" onClick={() => setFlipped(f => !f)} aria-label={founder.name}
+        aria-pressed={flipped}>
+        <div className="founder-flip-inner" style={{ transform: flipped ? 'rotateY(180deg)' : 'none' }}>
+
+          {/* ── FRONT: slika + ime dolje + "klikni za više" ── */}
+          <div className="founder-face founder-front">
+            <Image src={founder.img} alt={founder.name} fill
+              style={{ objectFit: 'cover', objectPosition: 'top center', filter: 'brightness(0.82) grayscale(0.18)' }} sizes="(max-width: 860px) 100vw, 50vw" />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(10,10,10,0.94) 0%, rgba(10,10,10,0.35) 42%, transparent 68%)' }} />
+            <div style={{ position: 'absolute', top: '20px', right: '26px', fontFamily: 'var(--fd)', fontSize: 'clamp(2.6rem,5vw,4.6rem)', fontWeight: 800, color: 'rgba(255,255,255,0.08)', lineHeight: 1, userSelect: 'none' }}>0{index + 1}</div>
+            {/* Ime + uloga na dnu slike */}
+            <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 'clamp(20px,4vw,34px)', textAlign: 'left' }}>
+              <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.55)', marginBottom: '10px', fontFamily: 'var(--fm)' }}>{founder.role}</div>
+              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.7rem, 3.4vw, 3rem)', lineHeight: 0.94, margin: 0, letterSpacing: '-0.01em' }}>{founder.name}</h2>
+              {founder.nickname && <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.14em', marginTop: '6px', fontStyle: 'italic' }}>"{founder.nickname}"</div>}
+              {/* hint pilula */}
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '18px', padding: '7px 14px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.06)' }}>
+                <RotateCw size={12} strokeWidth={2.4} style={{ color: 'rgba(255,255,255,0.75)' }} />
+                <span style={{ fontSize: '0.6rem', letterSpacing: '0.2em', fontWeight: 700, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase' as const }}>{hint}</span>
               </div>
-            ))}
+            </div>
           </div>
+
+          {/* ── BACK: opis osobe ── */}
+          <div className="founder-face founder-back">
+            <div style={{ position: 'absolute', top: '-14px', right: '14px', fontFamily: 'var(--fd)', fontSize: 'clamp(6rem,12vw,12rem)', fontWeight: 800, color: 'rgba(255,255,255,0.03)', lineHeight: 1, userSelect: 'none', pointerEvents: 'none' }}>0{index + 1}</div>
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.48)', marginBottom: '12px', fontFamily: 'var(--fm)' }}>{founder.role}</div>
+              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.5rem, 3vw, 2.6rem)', lineHeight: 0.94, marginBottom: '18px', letterSpacing: '-0.01em' }}>{founder.name}</h2>
+              <div style={{ width: '36px', height: '2px', background: '#fff', marginBottom: '20px', opacity: 0.7 }} />
+              <p style={{ color: 'rgba(255,255,255,0.66)', lineHeight: 1.8, fontSize: '0.88rem', marginBottom: '22px' }}>{founder.bio}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
+                {founder.achievements.map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '11px', color: 'rgba(255,255,255,0.72)' }}>
+                    <div style={{ width: '4px', height: '4px', background: '#fff', flexShrink: 0, marginTop: '7px', opacity: 0.4 }} />
+                    <span style={{ fontSize: '0.82rem', lineHeight: 1.5 }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '22px', color: 'rgba(255,255,255,0.4)' }}>
+              <RotateCw size={12} strokeWidth={2.4} style={{ transform: 'scaleX(-1)' }} />
+              <span style={{ fontSize: '0.58rem', letterSpacing: '0.2em', fontWeight: 700, textTransform: 'uppercase' as const }}>{backLabel}</span>
+            </div>
+          </div>
+
         </div>
-      </div>
+      </button>
     </div>
   )
 }
@@ -419,12 +440,12 @@ export default function Landing() {
             </p>
           </div>
         </div>
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          {FOUNDERS.map((founder, i) => (
-            <div key={founder.name} style={{ borderBottom: i < FOUNDERS.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-              <FounderRow founder={founder} index={i} />
-            </div>
-          ))}
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 clamp(20px,5vw,60px) clamp(60px,10vw,100px)' }}>
+          <div className="founder-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'clamp(16px,3vw,28px)' }}>
+            {FOUNDERS.map((founder, i) => (
+              <FounderCard key={founder.name} founder={founder} index={i} hint={t('home.f.fliphint')} backLabel={t('home.f.flipback')} />
+            ))}
+          </div>
         </div>
       </section>
 
@@ -532,29 +553,41 @@ export default function Landing() {
 
         /* ══ HOVER OSTALO ═════════════════════════════════════════ */
         .info-card:hover h4 { color: rgba(255,255,255,0.7) !important; }
-        .founder-img:hover  { transform: scale(1.04) !important; }
         .club-img:hover     { transform: scale(1.05) !important; }
         .feature-card:hover { transform: translateY(-5px) !important; border-color: rgba(255,255,255,0.14) !important; box-shadow: 0 8px 32px rgba(255,255,255,0.04); }
         .feature-card:hover > div:first-child { opacity: 1 !important; }
         .feature-card:hover > div:nth-child(2) { color: rgba(255,255,255,0.14) !important; }
 
-        /* ══ GRID LAYOUTS ═════════════════════════════════════════ */
-        .founder-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          min-height: 560px;
+        /* ══ FOUNDER FLIP CARDS ═══════════════════════════════════ */
+        .founder-flip { perspective: 1800px; }
+        .founder-flip-btn {
+          display: block; width: 100%; padding: 0; margin: 0;
+          background: none; border: none; cursor: pointer;
+          height: clamp(460px, 58vw, 620px);
+          -webkit-tap-highlight-color: transparent;
         }
-        .founder-row-reverse .founder-img-wrap { order: 2; }
-        .founder-row-reverse .founder-text-wrap { order: 1; }
-        .founder-img-wrap  { position: relative; overflow: hidden; min-height: 400px; }
-        .founder-text-wrap {
-          padding: clamp(40px,7vw,80px) clamp(24px,5vw,72px);
+        .founder-flip-inner {
+          position: relative; width: 100%; height: 100%;
+          transform-style: preserve-3d;
+          transition: transform 0.75s cubic-bezier(0.16,1,0.3,1);
+          border-radius: 20px;
+        }
+        .founder-face {
+          position: absolute; inset: 0;
+          -webkit-backface-visibility: hidden; backface-visibility: hidden;
+          border-radius: 20px; overflow: hidden;
+          border: 1px solid rgba(255,255,255,0.08);
+        }
+        .founder-front { background: #0d0d0d; }
+        .founder-back {
+          transform: rotateY(180deg);
           background: #121212;
+          padding: clamp(28px,4vw,44px);
           display: flex; flex-direction: column; justify-content: center;
-          position: relative; overflow: hidden;
-          border-left: 1px solid rgba(255,255,255,0.07);
+          overflow-y: auto; text-align: left;
         }
-        .founder-row-reverse .founder-text-wrap { border-left: none; border-right: 1px solid rgba(255,255,255,0.07); }
+        .founder-flip-btn:hover .founder-front img { transform: scale(1.04); transition: transform 0.8s; }
+        .founder-front img { transition: transform 0.8s; }
 
         .club-grid        { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: clamp(40px,6vw,100px); align-items: center; }
         .club-info-cards  { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px,3vw,30px); margin-top: clamp(24px,4vw,50px); }
@@ -576,11 +609,8 @@ export default function Landing() {
           .hero-btns       { justify-content: center; flex-direction: column !important; gap: 10px !important; }
           .hero-btns a     { flex: unset !important; width: 100% !important; }
           .cats-two-col    { grid-template-columns: 1fr !important; }
-          .founder-row { grid-template-columns: 1fr !important; min-height: unset; }
-          .founder-row-reverse .founder-img-wrap { order: 1; }
-          .founder-row-reverse .founder-text-wrap { order: 2; }
-          .founder-img-wrap { min-height: 280px; }
-          .founder-text-wrap { border-left: none !important; border-right: none !important; border-top: 1px solid rgba(255,255,255,0.07); }
+          .founder-grid { grid-template-columns: 1fr !important; }
+          .founder-flip-btn { height: clamp(440px, 118vw, 560px) !important; }
           .club-grid       { grid-template-columns: 1fr !important; gap: 24px !important; }
           .club-images     { grid-template-columns: 1fr 1fr !important; }
           .club-images > div { height: 140px !important; margin-top: 0 !important; }

@@ -27,6 +27,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
     [t('nav.founders'),     '#coach'],
     [t('nav.system'),       '#system'],
     [t('nav.team'),         '/team'],
+    [t('nav.coaches'),      '/treneri'],
     [t('nav.competitions'), '/competitions'],
     [t('nav.records'),      '/records'],
   ]

@@ -8,6 +8,7 @@ const translations = {
     'nav.founders':     'OSNIVAČI',
     'nav.system':       'SUSTAV',
     'nav.team':         'TIM',
+    'nav.coaches':      'TRENERI',
     'nav.competitions': 'NATJECANJA',
     'nav.records':      'REKORDI',
     'nav.home':         'POČETNA',
@@ -15,6 +16,12 @@ const translations = {
     'nav.training':     'TRENING →',
     'nav.join':         'PRIDRUŽI SE',
     'nav.rights':       'Sva prava pridržana',
+    'home.f.fliphint':  'klikni za više',
+    'home.f.flipback':  'natrag',
+    'coaches.eyebrow':  'NAŠ TIM',
+    'coaches.title':    'TRENERI',
+    'coaches.soon':     'DOLAZI USKORO',
+    'coaches.desc':     'Uskoro predstavljamo cijeli trenerski tim LWL UP-a — profili, specijalnosti i priče iza šipke.',
 
     // ── Footer ──────────────────────────────────────────────────────
     'footer.desc':                'Vodeći powerlifting klub u regiji. Specijalizirani za razvoj snage i vrhunsku pripremu sportaša za natjecanja na svim razinama.',
@@ -250,6 +257,7 @@ const translations = {
     'nav.founders':     'FOUNDERS',
     'nav.system':       'SYSTEM',
     'nav.team':         'TEAM',
+    'nav.coaches':      'COACHES',
     'nav.competitions': 'COMPETITIONS',
     'nav.records':      'RECORDS',
     'nav.home':         'HOME',
@@ -257,6 +265,12 @@ const translations = {
     'nav.training':     'TRAINING →',
     'nav.join':         'JOIN US',
     'nav.rights':       'All rights reserved',
+    'home.f.fliphint':  'click for more',
+    'home.f.flipback':  'back',
+    'coaches.eyebrow':  'OUR TEAM',
+    'coaches.title':    'COACHES',
+    'coaches.soon':     'COMING SOON',
+    'coaches.desc':     'We\'re soon introducing the full LWL UP coaching team — profiles, specialties and the stories behind the bar.',
 
     // ── Footer ──────────────────────────────────────────────────────
     'footer.desc':                'Leading powerlifting club in the region. Specialised in strength development and elite preparation of athletes for competitions at all levels.',
