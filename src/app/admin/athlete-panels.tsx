@@ -1031,6 +1031,16 @@ export function AthletePanel({
   const switchBlock = async (blockId: string) => {
     setLoadingBlock(true)
     setShowBlockSelector(false)
+    // Odabir bloka u editoru = taj blok postaje AKTIVNI (kao na lifterovoj strani).
+    // Bez ovoga lifter i dalje vidi stari aktivni blok, a zelena točka ne prati odabir.
+    const prevActive = allBlocks.filter(b => b.status === 'active' && b.id !== blockId)
+    const { error: actErr } = await supabase.from('blocks').update({ status: 'active' }).eq('id', blockId)
+    if (actErr) { alert(`Greška pri postavljanju aktivnog bloka: ${actErr.message}`) }
+    await Promise.all(prevActive.map(b => supabase.from('blocks').update({ status: 'planned' }).eq('id', b.id)))
+    setAllBlocks(bs => bs.map(b =>
+      b.id === blockId ? { ...b, status: 'active' } : (b.status === 'active' ? { ...b, status: 'planned' } : b)
+    ))
+
     const { data } = await supabase
       .from('blocks')
       .select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))')
@@ -1041,9 +1051,10 @@ export function AthletePanel({
         w.workouts?.sort((a: Workout, b: Workout) => a.workout_date.localeCompare(b.workout_date))
         w.workouts?.forEach((wo: Workout) => wo.workout_exercises?.sort((a: WorkoutExercise, b: WorkoutExercise) => a.exercise_order - b.exercise_order))
       })
-      setBlock(data as Block)
+      setBlock({ ...data, status: 'active' } as Block)
     }
     setLoadingBlock(false)
+    onRefresh() // osvježi listu liftera → sidebar/dashboard odmah prate novi aktivni blok
   }
 
   const createBlock = async () => {
