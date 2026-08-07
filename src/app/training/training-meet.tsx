@@ -608,7 +608,8 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
       {selectedComp && (
         <div style={{ marginBottom: '20px', padding: '14px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
           <div style={{ fontSize: '0.52rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '12px' }}>RASPORED DANA</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px' }}>
+          {/* auto-fit: 3 u redu na širem, prelama se na 2/1 kad nativni time-picker ne stane (mobitel) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
             {([
               { label: 'Vaganje', value: vaganje, set: setVaganje, key: 'vaganje', color: '#f59e0b' },
               { label: 'Zagrijavanje', value: zagrijavanje, set: setZagrijavanje, key: 'zagrijavanje', color: '#6b8cff' },

@@ -152,13 +152,18 @@ export function GlCalc() {
   const [squat,  setSquat]  = useState('')
   const [bench,  setBench]  = useState('')
   const [dead,   setDead]   = useState('')
+  const [totalIn, setTotalIn] = useState('')
   const [bw,     setBw]     = useState('')
   const [sex,    setSex]    = useState<'male'|'female'>('male')
+  // Način unosa: pojedini liftovi (zbrajaju se) ili direktno total
+  const [mode,   setMode]   = useState<'lifts'|'total'>('lifts')
 
   const s = parseFloat(squat) || 0
   const bn = parseFloat(bench) || 0
   const d = parseFloat(dead) || 0
-  const total = s > 0 && bn > 0 && d > 0 ? Math.round((s + bn + d) * 2) / 2 : 0
+  const total = mode === 'total'
+    ? (Math.round((parseFloat(totalIn) || 0) * 2) / 2)
+    : (s > 0 && bn > 0 && d > 0 ? Math.round((s + bn + d) * 2) / 2 : 0)
   const b = parseFloat(bw)
 
   const gl = (total && b) ? (() => {
@@ -190,18 +195,36 @@ export function GlCalc() {
         ))}
       </div>
 
-      {/* Lift inputs */}
-      <div>
-        <SectionTitle>Unesi liftove</SectionTitle>
-        <div className="gl-lifts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
-          <CalcInput label="Čučanj (kg)"        value={squat} onChange={setSquat} color="#f87171" step="0.5" placeholder="npr. 200" />
-          <CalcInput label="Bench Press (kg)"   value={bench} onChange={setBench} color="#f59e0b" step="0.5" placeholder="npr. 140" />
-          <CalcInput label="Mrtvo Dizanje (kg)" value={dead}  onChange={setDead}  color="#6b8cff" step="0.5" placeholder="npr. 250" />
-        </div>
+      {/* Način unosa: pojedini liftovi ili total */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        {([['lifts','Pojedini liftovi'],['total','Total']] as const).map(([mv, label]) => (
+          <button key={mv} onClick={() => setMode(mv)} style={{
+            padding: '9px', borderRadius: '10px', cursor: 'pointer', fontFamily: 'var(--fm)', fontWeight: 600, fontSize: '0.76rem', transition: 'all 0.2s',
+            background: mode === mv ? 'rgba(107,140,255,0.12)' : 'rgba(255,255,255,0.03)',
+            border: `1.5px solid ${mode === mv ? 'rgba(107,140,255,0.4)' : 'rgba(255,255,255,0.08)'}`,
+            color: mode === mv ? '#8ba8ff' : 'rgba(255,255,255,0.4)',
+          }}>{label}</button>
+        ))}
       </div>
 
-      {/* Auto total display */}
-      {total > 0 && (
+      {/* Unos: liftovi ili total */}
+      <div>
+        <SectionTitle>{mode === 'total' ? 'Unesi total' : 'Unesi liftove'}</SectionTitle>
+        {mode === 'total' ? (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+            <CalcInput label="Total (kg)" value={totalIn} onChange={setTotalIn} color="#fff" step="0.5" placeholder="npr. 590" />
+          </div>
+        ) : (
+          <div className="gl-lifts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+            <CalcInput label="Čučanj (kg)"        value={squat} onChange={setSquat} color="#f87171" step="0.5" placeholder="npr. 200" />
+            <CalcInput label="Bench Press (kg)"   value={bench} onChange={setBench} color="#f59e0b" step="0.5" placeholder="npr. 140" />
+            <CalcInput label="Mrtvo Dizanje (kg)" value={dead}  onChange={setDead}  color="#6b8cff" step="0.5" placeholder="npr. 250" />
+          </div>
+        )}
+      </div>
+
+      {/* Auto total display — samo u načinu pojedinih liftova */}
+      {mode === 'lifts' && total > 0 && (
         <div className="gl-total-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1px', background: 'rgba(255,255,255,0.06)', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', animation: 'popIn 0.3s ease' }}>
           {[['SQ', squat, '#f87171'], ['BP', bench, '#f59e0b'], ['DL', dead, '#6b8cff'], ['TOTAL', String(total), '#fff']].map(([l, v, c]) => (
             <div key={l} style={{ padding: '14px 10px', background: '#09090e', textAlign: 'center' as const }}>
