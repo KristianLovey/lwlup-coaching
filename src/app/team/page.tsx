@@ -265,7 +265,7 @@ export default function TeamPage() {
   const setF = (k: keyof AthleteForm, v: string | boolean) => setForm(f => ({ ...f, [k]: v }))
 
   return (
-    <div style={{ background: '#0e0e0e', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
+    <div style={{ background: '#131317', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
 
       <div className="star-field" />
       <ParticleCanvas />
@@ -299,10 +299,10 @@ export default function TeamPage() {
       </section>
 
       {/* STATS */}
-      <section style={{ background: '#0e0e0e', padding: '80px 60px', borderTop: '1px solid rgba(255,255,255,0.08)', borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'relative', zIndex: 1 }}>
+      <section style={{ background: '#131317', padding: '80px 60px', borderTop: '1px solid rgba(255,255,255,0.08)', borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'relative', zIndex: 1 }}>
         <div ref={statsReveal.ref} className="team-stats-grid" style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.08)' }}>
           {TEAM_STATS.map((stat, i) => (
-            <div key={i} className="team-stat-card" style={{ textAlign: 'center', padding: '48px 20px', background: '#0e0e0e', transition: 'all 0.4s', opacity: statsReveal.visible ? 1 : 0, transform: statsReveal.visible ? 'none' : 'translateY(25px)', transitionDelay: `${i * 0.08}s`, transitionDuration: '0.7s' }}>
+            <div key={i} className="team-stat-card" style={{ textAlign: 'center', padding: '48px 20px', background: '#131317', transition: 'all 0.4s', opacity: statsReveal.visible ? 1 : 0, transform: statsReveal.visible ? 'none' : 'translateY(25px)', transitionDelay: `${i * 0.08}s`, transitionDuration: '0.7s' }}>
               <div style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>{stat.icon}</div>
               <div style={{ fontFamily: 'var(--fd)', fontSize: '3.5rem', marginBottom: '10px', lineHeight: 1 }}>{stat.value}</div>
               <div style={{ fontSize: '0.62rem', letterSpacing: '0.28em', color: 'rgba(255,255,255,0.5)' }}>{stat.label}</div>
@@ -328,7 +328,7 @@ export default function TeamPage() {
                 onMouseLeave={() => setHoveredMember(null)}
                 style={{
                   position: 'relative',
-                  background: '#0e0e0e',
+                  background: '#131317',
                   overflow: 'hidden',
                   cursor: 'pointer',
                   transition: 'transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s',
@@ -359,7 +359,7 @@ export default function TeamPage() {
                       onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
                     />
                   ) : (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(160deg, #0d0d0d 0%, #060606 100%)' }}>
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(160deg, #16161b 0%, #060606 100%)' }}>
                       <svg width="80" height="80" viewBox="0 0 80 80" fill="none" opacity="0.12">
                         <circle cx="40" cy="28" r="16" fill="#fff" />
                         <path d="M8 72c0-17.673 14.327-32 32-32s32 14.327 32 32" fill="#fff" />
@@ -465,7 +465,7 @@ export default function TeamPage() {
       </section>
 
       {/* CTA */}
-      <section style={{ padding: '120px 60px', background: '#0e0e0e', borderTop: '1px solid rgba(255,255,255,0.08)', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+      <section style={{ padding: '120px 60px', background: '#131317', borderTop: '1px solid rgba(255,255,255,0.08)', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <div ref={ctaReveal.ref} style={{ opacity: ctaReveal.visible ? 1 : 0, transform: ctaReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
           <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem, 8vw, 6rem)', marginBottom: '30px', lineHeight: 0.9 }}>
             {t('team.cta.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>{t('team.cta.title2')}</span>

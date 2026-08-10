@@ -6,7 +6,7 @@ import { useLanguage } from '@/context/LanguageContext'
 export default function TreneriPage() {
   const { t } = useLanguage()
   return (
-    <div style={{ background: '#0e0e0e', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ background: '#131317', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div className="star-field" />
       <Navbar variant="solid" />
 

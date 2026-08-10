@@ -321,7 +321,7 @@ export default function CompetitionsPage() {
   const totalParticipations = filtered.reduce((s, c) => s + (c.athletes?.length ?? 0), 0)
 
   return (
-    <div style={{ background: '#0e0e0e', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
+    <div style={{ background: '#131317', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
 
       <div className="star-field" />
       <ParticleCanvas />
@@ -351,7 +351,7 @@ export default function CompetitionsPage() {
                     { val: completed,           label: t('comp.filter.completed') },
                     { val: totalParticipations, label: t('comp.appearances') },
                   ].map((s, i) => (
-                    <div key={i} style={{ padding: '16px 22px', background: '#0e0e0e', textAlign: 'center', minWidth: '76px' }}>
+                    <div key={i} style={{ padding: '16px 22px', background: '#131317', textAlign: 'center', minWidth: '76px' }}>
                       <div style={{ fontFamily: 'var(--fd)', fontSize: '1.9rem', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{s.val}</div>
                       <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.22em', marginTop: '4px' }}>{s.label}</div>
                     </div>

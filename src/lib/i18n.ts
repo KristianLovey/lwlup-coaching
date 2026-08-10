@@ -87,6 +87,8 @@ const translations = {
     'home.f6.desc':               'Svi programi orijentirani su prema natjecanjima. Peaking, prijava i mentalna priprema — sve na jednom mjestu.',
     'home.cta.title':             'OSTAVI SVOJ TRAG',
     'home.cta.btn':               'PRIDRUŽI SE TIMU',
+    'home.cta.eyebrow':           'TVOJ SLJEDEĆI KORAK',
+    'home.cta.sub':               'Prijavi se, upoznajmo se i krenimo graditi tvoju snagu. Mjesto u ekipi te čeka.',
     // Founders data
     'home.f.role0':   'GLAVNI TRENER & SUOSNIVAČ',
     'home.f.role1':   'PODPREDSJEDNIK & SUOSNIVAČ',
@@ -336,6 +338,8 @@ const translations = {
     'home.f6.desc':               'All programs are competition-oriented. Peaking, entry and mental preparation — all in one place.',
     'home.cta.title':             'LEAVE YOUR MARK',
     'home.cta.btn':               'JOIN THE TEAM',
+    'home.cta.eyebrow':           'YOUR NEXT STEP',
+    'home.cta.sub':               'Sign up, let\'s meet, and start building your strength. A spot on the team is waiting.',
     // Founders data
     'home.f.role0':   'HEAD COACH & CO-FOUNDER',
     'home.f.role1':   'VP & CO-FOUNDER',

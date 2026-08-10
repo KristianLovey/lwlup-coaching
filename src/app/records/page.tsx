@@ -430,7 +430,7 @@ export default function RecordsPage() {
   }, [search, classes, records, agesToShow])
 
   return (
-    <div style={{ background: '#0e0e0e', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
+    <div style={{ background: '#131317', color: '#fff', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
       <Navbar variant="solid" />
 
       {/* HERO */}

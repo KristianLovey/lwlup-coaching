@@ -675,11 +675,15 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
                           )
                         })}
                       </div>
-                      {/* datum ispod SVAKOG stupca (dd.mm.) — jasno koji je dan koji */}
+                      {/* datum ispod stupaca — svaki ~3. da se ne preklapa (ostalo na hover) */}
                       <div style={{ display: 'flex', gap: 4, marginTop: 3 }}>
-                        {rows.map((r: any, i: number) => (
-                          <span key={i} style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>{fmtDate(r.log_date)}</span>
-                        ))}
+                        {rows.map((r: any, i: number) => {
+                          const step = Math.ceil(rows.length / 5)
+                          const show = i % step === 0 || i === rows.length - 1
+                          return (
+                            <span key={i} style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-faint)', whiteSpace: 'nowrap', overflow: 'visible' }}>{show ? fmtDate(r.log_date) : ''}</span>
+                          )
+                        })}
                       </div>
                     </div>
                   )
