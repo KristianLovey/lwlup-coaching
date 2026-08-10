@@ -8,7 +8,7 @@ export default function Footer() {
   const { t } = useLanguage()
 
   return (
-    <footer style={{ background: '#000', borderTop: '1px solid rgba(255,255,255,0.06)', fontFamily: 'var(--fm)', position: 'relative', overflow: 'hidden' }}>
+    <footer style={{ background: '#131317', borderTop: '1px solid rgba(255,255,255,0.09)', fontFamily: 'var(--fm)', position: 'relative', overflow: 'hidden' }}>
 
       {/* Big background wordmark */}
       <div style={{ position: 'absolute', bottom: '60px', left: '50%', transform: 'translateX(-50%)', fontFamily: 'var(--fd)', fontSize: 'clamp(6rem,14vw,16rem)', fontWeight: 800, letterSpacing: '-0.02em', color: 'rgba(255,255,255,0.03)', whiteSpace: 'nowrap', pointerEvents: 'none', userSelect: 'none', lineHeight: 1 }}>

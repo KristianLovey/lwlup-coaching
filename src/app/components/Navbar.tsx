@@ -141,7 +141,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
         height: '80px',
         padding: '0 clamp(20px,5vw,60px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: solid || menuOpen ? 'rgba(5,5,5,0.98)' : 'transparent',
+        background: solid || menuOpen ? 'rgba(19,19,23,0.98)' : 'transparent',
         borderBottom: solid || menuOpen ? '1px solid rgba(255,255,255,0.08)' : '1px solid transparent',
         backdropFilter: solid || menuOpen ? 'blur(20px)' : 'none',
         transition: 'all 0.4s cubic-bezier(.4,0,.2,1)',
@@ -224,7 +224,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
       {/* Mobile menu */}
       <div className="nav-mobile-menu" style={{
         position: 'fixed', top: '64px', left: 0, right: 0, bottom: 0, zIndex: 199,
-        background: '#050505', display: 'flex', flexDirection: 'column',
+        background: '#131317', display: 'flex', flexDirection: 'column',
         padding: '32px 24px 60px', overflowY: 'auto',
         opacity: menuOpen ? 1 : 0,
         transform: menuOpen ? 'translateY(0)' : 'translateY(-12px)',
@@ -326,7 +326,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
         .nav-cta-secondary:hover { background:rgba(255,255,255,0.08) !important; border-color:rgba(255,255,255,0.6) !important; }
         @media (min-width: 769px) { .nav-desktop { display:flex !important; } .nav-hamburger { display:none !important; } }
         @media (max-width: 768px) { nav { padding:0 20px !important; height:64px !important; } .nav-desktop { display:none !important; } .nav-hamburger { display:flex !important; } }
-        :root.is-native nav { top: 0 !important; height: calc(56px + env(safe-area-inset-top)) !important; padding-top: env(safe-area-inset-top) !important; background: #050505 !important; backdrop-filter: none !important; }
+        :root.is-native nav { top: 0 !important; height: calc(56px + env(safe-area-inset-top)) !important; padding-top: env(safe-area-inset-top) !important; background: #131317 !important; backdrop-filter: none !important; }
         :root.is-native .nav-mobile-menu { top: calc(56px + env(safe-area-inset-top)) !important; }
       `}</style>
     </>

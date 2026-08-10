@@ -481,9 +481,9 @@ export default function Landing() {
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 70% 60% at 50% 42%, rgba(255,255,255,0.07) 0%, transparent 68%)', zIndex: 0 }} />
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 120%, rgba(239,53,53,0.10) 0%, transparent 55%)', zIndex: 0 }} />
         <div className="cta-grid-lines" style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.5 }} />
-        {/* golemi „duh" naslov iza — dubina */}
-        <div aria-hidden style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 0, pointerEvents: 'none' }}>
-          <span className="hero-outline" style={{ fontFamily: 'var(--fd)', fontWeight: 800, fontSize: 'clamp(8rem,26vw,26rem)', lineHeight: 1, letterSpacing: '-0.04em', opacity: 0.05, whiteSpace: 'nowrap' }}>LWL UP</span>
+        {/* golemi „duh" naslov iza — solidni faint fill (isti stil kao footer, ne lomi se) */}
+        <div aria-hidden style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+          <span style={{ fontFamily: 'var(--fd)', fontWeight: 800, fontSize: 'clamp(5rem,18vw,17rem)', lineHeight: 1, letterSpacing: '-0.03em', color: 'rgba(255,255,255,0.035)', whiteSpace: 'nowrap' }}>LWL UP</span>
         </div>
 
         <div style={{ position: 'relative', zIndex: 2, padding: '0 20px', maxWidth: '1000px' }}>
