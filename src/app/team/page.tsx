@@ -359,7 +359,7 @@ export default function TeamPage() {
                       onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
                     />
                   ) : (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(160deg, #16161b 0%, #060606 100%)' }}>
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(160deg, #16161b 0%, #131317 100%)' }}>
                       <svg width="80" height="80" viewBox="0 0 80 80" fill="none" opacity="0.12">
                         <circle cx="40" cy="28" r="16" fill="#fff" />
                         <path d="M8 72c0-17.673 14.327-32 32-32s32 14.327 32 32" fill="#fff" />

@@ -312,7 +312,7 @@ export default function Landing() {
 
 
       {/* ══ KATEGORIJE ═══════════════════════════════════════════ */}
-      <section id="kategorije" style={{ background: '#131317', borderTop: '1px solid rgba(255,255,255,0.09)', padding: 'clamp(80px,12vw,140px) clamp(20px,5vw,60px)' }}>
+      <section id="kategorije" style={{ background: '#131317', padding: 'clamp(80px,12vw,140px) clamp(20px,5vw,60px)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
           {/* Header */}
@@ -426,7 +426,7 @@ export default function Landing() {
       
 
       {/* ══ FOUNDERS ══════════════════════════════════════════════ */}
-      <section id="coach" style={{ background: '#1a1a20', borderTop: '1px solid rgba(255,255,255,0.09)', overflow: 'hidden' }}>
+      <section id="coach" style={{ background: '#1a1a20', overflow: 'hidden' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: 'clamp(60px,10vw,100px) clamp(20px,5vw,60px) clamp(40px,6vw,60px)' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' }}>
             <div>
@@ -450,7 +450,7 @@ export default function Landing() {
       </section>
 
       {/* ══ SYSTEM ════════════════════════════════════════════════ */}
-      <section id="system" style={{ background: '#131317', padding: 'clamp(80px,12vw,150px) clamp(20px,5vw,60px)', borderTop: '1px solid rgba(255,255,255,0.09)', position: 'relative', overflow: 'hidden' }}>
+      <section id="system" style={{ background: '#131317', padding: 'clamp(80px,12vw,150px) clamp(20px,5vw,60px)', position: 'relative', overflow: 'hidden' }}>
         <div aria-hidden style={{ position: 'absolute', top: 0, left: '15%', width: '70%', height: '380px', background: 'radial-gradient(ellipse at center top, rgba(255,255,255,0.05) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
         <div ref={systemReveal.ref} style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <div style={{ marginBottom: 'clamp(48px,8vw,88px)', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>
@@ -476,7 +476,7 @@ export default function Landing() {
       </section>
 
       {/* ══ CTA — hero-style, bez slike (čist CSS, brzo) ═════════ */}
-      <section className="cta-legacy" style={{ minHeight: 'clamp(70vh,86vh,900px)', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', position: 'relative', overflow: 'hidden', borderTop: '1px solid rgba(255,255,255,0.09)' }}>
+      <section className="cta-legacy" style={{ minHeight: 'clamp(70vh,86vh,900px)', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         {/* slojeviti sjaj + suptilna mreža (isti impactful osjećaj kao hero) */}
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 70% 60% at 50% 42%, rgba(255,255,255,0.07) 0%, transparent 68%)', zIndex: 0 }} />
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 120%, rgba(239,53,53,0.10) 0%, transparent 55%)', zIndex: 0 }} />

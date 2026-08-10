@@ -17,15 +17,19 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
   const pathname = usePathname()
   const [scrollY, setScrollY]         = useState(0)
   const [menuOpen, setMenuOpen]       = useState(false)
+  const [homeOpen, setHomeOpen]       = useState(false)
   const [loggedIn, setLoggedIn]       = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
   const { lang, setLang, t } = useLanguage()
 
-  const NAV_LINKS: [string, string][] = [
+  // Sekcije naslovnice → grupirane pod "HOME" dropdown; zasebne stranice ostaju top-level
+  const HOME_ANCHORS: [string, string][] = [
     [t('nav.powerlifting'), '#kategorije'],
     [t('nav.about'),        '#club'],
     [t('nav.founders'),     '#coach'],
     [t('nav.system'),       '#system'],
+  ]
+  const PAGE_LINKS: [string, string][] = [
     [t('nav.team'),         '/team'],
     [t('nav.coaches'),      '/treneri'],
     [t('nav.competitions'), '/competitions'],
@@ -168,8 +172,27 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
               onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
             >← {backLink.label}</Link>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '36px' }}>
-              {NAV_LINKS.map(([label, href]) => (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '30px' }}>
+              {/* HOME — dropdown sa sekcijama naslovnice */}
+              <div style={{ position: 'relative' }} onMouseEnter={() => setHomeOpen(true)} onMouseLeave={() => setHomeOpen(false)}>
+                <a href={pathname === '/' ? '#top' : '/'}
+                  style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.7rem', letterSpacing: '0.2em', color: homeOpen ? '#fff' : 'rgba(255,255,255,0.5)', textDecoration: 'none', transition: 'color 0.3s', fontWeight: 600 }}>
+                  {t('nav.home')}
+                  <span style={{ display: 'inline-block', transform: homeOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s', fontSize: '0.6rem' }}>▾</span>
+                </a>
+                {/* invisible bridge so hover ne prekida dok se spušta na panel */}
+                <div style={{ position: 'absolute', top: '100%', left: 0, height: '14px', width: '200px' }} />
+                <div style={{ position: 'absolute', top: 'calc(100% + 12px)', left: '-14px', minWidth: '210px', background: 'rgba(20,20,26,0.98)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '12px', boxShadow: '0 24px 60px rgba(0,0,0,0.7)', backdropFilter: 'blur(20px)', padding: '8px', opacity: homeOpen ? 1 : 0, transform: homeOpen ? 'translateY(0)' : 'translateY(-8px)', pointerEvents: homeOpen ? 'all' : 'none', transition: 'opacity 0.22s, transform 0.22s' }}>
+                  {HOME_ANCHORS.map(([label, href]) => (
+                    <a key={href} href={resolveHref(href)} onClick={() => setHomeOpen(false)}
+                      style={{ display: 'block', padding: '11px 14px', borderRadius: '8px', fontSize: '0.7rem', letterSpacing: '0.16em', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, transition: 'all 0.18s' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#fff' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}
+                    >{label}</a>
+                  ))}
+                </div>
+              </div>
+              {PAGE_LINKS.map(([label, href]) => (
                 <a key={href} href={resolveHref(href)}
                   style={{ fontSize: '0.7rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)', textDecoration: 'none', transition: 'all 0.3s', fontWeight: 600 }}
                   onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'translateY(-2px)' }}
@@ -225,7 +248,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
               <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
             </Link>
           ) : (
-            NAV_LINKS.map(([label, href], i) => {
+            [...HOME_ANCHORS, ...PAGE_LINKS].map(([label, href], i) => {
               const resolved = resolveHref(href)
               const isAnchor = resolved.startsWith('/#') || resolved.startsWith('#')
               const itemStyle: React.CSSProperties = {
@@ -265,7 +288,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
         <div style={{
           marginTop: '40px', display: 'flex', flexDirection: 'column', gap: '10px',
           opacity: menuOpen ? 1 : 0, transform: menuOpen ? 'none' : 'translateY(12px)',
-          transition: `opacity 0.35s ${NAV_LINKS.length * 0.06 + 0.1}s, transform 0.35s ${NAV_LINKS.length * 0.06 + 0.1}s`,
+          transition: `opacity 0.35s ${(HOME_ANCHORS.length + PAGE_LINKS.length) * 0.06 + 0.1}s, transform 0.35s ${(HOME_ANCHORS.length + PAGE_LINKS.length) * 0.06 + 0.1}s`,
         }}>
           {/* Auth CTA — main mobile action */}
           <AuthCTA mobile />
