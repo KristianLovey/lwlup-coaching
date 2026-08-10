@@ -934,7 +934,17 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     })
   }, [plannedSets]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const computed = useMemo(() => computeWeights(logs.map(l => l.weight_kg), planRows), [logs, planRows])
+  // Backoff se računa iz UŽIVO utipkane kilaže referenciranog seta (localVals),
+  // a ne samo iz spremljene — pa se backoff serije osvježe istog trena kad mijenjaš
+  // kilažu seta na koji se pozivaju (ne treba čekati blur/commit).
+  const computed = useMemo(() => {
+    const liveWeights = logs.map(l => {
+      const lv = localVals[`${l.set_number}_weight_kg`]
+      if (lv !== undefined) { const n = parseFloat(lv); return Number.isFinite(n) ? n : null }
+      return l.weight_kg
+    })
+    return computeWeights(liveWeights, planRows)
+  }, [logs, planRows, localVals])
 
   const savePlan = (rows: SetPlanRow[]) => onAggregateUpdate({ set_plan: { rows } })
 

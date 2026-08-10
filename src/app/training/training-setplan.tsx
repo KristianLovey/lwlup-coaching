@@ -17,7 +17,7 @@ export function computeWeights(
     if (out[i] != null) return out[i]
     if (seen.has(i)) return null // cycle guard
     seen.add(i)
-    const row = rows[i] ?? { mode: 'manual' as const, pct: 90, ref: i > 0 ? i - 1 : 1 }
+    const row = rows[i] ?? { mode: 'manual' as const, pct: 92.5, ref: i > 0 ? i - 1 : 1 }
     if (row.mode !== 'backoff') {
       out[i] = manual[i] ?? null
     } else {
@@ -37,8 +37,9 @@ export function roundToPlate(kg: number): number {
 }
 
 export function defaultRow(i: number): SetPlanRow {
-  // Default reference is the previous set; the very first set falls back to the second
-  return { mode: 'manual', pct: 90, ref: i > 0 ? i - 1 : 1 }
+  // Default reference is the previous set; the very first set falls back to the second.
+  // Default backoff postotak = 92.5% (najčešći kod nas).
+  return { mode: 'manual', pct: 92.5, ref: i > 0 ? i - 1 : 1 }
 }
 
 // ── Total tonnage ──────────────────────────────────────────────────────
