@@ -818,17 +818,44 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       })
   }, [we.id, plannedSets, isAdmin])
 
-  // Keep localVals in sync with logs — skip the focused set entirely
+  // Realtime: kad trener (ili druga sesija) upiše set, uživo se osvježi ovdje.
+  // Nikad ne prepisujemo set koji korisnik trenutno tipka (fokus / pending).
+  useEffect(() => {
+    const ch = supabase.channel(`sl-rt-${we.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'set_logs', filter: `workout_exercise_id=eq.${we.id}` },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as any
+          if (!row || row.athlete_id !== userId || row.set_number == null) return
+          const key = `${row.set_number}_`
+          const focusedSet = focusedKey.current ? focusedKey.current.split('_')[0] : null
+          if (String(row.set_number) === focusedSet) return // korisnik tipka baš taj set
+          if (Object.keys(debounceTimers.current).some(k => k.startsWith(key))) return // nespremljene izmjene tog seta
+          setLogs(prev => {
+            const merged = prev.map(l => l.set_number === row.set_number
+              ? { ...l, weight_kg: row.weight_kg ?? null, reps: row.reps ?? null, rpe: row.rpe ?? null, completed: row.completed ?? l.completed, is_top_set: row.is_top_set ?? l.is_top_set }
+              : l)
+            return merged
+          })
+        })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [we.id, userId])
+
+  // Keep localVals in sync with logs — bez prepisivanja polja koje korisnik
+  // trenutno tipka. Preskačemo fokusirani set I svako polje s nespremljenim
+  // izmjenama (pending debounce timer), inače bi sync odsjekao zadnje znamenke
+  // (npr. 155 → 15) kad se commit i re-render poklope.
   useEffect(() => {
     setLocalVals(prev => {
       const next = { ...prev }
-      // Extract set number from focused key (e.g. "2_weight_kg" → "2")
       const focusedSet = focusedKey.current ? focusedKey.current.split('_')[0] : null
       logs.forEach(s => {
         if (String(s.set_number) === focusedSet) return // skip entire set being edited
-        next[`${s.set_number}_weight_kg`] = s.weight_kg != null ? String(s.weight_kg) : ''
-        next[`${s.set_number}_reps`] = s.reps != null ? String(s.reps) : ''
-        next[`${s.set_number}_rpe`] = s.rpe != null ? String(s.rpe) : ''
+        ;(['weight_kg', 'reps', 'rpe'] as const).forEach(field => {
+          const key = `${s.set_number}_${field}`
+          if (debounceTimers.current[key]) return // nespremljene znamenke — ne diraj
+          next[key] = s[field] != null ? String(s[field]) : ''
+        })
       })
       return next
     })
@@ -836,17 +863,28 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
 
 
   const upsertViaApi = async (setNum: number, field: string, value: unknown) => {
+    const doPost = (tok: string | null) => fetch('/api/admin/upsert-set-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+      body: JSON.stringify({ workoutExerciseId: we.id, athleteId: userId, setNumber: setNum, field, value }),
+    })
     let token = tokenRef.current
     if (!token) {
       const { data } = await supabase.auth.getSession()
       token = data.session?.access_token ?? null
       tokenRef.current = token
     }
-    await fetch('/api/admin/upsert-set-log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ workoutExerciseId: we.id, athleteId: userId, setNumber: setNum, field, value }),
-    })
+    let res: Response
+    try { res = await doPost(token) } catch { res = await doPost(token) } // 1 retry na mrežni pad
+    // Istekao token → osvježi sesiju i pokušaj ponovno (inače se upis tiho gubi)
+    if (res.status === 401) {
+      const { data } = await supabase.auth.getSession()
+      token = data.session?.access_token ?? null
+      tokenRef.current = token
+      res = await doPost(token)
+    }
+    if (!res.ok) { res = await doPost(token) } // još jedan retry za prolazne 5xx
+    if (!res.ok) throw new Error(`upsert-set-log ${res.status}`)
   }
 
   const upsertDirect = async (setNum: number, field: string, value: unknown) => {
