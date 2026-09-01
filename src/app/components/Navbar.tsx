@@ -1,11 +1,22 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { ArrowRight, X } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/context/LanguageContext'
+
+// Supabase u zasebnom chunku — učitava se tek ako postoji auth cookie.
+const NavAuthProbe = dynamic(() => import('./NavAuthProbe'), { ssr: false })
+
+/** Ima li uopće smisla dizati Supabase? @supabase/ssr drži sesiju u
+ *  `sb-<ref>-auth-token` cookieju (može biti razlomljen na .0/.1), koji je
+ *  čitljiv iz JS-a. Nema cookieja → korisnik sigurno nije prijavljen. */
+function hasAuthCookie() {
+  if (typeof document === 'undefined') return false
+  return document.cookie.split('; ').some(c => c.startsWith('sb-') && c.includes('auth-token'))
+}
 
 type NavbarProps = {
   variant?: 'transparent' | 'solid'
@@ -43,18 +54,18 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
   }
 
   // ── Auth state ────────────────────────────────────────────────────
+  // Bez cookieja preskačemo Supabase u cijelosti; s cookiejem ga učitava
+  // <NavAuthProbe/>, koji provjeri je li sesija stvarno još valjana.
+  const [needsProbe, setNeedsProbe] = useState(false)
   useEffect(() => {
-    const supabase = createClient()
+    if (hasAuthCookie()) setNeedsProbe(true)
+    else { setLoggedIn(false); setAuthChecked(true) }
+  }, [])
 
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setLoggedIn(!!user)
-      setAuthChecked(true)
-    })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      setLoggedIn(!!session?.user)
-      setAuthChecked(true)
-    })
-    return () => subscription.unsubscribe()
+  // Stabilna referenca — inline arrow bi svaki render ponovno pretplaćivao probe.
+  const onAuthResolve = useCallback((isLoggedIn: boolean) => {
+    setLoggedIn(isLoggedIn)
+    setAuthChecked(true)
   }, [])
 
   // ── Scroll listener ───────────────────────────────────────────────
@@ -136,6 +147,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
 
   return (
     <>
+      {needsProbe && <NavAuthProbe onResolve={onAuthResolve} />}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
         height: '80px',

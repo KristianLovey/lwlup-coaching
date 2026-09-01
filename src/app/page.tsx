@@ -179,10 +179,10 @@ export default function Landing() {
   const { t } = useLanguage()
 
   const STATS = [
-    { val: '10+',  label: t('home.stats.lifters'),  icon: StatIcons.lifters },
+    { val: '20+',  label: t('home.stats.lifters'),  icon: StatIcons.lifters },
     { val: '12',   label: t('home.stats.records'),  icon: StatIcons.records },
     { val: '6',    label: t('home.stats.european'), icon: StatIcons.europe  },
-    { val: '2023', label: t('home.stats.founded'),  icon: StatIcons.year    },
+    { val: '2026', label: t('home.stats.founded'),  icon: StatIcons.year    },
   ]
   const FEATURES = [
     { sym: '01', title: t('home.f1.title'), desc: t('home.f1.desc') },
@@ -486,14 +486,21 @@ export default function Landing() {
           <span style={{ fontFamily: 'var(--fd)', fontWeight: 800, fontSize: 'clamp(5rem,18vw,17rem)', lineHeight: 1, letterSpacing: '-0.03em', color: 'rgba(255,255,255,0.035)', whiteSpace: 'nowrap' }}>LWL UP</span>
         </div>
 
-        <div style={{ position: 'relative', zIndex: 2, padding: '0 20px', maxWidth: '1000px' }}>
+        {/* 1400px: na 1000px "LEAVE YOUR" nije stalo u redak pa se naslov lomio na tri retka */}
+        <div style={{ position: 'relative', zIndex: 2, padding: '0 20px', maxWidth: '1400px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '22px' }}>
             <span style={{ width: '26px', height: '1.5px', background: 'rgba(255,255,255,0.4)' }} />
             <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.cta.eyebrow')}</span>
             <span style={{ width: '26px', height: '1.5px', background: 'rgba(255,255,255,0.4)' }} />
           </div>
           <h2 className="cta-glow-text" style={{ fontFamily: 'var(--fd)', fontWeight: 800, fontSize: 'clamp(3rem,12vw,11rem)', lineHeight: 0.86, letterSpacing: '-0.03em', margin: 0 }}>
-            {t('home.cta.title')}
+            {/* Uvijek dva retka: zadnja riječ ide u drugi red, ostatak u prvi.
+                Vrijedi za oba jezika — "OSTAVI SVOJ / TRAG", "LEAVE YOUR / MARK". */}
+            {(() => {
+              const words = t('home.cta.title').trim().split(/\s+/)
+              if (words.length < 2) return t('home.cta.title')
+              return <>{words.slice(0, -1).join(' ')}<br />{words[words.length - 1]}</>
+            })()}
           </h2>
           <p style={{ color: 'rgba(255,255,255,0.62)', fontSize: 'clamp(0.9rem,1.9vw,1.05rem)', lineHeight: 1.8, maxWidth: '520px', margin: 'clamp(22px,4vw,34px) auto clamp(30px,5vw,44px)' }}>
             {t('home.cta.sub')}
