@@ -49,49 +49,45 @@ export default function PravilaPage() {
     <>
       <Navbar variant="solid" simple />
 
-      <main style={{ background: '#050505', minHeight: '100vh', fontFamily: 'var(--fm)' }}>
+      <main style={{ background: '#131317', minHeight: '100vh', fontFamily: 'var(--fm)', color: '#fff' }}>
 
         {/* Hero */}
-        <div style={{ position: 'relative', overflow: 'hidden', paddingTop: '140px', paddingBottom: '80px' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(99,102,241,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.4), transparent)' }} />
+        <div style={{ position: 'relative', overflow: 'hidden', paddingTop: 'clamp(120px,18vw,170px)', paddingBottom: 'clamp(50px,8vw,80px)' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255,255,255,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent)' }} />
 
           <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 clamp(20px,5vw,60px)', position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <div style={{ width: '28px', height: '1px', background: 'rgba(99,102,241,0.6)' }} />
-              <span style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.3)', fontWeight: 700 }}>PRAVNI DOKUMENTI</span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+              <div style={{ width: '28px', height: '2px', background: 'rgba(255,255,255,0.6)' }} />
+              <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--fm)', fontWeight: 700 }}>PRAVNI DOKUMENTI</span>
             </div>
-            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.2rem,6vw,4rem)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.05, margin: '0 0 24px', color: '#f0f0f8' }}>
+            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', fontWeight: 800, letterSpacing: '-0.01em', lineHeight: 0.9, margin: '0 0 24px' }}>
               Pravila privatnosti<br />
-              <span style={{ color: 'rgba(255,255,255,0.3)' }}>&amp; uvjeti korištenja</span>
+              <span style={{ opacity: 0.4 }}>&amp; uvjeti korištenja</span>
             </h1>
-            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.7, margin: 0 }}>
+            <p style={{ fontSize: 'clamp(0.82rem,2vw,0.95rem)', color: 'rgba(255,255,255,0.6)', lineHeight: 1.9, margin: 0, maxWidth: '540px' }}>
               Zadnja izmjena: travanj 2026. Molimo pročitajte ove uvjete prije korištenja platforme LWL UP.
             </p>
           </div>
         </div>
 
-        {/* Divider */}
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 clamp(20px,5vw,60px)' }}>
-          <div style={{ height: '1px', background: 'linear-gradient(90deg, rgba(255,255,255,0.08), transparent)' }} />
-        </div>
-
         {/* Content */}
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '64px clamp(20px,5vw,60px) 100px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: 'clamp(40px,6vw,64px) clamp(20px,5vw,60px) clamp(70px,10vw,100px)' }}>
           {SECTIONS.map((section, i) => (
-            <div key={i} style={{ marginBottom: '56px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
-                <span style={{ fontFamily: 'var(--fd)', fontSize: '0.62rem', color: 'rgba(99,102,241,0.6)', fontWeight: 800, letterSpacing: '0.04em', minWidth: '20px' }}>
+            <div key={i} style={{ marginBottom: 'clamp(40px,6vw,56px)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '18px' }}>
+                <span style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700 }}>
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.13)' }} />
               </div>
-              <h2 style={{ fontFamily: 'var(--fm)', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.22em', color: '#e0e0f0', marginBottom: '20px', marginTop: 0 }}>
+              {/* Naslov u vlastitom retku — predugačak je za redak s linijom na mobitelu */}
+              <h2 style={{ fontFamily: 'var(--fm)', fontSize: 'clamp(0.62rem,1.7vw,0.72rem)', fontWeight: 700, letterSpacing: '0.2em', lineHeight: 1.7, color: 'rgba(255,255,255,0.9)', margin: '0 0 20px' }}>
                 {section.title}
               </h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {section.body.map((para, j) => (
-                  <p key={j} style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.42)', lineHeight: 1.8, margin: 0, paddingLeft: '20px', borderLeft: '1px solid rgba(255,255,255,0.06)' }}>
+                  <p key={j} style={{ fontSize: 'clamp(0.82rem,2vw,0.9rem)', color: 'rgba(255,255,255,0.6)', lineHeight: 1.9, margin: 0, paddingLeft: '20px', borderLeft: '1px solid rgba(255,255,255,0.13)' }}>
                     {para}
                   </p>
                 ))}
@@ -100,12 +96,12 @@ export default function PravilaPage() {
           ))}
 
           {/* Disclaimer box */}
-          <div style={{ marginTop: '64px', padding: '28px 32px', background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: '4px' }}>
-            <div style={{ fontSize: '0.58rem', letterSpacing: '0.35em', color: 'rgba(99,102,241,0.6)', fontWeight: 700, marginBottom: '12px' }}>NAPOMENA</div>
-            <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.7, margin: 0 }}>
+          <div style={{ marginTop: 'clamp(48px,7vw,64px)', padding: 'clamp(22px,4vw,28px) clamp(20px,4vw,32px)', background: '#181818', border: '1px solid rgba(255,255,255,0.16)', borderRadius: '4px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+            <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '12px' }}>NAPOMENA</div>
+            <p style={{ fontSize: 'clamp(0.8rem,2vw,0.86rem)', color: 'rgba(255,255,255,0.6)', lineHeight: 1.9, margin: 0 }}>
               Ova pravila su sastavljena u dobroj vjeri i u skladu s primjenjivim propisima. Korištenjem platforme LWL UP korisnik potvrđuje da je pročitao, razumio i prihvatio sve gore navedene uvjete. Za sva pitanja vezana uz privatnost i uvjete možete nas kontaktirati putem Instagram profila{' '}
               <a href="https://www.instagram.com/lwlup/" target="_blank" rel="noopener noreferrer"
-                style={{ color: 'rgba(255,255,255,0.55)', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '1px' }}>
+                style={{ color: '#fff', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.4)', paddingBottom: '1px' }}>
                 @lwlup
               </a>.
             </p>

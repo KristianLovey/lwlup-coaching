@@ -590,6 +590,12 @@ export default function Landing() {
           background: none; border: none; cursor: pointer;
           height: clamp(460px, 58vw, 620px);
           -webkit-tap-highlight-color: transparent;
+          /* Perspective sits on .founder-flip, but the rotating element is a
+             grandchild. Without preserve-3d here the button flattens the 3D
+             context and mobile engines stop culling the front backface —
+             you see the mirrored photo before the back paints. */
+          -webkit-transform-style: preserve-3d;
+          transform-style: preserve-3d;
         }
         .founder-flip-inner {
           position: relative; width: 100%; height: 100%;
@@ -603,9 +609,11 @@ export default function Landing() {
           border-radius: 20px; overflow: hidden;
           border: 1px solid rgba(255,255,255,0.08);
         }
-        .founder-front { background: #16161b; }
+        /* The two faces are coplanar; nudging them apart in Z stops mobile GPUs
+           z-fighting and briefly drawing the wrong one mid-flip. */
+        .founder-front { background: #16161b; transform: translateZ(1px); }
         .founder-back {
-          transform: rotateY(180deg);
+          transform: rotateY(180deg) translateZ(1px);
           background: #1a1a20;
           padding: clamp(28px,4vw,44px);
           display: flex; flex-direction: column; justify-content: center;
