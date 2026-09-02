@@ -314,7 +314,7 @@ const translations = {
     'home.cats.years':            'yrs.',
     'home.about.title1':          'FORGED',
     'home.about.title2':          'IN IRON',
-    'home.about.desc':            'LWL UP is more than a club — it is a strength community where competitors push the limits of human potential. Founded in 2023 by Walter Smajlović and Luka Grežina to unite people with one goal: build the biggest total. Since then, we have been raising the standard of powerlifting in Croatia.',
+    'home.about.desc':            'LWL UP is more than a club, it is a strength community where competitors push the limits of human potential. Founded in 2023 by Walter Smajlović and Luka Grežina to unite people with one goal: build the biggest total. Since then, we have been raising the standard of powerlifting in Croatia.',
     'home.about.community.title': 'Community',
     'home.about.community.desc':  'We train together, compete together, grow together.',
     'home.about.expertise.title': 'Expertise',
