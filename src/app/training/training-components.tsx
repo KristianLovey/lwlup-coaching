@@ -1173,7 +1173,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
         return (
           <div key={i} style={{ position: 'relative', overflow: 'hidden' }}>
             {/* Row content — blurred when locked */}
-            <div className={`set-log-row ${gridClass}`} style={{ display: 'grid', alignItems: 'stretch', background: log.completed ? 'rgba(34,197,94,0.07)' : i % 2 === 0 ? 'transparent' : 'var(--t-s2)', borderBottom: '1px solid var(--t-border)', transition: 'background 0.15s, filter 0.35s', minHeight: '52px', filter: isLocked ? 'blur(5px)' : 'none', pointerEvents: isLocked ? 'none' : 'auto', userSelect: isLocked ? 'none' : 'auto' }}>
+            <div className={`set-log-row ${gridClass}`} style={{ display: 'grid', alignItems: 'stretch', background: log.completed ? 'var(--t-done)' : i % 2 === 0 ? 'transparent' : 'var(--t-s2)', borderBottom: '1px solid var(--t-border)', transition: 'background 0.15s, filter 0.35s', minHeight: '52px', filter: isLocked ? 'blur(5px)' : 'none', pointerEvents: isLocked ? 'none' : 'auto', userSelect: isLocked ? 'none' : 'auto' }}>
 
               {/* Set label */}
               <div style={{ ...cellStyle, justifyContent: 'center', padding: '12px 8px', gap: '6px', flexDirection: 'column' as const }}>

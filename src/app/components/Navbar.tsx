@@ -175,12 +175,8 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
         {/* Logo */}
         <Link href="/" onClick={() => setMenuOpen(false)}
           style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#fff', zIndex: 1 }}>
-          <Image src="/slike/logopng.png" alt="LWL UP" width={82} height={60}
-            priority
-            style={{ height: '60px', width: 'auto', transition: 'transform 0.3s' }}
-            onMouseEnter={e => (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.1) rotate(-2deg)'}
-            onMouseLeave={e => (e.currentTarget as HTMLImageElement).style.transform = 'scale(1) rotate(0deg)'}
-          />
+          <Image src="/slike/logopng.png" alt="LWL UP" width={98} height={72} priority
+            className="nav-logo-img" style={{ height: '72px', width: 'auto' }} />
         </Link>
 
         {/* Desktop nav */}
@@ -346,9 +342,10 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
         .nav-cta-primary:hover  { background:#000 !important; color:#fff !important; border-color:rgba(255,255,255,0.5) !important; }
         .nav-cta-secondary:hover { background:rgba(255,255,255,0.08) !important; border-color:rgba(255,255,255,0.6) !important; }
         @media (min-width: 769px) { .nav-desktop { display:flex !important; } .nav-hamburger { display:none !important; } }
-        @media (max-width: 768px) { nav { padding:0 20px !important; height:64px !important; } .nav-desktop { display:none !important; } .nav-hamburger { display:flex !important; } }
+        @media (max-width: 768px) { nav { padding:0 20px !important; height:64px !important; } .nav-desktop { display:none !important; } .nav-hamburger { display:flex !important; } .nav-logo-img { height:52px !important; } }
         :root.is-native nav { top: 0 !important; height: calc(56px + env(safe-area-inset-top)) !important; padding-top: env(safe-area-inset-top) !important; background: #131317 !important; backdrop-filter: none !important; }
         :root.is-native .nav-mobile-menu { top: calc(56px + env(safe-area-inset-top)) !important; }
+        :root.is-native .nav-logo-img { height: 44px !important; }
       `}</style>
     </>
   )

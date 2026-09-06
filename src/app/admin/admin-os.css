@@ -37,6 +37,7 @@
   --t-s2: var(--surface-2);
   --t-s3: var(--surface-3);
   --t-hi: var(--surface-hi);
+  --t-done: #142b1d;
   --t-border: var(--border);
   --t-border-hi: var(--border-strong);
 
@@ -54,6 +55,7 @@
   -webkit-font-smoothing: antialiased;
 }
 .lwl-admin-os[data-theme="light"] {
+  --t-done:       #e4f5ea;
   --bg:           #f4f2ec;
   --surface-1:    #ffffff;
   --surface-2:    #fafaf6;

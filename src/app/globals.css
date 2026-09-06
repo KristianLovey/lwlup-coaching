@@ -27,6 +27,7 @@
   --t-s2:        #181818;  /* redak / polje unutar kartice */
   --t-s3:        #202020;  /* istaknuto, hover, aktivno */
   --t-hi:        #2a2a2a;  /* najviši sloj (odabrano) */
+  --t-done:      #142b1d;  /* odrađena serija — zelena ploha, ne prozirni sloj */
   --t-border:    #232323;
   --t-border-hi: #3a3a3a;
 

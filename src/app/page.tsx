@@ -241,7 +241,7 @@ export default function Landing() {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 60%, #131317 100%)', zIndex: 1 }} />
 
         {/* Main content — starts below navbar with breathing room */}
-        <div style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '0 clamp(20px,5vw,60px)', paddingTop: 'clamp(90px,16vh,160px)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }} className="hero-content">
+        <div style={{ position: 'relative', zIndex: 2, width: '100%', padding: '0 clamp(20px,5vw,60px)', paddingTop: 'clamp(90px,16vh,160px)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }} className="hero-content">
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '680px' }}>
 
             {/* Big headline */}
@@ -584,14 +584,15 @@ export default function Landing() {
         /* kartice imaju lijevu crtu koja se na hover pojača — bez nje je translateY
            na golom tekstu izgledao kao da nešto poskakuje bez razloga */
         .info-card { padding-left: 16px; border-left: 1px solid rgba(255,255,255,0.14); transition: border-color 0.3s, transform 0.3s cubic-bezier(0.16,1,0.3,1); }
-        .info-card:hover { border-left-color: #ef3535; }
+        /* hover je crno-bijeli: crna ploha + bijela crta, bez signalne crvene */
+        .info-card:hover { border-left-color: #fff; background: rgba(0,0,0,0.35); }
         .club-images > div { transition: box-shadow 0.4s; }
         .club-images > div:hover { box-shadow: 0 18px 50px -18px rgba(0,0,0,0.9); }
         .club-images > div:hover .club-img { transform: scale(1.06); }
 
         /* Natrag na vrh — prije nije imao nikakav hover (inline transform traži !important) */
         .scroll-to-top-btn svg { transition: stroke 0.25s, transform 0.3s cubic-bezier(0.16,1,0.3,1); }
-        .scroll-to-top-btn:hover { transform: scale(1.08) translateY(-3px) !important; background: #ef3535 !important; box-shadow: 0 10px 30px rgba(239,53,53,0.4) !important; }
+        .scroll-to-top-btn:hover { transform: scale(1.08) translateY(-3px) !important; background: #0a0a0a !important; box-shadow: 0 10px 30px rgba(0,0,0,0.65) !important; }
         .scroll-to-top-btn:hover svg { stroke: #fff !important; transform: translateY(-2px); }
         .scroll-to-top-btn:active { transform: scale(0.94) !important; }
         .club-img:hover     { transform: scale(1.05) !important; }
@@ -652,10 +653,10 @@ export default function Landing() {
 
         /* ══ MOBILE ═══════════════════════════════════════════════ */
         @media (max-width: 768px) {
-          .hero-content    { align-items: center !important; text-align: center; padding-bottom: 120px !important; }
+          .hero-content    { align-items: flex-start !important; text-align: left; padding-bottom: 120px !important; }
           .hero-content h1 { font-size: clamp(3.2rem,12vw,5rem) !important; margin-bottom: 20px !important; }
           .hero-content p  { font-size: 0.9rem !important; margin-bottom: 24px !important; }
-          .hero-btns       { justify-content: center; flex-direction: column !important; gap: 10px !important; }
+          .hero-btns       { justify-content: flex-start; flex-direction: column !important; gap: 10px !important; }
           .hero-btns a     { flex: unset !important; width: 100% !important; }
           .cats-two-col    { grid-template-columns: 1fr !important; }
           .founder-grid { grid-template-columns: 1fr !important; }
