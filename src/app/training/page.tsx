@@ -728,39 +728,39 @@ export default function TrainingPage() {
           70%      { box-shadow: 0 0 0 8px transparent; }
         }
 
-        .nav-menu-item { width:100%; display:flex; align-items:center; gap:10px; padding:9px 10px; background:transparent; border:none; cursor:pointer; color:#999; font-size:0.82rem; font-family:var(--fm); transition:all 0.15s; text-align:left; border-radius:6px; }
-        .nav-menu-item:hover { background:#161618; color:#e0e0e0; }
+        .nav-menu-item { width:100%; display:flex; align-items:center; gap:10px; padding:9px 10px; background: transparent; border: none; cursor:pointer; color:#999; font-size:0.82rem; font-family:var(--fm); transition:all 0.15s; text-align:left; border-radius:6px; }
+        .nav-menu-item:hover { background: #161618; color:#e0e0e0; }
         .nav-menu-admin:hover { color:#ef4444 !important; }
         .nav-menu-logout { color:#666; }
-        .nav-menu-logout:hover { background:#1a0a0a !important; color:#ff7070 !important; }
+        .nav-menu-logout:hover { background: #1a0a0a !important; color:#ff7070 !important; }
 
-        .cat-btn { padding:4px 12px; font-size:0.62rem; letter-spacing:0.12em; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:var(--fm); background:transparent; color:#555; border:1px solid rgba(255,255,255,0.1); border-radius:5px; }
-        .cat-btn:hover { border-color:rgba(255,255,255,0.3); color:#aaa; }
-        .cat-btn-active { background:#e0e0e0 !important; color:#000 !important; border-color:#e0e0e0 !important; }
+        .cat-btn { padding:4px 12px; font-size:0.62rem; letter-spacing:0.12em; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:var(--fm); background: transparent; color:#555; border: 1px solid var(--t-border); border-radius:5px; }
+        .cat-btn:hover { border-color: var(--t-border-hi); color:#aaa; }
+        .cat-btn-active { background: #e0e0e0 !important; color:#000 !important; border-color: #e0e0e0 !important; }
 
-        .icon-btn-danger { background:transparent; border:none; cursor:pointer; color:#555; padding:4px; display:flex; align-items:center; justify-content:center; transition:color 0.15s; border-radius:4px; }
-        .icon-btn-danger:hover { color:#ef4444; background:#1a0a0a; }
-        .icon-btn { width:28px; height:28px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03); display:grid; place-items:center; color:rgba(255,255,255,0.4); cursor:pointer; transition:all 0.2s; }
-        .icon-btn:hover { border-color:rgba(255,255,255,0.2); color:#fff; background:rgba(255,255,255,0.07); }
+        .icon-btn-danger { background: transparent; border: none; cursor:pointer; color:#555; padding:4px; display:flex; align-items:center; justify-content:center; transition:color 0.15s; border-radius:4px; }
+        .icon-btn-danger:hover { color:#ef4444; background: #1a0a0a; }
+        .icon-btn { width:28px; height:28px; border-radius:8px; border: 1px solid var(--t-border); background: var(--t-s2); display:grid; place-items:center; color:rgba(255,255,255,0.4); cursor:pointer; transition:all 0.2s; }
+        .icon-btn:hover { border-color: var(--t-border-hi); color:#fff; background: var(--t-s3); }
 
-        .done-badge { display:flex; align-items:center; gap:6px; padding:6px 12px; border:1px solid rgba(255,255,255,0.12); cursor:pointer; transition:all 0.2s; border-radius:6px; background:rgba(255,255,255,0.04); }
+        .done-badge { display:flex; align-items:center; gap:6px; padding:6px 12px; border: 1px solid var(--t-border); cursor:pointer; transition:all 0.2s; border-radius:6px; background: var(--t-s3); }
         .done-badge span { font-size:0.54rem; letter-spacing:0.2em; color:rgba(255,255,255,0.45); font-family:var(--fm); font-weight:800; }
-        .done-badge:hover { border-color:rgba(255,255,255,0.28); background:rgba(255,255,255,0.07); }
-        .done-badge-active { border-color:rgba(34,197,94,0.45) !important; background:rgba(34,197,94,0.1) !important; }
+        .done-badge:hover { border-color: var(--t-border-hi); background: var(--t-s3); }
+        .done-badge-active { border-color: rgba(34,197,94,0.45) !important; background: rgba(34,197,94,0.1) !important; }
         .done-badge-active span { color:#4ade80 !important; }
 
-        .add-btn { width:100%; padding:10px; background:rgba(255,255,255,0.02); border:1px dashed rgba(255,255,255,0.1); color:rgba(255,255,255,0.28); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; font-size:0.6rem; letter-spacing:0.22em; font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:6px; }
-        .add-btn:hover { border-color:rgba(255,255,255,0.25); color:rgba(255,255,255,0.65); background:rgba(255,255,255,0.05); }
+        .add-btn { width:100%; padding:10px; background: var(--t-s2); border: 1px dashed var(--t-border); color:rgba(255,255,255,0.28); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; font-size:0.6rem; letter-spacing:0.22em; font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:6px; }
+        .add-btn:hover { border-color: var(--t-border-hi); color:rgba(255,255,255,0.65); background: var(--t-s3); }
 
-        .add-week-btn { width:100%; padding:18px; background:rgba(255,255,255,0.02); border:1px dashed rgba(255,255,255,0.08); color:rgba(255,255,255,0.22); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-size:0.62rem; letter-spacing:0.3em; font-family:var(--fm); font-weight:800; transition:all 0.2s; border-radius:10px; margin-top:8px; }
-        .add-week-btn:hover { border-color:rgba(255,255,255,0.22); color:rgba(255,255,255,0.65); background:rgba(255,255,255,0.05); }
+        .add-week-btn { width:100%; padding:18px; background: var(--t-s2); border: 1px dashed var(--t-border); color:rgba(255,255,255,0.22); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-size:0.62rem; letter-spacing:0.3em; font-family:var(--fm); font-weight:800; transition:all 0.2s; border-radius:10px; margin-top:8px; }
+        .add-week-btn:hover { border-color: var(--t-border-hi); color:rgba(255,255,255,0.65); background: var(--t-s3); }
 
-        .action-btn { display:flex; align-items:center; gap:7px; background:transparent; border:none; color:#555; cursor:pointer; font-size:0.58rem; letter-spacing:0.2em; font-family:var(--fm); font-weight:800; transition:all 0.15s; white-space:nowrap; padding:0 16px; }
+        .action-btn { display:flex; align-items:center; gap:7px; background: transparent; border: none; color:#555; cursor:pointer; font-size:0.58rem; letter-spacing:0.2em; font-family:var(--fm); font-weight:800; transition:all 0.15s; white-space:nowrap; padding:0 16px; }
         .action-btn:hover { color:#e0e0e0; }
 
-        .workout-card:hover { border-color:rgba(255,255,255,0.14) !important; }
-        .ex-row-wrap { border-left:2px solid rgba(255,255,255,0.05); }
-        .ex-row-main:hover { background:#0e0e0e; }
+        .workout-card:hover { border-color: var(--t-border-hi) !important; }
+        .ex-row-wrap { border-left: 2px solid var(--t-border); }
+        .ex-row-main:hover { background: #0e0e0e; }
 
         .tab-switcher { scrollbar-width:none; }
         .tab-switcher::-webkit-scrollbar { display:none; }

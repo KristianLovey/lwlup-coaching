@@ -855,7 +855,7 @@ function WaterLog({ userId }: { userId: string }) {
               <div style={{ fontSize: '0.52rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontWeight: 600 }}>DANAS</div>
               <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '4px' }}>
                 {todayEntries.map(e => (
-                  <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px' }}>
+                  <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 12px', background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '8px' }}>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: COLOR, flexShrink: 0, boxShadow: `0 0 5px ${COLOR}88` }} />
                     <span style={{ flex: 1, fontSize: '0.82rem', color: '#e0e0e0', fontFamily: 'var(--fd)', fontWeight: 600 }}>
                       {e.amount_ml >= 1000 ? `${(e.amount_ml / 1000).toFixed(1)}L` : `${e.amount_ml}ml`}
@@ -874,7 +874,7 @@ function WaterLog({ userId }: { userId: string }) {
           )}
 
           {/* Settings section */}
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '14px' }}>
+          <div style={{ borderTop: '1px solid var(--t-border)', paddingTop: '14px' }}>
             <button onClick={() => setShowSettings(s => !s)}
               style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: '0.58rem', fontFamily: 'var(--fm)', letterSpacing: '0.15em', fontWeight: 600, padding: 0 }}>
               <ChevronDown size={12} style={{ transform: showSettings ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
@@ -891,7 +891,7 @@ function WaterLog({ userId }: { userId: string }) {
                     <div key={lbl}>
                       <div style={{ fontSize: '0.48rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', marginBottom: '5px', fontWeight: 600 }}>{lbl}</div>
                       <input type="number" value={val} onChange={e => (set as any)(e.target.value)} placeholder={ph}
-                        style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '7px', color: '#f0f0f5', padding: '8px 10px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' as const }}
+                        style={{ width: '100%', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '7px', color: '#f0f0f5', padding: '8px 10px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' as const }}
                         onFocus={e => e.currentTarget.style.borderColor = COLOR}
                         onBlur={e  => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
                     </div>
@@ -914,12 +914,12 @@ function WaterLog({ userId }: { userId: string }) {
                 <div>
                   <div style={{ fontSize: '0.48rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', marginBottom: '5px', fontWeight: 600 }}>VLASTITI CILJ (ml)</div>
                   <input type="number" value={goalInput} onChange={e => setGoalInput(e.target.value)} placeholder="npr. 3000" step={100}
-                    style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '7px', color: '#f0f0f5', padding: '8px 10px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' as const }}
+                    style={{ width: '100%', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '7px', color: '#f0f0f5', padding: '8px 10px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' as const }}
                     onFocus={e => e.currentTarget.style.borderColor = COLOR}
                     onBlur={e  => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
                 </div>
                 <button onClick={saveSettings} disabled={saving}
-                  style={{ padding: '10px', background: saving ? 'rgba(255,255,255,0.06)' : '#fff', border: 'none', borderRadius: '8px', color: saving ? '#555' : '#000', fontFamily: 'var(--fm)', fontSize: '0.72rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', letterSpacing: '0.05em', transition: 'all 0.2s' }}>
+                  style={{ padding: '10px', background: saving ? 'var(--t-s3)' : '#fff', border: 'none', borderRadius: '8px', color: saving ? '#555' : '#000', fontFamily: 'var(--fm)', fontSize: '0.72rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', letterSpacing: '0.05em', transition: 'all 0.2s' }}>
                   {saving ? 'Snimanje...' : 'Spremi postavke'}
                 </button>
               </div>
@@ -1046,7 +1046,7 @@ function WellbeingTracker({ userId }: { userId: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '2px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '3px' }}>
+      <div style={{ display: 'flex', gap: '2px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '10px', padding: '3px' }}>
         {([['log','Dnevni unos'],['supplements','Suplementi'],['history','Tjedan']] as const).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} style={{ flex: 1, padding: '8px 4px', background: tab === id ? `${COLOR}20` : 'transparent', border: `1px solid ${tab === id ? COLOR+'44' : 'transparent'}`, borderRadius: '8px', cursor: 'pointer', color: tab === id ? COLOR : 'rgba(255,255,255,0.35)', fontSize: '0.62rem', fontFamily: 'var(--fm)', fontWeight: tab === id ? 700 : 400, transition: 'all 0.15s' }}>
             {label}
@@ -1080,14 +1080,14 @@ function WellbeingTracker({ userId }: { userId: string }) {
                 const active = draft.sleep_hours === String(h)
                 return (
                   <button key={h} onClick={() => setDraft(d => ({ ...d, sleep_hours: String(h) }))}
-                    style={{ padding: '8px 2px', background: active ? 'rgba(96,165,250,0.16)' : 'rgba(255,255,255,0.03)', border: `1.5px solid ${active ? '#60a5fa55' : 'rgba(255,255,255,0.08)'}`, borderRadius: '8px', cursor: 'pointer', color: active ? '#60a5fa' : 'rgba(255,255,255,0.4)', fontSize: '0.7rem', fontFamily: 'var(--fm)', fontWeight: active ? 700 : 400, transition: 'all 0.15s' }}>
+                    style={{ padding: '8px 2px', background: active ? 'rgba(96,165,250,0.16)' : 'var(--t-s2)', border: `1.5px solid ${active ? '#60a5fa55' : 'var(--t-border)'}`, borderRadius: '8px', cursor: 'pointer', color: active ? '#60a5fa' : 'rgba(255,255,255,0.4)', fontSize: '0.7rem', fontFamily: 'var(--fm)', fontWeight: active ? 700 : 400, transition: 'all 0.15s' }}>
                     {h}h
                   </button>
                 )
               })}
             </div>
             <input type="number" placeholder="Ili upiši sate..." value={draft.sleep_hours} onChange={e => setDraft(d => ({ ...d, sleep_hours: e.target.value }))} step="0.5" min="0" max="14"
-              style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.1)', color: '#f0f0f5', padding: '9px 14px', borderRadius: '10px', outline: 'none', fontSize: '0.85rem', fontFamily: 'var(--fm)', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
+              style={{ width: '100%', background: 'var(--t-s2)', border: '1.5px solid var(--t-border)', color: '#f0f0f5', padding: '9px 14px', borderRadius: '10px', outline: 'none', fontSize: '0.85rem', fontFamily: 'var(--fm)', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
               onFocus={e => e.target.style.borderColor = '#60a5fa'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
           </div>
 
@@ -1100,7 +1100,7 @@ function WellbeingTracker({ userId }: { userId: string }) {
                 const active = draft.stress_level === n
                 return (
                   <button key={n} onClick={() => setDraft(d => ({ ...d, stress_level: active ? null : n }))}
-                    style={{ padding: '10px 2px', background: active ? `${c}18` : 'rgba(255,255,255,0.03)', border: `1.5px solid ${active ? c+'55' : 'rgba(255,255,255,0.08)'}`, borderRadius: '8px', cursor: 'pointer', color: active ? c : 'rgba(255,255,255,0.35)', fontSize: '0.85rem', fontFamily: 'var(--fd)', fontWeight: active ? 900 : 400, transition: 'all 0.15s' }}>
+                    style={{ padding: '10px 2px', background: active ? `${c}18` : 'var(--t-s2)', border: `1.5px solid ${active ? c+'55' : 'var(--t-border)'}`, borderRadius: '8px', cursor: 'pointer', color: active ? c : 'rgba(255,255,255,0.35)', fontSize: '0.85rem', fontFamily: 'var(--fd)', fontWeight: active ? 900 : 400, transition: 'all 0.15s' }}>
                     {n}
                   </button>
                 )
@@ -1116,14 +1116,14 @@ function WellbeingTracker({ userId }: { userId: string }) {
                 const active = draft.caffeine_mg === String(mg)
                 return (
                   <button key={mg} onClick={() => setDraft(d => ({ ...d, caffeine_mg: String(mg) }))}
-                    style={{ padding: '8px 2px', background: active ? 'rgba(251,191,36,0.14)' : 'rgba(255,255,255,0.03)', border: `1.5px solid ${active ? '#fbbf2455' : 'rgba(255,255,255,0.08)'}`, borderRadius: '8px', cursor: 'pointer', color: active ? '#fbbf24' : 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontFamily: 'var(--fm)', fontWeight: active ? 700 : 400, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}>
+                    style={{ padding: '8px 2px', background: active ? 'rgba(251,191,36,0.14)' : 'var(--t-s2)', border: `1.5px solid ${active ? '#fbbf2455' : 'var(--t-border)'}`, borderRadius: '8px', cursor: 'pointer', color: active ? '#fbbf24' : 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontFamily: 'var(--fm)', fontWeight: active ? 700 : 400, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}>
                     {mg === 0 ? 'Bez' : `${mg}`}
                   </button>
                 )
               })}
             </div>
             <input type="number" placeholder="Ili upiši mg..." value={draft.caffeine_mg} onChange={e => setDraft(d => ({ ...d, caffeine_mg: e.target.value }))} step="10" min="0"
-              style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.1)', color: '#f0f0f5', padding: '9px 14px', borderRadius: '10px', outline: 'none', fontSize: '0.85rem', fontFamily: 'var(--fm)', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
+              style={{ width: '100%', background: 'var(--t-s2)', border: '1.5px solid var(--t-border)', color: '#f0f0f5', padding: '9px 14px', borderRadius: '10px', outline: 'none', fontSize: '0.85rem', fontFamily: 'var(--fm)', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
               onFocus={e => e.target.style.borderColor = '#fbbf24'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
           </div>
 
@@ -1131,7 +1131,7 @@ function WellbeingTracker({ userId }: { userId: string }) {
           <div>
             <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', fontFamily: 'var(--fm)', marginBottom: '6px', fontWeight: 600 }}>BILJEŠKA (opcionalno)</div>
             <textarea value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} rows={2} placeholder="Kako si se osjećao/la danas..."
-              style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.1)', color: '#f0f0f5', padding: '10px 14px', borderRadius: '10px', outline: 'none', resize: 'vertical' as const, fontFamily: 'var(--fm)', fontSize: '0.85rem', lineHeight: 1.6, boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
+              style={{ width: '100%', background: 'var(--t-s2)', border: '1.5px solid var(--t-border)', color: '#f0f0f5', padding: '10px 14px', borderRadius: '10px', outline: 'none', resize: 'vertical' as const, fontFamily: 'var(--fm)', fontSize: '0.85rem', lineHeight: 1.6, boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
               onFocus={e => e.target.style.borderColor = COLOR} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
           </div>
 
@@ -1149,16 +1149,16 @@ function WellbeingTracker({ userId }: { userId: string }) {
             <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
               <input type="text" placeholder="Naziv (npr. Kreatin, Vitamin D3, Omega-3...)" value={suppDraft.name} onChange={e => setSuppDraft(d => ({ ...d, name: e.target.value }))}
                 onKeyDown={e => { if (e.key === 'Enter') addSupp() }}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.1)', color: '#f0f0f5', padding: '10px 14px', borderRadius: '10px', outline: 'none', fontFamily: 'var(--fm)', fontSize: '0.85rem', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
+                style={{ width: '100%', background: 'var(--t-s2)', border: '1.5px solid var(--t-border)', color: '#f0f0f5', padding: '10px 14px', borderRadius: '10px', outline: 'none', fontFamily: 'var(--fm)', fontSize: '0.85rem', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
                 onFocus={e => e.target.style.borderColor = '#10b981'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
               <div className="supp-amount-row" style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '8px', alignItems: 'center' }}>
                 <input type="number" placeholder="Količina" value={suppDraft.amount} onChange={e => setSuppDraft(d => ({ ...d, amount: e.target.value }))} step="0.1" min="0"
-                  style={{ background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.1)', color: '#f0f0f5', padding: '10px 14px', borderRadius: '10px', outline: 'none', fontFamily: 'var(--fm)', fontSize: '0.85rem', boxSizing: 'border-box' as const, transition: 'border-color 0.2s', width: '100%' }}
+                  style={{ background: 'var(--t-s2)', border: '1.5px solid var(--t-border)', color: '#f0f0f5', padding: '10px 14px', borderRadius: '10px', outline: 'none', fontFamily: 'var(--fm)', fontSize: '0.85rem', boxSizing: 'border-box' as const, transition: 'border-color 0.2s', width: '100%' }}
                   onFocus={e => e.target.style.borderColor = '#10b981'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
                 <div style={{ display: 'flex', gap: '3px' }}>
                   {(['g','mg','ml','IU'] as const).map(u => (
                     <button key={u} onClick={() => setSuppDraft(d => ({ ...d, unit: u }))}
-                      style={{ padding: '8px 9px', background: suppDraft.unit === u ? 'rgba(16,185,129,0.14)' : 'rgba(255,255,255,0.03)', border: `1.5px solid ${suppDraft.unit === u ? '#10b98155' : 'rgba(255,255,255,0.08)'}`, borderRadius: '8px', cursor: 'pointer', color: suppDraft.unit === u ? '#10b981' : 'rgba(255,255,255,0.4)', fontSize: '0.68rem', fontFamily: 'var(--fm)', fontWeight: suppDraft.unit === u ? 700 : 400, transition: 'all 0.15s' }}>
+                      style={{ padding: '8px 9px', background: suppDraft.unit === u ? 'rgba(16,185,129,0.14)' : 'var(--t-s2)', border: `1.5px solid ${suppDraft.unit === u ? '#10b98155' : 'var(--t-border)'}`, borderRadius: '8px', cursor: 'pointer', color: suppDraft.unit === u ? '#10b981' : 'rgba(255,255,255,0.4)', fontSize: '0.68rem', fontFamily: 'var(--fm)', fontWeight: suppDraft.unit === u ? 700 : 400, transition: 'all 0.15s' }}>
                       {u}
                     </button>
                   ))}
@@ -1199,7 +1199,7 @@ function WellbeingTracker({ userId }: { userId: string }) {
                 {Object.entries(
                   suppLogs.filter(s => s.log_date !== today).reduce((acc, s) => { if (!acc[s.log_date]) acc[s.log_date] = []; acc[s.log_date].push(s); return acc }, {} as Record<string, SupplementLog[]>)
                 ).map(([date, supps]) => (
-                  <div key={date} style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px' }}>
+                  <div key={date} style={{ padding: '10px 14px', background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '10px' }}>
                     <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', marginBottom: '6px', letterSpacing: '0.1em' }}>{date}</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '6px' }}>
                       {supps.map(s => (
@@ -1245,7 +1245,7 @@ function WellbeingTracker({ userId }: { userId: string }) {
           })()}
 
           {/* ── Sleep ── */}
-          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px' }}>
+          <div style={{ background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '12px', padding: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#60a5fa', boxShadow: '0 0 8px #60a5fa88' }} />
@@ -1264,7 +1264,7 @@ function WellbeingTracker({ userId }: { userId: string }) {
                   <div key={d} style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
                     {h > 0 && <div style={{ fontSize: '0.5rem', color: bc!, fontFamily: 'var(--fm)', fontWeight: 700, lineHeight: 1 }}>{h}h</div>}
                     <div style={{ width: '100%', position: 'relative' as const, height: '60px', display: 'flex', alignItems: 'flex-end' }}>
-                      <div style={{ position: 'absolute' as const, inset: 0, background: isToday ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)', borderRadius: '6px', border: isToday ? '1px solid rgba(255,255,255,0.1)' : 'none' }} />
+                      <div style={{ position: 'absolute' as const, inset: 0, background: isToday ? 'var(--t-s3)' : 'var(--t-s2)', borderRadius: '6px', border: isToday ? '1px solid var(--t-border)' : 'none' }} />
                       {h > 0 && <div style={{ position: 'absolute' as const, bottom: 0, left: 0, right: 0, height: `${pct * 100}%`, background: `linear-gradient(to top, ${bc!}dd, ${bc!}55)`, borderRadius: '6px', minHeight: '4px', transition: 'height 0.5s cubic-bezier(0.16,1,0.3,1)', boxShadow: `0 2px 12px ${bc!}44` }} />}
                     </div>
                     <div style={{ fontSize: '0.5rem', color: isToday ? '#fff' : 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: isToday ? 800 : 400 }}>{DAY_L[i]}</div>
@@ -1283,7 +1283,7 @@ function WellbeingTracker({ userId }: { userId: string }) {
           </div>
 
           {/* ── Stress ── */}
-          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px' }}>
+          <div style={{ background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '12px', padding: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b', boxShadow: '0 0 8px #f59e0b88' }} />
@@ -1298,11 +1298,11 @@ function WellbeingTracker({ userId }: { userId: string }) {
                 const c = s == null ? null : s <= 3 ? '#4ade80' : s <= 6 ? '#f59e0b' : '#f87171'
                 const isToday = d === today
                 return (
-                  <div key={d} style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '6px', padding: '10px 4px 8px', background: c ? `${c}0c` : 'rgba(255,255,255,0.02)', border: `1px solid ${c ? c+'28' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', position: 'relative' as const, transition: 'background 0.2s' }}>
+                  <div key={d} style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '6px', padding: '10px 4px 8px', background: c ? `${c}0c` : 'var(--t-s2)', border: `1px solid ${c ? c+'28' : 'var(--t-border)'}`, borderRadius: '10px', position: 'relative' as const, transition: 'background 0.2s' }}>
                     {isToday && <div style={{ position: 'absolute' as const, top: '5px', right: '5px', width: '4px', height: '4px', borderRadius: '50%', background: 'rgba(255,255,255,0.35)' }} />}
                     {s != null
                       ? <div style={{ fontSize: '1.25rem', fontWeight: 900, color: c!, fontFamily: 'var(--fd)', lineHeight: 1, textShadow: `0 0 12px ${c!}55` }}>{s}</div>
-                      : <div style={{ width: '16px', height: '2px', background: 'rgba(255,255,255,0.08)', borderRadius: '1px', marginTop: '6px' }} />
+                      : <div style={{ width: '16px', height: '2px', background: 'var(--t-hi)', borderRadius: '1px', marginTop: '6px' }} />
                     }
                     <div style={{ fontSize: '0.5rem', color: isToday ? '#fff' : 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: isToday ? 800 : 400 }}>{DAY_L[i]}</div>
                   </div>
@@ -1312,7 +1312,7 @@ function WellbeingTracker({ userId }: { userId: string }) {
           </div>
 
           {/* ── Caffeine ── */}
-          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px' }}>
+          <div style={{ background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '12px', padding: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#fbbf24', boxShadow: '0 0 8px #fbbf2488' }} />
@@ -1337,7 +1337,7 @@ function WellbeingTracker({ userId }: { userId: string }) {
                     <div key={d} style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
                       {mg > 0 && <div style={{ fontSize: '0.48rem', color: bc, fontFamily: 'var(--fm)', fontWeight: 700, lineHeight: 1 }}>{mg}</div>}
                       <div style={{ width: '100%', position: 'relative' as const, height: '50px', display: 'flex', alignItems: 'flex-end' }}>
-                        <div style={{ position: 'absolute' as const, inset: 0, background: isToday ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.03)', borderRadius: '6px' }} />
+                        <div style={{ position: 'absolute' as const, inset: 0, background: isToday ? 'var(--t-s3)' : 'var(--t-s2)', borderRadius: '6px' }} />
                         {mg > 0 && <div style={{ position: 'absolute' as const, bottom: 0, left: 0, right: 0, height: `${pct * 100}%`, background: `linear-gradient(to top, ${bc}ee, ${bc}55)`, borderRadius: '6px', minHeight: '4px', transition: 'height 0.5s cubic-bezier(0.16,1,0.3,1)', boxShadow: `0 2px 10px ${bc}44` }} />}
                       </div>
                       <div style={{ fontSize: '0.5rem', color: isToday ? '#fff' : 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: isToday ? 800 : 400 }}>{DAY_L[i]}</div>
@@ -1350,7 +1350,7 @@ function WellbeingTracker({ userId }: { userId: string }) {
 
           {/* ── Supplements ── */}
           {suppLogs.length > 0 && (
-            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '12px', padding: '14px' }}>
+            <div style={{ background: 'var(--t-s2)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '12px', padding: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b98188' }} />
                 <span style={{ fontSize: '0.58rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--fm)', fontWeight: 700 }}>SUPLEMENTI OVAJ TJEDAN</span>
@@ -1528,7 +1528,7 @@ function ProgressGraph({ userId }: { userId: string }) {
   function LiftChart({ lift, color, label }: { lift: string; color: string; label: string }) {
     const data = filterRows(lift)
     if (data.length === 0) return (
-      <div style={{ height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem', fontFamily: 'var(--fm)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px' }}>
+      <div style={{ height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem', fontFamily: 'var(--fm)', border: '1px solid var(--t-border)', borderRadius: '10px' }}>
         Nema podataka za odabrani filter
       </div>
     )
@@ -1592,7 +1592,7 @@ function ProgressGraph({ userId }: { userId: string }) {
               <circle cx={p.x} cy={p.y} r={hov === i ? 5 : 2.5} fill={hov === i ? '#fff' : color} stroke={color} strokeWidth="1.5" />
               {hov === i && (
                 <foreignObject x={p.x - 60} y={p.y - 56} width="120" height="50" style={{ overflow: 'visible', pointerEvents: 'none' }}>
-                  <div style={{ background: '#111111', border: `1px solid ${color}44`, borderRadius: '8px', padding: '7px 10px', textAlign: 'center', whiteSpace: 'nowrap' as const, fontFamily: 'var(--fm)' }}>
+                  <div style={{ background: 'var(--t-s1)', border: `1px solid ${color}44`, borderRadius: '8px', padding: '7px 10px', textAlign: 'center', whiteSpace: 'nowrap' as const, fontFamily: 'var(--fm)' }}>
                     <div style={{ fontSize: '1rem', fontWeight: 800, color, fontFamily: 'var(--fd)', lineHeight: 1 }}>{p.weight_kg}kg</div>
                     {p.actual_reps && <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>×{p.actual_reps} rep</div>}
                     <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.25)', marginTop: '1px' }}>{p.block_name} · W{p.week_number} · {p.date}</div>
@@ -1629,7 +1629,7 @@ function ProgressGraph({ userId }: { userId: string }) {
         <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color, fontFamily: 'var(--fm)', marginBottom: '6px', fontWeight: 700 }}>{label}</div>
         <div className="exsel-wrap" style={{ position: 'relative' }}>
           <button onClick={() => { setOpen(o => !o); setQuery('') }}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '9px 12px', background: open ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.04)', border: `1.5px solid ${open ? color : color + '44'}`, borderRadius: '9px', color: value ? '#f0f0f5' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left' as const, transition: 'all 0.15s', boxShadow: open ? `0 0 0 3px ${color}14` : 'none' }}>
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '9px 12px', background: open ? 'var(--t-hi)' : 'var(--t-s3)', border: `1.5px solid ${open ? color : color + '44'}`, borderRadius: '9px', color: value ? '#f0f0f5' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left' as const, transition: 'all 0.15s', boxShadow: open ? `0 0 0 3px ${color}14` : 'none' }}>
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{value || '— bez odabira —'}</span>
             <ChevronDown size={13} color={color} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
           </button>
@@ -1637,7 +1637,7 @@ function ProgressGraph({ userId }: { userId: string }) {
             <div style={{ position: 'absolute', top: 'calc(100% + 5px)', left: 0, right: 0, background: '#0d0d17', border: `1px solid ${color}33`, borderRadius: '10px', boxShadow: '0 16px 48px rgba(0,0,0,0.85)', zIndex: 400, overflow: 'hidden', animation: 'dropDown 0.15s ease' }}>
               <div style={{ padding: '8px' }}>
                 <input autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder="Pretraži..."
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: `1px solid ${color}22`, borderRadius: '7px', color: '#e0e0e0', padding: '7px 10px', fontFamily: 'var(--fm)', fontSize: '0.8rem', outline: 'none', boxSizing: 'border-box' as const }} />
+                  style={{ width: '100%', background: 'var(--t-s3)', border: `1px solid ${color}22`, borderRadius: '7px', color: '#e0e0e0', padding: '7px 10px', fontFamily: 'var(--fm)', fontSize: '0.8rem', outline: 'none', boxSizing: 'border-box' as const }} />
               </div>
               <div style={{ maxHeight: '220px', overflowY: 'auto' as const }}>
                 <button onClick={() => { onChange(''); setOpen(false) }}
@@ -1682,7 +1682,7 @@ function ProgressGraph({ userId }: { userId: string }) {
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const }}>
           {REP_RANGES.map((r, i) => (
             <button key={r.label} onClick={() => setRepRange(i)}
-              style={{ padding: '5px 12px', background: repRange === i ? `${COLOR}18` : 'transparent', border: `1px solid ${repRange === i ? COLOR : 'rgba(255,255,255,0.1)'}`, borderRadius: '6px', color: repRange === i ? COLOR : '#555', cursor: 'pointer', fontSize: '0.62rem', fontFamily: 'var(--fm)', transition: 'all 0.15s' }}>
+              style={{ padding: '5px 12px', background: repRange === i ? `${COLOR}18` : 'transparent', border: `1px solid ${repRange === i ? COLOR : 'var(--t-border)'}`, borderRadius: '6px', color: repRange === i ? COLOR : '#555', cursor: 'pointer', fontSize: '0.62rem', fontFamily: 'var(--fm)', transition: 'all 0.15s' }}>
               {r.label}
             </button>
           ))}
@@ -1691,12 +1691,12 @@ function ProgressGraph({ userId }: { userId: string }) {
 
       {/* Charts */}
       {primaryLift && (
-        <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px' }}>
+        <div style={{ padding: '16px 20px', background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '12px' }}>
           <LiftChart lift={primaryLift} color={COLOR} label={primaryLift} />
         </div>
       )}
       {secondaryLift && secondaryLift !== primaryLift && (
-        <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px' }}>
+        <div style={{ padding: '16px 20px', background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '12px' }}>
           <LiftChart lift={secondaryLift} color="#f59e0b" label={secondaryLift} />
         </div>
       )}
@@ -1811,17 +1811,17 @@ function WeightChart({ pts, toSvgX, toSvgY, minW, maxW, baselineKg }: {
   const hovY = hovered !== null ? toSvgY(pts[hovered].weight_kg) : 0
 
   return (
-    <div style={{ animation: mounted ? 'wChartIn 0.5s cubic-bezier(0.16,1,0.3,1) both' : 'none', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.09)', background: 'linear-gradient(160deg, rgba(20,10,28,0.98) 0%, rgba(8,8,14,0.98) 100%)', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}>
+    <div style={{ animation: mounted ? 'wChartIn 0.5s cubic-bezier(0.16,1,0.3,1) both' : 'none', borderRadius: '18px', overflow: 'hidden', border: '1px solid var(--t-border)', background: 'linear-gradient(160deg, rgba(20,10,28,0.98) 0%, rgba(8,8,14,0.98) 100%)', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}>
 
       {/* Stats bar — row 1 */}
-      <div className="wstats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="wstats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr', borderBottom: '1px solid var(--t-border)' }}>
         <div className="wstats-cell" style={{ padding: '16px 14px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}>
           <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase' as const, textAlign: 'center' as const }}>Trenutna kilaza</div>
           <div style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', fontWeight: 800, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'center' as const }}>
             {last}<span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.22)', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400 }}>kg</span>
           </div>
         </div>
-        <div className="wstats-div" style={{ background: 'rgba(255,255,255,0.05)' }} />
+        <div className="wstats-div" style={{ background: 'var(--t-s3)' }} />
         <div className="wstats-cell" style={{ padding: '16px 14px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}>
           <div className="wstats-label" style={{ fontSize: '0.38rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase' as const, textAlign: 'center' as const }}>Broj unosa</div>
           <div style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', fontWeight: 800, lineHeight: 1, color: '#f472b6', textAlign: 'center' as const }}>
@@ -1831,7 +1831,7 @@ function WeightChart({ pts, toSvgX, toSvgY, minW, maxW, baselineKg }: {
       </div>
 
       {/* Stats bar — row 2: Promjena */}
-      <div style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', background: diff === 0 ? 'transparent' : isDown ? 'rgba(74,222,128,0.04)' : 'rgba(248,113,113,0.04)' }}>
+      <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--t-border)', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', background: diff === 0 ? 'transparent' : isDown ? 'rgba(74,222,128,0.04)' : 'rgba(248,113,113,0.04)' }}>
         <div style={{ fontSize: '0.38rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '5px', textTransform: 'uppercase' as const }}>Promjena</div>
         <div style={{ fontFamily: 'var(--fd)', fontSize: '1.5rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em', color: diff === 0 ? 'rgba(255,255,255,0.25)' : isDown ? '#4ade80' : '#f87171' }}>
           {diff > 0 ? '+' : ''}{diff}<span style={{ fontSize: '0.65rem', marginLeft: '3px', fontFamily: 'var(--fm)', fontWeight: 400, opacity: 0.6 }}>kg</span>
@@ -1930,7 +1930,7 @@ function WeightChart({ pts, toSvgX, toSvgY, minW, maxW, baselineKg }: {
 
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 16px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', marginTop: '6px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 16px 16px', borderTop: '1px solid var(--t-border)', marginTop: '6px' }}>
         <span style={{ fontSize: '0.44rem', color: 'rgba(255,255,255,0.15)', fontFamily: 'var(--fm)', letterSpacing: '0.08em' }}>
           {new Date(pts[0].date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: 'numeric' })}
         </span>
@@ -1945,7 +1945,7 @@ function WeightChart({ pts, toSvgX, toSvgY, minW, maxW, baselineKg }: {
         @keyframes wDotIn   { from { opacity:0; transform:scale(0.5) } to { opacity:1; transform:scale(1) } }
         @media (max-width: 420px) {
           .wstats-grid { grid-template-columns: 1fr 1px 1fr !important; grid-template-rows: auto auto; }
-          .wstats-grid > .wstats-cell:nth-child(5) { grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,0.06); }
+          .wstats-grid > .wstats-cell:nth-child(5) { grid-column: 1 / -1; border-top: 1px solid var(--t-border); }
           .wstats-grid > .wstats-div:nth-child(4) { display: none; }
           .wstats-label { font-size: 0.42rem !important; letter-spacing: 0.1em !important; }
         }
@@ -2032,14 +2032,14 @@ function WeightTracker({ userId }: { userId: string }) {
       {/* Confirm dialog */}
       {confirmId && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
-          <div style={{ background: '#13131e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', padding: '28px 28px 24px', maxWidth: '340px', width: '90%', boxShadow: '0 24px 60px rgba(0,0,0,0.7)' }}>
+          <div style={{ background: '#13131e', border: '1px solid var(--t-border)', borderRadius: '14px', padding: '28px 28px 24px', maxWidth: '340px', width: '90%', boxShadow: '0 24px 60px rgba(0,0,0,0.7)' }}>
             <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f0f0f5', fontFamily: 'var(--fm)', marginBottom: '10px' }}>Promijeni baznu kilažu?</div>
             <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', lineHeight: 1.6, marginBottom: '22px' }}>
               Promjena se računata od ovog unosa. Stari referentni unos briše se.
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button onClick={() => setConfirmId(null)}
-                style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '9px', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.74rem', fontFamily: 'var(--fm)', fontWeight: 600 }}>
+                style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--t-border)', borderRadius: '9px', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.74rem', fontFamily: 'var(--fm)', fontWeight: 600 }}>
                 Odustani
               </button>
               <button onClick={confirmSetBaseline}
@@ -2073,12 +2073,12 @@ function WeightTracker({ userId }: { userId: string }) {
             {entries.map(e => {
               const isBase = !!e.is_weight_baseline
               return (
-                <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: isBase ? `${COLOR}0a` : 'rgba(255,255,255,0.02)', border: `1px solid ${isBase ? COLOR + '33' : 'rgba(255,255,255,0.06)'}`, borderRadius: '9px', transition: 'all 0.2s' }}>
+                <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: isBase ? `${COLOR}0a` : 'var(--t-s2)', border: `1px solid ${isBase ? COLOR + '33' : 'var(--t-border)'}`, borderRadius: '9px', transition: 'all 0.2s' }}>
                   {/* Baseline toggle */}
                   <button
                     title={isBase ? 'Ovo je referentna kilaza' : 'Postavi kao referentnu kilazu'}
                     onClick={() => !isBase && setConfirmId(e.id)}
-                    style={{ width: '22px', height: '22px', borderRadius: '50%', border: `1.5px solid ${isBase ? COLOR : 'rgba(255,255,255,0.18)'}`, background: isBase ? COLOR : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isBase ? 'default' : 'pointer', flexShrink: 0, transition: 'all 0.2s' }}
+                    style={{ width: '22px', height: '22px', borderRadius: '50%', border: `1.5px solid ${isBase ? COLOR : 'var(--t-border-hi)'}`, background: isBase ? COLOR : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isBase ? 'default' : 'pointer', flexShrink: 0, transition: 'all 0.2s' }}
                     onMouseEnter={e2 => { if (!isBase) e2.currentTarget.style.borderColor = COLOR }}
                     onMouseLeave={e2 => { if (!isBase) e2.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)' }}>
                     {isBase && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#000" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
@@ -2188,7 +2188,7 @@ function NutritionTracker({ userId }: { userId: string }) {
   return (
     <div>
       {/* Tab switcher */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', padding: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.07)', width: 'fit-content' }}>
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', padding: '3px', background: 'var(--t-s3)', borderRadius: '10px', border: '1px solid var(--t-border)', width: 'fit-content' }}>
         {(['settings','plan','log'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             style={{ padding: '7px 18px', background: tab === t ? `${COLOR}18` : 'transparent', border: tab === t ? `1px solid ${COLOR}40` : '1px solid transparent', borderRadius: '8px', cursor: 'pointer', fontSize: '0.72rem', fontFamily: 'var(--fm)', fontWeight: tab === t ? 700 : 400, color: tab === t ? COLOR : 'rgba(255,255,255,0.4)', transition: 'all 0.2s' }}>
@@ -2213,7 +2213,7 @@ function NutritionTracker({ userId }: { userId: string }) {
             <div style={{ display: 'flex', gap: '8px' }}>
               {(['male','female'] as const).map(s => (
                 <button key={s} onClick={() => setSettings(prev => ({ ...prev, sex: s }))}
-                  style={{ padding: '8px 20px', background: settings.sex === s ? `${COLOR}18` : 'rgba(255,255,255,0.03)', border: `1.5px solid ${settings.sex === s ? COLOR+'55' : 'rgba(255,255,255,0.1)'}`, borderRadius: '9px', cursor: 'pointer', color: settings.sex === s ? COLOR : 'rgba(255,255,255,0.5)', fontSize: '0.8rem', fontFamily: 'var(--fm)', fontWeight: settings.sex === s ? 700 : 400, transition: 'all 0.2s' }}>
+                  style={{ padding: '8px 20px', background: settings.sex === s ? `${COLOR}18` : 'var(--t-s2)', border: `1.5px solid ${settings.sex === s ? COLOR+'55' : 'var(--t-border)'}`, borderRadius: '9px', cursor: 'pointer', color: settings.sex === s ? COLOR : 'rgba(255,255,255,0.5)', fontSize: '0.8rem', fontFamily: 'var(--fm)', fontWeight: settings.sex === s ? 700 : 400, transition: 'all 0.2s' }}>
                   {s === 'male' ? 'Muški' : 'Ženski'}
                 </button>
               ))}
@@ -2226,7 +2226,7 @@ function NutritionTracker({ userId }: { userId: string }) {
             <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '6px' }}>
               {ACTIVITY_LEVELS.map(a => (
                 <button key={a.id} onClick={() => setSettings(prev => ({ ...prev, activity_level: a.id }))}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: settings.activity_level === a.id ? `${COLOR}10` : 'rgba(255,255,255,0.02)', border: `1.5px solid ${settings.activity_level === a.id ? COLOR+'40' : 'rgba(255,255,255,0.07)'}`, borderRadius: '9px', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left' as const }}>
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: settings.activity_level === a.id ? `${COLOR}10` : 'var(--t-s2)', border: `1.5px solid ${settings.activity_level === a.id ? COLOR+'40' : 'var(--t-border)'}`, borderRadius: '9px', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left' as const }}>
                   <span style={{ fontSize: '0.82rem', color: settings.activity_level === a.id ? COLOR : 'rgba(255,255,255,0.6)', fontFamily: 'var(--fm)', fontWeight: settings.activity_level === a.id ? 600 : 400 }}>{a.label}</span>
                   <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>×{a.mult}</span>
                 </button>
@@ -2292,7 +2292,7 @@ function NutritionTracker({ userId }: { userId: string }) {
               )
             })}
           </div>
-          <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', lineHeight: 1.7, padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', lineHeight: 1.7, padding: '12px 16px', background: 'var(--t-s2)', borderRadius: '8px', border: '1px solid var(--t-border)' }}>
             Protein: 2.2g/kg • Masti: 25% kalorija • Ugljikohidrati: ostatak kalorija<br/>
             Preporuke koraka su okvirne — prilagodi prema uputama trenera.
           </div>
@@ -2310,7 +2310,7 @@ function NutritionTracker({ userId }: { userId: string }) {
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const }}>
                 {DAY_TYPES.map(dt => (
                   <button key={dt.id} onClick={() => setLogDraft(d => ({ ...d, day_type: dt.id }))}
-                    style={{ padding: '7px 12px', background: logDraft.day_type === dt.id ? `${dt.color}18` : 'rgba(255,255,255,0.03)', border: `1.5px solid ${logDraft.day_type === dt.id ? dt.color+'50' : 'rgba(255,255,255,0.08)'}`, borderRadius: '8px', cursor: 'pointer', color: logDraft.day_type === dt.id ? dt.color : 'rgba(255,255,255,0.4)', fontSize: '0.7rem', fontFamily: 'var(--fm)', fontWeight: logDraft.day_type === dt.id ? 700 : 400, transition: 'all 0.15s' }}>
+                    style={{ padding: '7px 12px', background: logDraft.day_type === dt.id ? `${dt.color}18` : 'var(--t-s2)', border: `1.5px solid ${logDraft.day_type === dt.id ? dt.color+'50' : 'var(--t-border)'}`, borderRadius: '8px', cursor: 'pointer', color: logDraft.day_type === dt.id ? dt.color : 'rgba(255,255,255,0.4)', fontSize: '0.7rem', fontFamily: 'var(--fm)', fontWeight: logDraft.day_type === dt.id ? 700 : 400, transition: 'all 0.15s' }}>
                     {dt.label}
                   </button>
                 ))}
@@ -2338,7 +2338,7 @@ function NutritionTracker({ userId }: { userId: string }) {
           <div>
             <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', fontFamily: 'var(--fm)', marginBottom: '6px', fontWeight: 600 }}>BILJEŠKA</div>
             <textarea value={logDraft.notes ?? ''} onChange={e => setLogDraft(d => ({ ...d, notes: e.target.value || null }))} rows={2} placeholder="Kako si se osjećao/la, što si jeo/la..."
-              style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.1)', color: '#f0f0f5', padding: '10px 14px', borderRadius: '10px', outline: 'none', resize: 'vertical', fontFamily: 'var(--fm)', fontSize: '0.85rem', lineHeight: 1.6, boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
+              style={{ width: '100%', background: 'var(--t-s2)', border: '1.5px solid var(--t-border)', color: '#f0f0f5', padding: '10px 14px', borderRadius: '10px', outline: 'none', resize: 'vertical', fontFamily: 'var(--fm)', fontSize: '0.85rem', lineHeight: 1.6, boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
               onFocus={e => e.target.style.borderColor = COLOR}
               onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
           </div>
@@ -2356,7 +2356,7 @@ function NutritionTracker({ userId }: { userId: string }) {
                 {logs.map(l => {
                   const dt = DAY_TYPES.find(d => d.id === l.day_type)
                   return (
-                    <div key={l.id} style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' as const }}>
+                    <div key={l.id} style={{ padding: '12px 16px', background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' as const }}>
                       <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--fm)', minWidth: '80px' }}>{l.date}</div>
                       {dt && <span style={{ fontSize: '0.58rem', fontWeight: 700, color: dt.color, background: `${dt.color}14`, padding: '2px 8px', borderRadius: '5px', border: `1px solid ${dt.color}25`, fontFamily: 'var(--fm)' }}>{dt.label}</span>}
                       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' as const, flex: 1 }}>
@@ -2495,7 +2495,7 @@ function MeetChecklist({ userId }: { userId?: string }) {
       </div>
 
       {/* Progress bar */}
-      <div style={{ height: '4px', background: 'rgba(255,255,255,0.07)', borderRadius: '2px', overflow: 'hidden' }}>
+      <div style={{ height: '4px', background: 'var(--t-s3)', borderRadius: '2px', overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${totalItems > 0 ? (checkedCount / totalItems) * 100 : 0}%`, background: 'linear-gradient(90deg, #34d399, #4ade80)', borderRadius: '2px', transition: 'width 0.4s cubic-bezier(0.16,1,0.3,1)' }} />
       </div>
 
@@ -2528,10 +2528,10 @@ function MeetChecklist({ userId }: { userId?: string }) {
                   return (
                     <div key={key}
                       onClick={() => toggle(key)}
-                      style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '10px 16px', cursor: 'pointer', transition: 'background 0.1s', background: isDone ? 'rgba(74,222,128,0.04)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                      style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '10px 16px', cursor: 'pointer', transition: 'background 0.1s', background: isDone ? 'rgba(74,222,128,0.04)' : 'transparent', borderBottom: '1px solid var(--t-border)' }}
                       onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = isDone ? 'rgba(74,222,128,0.07)' : 'rgba(255,255,255,0.03)'}
                       onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = isDone ? 'rgba(74,222,128,0.04)' : 'transparent'}>
-                      <div style={{ width: '18px', height: '18px', borderRadius: '5px', border: `1.5px solid ${isDone ? '#4ade80' : 'rgba(255,255,255,0.18)'}`, background: isDone ? 'rgba(74,222,128,0.15)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px', transition: 'all 0.15s' }}>
+                      <div style={{ width: '18px', height: '18px', borderRadius: '5px', border: `1.5px solid ${isDone ? '#4ade80' : 'var(--t-border-hi)'}`, background: isDone ? 'rgba(74,222,128,0.15)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px', transition: 'all 0.15s' }}>
                         {isDone && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="#4ade80" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>

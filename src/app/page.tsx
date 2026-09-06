@@ -246,7 +246,7 @@ export default function Landing() {
 
             {/* Big headline */}
             <h1 style={{ fontFamily: 'var(--fm)', fontSize: 'clamp(4.2rem, 10vw, 9.5rem)', lineHeight: 0.88, marginBottom: '24px', marginTop: 0, letterSpacing: '-0.02em' }}>
-              <span className="hero-outline" style={{ display: 'block' }}>LWL UP</span>
+              <span className="hero-outline" style={{ display: 'block' }}>{'LWL UP '}</span>
               <span style={{ display: 'block', color: '#fff' }}>YOUR GAME.</span>
             </h1>
 

@@ -253,7 +253,7 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
                     return (
                       <td key={day.key} style={{ padding: '3px', verticalAlign: 'stretch' as const }}>
                         <div className="pa-cell-wrap" style={{
-                          background: empty ? 'rgba(255,255,255,0.02)' : `linear-gradient(155deg, ${m.bg}, rgba(0,0,0,0.18))`,
+                          background: empty ? 'var(--t-s2)' : `linear-gradient(155deg, ${m.bg}, rgba(0,0,0,0.18))`,
                           border: empty ? '1px dashed var(--t-border)' : `1px solid ${m.border}`,
                           boxShadow: empty ? 'none' : `0 6px 18px -10px ${m.color}, inset 0 1px 0 rgba(255,255,255,0.05)`,
                           borderRadius: '12px',
@@ -439,7 +439,7 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
                       <td key={day.key} style={{ padding: '3px', verticalAlign: 'stretch' as const }}>
                         <div className="pv-cell" style={{
                           minWidth: '34px', minHeight: '54px', height: '100%',
-                          background: empty ? 'rgba(255,255,255,0.018)' : `linear-gradient(155deg, ${m.bg}, rgba(0,0,0,0.18))`,
+                          background: empty ? 'var(--t-s2)' : `linear-gradient(155deg, ${m.bg}, rgba(0,0,0,0.18))`,
                           border: empty ? '1px dashed var(--t-border)' : `1px solid ${m.border}`,
                           boxShadow: empty ? 'none' : `0 6px 18px -10px ${m.color}, inset 0 1px 0 rgba(255,255,255,0.04)`,
                           borderRadius: '11px', overflow: 'hidden',

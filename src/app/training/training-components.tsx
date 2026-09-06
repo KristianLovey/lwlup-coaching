@@ -227,15 +227,15 @@ function _TrainingNavDeprecated({ athleteName, isAdmin, onLogout, avatarIcon }: 
         @keyframes pingPulse { 0%,100% { transform:scale(1); opacity:0.5 } 50% { transform:scale(2.4); opacity:0 } }
         .nav-menu-item {
           width:100%; display:flex; align-items:center; gap:10px;
-          padding:8px 12px; background:transparent; border:none;
+          padding:8px 12px; background: transparent; border: none;
           color:rgba(255,255,255,0.7); font-size:0.82rem; font-family:var(--fm);
           font-weight:450; cursor:pointer; border-radius:9px;
           transition:background 0.15s, color 0.15s; text-align:left; letter-spacing:0.01em;
         }
-        .nav-menu-item:hover { background:rgba(255,255,255,0.07); color:#fff; }
-        .nav-menu-admin:hover { background:rgba(245,158,11,0.08) !important; }
+        .nav-menu-item:hover { background: var(--t-s3); color:#fff; }
+        .nav-menu-admin:hover { background: rgba(245,158,11,0.08) !important; }
         .nav-menu-logout { color:rgba(255,80,80,0.7) !important; }
-        .nav-menu-logout:hover { background:rgba(255,60,60,0.08) !important; color:#ff6060 !important; }
+        .nav-menu-logout:hover { background: rgba(255,60,60,0.08) !important; color:#ff6060 !important; }
         .tnav-pill { display:flex; align-items:center; }
         @media (max-width:640px) { .tnav-status { display:none !important; } }
         @media (max-width:520px) { .tnav-name   { display:none !important; } }
@@ -456,11 +456,11 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
       <style>{`
         @keyframes appnavDrop { from { opacity:0; transform:translateY(-6px) scale(0.98) } to { opacity:1; transform:none } }
         @keyframes appnavPing { 0%,100% { transform:scale(1); opacity:0.5 } 50% { transform:scale(2.4); opacity:0 } }
-        .appnav-item { width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:transparent; border:none; color:rgba(255,255,255,0.7); font-size:0.82rem; font-family:var(--fm); font-weight:450; cursor:pointer; border-radius:9px; transition:background 0.15s, color 0.15s; text-align:left; letter-spacing:0.01em; }
-        .appnav-item:hover { background:rgba(255,255,255,0.07); color:#fff; }
-        .appnav-admin:hover { background:rgba(245,158,11,0.08) !important; }
+        .appnav-item { width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background: transparent; border: none; color:rgba(255,255,255,0.7); font-size:0.82rem; font-family:var(--fm); font-weight:450; cursor:pointer; border-radius:9px; transition:background 0.15s, color 0.15s; text-align:left; letter-spacing:0.01em; }
+        .appnav-item:hover { background: var(--t-s3); color:#fff; }
+        .appnav-admin:hover { background: rgba(245,158,11,0.08) !important; }
         .appnav-logout { color:rgba(255,80,80,0.7) !important; }
-        .appnav-logout:hover { background:rgba(255,60,60,0.08) !important; color:#ff6060 !important; }
+        .appnav-logout:hover { background: rgba(255,60,60,0.08) !important; color:#ff6060 !important; }
         @media (max-width:640px) { .appnav-status { display:none !important; } }
         @media (max-width:520px) { .appnav-name   { display:none !important; } }
       `}</style>
@@ -536,9 +536,9 @@ export function ExercisePicker({ exercises, onSelect, onClose }: {
         </div>
         <style>{`
           .ep-cats::-webkit-scrollbar { height: 5px; }
-          .ep-cats::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
-          .ep-cat-btn { white-space: nowrap; flex-shrink: 0; padding: 6px 13px; font-size: 0.62rem; letter-spacing: 0.1em; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: var(--fm), ui-monospace, monospace; background: transparent; color: #888; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; }
-          .ep-cat-btn:hover { border-color: rgba(255,255,255,0.3); color: #ddd; }
+          .ep-cats::-webkit-scrollbar-thumb { background: var(--t-hi); border-radius: 3px; }
+          .ep-cat-btn { white-space: nowrap; flex-shrink: 0; padding: 6px 13px; font-size: 0.62rem; letter-spacing: 0.1em; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: var(--fm), ui-monospace, monospace; background: transparent; color: #888; border: 1px solid var(--t-border); border-radius: 6px; }
+          .ep-cat-btn:hover { border-color: var(--t-border-hi); color: #ddd; }
           .ep-cat-btn-active { background: #e6e6e6; color: #000; border-color: #e6e6e6; }
         `}</style>
         {/* List */}
@@ -1119,13 +1119,13 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   // so a media query can tighten it on mobile — inline styles would override it.
   const gridClass = isAdmin ? 'slg-admin' : 'slg-lifter'
   const BLUE = '#6b8cff'
-  const cellStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)' }
-  const inputStyle: React.CSSProperties = { width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#f0f0f0', padding: '5px 6px', fontSize: '1rem', outline: 'none', fontFamily: 'var(--fm)', fontWeight: 700, textAlign: 'center', boxSizing: 'border-box' }
+  const cellStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--t-border)' }
+  const inputStyle: React.CSSProperties = { width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid var(--t-border-hi)', color: '#f0f0f0', padding: '5px 6px', fontSize: '1rem', outline: 'none', fontFamily: 'var(--fm)', fontWeight: 700, textAlign: 'center', boxSizing: 'border-box' }
 
   return (
     <div>
       {/* Single header row */}
-      <div className={`set-log-header ${gridClass}`} style={{ display: 'grid', background: 'rgba(0,0,0,0.25)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+      <div className={`set-log-header ${gridClass}`} style={{ display: 'grid', background: 'rgba(0,0,0,0.25)', borderBottom: '1px solid var(--t-border)' }}>
         <div style={{ ...cellStyle, justifyContent: 'flex-start', padding: '6px 10px' }}>
           <span className="slh-lbl" style={{ color: '#666', letterSpacing: '0.18em', fontWeight: 700, fontFamily: 'var(--fm)' }}>SET</span>
         </div>
@@ -1144,7 +1144,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
             RPE{targetRpe ? ` · ${targetRpe}` : ''}
           </span>
         </div>
-        <div style={{ ...cellStyle, padding: '6px 0', borderRight: isAdmin ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
+        <div style={{ ...cellStyle, padding: '6px 0', borderRight: isAdmin ? '1px solid var(--t-border)' : 'none' }}>
           <span className="slh-lbl" style={{ color: 'rgba(255,255,255,0.35)', letterSpacing: '0.14em', fontWeight: 700, fontFamily: 'var(--fm)' }}>{isAdmin ? 'TOP' : '○'}</span>
         </div>
         {isAdmin && (
@@ -1171,11 +1171,11 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
         return (
           <div key={i} style={{ position: 'relative', overflow: 'hidden' }}>
             {/* Row content — blurred when locked */}
-            <div className={`set-log-row ${gridClass}`} style={{ display: 'grid', alignItems: 'stretch', background: log.completed ? 'rgba(34,197,94,0.07)' : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.013)', borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.15s, filter 0.35s', minHeight: '52px', filter: isLocked ? 'blur(5px)' : 'none', pointerEvents: isLocked ? 'none' : 'auto', userSelect: isLocked ? 'none' : 'auto' }}>
+            <div className={`set-log-row ${gridClass}`} style={{ display: 'grid', alignItems: 'stretch', background: log.completed ? 'rgba(34,197,94,0.07)' : i % 2 === 0 ? 'transparent' : 'var(--t-s2)', borderBottom: '1px solid var(--t-border)', transition: 'background 0.15s, filter 0.35s', minHeight: '52px', filter: isLocked ? 'blur(5px)' : 'none', pointerEvents: isLocked ? 'none' : 'auto', userSelect: isLocked ? 'none' : 'auto' }}>
 
               {/* Set label */}
               <div style={{ ...cellStyle, justifyContent: 'center', padding: '12px 8px', gap: '6px', flexDirection: 'column' as const }}>
-                <div style={{ width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0, background: log.completed ? '#22c55e' : 'rgba(255,255,255,0.15)', boxShadow: log.completed ? '0 0 5px rgba(34,197,94,0.5)' : 'none', transition: 'all 0.2s' }} />
+                <div style={{ width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0, background: log.completed ? '#22c55e' : 'var(--t-border-hi)', boxShadow: log.completed ? '0 0 5px rgba(34,197,94,0.5)' : 'none', transition: 'all 0.2s' }} />
                 <span style={{ fontSize: '0.68rem', fontWeight: 900, color: log.completed ? '#22c55e' : 'rgba(255,255,255,0.6)', fontFamily: 'var(--fd)', letterSpacing: '0.06em' }}>S{log.set_number}</span>
                 {!isAdmin && log.is_top_set && (
                   <span style={{ fontSize: '0.5rem', color: '#facc15', fontFamily: 'var(--fm)', lineHeight: 1 }} title="Top set">★</span>
@@ -1183,7 +1183,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
               </div>
 
               {/* KG — backoff sets show a computed (read-only) weight */}
-              <div style={{ ...cellStyle, padding: '10px 12px', background: isBackoff ? 'rgba(107,140,255,0.06)' : 'rgba(255,255,255,0.015)' }}>
+              <div style={{ ...cellStyle, padding: '10px 12px', background: isBackoff ? 'rgba(107,140,255,0.06)' : 'var(--t-s2)' }}>
                 {isBackoff ? (
                   <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: '2px', width: '100%' }} title={`${row.pct}% od seta ${row.ref + 1}`}>
                     <span style={{ fontSize: '0.98rem', fontWeight: 800, color: compVal != null ? BLUE : '#555', fontFamily: 'var(--fd)', lineHeight: 1.05 }}>
@@ -1253,7 +1253,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                     className="set-done-btn"
                     style={{ background: 'transparent', border: 'none', cursor: canComplete ? 'not-allowed' : 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'manipulation' }}
                     title={log.completed ? 'Poništi' : canComplete ? 'Unesi kg i reps' : 'Odrađeno'}>
-                    <div style={{ width: '26px', height: '26px', minWidth: '26px', minHeight: '26px', borderRadius: '50%', flexShrink: 0, border: log.completed ? 'none' : `1.5px solid ${canComplete ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.28)'}`, background: log.completed ? '#22c55e' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.18s cubic-bezier(0.16,1,0.3,1)', boxShadow: log.completed ? '0 0 12px rgba(34,197,94,0.45)' : 'none', opacity: canComplete ? 0.3 : 1 }}>
+                    <div style={{ width: '26px', height: '26px', minWidth: '26px', minHeight: '26px', borderRadius: '50%', flexShrink: 0, border: log.completed ? 'none' : `1.5px solid ${canComplete ? 'var(--t-border)' : 'var(--t-border-hi)'}`, background: log.completed ? '#22c55e' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.18s cubic-bezier(0.16,1,0.3,1)', boxShadow: log.completed ? '0 0 12px rgba(34,197,94,0.45)' : 'none', opacity: canComplete ? 0.3 : 1 }}>
                       {log.completed && <Check size={13} color="#fff" strokeWidth={3} />}
                     </div>
                   </button>
@@ -1269,7 +1269,7 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                     <button onClick={() => toggleBackoff(log.set_number)}
                       disabled={!!log.is_top_set}
                       title={log.is_top_set ? 'Top set ne može biti backoff' : (isBackoff ? 'Makni backoff' : 'Backoff od ranijeg seta')}
-                      style={{ background: isBackoff ? 'rgba(107,140,255,0.18)' : 'transparent', border: `1px solid ${isBackoff ? 'rgba(107,140,255,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '6px', cursor: log.is_top_set ? 'not-allowed' : 'pointer', color: isBackoff ? BLUE : '#3a3a3a', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: log.is_top_set ? 0.2 : 1 }}>
+                      style={{ background: isBackoff ? 'rgba(107,140,255,0.18)' : 'transparent', border: `1px solid ${isBackoff ? 'rgba(107,140,255,0.5)' : 'var(--t-border)'}`, borderRadius: '6px', cursor: log.is_top_set ? 'not-allowed' : 'pointer', color: isBackoff ? BLUE : '#3a3a3a', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: log.is_top_set ? 0.2 : 1 }}>
                       <TrendingDown size={13} strokeWidth={2.5} />
                     </button>
                   )}
@@ -1279,11 +1279,11 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
 
             {/* Admin: inline backoff config under a backoff set */}
             {isBackoff && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 16px 10px 50px', background: 'linear-gradient(90deg, rgba(107,140,255,0.08), rgba(107,140,255,0.015))', borderBottom: '1px solid rgba(255,255,255,0.05)', borderLeft: '2px solid rgba(107,140,255,0.55)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 16px 10px 50px', background: 'linear-gradient(90deg, rgba(107,140,255,0.08), rgba(107,140,255,0.015))', borderBottom: '1px solid var(--t-border)', borderLeft: '2px solid rgba(107,140,255,0.55)' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.42rem', color: BLUE, letterSpacing: '0.18em', fontWeight: 800, fontFamily: 'var(--fm)', flexShrink: 0 }}>
                   <TrendingDown size={9} strokeWidth={2.5} /> BACKOFF
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(107,140,255,0.35)', borderRadius: '6px', padding: '3px 8px 3px 10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--t-s3)', border: '1px solid rgba(107,140,255,0.35)', borderRadius: '6px', padding: '3px 8px 3px 10px' }}>
                   <input type="number" min={1} max={300} step={0.5} value={row.pct || ''}
                     onChange={e => updatePlanRow(i, 'pct', Number(e.target.value) || 0)}
                     style={{ width: '56px', background: 'transparent', border: 'none', color: BLUE, fontFamily: 'var(--fd)', fontSize: '0.95rem', fontWeight: 800, padding: 0, outline: 'none', textAlign: 'right' as const }} />
@@ -1293,9 +1293,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <select value={row.ref}
                     onChange={e => updatePlanRow(i, 'ref', Number(e.target.value))}
-                    style={{ appearance: 'none' as const, WebkitAppearance: 'none' as const, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'rgba(255,255,255,0.8)', fontFamily: 'var(--fm)', fontSize: '0.58rem', fontWeight: 700, padding: '5px 20px 5px 9px', outline: 'none', cursor: 'pointer' }}>
+                    style={{ appearance: 'none' as const, WebkitAppearance: 'none' as const, background: 'var(--t-s3)', border: '1px solid var(--t-border-hi)', borderRadius: '6px', color: 'rgba(255,255,255,0.8)', fontFamily: 'var(--fm)', fontSize: '0.58rem', fontWeight: 700, padding: '5px 20px 5px 9px', outline: 'none', cursor: 'pointer' }}>
                     {logs.map((_, ri) => ri).filter(ri => ri !== i).map(ri => (
-                      <option key={ri} value={ri} style={{ background: '#0d0d0d' }}>Set {ri + 1}</option>
+                      <option key={ri} value={ri} style={{ background: 'var(--t-s1)' }}>Set {ri + 1}</option>
                     ))}
                   </select>
                   <ChevronDown size={11} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', right: '6px', pointerEvents: 'none' }} />
@@ -1374,7 +1374,7 @@ function AdminPlanCell({ value, placeholder, type, color, onSave }: {
       onChange={e => setVal(isNum ? e.target.value.replace(',', '.') : e.target.value)}
       onBlur={commit}
       onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
-      style={{ width: '52px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${color}66`, borderRadius: '5px', color, padding: '3px 6px', fontSize: '1rem', fontWeight: 800, outline: 'none', fontFamily: 'var(--fm)', textAlign: 'center', boxSizing: 'border-box' }}
+      style={{ width: '52px', background: 'var(--t-s3)', border: `1px solid ${color}66`, borderRadius: '5px', color, padding: '3px 6px', fontSize: '1rem', fontWeight: 800, outline: 'none', fontFamily: 'var(--fm)', textAlign: 'center', boxSizing: 'border-box' }}
     />
   )
   return (
@@ -1425,7 +1425,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
   const rmButton = (
     <div style={{ position: 'relative', flexShrink: 0 }}>
       <button onClick={toggleRm} title="Procijenjeni 1RM po top setovima"
-        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: rmOpen ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${rmOpen ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '5px', color: rmOpen ? '#4ade80' : '#777', cursor: 'pointer', padding: '3px 7px', fontSize: '0.5rem', letterSpacing: '0.1em', fontWeight: 800, fontFamily: 'var(--fm)', transition: 'all 0.15s' }}>
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: rmOpen ? 'rgba(34,197,94,0.12)' : 'var(--t-s3)', border: `1px solid ${rmOpen ? 'rgba(34,197,94,0.4)' : 'var(--t-border)'}`, borderRadius: '5px', color: rmOpen ? '#4ade80' : '#777', cursor: 'pointer', padding: '3px 7px', fontSize: '0.5rem', letterSpacing: '0.1em', fontWeight: 800, fontFamily: 'var(--fm)', transition: 'all 0.15s' }}>
         1RM{rmOpen && rmBest != null && <span style={{ fontFamily: 'var(--fd)', fontSize: '0.72rem', color: '#4ade80' }}>{rmBest}</span>}
       </button>
       {rmOpen && (
@@ -1511,7 +1511,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
       {/* ── Main row ── */}
       {isAdmin ? (
         /* Admin: full-width card layout */
-        <div className="ex-row-main" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="ex-row-main" style={{ borderBottom: '1px solid var(--t-border)' }}>
           {/* Top bar: name + action buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 14px 8px', minWidth: 0 }}>
             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="2.5" style={{ flexShrink: 0 }}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -1523,13 +1523,13 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
             {/* ⓘ history */}
             <button onClick={toggleHistory}
               title="Usporedi s prošlim tjednom"
-              style={{ background: showHistory ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)', border: `1px solid ${showHistory ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showHistory ? 'rgba(255,255,255,0.85)' : '#555', fontSize: '0.58rem', fontWeight: 800, flexShrink: 0, transition: 'all 0.15s' }}>
+              style={{ background: showHistory ? 'var(--t-hi)' : 'var(--t-s3)', border: `1px solid ${showHistory ? 'var(--t-border-hi)' : 'var(--t-border)'}`, borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showHistory ? 'rgba(255,255,255,0.85)' : '#555', fontSize: '0.58rem', fontWeight: 800, flexShrink: 0, transition: 'all 0.15s' }}>
               i
             </button>
             {rmButton}
             {/* Note/expand */}
             <button onClick={e => { e.stopPropagation(); setExpanded(!expanded) }}
-              style={{ background: hasNote ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${hasNote ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '4px', color: hasNote ? '#f59e0b' : '#555', fontSize: '0.52rem', fontWeight: 800, padding: '3px 7px', cursor: 'pointer', fontFamily: 'var(--fm)', flexShrink: 0, transition: 'all 0.15s' }}>
+              style={{ background: hasNote ? 'rgba(245,158,11,0.12)' : 'var(--t-s3)', border: `1px solid ${hasNote ? 'rgba(245,158,11,0.3)' : 'var(--t-border)'}`, borderRadius: '4px', color: hasNote ? '#f59e0b' : '#555', fontSize: '0.52rem', fontWeight: 800, padding: '3px 7px', cursor: 'pointer', fontFamily: 'var(--fm)', flexShrink: 0, transition: 'all 0.15s' }}>
               {expanded ? '▲' : (hasNote ? '!' : '+')}
             </button>
             {/* Delete */}
@@ -1539,14 +1539,14 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
           {/* Plan row: 4 tappable fields in a grid */}
           <div
             onClick={e => e.stopPropagation()}
-            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', borderTop: '1px solid rgba(255,255,255,0.05)', marginBottom: '0' }}>
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', borderTop: '1px solid var(--t-border)', marginBottom: '0' }}>
             {([
               { label: 'SETOVI', value: we.planned_sets,                 field: 'planned_sets'      as keyof WorkoutExercise, accent: '#94a3b8', isNum: true  },
               { label: 'REPS',   value: we.planned_reps,                 field: 'planned_reps'      as keyof WorkoutExercise, accent: '#e2e8f0', isNum: false },
               { label: 'KG',     value: we.planned_weight_kg,            field: 'planned_weight_kg' as keyof WorkoutExercise, accent: 'rgba(255,255,255,0.75)', isNum: true  },
               { label: 'RPE',    value: we.target_rpe ?? we.planned_rpe, field: 'target_rpe'        as keyof WorkoutExercise, accent: '#facc15', isNum: true  },
             ] as Array<{ label: string; value: string | number | null; field: keyof WorkoutExercise; accent: string; isNum: boolean }>).map((f, fi) => (
-              <div key={String(f.field)} style={{ padding: '10px 8px 8px', borderRight: fi < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center', cursor: 'text' }}>
+              <div key={String(f.field)} style={{ padding: '10px 8px 8px', borderRight: fi < 3 ? '1px solid var(--t-border)' : 'none', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center', cursor: 'text' }}>
                 <div style={{ fontSize: '0.4rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.22)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{f.label}</div>
                 <div style={{ fontSize: '1.1rem', fontWeight: 800, color: f.accent, fontFamily: 'var(--fm)' }}>
                   <AdminPlanCell value={f.value} placeholder="—" type={f.isNum ? 'number' : 'text'} color={f.accent} onSave={(v: string) => save(f.field, v, f.isNum)} />
@@ -1564,7 +1564,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
             ) : <div style={{ flex: 1 }} />}
             <button
               onClick={() => setSetsOpen(v => !v)}
-              style={{ display: 'flex', alignItems: 'center', gap: '5px', background: setsOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)', border: `1px solid ${setsOpen ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '5px', color: setsOpen ? 'rgba(255,255,255,0.8)' : '#555', cursor: 'pointer', padding: '4px 10px', fontSize: '0.56rem', letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700, flexShrink: 0, transition: 'all 0.2s' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', background: setsOpen ? 'var(--t-hi)' : 'var(--t-s3)', border: `1px solid ${setsOpen ? 'var(--t-border-hi)' : 'var(--t-border)'}`, borderRadius: '5px', color: setsOpen ? 'rgba(255,255,255,0.8)' : '#555', cursor: 'pointer', padding: '4px 10px', fontSize: '0.56rem', letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700, flexShrink: 0, transition: 'all 0.2s' }}>
               SETOVI
               <ChevronRight size={10} style={{ transform: setsOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
@@ -1584,7 +1584,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
           return (
             <div className="ex-row-main"
               onClick={() => setSetsOpen(v => !v)}
-              style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.07)', borderLeft: `3px solid ${we.completed ? '#22c55e' : catColor}`, padding: '13px 14px 13px 16px', cursor: 'pointer', background: we.completed ? 'rgba(34,197,94,0.03)' : 'transparent', transition: 'background 0.2s', minHeight: '56px' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid var(--t-border)', borderLeft: `3px solid ${we.completed ? '#22c55e' : catColor}`, padding: '13px 14px 13px 16px', cursor: 'pointer', background: we.completed ? 'rgba(34,197,94,0.03)' : 'transparent', transition: 'background 0.2s', minHeight: '56px' }}>
 
               {/* Name + plan line */}
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -1594,7 +1594,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
                   </span>
                   <button onClick={toggleHistory}
                     title="Usporedi s prošlim tjednom"
-                    style={{ background: showHistory ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)', border: `1px solid ${showHistory ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showHistory ? 'rgba(255,255,255,0.85)' : '#444', fontSize: '0.6rem', fontWeight: 800, flexShrink: 0, transition: 'all 0.15s' }}>
+                    style={{ background: showHistory ? 'var(--t-hi)' : 'var(--t-s3)', border: `1px solid ${showHistory ? 'var(--t-border-hi)' : 'var(--t-border)'}`, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showHistory ? 'rgba(255,255,255,0.85)' : '#444', fontSize: '0.6rem', fontWeight: 800, flexShrink: 0, transition: 'all 0.15s' }}>
                     i
                   </button>
                   {rmButton}
@@ -1633,7 +1633,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
                   <>
                     <div style={{ display: 'flex', gap: '3px' }}>
                       {Array.from({ length: Math.min(totalDots, 6) }).map((_, i) => (
-                        <div key={i} style={{ width: '7px', height: '7px', borderRadius: '50%', background: i < doneDots ? catColor : 'transparent', border: `1.5px solid ${i < doneDots ? catColor : 'rgba(255,255,255,0.2)'}`, boxShadow: i < doneDots ? `0 0 4px ${catColor}80` : 'none', transition: 'all 0.2s' }} />
+                        <div key={i} style={{ width: '7px', height: '7px', borderRadius: '50%', background: i < doneDots ? catColor : 'transparent', border: `1.5px solid ${i < doneDots ? catColor : 'var(--t-border-hi)'}`, boxShadow: i < doneDots ? `0 0 4px ${catColor}80` : 'none', transition: 'all 0.2s' }} />
                       ))}
                     </div>
                     <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{doneDots}/{totalDots}</span>
@@ -1650,7 +1650,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
 
       {/* ── History panel — isti dan bloka kroz tjedne (W1, W2, …) + % skok po seriji ── */}
       {showHistory && (
-        <div style={{ background: '#060606', borderBottom: '1px solid rgba(255,255,255,0.06)', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '12px 16px', animation: 'fadeUp 0.18s ease' }}>
+        <div style={{ background: 'var(--t-bg)', borderBottom: '1px solid var(--t-border)', borderTop: '1px solid var(--t-border)', padding: '12px 16px', animation: 'fadeUp 0.18s ease' }}>
           <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '8px' }}>
             POVIJEST — {we.exercise?.name}{dayName ? ` · ${dayName.toUpperCase()}` : ''}
           </div>
@@ -1663,8 +1663,8 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
               {historyWeeks.map((group, gi) => {
                 const prev = gi > 0 ? historyWeeks[gi - 1] : null
                 return (
-                  <div key={group.week} style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', overflow: 'hidden', background: 'rgba(255,255,255,0.02)' }}>
-                    <div style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.05)', fontSize: '0.5rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.65)', fontWeight: 800, fontFamily: 'var(--fm)' }}>WEEK {group.week}</div>
+                  <div key={group.week} style={{ border: '1px solid var(--t-border)', borderRadius: '8px', overflow: 'hidden', background: 'var(--t-s2)' }}>
+                    <div style={{ padding: '6px 10px', background: 'var(--t-s3)', fontSize: '0.5rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.65)', fontWeight: 800, fontFamily: 'var(--fm)' }}>WEEK {group.week}</div>
                     {group.logs.map((l: any, i: number) => {
                       // % skok naspram ISTE serije prošlog tjedna
                       const prevSet = prev?.logs.find((p: any) => p.set_number === l.set_number)
@@ -1672,7 +1672,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
                         ? ((Number(l.weight_kg) - Number(prevSet.weight_kg)) / Number(prevSet.weight_kg)) * 100
                         : null
                       return (
-                        <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: '6px', padding: '5px 10px', borderTop: '1px solid rgba(255,255,255,0.04)', fontFamily: 'var(--fm)' }}>
+                        <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: '6px', padding: '5px 10px', borderTop: '1px solid var(--t-border)', fontFamily: 'var(--fm)' }}>
                           <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', fontWeight: 800, flexShrink: 0 }}>S{l.set_number}</span>
                           <span style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>{l.weight_kg ?? '—'}</span>
                           <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>×{l.reps ?? '—'}</span>
@@ -1695,7 +1695,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
 
       {/* ── Expanded details (admin: tempo/odmor/bilješka, lifter: moja bilješka) ── */}
       {expanded && (
-        <div style={{ background: '#060606', borderBottom: '1px solid rgba(255,255,255,0.08)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ background: 'var(--t-bg)', borderBottom: '1px solid var(--t-border)', borderTop: '1px solid var(--t-border)' }}>
           {isAdmin ? (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0' }}>
               {[
@@ -1703,7 +1703,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
                 { label: 'ODMOR (sek)', key: 'planned_rest_seconds' as keyof WorkoutExercise, ph: '90', type: 'number' },
                 { label: 'BILJEŠKA TRENERA', key: 'coach_note' as keyof WorkoutExercise, ph: 'Uputa za liftera...' },
               ].map((f, fi) => (
-                <div key={String(f.key)} style={{ padding: '12px 16px', borderRight: fi < 2 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
+                <div key={String(f.key)} style={{ padding: '12px 16px', borderRight: fi < 2 ? '1px solid var(--t-border)' : 'none' }}>
                   <div style={{ fontSize: '0.46rem', color: '#666', letterSpacing: '0.2em', marginBottom: '6px' }}>{f.label}</div>
                   <EditableField value={we[f.key] as string | number | null} placeholder={f.ph} type={f.type} onSave={v => save(f.key, v)} />
                 </div>
@@ -1713,7 +1713,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
             /* Lifter: only comment — tempo/odmor shown as info */
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
               {(we.planned_tempo || we.planned_rest_seconds) && (
-                <div style={{ padding: '12px 16px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ padding: '12px 16px', borderRight: '1px solid var(--t-border)' }}>
                   <div style={{ fontSize: '0.46rem', color: '#555', letterSpacing: '0.2em', marginBottom: '5px' }}>TEMPO / ODMOR</div>
                   <div style={{ fontSize: '0.78rem', color: '#888' }}>
                     {we.planned_tempo || '—'} · {we.planned_rest_seconds ? `${we.planned_rest_seconds}s` : '—'}
@@ -1741,7 +1741,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
 
       {/* Lifter: inline comment field — vidljivo samo kad su setovi otvoreni */}
       {!isAdmin && setsOpen && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid var(--t-border)', borderBottom: '1px solid var(--t-border)' }}>
           <span style={{ fontSize: '0.42rem', color: '#444', letterSpacing: '0.22em', fontWeight: 700, fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>KOMENTAR</span>
           <div style={{ flex: 1 }}>
             <EditableField value={we.actual_note} placeholder="Dodaj komentar na vježbu..." onSave={v => save('actual_note', v)} />
@@ -1893,11 +1893,11 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
   return (
     <>
       {/* Outer card: sharp border */}
-      <div className="workout-card" style={{ border: '1px solid rgba(255,255,255,0.12)', marginBottom: '10px', overflow: 'hidden', borderRadius: '8px', boxShadow: '0 4px 28px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02)' }}>
+      <div className="workout-card" style={{ border: '1px solid var(--t-border)', marginBottom: '10px', overflow: 'hidden', borderRadius: '8px', boxShadow: '0 4px 28px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02)' }}>
 
         {/* ── Day header — sharp editorial strip ── */}
         <div
-          style={{ background: workout.completed ? '#0a1c0e' : '#111111', borderBottom: open ? '1px solid rgba(255,255,255,0.1)' : 'none', cursor: 'pointer', padding: '0' }}
+          style={{ background: workout.completed ? '#0a1c0e' : 'var(--t-s1)', borderBottom: open ? '1px solid var(--t-border)' : 'none', cursor: 'pointer', padding: '0' }}
           onClick={() => { const next = !open; setOpen(next); try { sessionStorage.setItem(ssKey, String(next)) } catch {} }}>
           {/* Top accent line / progress bar */}
           <div style={{ height: '3px', position: 'relative', background: progressPct > 0 ? 'rgba(34,197,94,0.1)' : 'rgba(239,53,53,0.18)', overflow: 'hidden' }}>
@@ -1927,7 +1927,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
             <div className="workout-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
               {/* Ex count badge */}
               {exCount > 0 && (
-                <div style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.38)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '3px 10px', borderRadius: '20px', letterSpacing: '0.12em', fontWeight: 700 }}>
+                <div style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.38)', background: 'var(--t-s3)', border: '1px solid var(--t-border)', padding: '3px 10px', borderRadius: '20px', letterSpacing: '0.12em', fontWeight: 700 }}>
                   {exCount} VJ
                 </div>
               )}
@@ -1940,7 +1940,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
                   workout.workout_exercises?.forEach(we => onUpdateExercise(we.id, { completed: newDone }))
                 }}
                   className={`done-badge${workout.completed ? ' done-badge-active' : ''}`}>
-                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: workout.completed ? 'none' : '1.5px solid rgba(255,255,255,0.25)', background: workout.completed ? '#22c55e' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', boxShadow: workout.completed ? '0 0 8px rgba(34,197,94,0.4)' : 'none' }}>
+                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: workout.completed ? 'none' : '1.5px solid var(--t-border-hi)', background: workout.completed ? '#22c55e' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', boxShadow: workout.completed ? '0 0 8px rgba(34,197,94,0.4)' : 'none' }}>
                     {workout.completed && <Check size={9} color="#fff" strokeWidth={3.5} />}
                   </div>
                   <span>{workout.completed ? 'GOTOVO' : 'ODRADITI'}</span>
@@ -1950,7 +1950,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
               {isAdmin && onMoveWorkout && !isFirst && (
                 <button onClick={e => { e.stopPropagation(); onMoveWorkout('up') }}
                   title="Pomjeri gore"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
                   <ArrowUp size={11} />
@@ -1959,7 +1959,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
               {isAdmin && onMoveWorkout && !isLast && (
                 <button onClick={e => { e.stopPropagation(); onMoveWorkout('down') }}
                   title="Pomjeri dolje"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
                   <ArrowDown size={11} />
@@ -1968,7 +1968,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
               {isAdmin && onCopyWorkout && (
                 <button onClick={e => { e.stopPropagation(); onCopyWorkout() }}
                   title="Kopiraj dan (isti tjedan)"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
                   <Copy size={11} />
@@ -1978,14 +1978,14 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
                 <div ref={weekPickerRef} style={{ position: 'relative' }}>
                   <button onClick={e => { e.stopPropagation(); setShowWeekPicker(v => !v) }}
                     title="Kopiraj dan u drugi tjedan"
-                    style={{ background: showWeekPicker ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)', border: `1px solid ${showWeekPicker ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'}`, color: showWeekPicker ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                    style={{ background: showWeekPicker ? 'var(--t-hi)' : 'var(--t-s3)', border: `1px solid ${showWeekPicker ? 'var(--t-border-hi)' : 'var(--t-border)'}`, color: showWeekPicker ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
                     onMouseEnter={e => { if (!showWeekPicker) { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' } }}
                     onMouseLeave={e => { if (!showWeekPicker) { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' } }}>
                     <CalendarDays size={11} />
                   </button>
                   {showWeekPicker && (
-                    <div style={{ position: 'absolute', right: 0, top: '110%', zIndex: 999, background: '#13131f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.7)', minWidth: '100px' }}>
-                      <div style={{ padding: '6px 10px 4px', fontSize: '0.55rem', fontFamily: 'var(--fm)', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.25)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>KOPIRAJ U</div>
+                    <div style={{ position: 'absolute', right: 0, top: '110%', zIndex: 999, background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.7)', minWidth: '100px' }}>
+                      <div style={{ padding: '6px 10px 4px', fontSize: '0.55rem', fontFamily: 'var(--fm)', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.25)', borderBottom: '1px solid var(--t-border)' }}>KOPIRAJ U</div>
                       {allWeeks.map(w => (
                         <button key={w.id}
                           onClick={e => { e.stopPropagation(); onCopyWorkoutToWeek(w.id); setShowWeekPicker(false) }}
@@ -2021,7 +2021,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
 
         {/* ── Exercise table — dark with sharp grid ── */}
         {open && (
-          <div style={{ background: '#080808', animation: 'fadeUp 0.2s ease' }}>
+          <div style={{ background: 'var(--t-bg)', animation: 'fadeUp 0.2s ease' }}>
 
             {/* Exercises */}
             {localExs.map((we, idx) => (
@@ -2045,7 +2045,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
                     style={{
                       width: '32px', flexShrink: 0,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      borderLeft: '1px solid rgba(255,255,255,0.06)',
+                      borderLeft: '1px solid var(--t-border)',
                       cursor: dragState?.id === we.id ? 'grabbing' : 'grab',
                       touchAction: 'none',
                       background: dragState?.id === we.id ? 'rgba(239,53,53,0.06)' : 'transparent',
@@ -2053,7 +2053,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
                   >
                     <div style={{
                       width: '18px', height: '18px',
-                      border: `1.5px dashed ${dragState?.id === we.id ? 'rgba(239,53,53,0.6)' : 'rgba(255,255,255,0.12)'}`,
+                      border: `1.5px dashed ${dragState?.id === we.id ? 'rgba(239,53,53,0.6)' : 'var(--t-border)'}`,
                       borderRadius: '4px',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       transition: 'border-color 0.15s',
@@ -2066,7 +2066,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
             ))}
 
             {/* Add vježbu + datum odrađeno + bilješka footer */}
-            <div className="ex-table-footer" style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: '10px', alignItems: 'flex-start', background: 'rgba(0,0,0,0.15)', flexWrap: 'wrap' as const }}>
+            <div className="ex-table-footer" style={{ padding: '12px 16px', borderTop: '1px solid var(--t-border)', display: 'flex', gap: '10px', alignItems: 'flex-start', background: 'rgba(0,0,0,0.15)', flexWrap: 'wrap' as const }}>
               {isAdmin && (
                 <button onClick={() => setShowPicker(true)} className="add-btn" style={{ flex: 'none' }}>
                   <Plus size={11} /> DODAJ VJEŽBU
@@ -2079,10 +2079,10 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
                   type="date"
                   value={workout.completion_date ? String(workout.completion_date).slice(0, 10) : ''}
                   onChange={e => onUpdateWorkout(workout.id, { completion_date: e.target.value ? `${e.target.value}T12:00:00` : null })}
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.72rem', padding: '5px 8px', outline: 'none', colorScheme: 'dark' as const }}
+                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '6px', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.72rem', padding: '5px 8px', outline: 'none', colorScheme: 'dark' as const }}
                 />
               </div>
-              <div style={{ flex: 1, minWidth: 140, borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '12px' }}>
+              <div style={{ flex: 1, minWidth: 140, borderLeft: '1px solid var(--t-border)', paddingLeft: '12px' }}>
                 <div style={{ fontSize: '0.48rem', color: '#444', letterSpacing: '0.22em', marginBottom: '4px' }}>BILJEŠKA DANA</div>
                 <EditableField value={workout.notes} placeholder="Dodaj bilješku..." onSave={v => onUpdateWorkout(workout.id, { notes: v || null })} />
               </div>
@@ -2106,7 +2106,7 @@ function WeekNotesModal({ notes, isAdmin, onSave, onClose }: {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', animation: 'fadeIn 0.15s' }}
       onClick={onClose}>
-      <div style={{ background: '#0d0d16', border: '1.5px solid rgba(251,191,36,0.25)', borderRadius: '14px', padding: '28px', maxWidth: '500px', width: '100%', boxShadow: '0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(251,191,36,0.08)', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
+      <div style={{ background: 'var(--t-s1)', border: '1.5px solid rgba(251,191,36,0.25)', borderRadius: '14px', padding: '28px', maxWidth: '500px', width: '100%', boxShadow: '0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(251,191,36,0.08)', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
           <MessageSquare size={16} color="#fbbf24" />
@@ -2118,7 +2118,7 @@ function WeekNotesModal({ notes, isAdmin, onSave, onClose }: {
         {isAdmin ? (
           <>
             <textarea value={val} onChange={e => setVal(e.target.value)} rows={5} placeholder="Napiši komentar za ovaj tjedan..."
-              style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(251,191,36,0.2)', borderRadius: '9px', color: '#f0f0f5', padding: '12px 14px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box' as const, lineHeight: 1.7 }}
+              style={{ width: '100%', background: 'var(--t-s3)', border: '1.5px solid rgba(251,191,36,0.2)', borderRadius: '9px', color: '#f0f0f5', padding: '12px 14px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box' as const, lineHeight: 1.7 }}
               onFocus={e => e.target.style.borderColor = 'rgba(251,191,36,0.5)'}
               onBlur={e => e.target.style.borderColor = 'rgba(251,191,36,0.2)'} />
             <button onClick={save} disabled={saving}
@@ -2187,8 +2187,8 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
   return (
     <div style={{
       marginBottom: '20px',
-      background: '#0e0e0e',
-      border: '1px solid rgba(255,255,255,0.08)',
+      background: 'var(--t-s1)',
+      border: '1px solid var(--t-border)',
       borderLeft: `3px solid ${accentColor}`,
       borderRadius: '16px',
       overflow: 'hidden',
@@ -2197,7 +2197,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
     }}>
 
       {/* ── Week header ── */}
-      <div style={{ background: allDone ? 'rgba(34,197,94,0.04)' : 'rgba(255,255,255,0.01)', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.07)' : 'none' }}
+      <div style={{ background: allDone ? 'rgba(34,197,94,0.04)' : 'var(--t-s2)', cursor: 'pointer', borderBottom: open ? '1px solid var(--t-border)' : 'none' }}
         onClick={() => { const next = !open; setOpen(next); try { sessionStorage.setItem(ssKey, String(next)) } catch {} }}>
 
         {/* Top: large week label row */}
@@ -2226,8 +2226,8 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '4px' }}>
             {/* Progress pill */}
             {total > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '6px 14px', borderRadius: '20px' }}>
-                <div style={{ width: '52px', height: '3px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--t-border)', padding: '6px 14px', borderRadius: '20px' }}>
+                <div style={{ width: '52px', height: '3px', background: 'var(--t-hi)', borderRadius: '2px', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', inset: '0 auto 0 0', width: `${pct}%`, background: allDone ? '#22c55e' : '#f0f0f0', boxShadow: allDone ? '0 0 8px rgba(34,197,94,0.6)' : 'none', transition: 'width 0.5s cubic-bezier(0.16,1,0.3,1)', borderRadius: '2px' }} />
                 </div>
                 <span style={{ fontSize: '0.54rem', color: allDone ? '#4ade80' : 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 800, letterSpacing: '0.05em' }}>{totalSets > 0 ? `${doneSets}/${totalSets}` : `${doneEx}/${totalEx}`}</span>
@@ -2238,7 +2238,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
             </div>
             {/* Week notes icon — always visible, yellow if has notes */}
             <button onClick={e => { e.stopPropagation(); setShowNotes(true) }}
-              style={{ background: hasNotes ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${hasNotes ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '7px', padding: '5px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.15s', color: hasNotes ? '#fbbf24' : 'rgba(255,255,255,0.3)' }}
+              style={{ background: hasNotes ? 'rgba(251,191,36,0.12)' : 'var(--t-s3)', border: `1px solid ${hasNotes ? 'rgba(251,191,36,0.35)' : 'var(--t-border)'}`, borderRadius: '7px', padding: '5px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.15s', color: hasNotes ? '#fbbf24' : 'rgba(255,255,255,0.3)' }}
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(251,191,36,0.5)'; (e.currentTarget as HTMLButtonElement).style.color = '#fbbf24' }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = hasNotes ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLButtonElement).style.color = hasNotes ? '#fbbf24' : 'rgba(255,255,255,0.3)' }}>
               <MessageSquare size={12} />
@@ -2248,7 +2248,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
               <>
                 <button onClick={e => { e.stopPropagation(); onCopyWeek(week.id) }}
                   title="Kopiraj tjedan"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', width: '28px', height: '28px', borderRadius: '7px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.4)', width: '28px', height: '28px', borderRadius: '7px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
                   <Copy size={12} />
@@ -2270,9 +2270,9 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
 
         {/* Day grid overview — only when collapsed */}
         {total > 0 && !open && (
-          <div className="day-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(total, 7)}, 1fr)`, margin: '16px 0 0', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="day-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(total, 7)}, 1fr)`, margin: '16px 0 0', borderTop: '1px solid var(--t-border)' }}>
             {week.workouts?.map((w, i) => (
-              <div key={w.id} style={{ padding: '10px 12px', borderRight: i < total - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none', background: w.completed ? 'rgba(34,197,94,0.06)' : 'rgba(0,0,0,0.2)', transition: 'background 0.2s' }}>
+              <div key={w.id} style={{ padding: '10px 12px', borderRight: i < total - 1 ? '1px solid var(--t-border)' : 'none', background: w.completed ? 'rgba(34,197,94,0.06)' : 'rgba(0,0,0,0.2)', transition: 'background 0.2s' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <span style={{ fontSize: '0.52rem', letterSpacing: '0.22em', color: w.completed ? '#4ade80' : '#666', fontFamily: 'var(--fm)', fontWeight: 800 }}>
                     D{i + 1}
@@ -2284,7 +2284,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
                   )}
                 </div>
                 {/* Bottom accent */}
-                <div style={{ height: '2px', marginTop: '8px', background: w.completed ? '#22c55e' : 'rgba(255,255,255,0.08)', borderRadius: '1px', boxShadow: w.completed ? '0 0 8px rgba(34,197,94,0.4)' : 'none' }} />
+                <div style={{ height: '2px', marginTop: '8px', background: w.completed ? '#22c55e' : 'var(--t-hi)', borderRadius: '1px', boxShadow: w.completed ? '0 0 8px rgba(34,197,94,0.4)' : 'none' }} />
               </div>
             ))}
           </div>
@@ -2293,7 +2293,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
 
       {/* ── Workout cards ── */}
       {open && (
-        <div style={{ padding: '22px 14px 14px', background: '#080808' }}>
+        <div style={{ padding: '22px 14px 14px', background: 'var(--t-bg)' }}>
           {[...(week.workouts ?? [])].sort((a, b) => a.workout_date.localeCompare(b.workout_date)).map((w, i, arr) => (
             <WorkoutCard key={w.id} workout={w} exercises={exercises} isAdmin={isAdmin} userId={userId} weekNumber={week.week_number} blockId={week.block_id}
               onUpdateWorkout={onUpdateWorkout} onDeleteWorkout={onDeleteWorkout}

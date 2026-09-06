@@ -35,7 +35,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: 'LWL UP Coaching',
-  description: 'Powerlifting club and coaching system from Croatia.',
+  description: 'Powerlifting klub i sustav treninga iz Hrvatske. Individualni program, analiza tehnike i natjecateljski fokus — LWL UP YOUR GAME.',
   icons: {
     icon: [
       { url: '/icon.png', type: 'image/png', sizes: '1302x980' },
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'LWL UP Coaching',
-    description: 'Powerlifting club and coaching system from Croatia.',
+    description: 'Powerlifting klub i sustav treninga iz Hrvatske. Individualni program, analiza tehnike i natjecateljski fokus — LWL UP YOUR GAME.',
     url: 'https://lwlup.com',
     siteName: 'LWL UP Coaching',
     images: [{ url: 'https://lwlup.com/icon.png', width: 1302, height: 980, alt: 'LWL UP Coaching Logo' }],
