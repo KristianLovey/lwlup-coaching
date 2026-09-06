@@ -241,7 +241,7 @@ export default function Landing() {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 60%, #131317 100%)', zIndex: 1 }} />
 
         {/* Main content — starts below navbar with breathing room */}
-        <div style={{ position: 'relative', zIndex: 2, width: '100%', padding: '0 clamp(20px,5vw,60px)', paddingTop: 'clamp(90px,16vh,160px)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }} className="hero-content">
+        <div style={{ position: 'relative', zIndex: 2, width: '100%', padding: '0 clamp(20px,5vw,60px) 0 clamp(24px,7vw,110px)', paddingTop: 'clamp(90px,16vh,160px)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }} className="hero-content">
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '680px' }}>
 
             {/* Big headline */}

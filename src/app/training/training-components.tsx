@@ -1185,7 +1185,9 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
               </div>
 
               {/* KG — backoff sets show a computed (read-only) weight */}
-              <div style={{ ...cellStyle, padding: '10px 12px', background: isBackoff ? 'rgba(107,140,255,0.06)' : 'var(--t-s2)' }}>
+              {/* KG stupac je SLOJ preko retka, ne zasebna ploha — neprozirna boja
+                  ovdje bi prekrila zelenu pozadinu odrađene serije. */}
+              <div style={{ ...cellStyle, padding: '10px 12px', background: isBackoff ? 'rgba(107,140,255,0.06)' : 'rgba(255,255,255,0.03)' }}>
                 {isBackoff ? (
                   <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: '2px', width: '100%' }} title={`${row.pct}% od seta ${row.ref + 1}`}>
                     <span style={{ fontSize: '0.98rem', fontWeight: 800, color: compVal != null ? BLUE : '#555', fontFamily: 'var(--fd)', lineHeight: 1.05 }}>
