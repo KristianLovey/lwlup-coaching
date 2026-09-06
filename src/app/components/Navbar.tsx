@@ -29,6 +29,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
   const [scrollY, setScrollY]         = useState(0)
   const [menuOpen, setMenuOpen]       = useState(false)
   const [homeOpen, setHomeOpen]       = useState(false)
+  const [mHomeOpen, setMHomeOpen]     = useState(false) // isti dropdown, mobilna verzija
   const [loggedIn, setLoggedIn]       = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
   const { lang, setLang, t } = useLanguage()
@@ -83,6 +84,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
   }, [])
 
   useEffect(() => {
+    if (!menuOpen) setMHomeOpen(false)
     document.body.style.overflow = menuOpen ? 'hidden' : ''
     if (menuOpen) document.body.classList.add('nav-open')
     else document.body.classList.remove('nav-open')
@@ -144,6 +146,18 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
       </Link>
     )
   }
+
+  // Stavka mobilnog izbornika — i je redoslijed za stagger ulaza.
+  const mobileItemStyle = (i: number): React.CSSProperties => ({
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    fontSize: 'clamp(1.8rem,7vw,2.4rem)', fontFamily: 'var(--fd)', fontWeight: 700,
+    letterSpacing: '0.04em', color: '#fff', textAlign: 'left',
+    textDecoration: 'none', padding: '18px 0',
+    borderBottom: '1px solid rgba(255,255,255,0.07)',
+    opacity: menuOpen ? 1 : 0,
+    transform: menuOpen ? 'translateX(0)' : 'translateX(-16px)',
+    transition: `opacity 0.35s ${i * 0.06 + 0.05}s ease, transform 0.35s ${i * 0.06 + 0.05}s ease`,
+  })
 
   return (
     <>
@@ -246,61 +260,56 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
       }}>
         <div style={{ flex: 1 }}>
           {simple ? (
-            <Link href="/" onClick={() => setMenuOpen(false)}
-              style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                fontSize: 'clamp(1.8rem,7vw,2.4rem)', fontFamily: 'var(--fd)', fontWeight: 700,
-                letterSpacing: '0.04em', color: '#fff', textDecoration: 'none', padding: '18px 0',
-                borderBottom: '1px solid rgba(255,255,255,0.07)',
-                opacity: menuOpen ? 1 : 0,
-                transform: menuOpen ? 'translateX(0)' : 'translateX(-16px)',
-                transition: 'opacity 0.35s 0.05s ease, transform 0.35s 0.05s ease',
-              }}>
+            <Link href="/" onClick={() => setMenuOpen(false)} style={mobileItemStyle(0)}>
               {t('nav.home')}
               <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
             </Link>
           ) : (
-            [...HOME_ANCHORS, ...PAGE_LINKS].map(([label, href], i) => {
-              const resolved = resolveHref(href)
-              const isAnchor = resolved.startsWith('/#') || resolved.startsWith('#')
-              const itemStyle: React.CSSProperties = {
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                fontSize: 'clamp(1.8rem,7vw,2.4rem)', fontFamily: 'var(--fd)', fontWeight: 700,
-                letterSpacing: '0.04em',
-                color: '#fff',
-                textDecoration: 'none', padding: '18px 0',
-                borderBottom: '1px solid rgba(255,255,255,0.07)',
-                opacity: menuOpen ? 1 : 0,
-                transform: menuOpen ? 'translateX(0)' : 'translateX(-16px)',
-                transition: `opacity 0.35s ${i * 0.06 + 0.05}s ease, transform 0.35s ${i * 0.06 + 0.05}s ease`,
-              }
-              const inner = (
-                <>
+            <>
+              {/* POČETNA — sekcije naslovnice su grupirane kao u desktop dropdownu,
+                  samo se ovdje otvaraju tapom umjesto hoverom. */}
+              <button onClick={() => setMHomeOpen(o => !o)}
+                aria-expanded={mHomeOpen}
+                style={{ ...mobileItemStyle(0), background: 'transparent', border: 'none',
+                  borderBottom: '1px solid rgba(255,255,255,0.07)', width: '100%', cursor: 'pointer' }}>
+                {t('nav.home')}
+                <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.35)', transform: mHomeOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }}>▾</span>
+              </button>
+              <div style={{
+                maxHeight: mHomeOpen ? '340px' : '0px', opacity: mHomeOpen ? 1 : 0, overflow: 'hidden',
+                transition: 'max-height 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.28s ease',
+              }}>
+                <div style={{ borderLeft: '1px solid rgba(255,255,255,0.12)', margin: '4px 0 4px 3px', paddingLeft: '16px' }}>
+                  {HOME_ANCHORS.map(([label, href], ai) => (
+                    <a key={href} href={resolveHref(href)} onClick={() => setMenuOpen(false)}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        fontFamily: 'var(--fm)', fontSize: '0.76rem', letterSpacing: '0.2em', fontWeight: 600,
+                        color: 'rgba(255,255,255,0.6)', textDecoration: 'none', padding: '15px 0',
+                        // zadnja nema crtu — inače se udvostruči s rubom sljedeće stavke
+                        borderBottom: ai < HOME_ANCHORS.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                      {label}
+                      <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.18)' }}>→</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+
+              {PAGE_LINKS.map(([label, href], i) => (
+                <Link key={href} href={resolveHref(href)}
+                  onClick={() => setMenuOpen(false)}
+                  style={mobileItemStyle(i + 1)}>
                   {label}
                   <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
-                </>
-              )
-              return isAnchor ? (
-                <a key={href} href={resolved}
-                  onClick={() => setMenuOpen(false)}
-                  style={itemStyle}>
-                  {inner}
-                </a>
-              ) : (
-                <Link key={href} href={resolved}
-                  onClick={() => setMenuOpen(false)}
-                  style={itemStyle}>
-                  {inner}
                 </Link>
-              )
-            })
+              ))}
+            </>
           )}
         </div>
 
         <div style={{
           marginTop: '40px', display: 'flex', flexDirection: 'column', gap: '10px',
           opacity: menuOpen ? 1 : 0, transform: menuOpen ? 'none' : 'translateY(12px)',
-          transition: `opacity 0.35s ${(HOME_ANCHORS.length + PAGE_LINKS.length) * 0.06 + 0.1}s, transform 0.35s ${(HOME_ANCHORS.length + PAGE_LINKS.length) * 0.06 + 0.1}s`,
+          transition: `opacity 0.35s ${(PAGE_LINKS.length + 1) * 0.06 + 0.1}s, transform 0.35s ${(PAGE_LINKS.length + 1) * 0.06 + 0.1}s`,
         }}>
           {/* Auth CTA — main mobile action */}
           <AuthCTA mobile />

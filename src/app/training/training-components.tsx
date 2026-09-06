@@ -14,6 +14,10 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import type { Exercise, WorkoutExercise, Workout, Week, SetLog, Competition, SetPlanRow, SetMode } from './types'
 import { computeWeights, defaultRow, estimate1RM, totalTonnage } from './training-setplan'
+import {
+  scopeKey, fieldKey, markIntent, markSaved, isSuperseded, localWins,
+  reconcileLogs, enqueue, parseDecimal, type FieldVal,
+} from './set-log-sync'
 
 const supabase = createClient()
 
@@ -472,7 +476,9 @@ export function EditableField({ value, placeholder, onSave, type = 'text', small
   const [val, setVal] = useState(String(value ?? ''))
   const inputRef = useRef<HTMLInputElement>(null)
   useEffect(() => { if (editing) inputRef.current?.focus() }, [editing])
-  useEffect(() => { setVal(String(value ?? '')) }, [value])
+  // Dok se tipka, prop ne smije pregaziti unos: parent se osvježava optimistički i
+  // preko realtimea, pa bi "207.5" usred tipkanja skočilo natrag na staru vrijednost.
+  useEffect(() => { if (!editing) setVal(String(value ?? '')) }, [value, editing])
   const commit = () => { setEditing(false); onSave(val) }
   if (editing) return (
     <input ref={inputRef} type={type} value={val}
@@ -697,6 +703,10 @@ export function CompetitionBanner({ userId }: { userId: string }) {
 
 // ─── SET LOG ROW — one box per set ─────────────────────────────────
 // Admin sees planned data. Lifter gets N input boxes (one per set).
+
+// Polja seta koja se sinkroniziraju s bazom (i čuvaju u localStorageu do potvrde).
+const SYNC_FIELDS = ['weight_kg', 'reps', 'rpe', 'completed', 'is_top_set'] as const
+
 export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
   we: WorkoutExercise; userId: string; isAdmin: boolean
   onAggregateUpdate: (data: Partial<WorkoutExercise>) => void
@@ -733,8 +743,13 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     return () => sub.subscription.unsubscribe()
   }, [isAdmin])
 
+  // Ključ pod kojim se pamte utipkane vrijednosti ovog seta (v. set-log-sync).
+  const scope = scopeKey(we.id, userId)
+
+  // Strogo: "207,5" → 207.5, a smeće ("20 7", "abc") vraća null umjesto NaN-a
+  // koji bi se kroz JSON tiho pretvorio u null i obrisao kilažu.
   const parseVal = (field: keyof SetLog, raw: string): string | number | null =>
-    (field === 'weight_kg' || field === 'rpe') ? (raw ? Number(raw) : null) : (raw || null)
+    (field === 'weight_kg' || field === 'rpe') ? parseDecimal(raw) : (raw || null)
 
   // Summary fields shown on the collapsed exercise row (total tonnage + last RPE).
   // actual_weight_kg (avg) is kept for the progress hub; _tonnage drives the display.
@@ -778,19 +793,43 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
 
   // Commit = update local `logs` (source of truth) + persist to DB. Runs on
   // debounce / blur, NOT per keystroke.
-  const commitField = async (setNum: number, field: keyof SetLog, val: unknown, pushAgg: boolean) => {
+  // Upisi idu kroz serijski red po setu: dva upisa istog polja (npr. "20" pa
+  // "207.5" kad u tipkanju napraviš pauzu) ne mogu se preteći na mreži, a stariji
+  // se prije slanja odbaci jer ga je noviji nadglasao.
+  const commitField = (setNum: number, field: keyof SetLog, val: unknown, pushAgg: boolean) => {
     const updated = logsRef.current.map(s => s.set_number === setNum ? { ...s, [field]: val } : s)
     setLogs(updated)
+    const key = fieldKey(setNum, String(field))
+    const seq = markIntent(scope, key, val as FieldVal)
     // Persist silently in the background — no visual indicator, no extra re-renders
     // so it never interrupts the user's input.
-    try {
-      if (isAdmin) await upsertViaApi(setNum, String(field), val)
-      else await upsertDirect(setNum, String(field), val)
-      if (field === 'weight_kg') await persistBackoffWeights(planRowsRef.current, updated)
-      if (pushAgg) pushAggregates(updated)
-    } catch (e) {
-      console.error('set_log save failed', e)
-    }
+    return enqueue(scope, String(setNum), async () => {
+      if (isSuperseded(scope, key, seq)) return // u međuvremenu je utipkano nešto novije
+      try {
+        if (isAdmin) await upsertViaApi(setNum, String(field), val)
+        else await upsertDirect(setNum, String(field), val)
+        markSaved(scope, key, seq)
+        if (field === 'weight_kg') await persistBackoffWeights(planRowsRef.current, updated)
+        if (pushAgg) pushAggregates(updated)
+      } catch (e) {
+        // Namjera ostaje nespremljena → pri sljedećem učitavanju se šalje ponovo.
+        console.error('set_log save failed', e)
+      }
+    })
+  }
+
+  // Ponovno slanje vrijednosti koja nikad nije potvrđena (pao internet, zatvoren tab).
+  const resendField = (setNum: number, field: string, v: FieldVal) => {
+    const key = fieldKey(setNum, field)
+    const seq = markIntent(scope, key, v)
+    enqueue(scope, String(setNum), async () => {
+      if (isSuperseded(scope, key, seq)) return
+      try {
+        if (isAdmin) await upsertViaApi(setNum, field, v)
+        else await upsertDirect(setNum, field, v)
+        markSaved(scope, key, seq)
+      } catch (e) { console.error('set_log resend failed', e) }
+    })
   }
 
   // Propagate set counts up for progress tracking
@@ -809,12 +848,17 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       .order('set_number')
       .then(({ data }) => {
         const existing = (data ?? []) as SetLog[]
-        const filled: SetLog[] = Array.from({ length: plannedSets }, (_, i) => {
+        const fromDb: SetLog[] = Array.from({ length: plannedSets }, (_, i) => {
           const found = existing.find(s => s.set_number === i + 1)
           return found ?? { set_number: i + 1, weight_kg: null, reps: null, rpe: null, completed: false, is_top_set: false }
         })
+        // Usporedi bazu sa zadnjim utipkanim vrijednostima iz localStoragea: ako neki
+        // upis nikad nije potvrđen, vrati ga u polje i pošalji ponovo umjesto da
+        // tiho ostane stara kilaža.
+        const { logs: filled, resend } = reconcileLogs(scope, fromDb, SYNC_FIELDS)
         setLogs(filled)
         propagateCounts(filled)
+        resend.forEach(r => resendField(r.setNum, r.field, r.v))
       })
   }, [we.id, plannedSets, isAdmin])
 
@@ -830,12 +874,19 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
           const focusedSet = focusedKey.current ? focusedKey.current.split('_')[0] : null
           if (String(row.set_number) === focusedSet) return // korisnik tipka baš taj set
           if (Object.keys(debounceTimers.current).some(k => k.startsWith(key))) return // nespremljene izmjene tog seta
-          setLogs(prev => {
-            const merged = prev.map(l => l.set_number === row.set_number
-              ? { ...l, weight_kg: row.weight_kg ?? null, reps: row.reps ?? null, rpe: row.rpe ?? null, completed: row.completed ?? l.completed, is_top_set: row.is_top_set ?? l.is_top_set }
-              : l)
-            return merged
-          })
+          // Zakašnjeli echo ne smije vratiti staru vrijednost preko onoga što je
+          // upravo utipkano (klasično: upišeš 207.5, pa stigne echo od "20").
+          const keepLocal = (fl: string) => localWins(scope, fieldKey(row.set_number, fl), row[fl])
+          setLogs(prev => prev.map(l => l.set_number === row.set_number
+            ? {
+                ...l,
+                weight_kg:  keepLocal('weight_kg')  ? l.weight_kg  : (row.weight_kg ?? null),
+                reps:       keepLocal('reps')       ? l.reps       : (row.reps ?? null),
+                rpe:        keepLocal('rpe')        ? l.rpe        : (row.rpe ?? null),
+                completed:  keepLocal('completed')  ? l.completed  : (row.completed ?? l.completed),
+                is_top_set: keepLocal('is_top_set') ? l.is_top_set : (row.is_top_set ?? l.is_top_set),
+              }
+            : l))
         })
       .subscribe()
     return () => { supabase.removeChannel(ch) }
@@ -933,14 +984,24 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
     if (liveW !== s.weight_kg) updates.weight_kg = liveW
     if (liveR !== s.reps) updates.reps = liveR
     if (liveE !== s.rpe) updates.rpe = liveE
-    if (!isAdmin) {
-      supabase.from('set_logs').upsert(
-        { workout_exercise_id: we.id, athlete_id: userId, set_number: setNum, ...updates },
-        { onConflict: 'workout_exercise_id,set_number' },
-      ).then(({ error }) => { if (error) console.error('markSetDone save failed', error) })
-    } else {
-      for (const [f, v] of Object.entries(updates)) upsertViaApi(setNum, f, v)
-    }
+    // Ide kroz isti serijski red kao i tipkanje — inače ovaj upis zna preteći upis
+    // koji je još u letu i vratiti staru kilažu.
+    const seqs = Object.entries(updates).map(([fl, v]) =>
+      [fl, markIntent(scope, fieldKey(setNum, fl), v as FieldVal)] as const)
+    enqueue(scope, String(setNum), async () => {
+      try {
+        if (!isAdmin) {
+          const { error } = await supabase.from('set_logs').upsert(
+            { workout_exercise_id: we.id, athlete_id: userId, set_number: setNum, ...updates },
+            { onConflict: 'workout_exercise_id,set_number' },
+          )
+          if (error) throw error
+        } else {
+          for (const [fl, v] of Object.entries(updates)) await upsertViaApi(setNum, fl, v)
+        }
+        seqs.forEach(([fl, sq]) => markSaved(scope, fieldKey(setNum, fl), sq))
+      } catch (e) { console.error('markSetDone save failed', e) }
+    })
   }
 
   const toggleTopSet = (setNum: number) => {
@@ -1007,8 +1068,11 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
       return next
     })
     for (const c of changed) {
+      const key = fieldKey(c.setNum, 'weight_kg')
+      const seq = markIntent(scope, key, c.val)
       if (isAdmin) await upsertViaApi(c.setNum, 'weight_kg', c.val)
       else await upsertDirect(c.setNum, 'weight_kg', c.val)
+      markSaved(scope, key, seq)
     }
   }
 
@@ -1300,7 +1364,9 @@ function AdminPlanCell({ value, placeholder, type, color, onSave }: {
   const [val, setVal] = useState(String(value ?? ''))
   const ref = useRef<HTMLInputElement>(null)
   useEffect(() => { if (editing) ref.current?.focus() }, [editing])
-  useEffect(() => { setVal(String(value ?? '')) }, [value])
+  // Dok se tipka, prop ne smije pregaziti unos: parent se osvježava optimistički i
+  // preko realtimea, pa bi "207.5" usred tipkanja skočilo natrag na staru vrijednost.
+  useEffect(() => { if (!editing) setVal(String(value ?? '')) }, [value, editing])
   const commit = () => { setEditing(false); onSave(val) }
   const isNum = type === 'number'
   if (editing) return (
@@ -1383,7 +1449,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
   )
 
   const save = (field: keyof WorkoutExercise, val: string, isNum = false) =>
-    onUpdate(we.id, { [field]: isNum ? (val ? Number(val) : null) : (val || null) })
+    onUpdate(we.id, { [field]: isNum ? parseDecimal(val) : (val || null) })
 
   const loadHistory = async () => {
     if (historyLoading) return

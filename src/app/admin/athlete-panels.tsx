@@ -1438,6 +1438,9 @@ export function AthletePanel({
   const updateExercise = useCallback(async (weId: string, data: Partial<WorkoutExercise>) => {
     const RUNTIME_ONLY = ['_completedSets', '_totalSets']
     const forDb = Object.fromEntries(Object.entries(data).filter(([k]) => !RUNTIME_ONLY.includes(k)))
+    // Prvo optimistički u state, tek onda mreža — inače polje do odgovora servera
+    // pokazuje staru vrijednost (izgleda kao da se upisano vratilo natrag).
+    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.map(we => we.id === weId ? { ...we, ...data } : we) })) })) } : b)
     if (Object.keys(forDb).length > 0) {
       const { data: { session } } = await supabase.auth.getSession()
       await fetch('/api/admin/update-exercise', {
@@ -1446,7 +1449,6 @@ export function AthletePanel({
         body: JSON.stringify({ weId, data: forDb }),
       })
     }
-    setBlock(b => b ? { ...b, weeks: b.weeks?.map(w => ({ ...w, workouts: w.workouts?.map(wo => ({ ...wo, workout_exercises: wo.workout_exercises?.map(we => we.id === weId ? { ...we, ...data } : we) })) })) } : b)
   }, [])
 
   const deleteExercise = useCallback(async (weId: string) => {

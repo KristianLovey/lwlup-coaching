@@ -435,17 +435,18 @@ export default function RecordsPage() {
 
       {/* HERO */}
       <section style={{ paddingTop: 'clamp(100px,14vw,150px)', paddingBottom: '24px', position: 'relative' }}>
-        <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '800px', height: '400px', background: 'radial-gradient(ellipse at center top, rgba(255,255,255,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div className="rec-glow" style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '800px', height: '400px', background: 'radial-gradient(ellipse at center top, rgba(255,255,255,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '0 clamp(16px,4vw,60px)', position: 'relative', zIndex: 1 }}>
-          <div style={{ fontSize: '0.65rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.55)', marginBottom: '14px' }}>
+          <div className="rec-eyebrow" style={{ fontSize: '0.65rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.55)', marginBottom: '14px' }}>
             {t('rec.eyebrow')}
           </div>
           <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,8vw,6rem)', lineHeight: 0.88, margin: '0 0 40px', letterSpacing: '-0.02em' }}>
-            {t('rec.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>{t('rec.title2')}</span>
+            <span className="rec-t1">{t('rec.title1')}</span><br />
+            <span className="rec-t2" style={{ color: 'rgba(255,255,255,0.3)' }}>{t('rec.title2')}</span>
           </h1>
 
           {/* Controls — 3 rows */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div className="rec-controls" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
             {/* Row 1: Gender */}
             <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', width: 'fit-content' }}>
@@ -501,24 +502,25 @@ export default function RecordsPage() {
       {/* TABLE */}
       <section style={{ maxWidth: '1300px', margin: '0 auto', padding: '0 clamp(16px,4vw,60px) 80px', position: 'relative', zIndex: 1, marginTop: '8px' }}>
         {matchingClasses.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.2)' }}>
+          <div className="rec-empty" style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.2)' }}>
             <Trophy size={36} style={{ opacity: 0.15, display: 'block', margin: '0 auto 16px' }} />
             <div style={{ fontSize: '0.75rem', letterSpacing: '0.3em' }}>{t('rec.noResults')} "{search}"</div>
           </div>
         ) : (
-          matchingClasses.map(cls => {
+          matchingClasses.map((cls, i) => {
             const clsData = records[cls]
             if (!clsData) return null
 
             return (
-              <div key={cls} style={{ marginBottom: '48px' }}>
+              <div key={gender + cls} className="rec-class"
+                style={{ marginBottom: '48px', '--d': `${0.42 + Math.min(i, 7) * 0.07}s` } as React.CSSProperties}>
                 {/* Weight class header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 0 10px' }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
                     <span style={{ fontFamily: 'var(--fd)', fontSize: '2.2rem', fontWeight: 800, color: 'rgba(255,255,255,0.55)', lineHeight: 1 }}>{cls}</span>
                     <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.2em' }}>KG</span>
                   </div>
-                  <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+                  <div className="rec-line" style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
                 </div>
 
                 {agesToShow.map(age => {
@@ -575,6 +577,38 @@ export default function RecordsPage() {
       <style>{`
         input::placeholder { color: rgba(255,255,255,0.38); }
         @media (max-width: 768px) { table { font-size: 0.85rem; } }
+
+        /* Ulaz stranice: hero se slaže odozdo, pa kaskada težinskih kategorija. */
+        @keyframes recIn   { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+        @keyframes recFade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes recLine { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+        .rec-glow    { animation: recFade 1.6s ease backwards; }
+        .rec-eyebrow,
+        .rec-t1, .rec-t2,
+        .rec-class,
+        .rec-empty   { animation: recIn 0.7s cubic-bezier(0.16,1,0.3,1) backwards; }
+        .rec-t1, .rec-t2 { display: inline-block; }
+
+        .rec-eyebrow { animation-delay: 0.05s; }
+        .rec-t1      { animation-delay: 0.12s; }
+        .rec-t2      { animation-delay: 0.20s; }
+        .rec-empty   { animation-delay: 0.30s; }
+
+        .rec-controls > div { animation: recIn 0.6s cubic-bezier(0.16,1,0.3,1) backwards; }
+        .rec-controls > div:nth-child(1) { animation-delay: 0.26s; }
+        .rec-controls > div:nth-child(2) { animation-delay: 0.32s; }
+        .rec-controls > div:nth-child(3) { animation-delay: 0.38s; }
+
+        /* --d je redoslijed kategorije (inline); custom property se nasljeđuje pa
+           linija kreće zajedno sa svojim blokom */
+        .rec-class { animation-delay: var(--d, 0s); }
+        .rec-line  { transform-origin: left; animation: recLine 0.9s cubic-bezier(0.16,1,0.3,1) backwards; animation-delay: calc(var(--d, 0s) + 0.08s); }
+
+        @media (prefers-reduced-motion: reduce) {
+          .rec-glow, .rec-eyebrow, .rec-t1, .rec-t2, .rec-class, .rec-empty,
+          .rec-controls > div, .rec-line { animation: none !important; }
+        }
       `}</style>
     </div>
   )
