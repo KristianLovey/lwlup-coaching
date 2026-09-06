@@ -396,6 +396,7 @@ export default function Landing() {
         <div ref={clubReveal.ref} style={{ opacity: clubReveal.visible ? 1 : 0, transform: clubReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
           <div className="club-grid">
             <div style={{ position: 'relative' }}>
+              <div style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.42)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>{t('home.about.eyebrow')}</div>
               <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,8vw,6rem)', lineHeight: 0.9, marginBottom: 'clamp(20px,4vw,40px)' }}>
                 {t('home.about.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>{t('home.about.title2')}</span>
               </h2>
@@ -584,7 +585,19 @@ export default function Landing() {
         }
 
         /* ══ HOVER OSTALO ═════════════════════════════════════════ */
-        .info-card:hover h4 { color: rgba(255,255,255,0.7) !important; }
+        /* kartice imaju lijevu crtu koja se na hover pojača — bez nje je translateY
+           na golom tekstu izgledao kao da nešto poskakuje bez razloga */
+        .info-card { padding-left: 16px; border-left: 1px solid rgba(255,255,255,0.14); transition: border-color 0.3s, transform 0.3s cubic-bezier(0.16,1,0.3,1); }
+        .info-card:hover { border-left-color: #ef3535; }
+        .club-images > div { transition: box-shadow 0.4s; }
+        .club-images > div:hover { box-shadow: 0 18px 50px -18px rgba(0,0,0,0.9); }
+        .club-images > div:hover .club-img { transform: scale(1.06); }
+
+        /* Natrag na vrh — prije nije imao nikakav hover (inline transform traži !important) */
+        .scroll-to-top-btn svg { transition: stroke 0.25s, transform 0.3s cubic-bezier(0.16,1,0.3,1); }
+        .scroll-to-top-btn:hover { transform: scale(1.08) translateY(-3px) !important; background: #ef3535 !important; box-shadow: 0 10px 30px rgba(239,53,53,0.4) !important; }
+        .scroll-to-top-btn:hover svg { stroke: #fff !important; transform: translateY(-2px); }
+        .scroll-to-top-btn:active { transform: scale(0.94) !important; }
         .club-img:hover     { transform: scale(1.05) !important; }
         .feature-card:hover { transform: translateY(-5px) !important; border-color: rgba(255,255,255,0.14) !important; box-shadow: 0 8px 32px rgba(255,255,255,0.04); }
         .feature-card:hover > div:first-child { opacity: 1 !important; }

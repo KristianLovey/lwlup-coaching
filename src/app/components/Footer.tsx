@@ -84,7 +84,7 @@ export default function Footer() {
                 { val: '10+',  key: 'footer.stats.competitors' as const },
                 { val: '12',   key: 'footer.stats.records'     as const },
                 { val: '6',    key: 'footer.stats.european'    as const },
-                { val: '2023', key: 'footer.stats.founded'     as const },
+                { val: '2026', key: 'footer.stats.founded'     as const },
               ].map((s, i) => (
                 <div key={i} style={{ padding: '14px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1 }}>{s.val}</span>

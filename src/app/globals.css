@@ -99,9 +99,10 @@ h1, h2, h3, h4, h5 { color: var(--text-primary); }
 .hotspot-label { position: absolute; top: 100%; left: 50%; white-space: nowrap; font-size: 0.6rem; letter-spacing: 0.2em; color: #fff; margin-top: 10px; transition: 0.3s; pointer-events: none; background: rgba(0,0,0,0.85); padding: 5px 10px; border: 1px solid rgba(255,255,255,0.25); }
 
 /* ── Club ────────────────────────────────────────────────────────── */
-.club-image:hover .club-img { transform: scale(1.1); }
+/* Hover slika i mobilni raspored drži page.tsx (.club-images) — ovdje su prije
+   stajali selektori .club-image / .club-img-grid kojih u markupu nema. */
 .info-card:hover { transform: translateY(-5px); }
-.info-card h4 { color: var(--text-primary) !important; }
+.info-card h3 { color: var(--text-primary) !important; }
 .info-card p  { color: var(--text-muted) !important; }
 
 /* ── Coach ───────────────────────────────────────────────────────── */
@@ -226,8 +227,6 @@ body.nav-open .scroll-to-top-btn {
   .modal-lift-name { font-size: 2.2rem !important; }
 
   .club-grid { grid-template-columns: 1fr !important; gap: 40px !important; padding: 80px 20px !important; }
-  .club-img-grid { grid-template-columns: 1fr 1fr !important; }
-  .club-img-grid > div { height: 220px !important; margin-top: 0 !important; }
   .club-section-num { display: none !important; }
 
   .coach-grid { grid-template-columns: 1fr !important; gap: 40px !important; padding: 80px 20px !important; }
@@ -301,7 +300,6 @@ body.nav-open .scroll-to-top-btn {
   .modal-inner { max-height: 100svh !important; border-radius: 0 !important; }
   .modal-img-side { height: 50vw !important; }
 
-  .club-img-grid > div { height: 160px !important; }
   .features-grid { grid-template-columns: 1fr !important; }
 
   .age-cats-grid { grid-template-columns: repeat(2, 1fr) !important; }
