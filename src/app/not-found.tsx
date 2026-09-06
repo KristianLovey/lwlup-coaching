@@ -40,7 +40,7 @@ export default function NotFound() {
             fontFamily: 'var(--fd)',
             fontSize: 'clamp(8rem, 20vw, 16rem)',
             fontWeight: 800,
-            lineHeight: 0.85,
+            lineHeight: 0.97,
             letterSpacing: '-0.04em',
             color: 'transparent',
             WebkitTextStroke: '1px rgba(255,255,255,0.06)',
@@ -50,7 +50,7 @@ export default function NotFound() {
           <div style={{
             position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'var(--fd)', fontSize: 'clamp(8rem, 20vw, 16rem)', fontWeight: 800,
-            lineHeight: 0.85, letterSpacing: '-0.04em',
+            lineHeight: 0.97, letterSpacing: '-0.04em',
             background: 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 100%)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           }}>404</div>

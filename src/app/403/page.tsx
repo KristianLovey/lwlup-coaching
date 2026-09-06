@@ -34,8 +34,8 @@ export default function ForbiddenPage() {
 
         {/* 403 */}
         <div style={{ position: 'relative', marginBottom: '8px' }}>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(6rem,16vw,12rem)', fontWeight: 800, lineHeight: 0.85, letterSpacing: '-0.04em', color: 'transparent', WebkitTextStroke: '1px rgba(239,68,68,0.08)', userSelect: 'none' }}>403</div>
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fd)', fontSize: 'clamp(6rem,16vw,12rem)', fontWeight: 800, lineHeight: 0.85, letterSpacing: '-0.04em', background: 'linear-gradient(180deg,rgba(239,68,68,0.25) 0%,rgba(239,68,68,0.05) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>403</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(6rem,16vw,12rem)', fontWeight: 800, lineHeight: 0.97, letterSpacing: '-0.04em', color: 'transparent', WebkitTextStroke: '1px rgba(239,68,68,0.08)', userSelect: 'none' }}>403</div>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fd)', fontSize: 'clamp(6rem,16vw,12rem)', fontWeight: 800, lineHeight: 0.97, letterSpacing: '-0.04em', background: 'linear-gradient(180deg,rgba(239,68,68,0.25) 0%,rgba(239,68,68,0.05) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>403</div>
         </div>
 
         <div style={{ width: '48px', height: '1px', background: 'rgba(239,68,68,0.2)', margin: '24px auto 28px' }} />

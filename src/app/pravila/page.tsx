@@ -61,7 +61,7 @@ export default function PravilaPage() {
               <div style={{ width: '28px', height: '2px', background: 'rgba(255,255,255,0.6)' }} />
               <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--fm)', fontWeight: 700 }}>PRAVNI DOKUMENTI</span>
             </div>
-            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', fontWeight: 800, letterSpacing: '-0.01em', lineHeight: 0.9, margin: '0 0 24px' }}>
+            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', fontWeight: 800, letterSpacing: '-0.01em', lineHeight: 1.02, margin: '0 0 24px' }}>
               Pravila privatnosti<br />
               <span style={{ opacity: 0.4 }}>&amp; uvjeti korištenja</span>
             </h1>

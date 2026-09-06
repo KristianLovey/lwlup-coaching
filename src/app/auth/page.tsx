@@ -89,7 +89,7 @@ export default function AuthPage() {
           <div style={{ fontSize: '0.58rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.2)', marginBottom: '20px' }}>
             DOBRODOŠAO NAZAD
           </div>
-          <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,4vw,4rem)', fontWeight: 800, lineHeight: 0.88, letterSpacing: '-0.02em', margin: '0 0 32px' }}>
+          <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,4vw,4rem)', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em', margin: '0 0 32px' }}>
             PRIJAVA<br /><span style={{ color: 'rgba(255,255,255,0.2)' }}>U SUSTAV</span>
           </h1>
 

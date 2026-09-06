@@ -437,10 +437,10 @@ export default function RecordsPage() {
       <section style={{ paddingTop: 'clamp(100px,14vw,150px)', paddingBottom: '24px', position: 'relative' }}>
         <div className="rec-glow" style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '800px', height: '400px', background: 'radial-gradient(ellipse at center top, rgba(255,255,255,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '0 clamp(16px,4vw,60px)', position: 'relative', zIndex: 1 }}>
-          <div className="rec-eyebrow" style={{ fontSize: '0.65rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.55)', marginBottom: '14px' }}>
+          <div className="rec-eyebrow section-eyebrow">
             {t('rec.eyebrow')}
           </div>
-          <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,8vw,6rem)', lineHeight: 0.88, margin: '0 0 40px', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,8vw,6rem)', lineHeight: 1, margin: '0 0 40px', letterSpacing: '-0.02em' }}>
             <span className="rec-t1">{t('rec.title1')}</span><br />
             <span className="rec-t2" style={{ color: 'rgba(255,255,255,0.3)' }}>{t('rec.title2')}</span>
           </h1>

@@ -548,7 +548,7 @@ export default function TrainingPage() {
                         <span style={{ display: 'inline-block', width: '20px', height: '1.5px', background: '#ef3535', borderRadius: '2px', flexShrink: 0 }} />
                         SPORTAŠ · AKTIVAN
                       </div>
-                      <h1 style={{ fontFamily: 'var(--fd)', fontWeight: 800, fontSize: 'clamp(40px, 4.5vw, 72px)', lineHeight: 0.9, letterSpacing: '-0.04em', margin: '20px 0 0', color: '#f0f0f0' }}>
+                      <h1 style={{ fontFamily: 'var(--fd)', fontWeight: 800, fontSize: 'clamp(40px, 4.5vw, 72px)', lineHeight: 1.02, letterSpacing: '-0.04em', margin: '20px 0 0', color: '#f0f0f0' }}>
                         {athleteName.split(' ')[0] || athleteName}
                         {athleteName.split(' ').length > 1 && (
                           <span style={{ display: 'block', color: 'rgba(255,255,255,0.28)', fontWeight: 500 }}>
@@ -576,7 +576,7 @@ export default function TrainingPage() {
                           onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#181818'}
                           onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = '#111111'}>
                           <div>
-                            <div style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: 'clamp(30px, 3vw, 52px)', lineHeight: 0.95, letterSpacing: '-0.04em', color: '#f0f0f0', fontVariantNumeric: 'tabular-nums' }}>
+                            <div style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: 'clamp(30px, 3vw, 52px)', lineHeight: 1.05, letterSpacing: '-0.04em', color: '#f0f0f0', fontVariantNumeric: 'tabular-nums' }}>
                               {s.num}<span style={{ fontSize: '0.42em', color: 'rgba(255,255,255,0.28)', fontWeight: 500 }}>{s.sub}</span>
                             </div>
                             <div style={{ fontFamily: 'var(--fm)', fontSize: '0.68rem', color: '#ef3535', marginTop: '8px', letterSpacing: '0.02em' }}>↗ {s.delta}</div>

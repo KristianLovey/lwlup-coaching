@@ -337,8 +337,8 @@ export default function CompetitionsPage() {
 
             <div className="comp-hero-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '32px', marginBottom: '40px' }}>
               <div>
-                <div style={{ fontSize: '0.7rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.3)', marginBottom: '14px' }}>{t('comp.eyebrow')}</div>
-                <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem, 8vw, 6.5rem)', lineHeight: 0.88, margin: 0, letterSpacing: '-0.02em' }}>
+                <div className="section-eyebrow">{t('comp.eyebrow')}</div>
+                <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem, 8vw, 6.5rem)', lineHeight: 1, margin: 0, letterSpacing: '-0.02em' }}>
                   {t('comp.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.18)' }}>{t('comp.title2')}</span>
                 </h1>
               </div>

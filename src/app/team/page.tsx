@@ -277,8 +277,8 @@ export default function TeamPage() {
         <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '900px', height: '500px', background: 'radial-gradient(ellipse at center top, rgba(255,255,255,0.06) 0%, transparent 70%)', zIndex: 1, pointerEvents: 'none' }} />
         <div ref={heroReveal.ref} className="team-hero-inner" style={{ position: 'relative', zIndex: 2, maxWidth: '1200px', margin: '0 auto', padding: '0 60px' }}>
           <div style={{ opacity: heroReveal.visible ? 1 : 0, transform: heroReveal.visible ? 'none' : 'translateY(35px)', transition: 'all 1s cubic-bezier(0.16,1,0.3,1)' }}>
-            <div style={{ fontSize: '0.75rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.45)', marginBottom: '20px' }}>{t('team.eyebrow')}</div>
-            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4rem, 10vw, 8rem)', lineHeight: 0.9, marginBottom: '30px' }}>
+            <div className="section-eyebrow">{t('team.eyebrow')}</div>
+            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4rem, 10vw, 8rem)', lineHeight: 1.02, marginBottom: '30px', marginTop: 0 }}>
               LWL UP<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>TEAM</span>
             </h1>
             <p style={{ fontSize: '1.15rem', color: 'rgba(255,255,255,0.65)', maxWidth: '700px', margin: '0 auto 60px', lineHeight: 1.85, fontWeight: 300 }}>
@@ -467,7 +467,7 @@ export default function TeamPage() {
       {/* CTA */}
       <section style={{ padding: '120px 60px', background: '#131317', borderTop: '1px solid rgba(255,255,255,0.08)', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <div ref={ctaReveal.ref} style={{ opacity: ctaReveal.visible ? 1 : 0, transform: ctaReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
-          <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem, 8vw, 6rem)', marginBottom: '30px', lineHeight: 0.9 }}>
+          <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem, 8vw, 6rem)', marginBottom: '30px', lineHeight: 1.02, marginTop: 0 }}>
             {t('team.cta.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>{t('team.cta.title2')}</span>
           </h2>
           <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.6)', maxWidth: '600px', margin: '0 auto 50px', lineHeight: 1.85, fontWeight: 300 }}>

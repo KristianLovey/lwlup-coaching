@@ -123,7 +123,7 @@ function LiftNameTag({ lift }: { lift: LiftKey }) {
   return (
     <div style={{ zIndex: 4 }}>
       <div style={{ fontSize: '0.55rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.6)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>{t('bt.technical')}</div>
-      <div className="bt-lift-name" style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.6rem,4vw,4rem)', fontWeight: 800, lineHeight: 0.88, letterSpacing: '-0.02em', textShadow: '0 4px 32px rgba(0,0,0,0.8)', color: '#fff' }}>{lift}</div>
+      <div className="bt-lift-name" style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.6rem,4vw,4rem)', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em', textShadow: '0 4px 32px rgba(0,0,0,0.8)', color: '#fff' }}>{lift}</div>
     </div>
   )
 }
@@ -229,7 +229,7 @@ export default function BigThree() {
           <div className="bt-intro-grid" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 'clamp(40px,6vw,72px)' }}>
             <div>
               <div style={{ fontSize: '0.58rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.5)', marginBottom: '20px', fontFamily: 'var(--fm)' }}>{t('bt.eyebrow')}</div>
-              <h3 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,3.5vw,3.2rem)', fontWeight: 800, lineHeight: 0.9, margin: '0 0 clamp(16px,3vw,28px)', letterSpacing: '-0.02em' }}>
+              <h3 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,3.5vw,3.2rem)', fontWeight: 800, lineHeight: 1.02, margin: '0 0 clamp(16px,3vw,28px)', letterSpacing: '-0.02em' }}>
                 {t('bt.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>{t('bt.title2')}</span>
               </h3>
               <p style={{ fontSize: 'clamp(0.88rem,2.5vw,1.1rem)', lineHeight: 1.85, color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: 300 }}>
@@ -257,7 +257,7 @@ export default function BigThree() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'clamp(40px,6vw,72px)', marginTop: 'clamp(60px,8vw,100px)', flexWrap: 'wrap', gap: '20px' }}>
             <div>
               <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.4)', marginBottom: '16px', fontFamily: 'var(--fm)' }}>{t('bt.discipline')}</div>
-              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,7vw,6rem)', lineHeight: 0.88, margin: 0 }}>
+              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,7vw,6rem)', lineHeight: 1, margin: 0 }}>
                 SBD<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>LIFTS</span>
               </h2>
             </div>
@@ -281,7 +281,7 @@ export default function BigThree() {
                   <div style={{ padding: 'clamp(24px,4vw,48px) clamp(16px,4vw,52px)', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 'clamp(12px,2vw,20px)' }}>
                     <div>
                       <div style={{ fontSize: 'clamp(0.5rem,1.5vw,0.58rem)', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.45)', marginBottom: '12px', fontFamily: 'var(--fm)', textTransform: 'uppercase' }}>{t(meta.sub)}</div>
-                      <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,5vw,4.5rem)', fontWeight: 800, lineHeight: 0.9, letterSpacing: '-0.02em', color: '#fff' }}>{lift}</div>
+                      <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,5vw,4.5rem)', fontWeight: 800, lineHeight: 1.02, letterSpacing: '-0.02em', color: '#fff' }}>{lift}</div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

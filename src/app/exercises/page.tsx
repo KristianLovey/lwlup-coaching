@@ -209,7 +209,7 @@ function ExModal({ ex, onClose }: { ex: Exercise; onClose: () => void }) {
                   {ex.category.toUpperCase()}
                 </span>
               </div>
-              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.8rem,5vw,2.8rem)', fontWeight: 800, lineHeight: 0.92, margin: 0, letterSpacing: '-0.02em', color: '#f0f0f0' }}>
+              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.8rem,5vw,2.8rem)', fontWeight: 800, lineHeight: 1.04, margin: 0, letterSpacing: '-0.02em', color: '#f0f0f0' }}>
                 {ex.name}
               </h2>
             </div>

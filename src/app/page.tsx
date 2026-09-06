@@ -130,7 +130,7 @@ function FounderCard({ founder, index, hint, backLabel }: { founder: FounderData
             {/* Ime + uloga na dnu slike */}
             <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 'clamp(20px,4vw,34px)', textAlign: 'left' }}>
               <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.55)', marginBottom: '10px', fontFamily: 'var(--fm)' }}>{founder.role}</div>
-              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.7rem, 3.4vw, 3rem)', lineHeight: 0.94, margin: 0, letterSpacing: '-0.01em' }}>{founder.name}</h2>
+              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.7rem, 3.4vw, 3rem)', lineHeight: 1.05, margin: 0, letterSpacing: '-0.01em' }}>{founder.name}</h2>
               {founder.nickname && <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.14em', marginTop: '6px', fontStyle: 'italic' }}>"{founder.nickname}"</div>}
               {/* hint pilula */}
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '18px', padding: '7px 14px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.09)' }}>
@@ -145,7 +145,7 @@ function FounderCard({ founder, index, hint, backLabel }: { founder: FounderData
             <div style={{ position: 'absolute', top: '-14px', right: '14px', fontFamily: 'var(--fd)', fontSize: 'clamp(6rem,12vw,12rem)', fontWeight: 800, color: 'rgba(255,255,255,0.03)', lineHeight: 1, userSelect: 'none', pointerEvents: 'none' }}>0{index + 1}</div>
             <div style={{ position: 'relative', zIndex: 1 }}>
               <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.48)', marginBottom: '12px', fontFamily: 'var(--fm)' }}>{founder.role}</div>
-              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.5rem, 3vw, 2.6rem)', lineHeight: 0.94, marginBottom: '18px', letterSpacing: '-0.01em' }}>{founder.name}</h2>
+              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.5rem, 3vw, 2.6rem)', lineHeight: 1.05, marginBottom: '18px', letterSpacing: '-0.01em', marginTop: 0 }}>{founder.name}</h2>
               <div style={{ width: '36px', height: '2px', background: '#fff', marginBottom: '20px', opacity: 0.7 }} />
               <p style={{ color: 'rgba(255,255,255,0.66)', lineHeight: 1.8, fontSize: '0.88rem', marginBottom: '22px' }}>{founder.bio}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
@@ -245,7 +245,7 @@ export default function Landing() {
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '680px' }}>
 
             {/* Big headline */}
-            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4.2rem, 10vw, 9.5rem)', lineHeight: 0.88, marginBottom: '24px', marginTop: 0, letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4.2rem, 10vw, 9.5rem)', lineHeight: 1, marginBottom: '24px', marginTop: 0, letterSpacing: '-0.02em' }}>
               <span className="hero-outline" style={{ display: 'block' }}>{'LWL UP '}</span>
               <span style={{ display: 'block', color: '#fff' }}>YOUR GAME.</span>
             </h1>
@@ -317,11 +317,10 @@ export default function Landing() {
 
           {/* Header */}
           <div style={{ marginBottom: 'clamp(48px,7vw,80px)' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-              <div style={{ width: '28px', height: '2px', background: 'rgba(255,255,255,0.6)' }} />
-              <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.cats.eyebrow')}</span>
+            <div className="section-eyebrow">
+              <span>{t('home.cats.eyebrow')}</span>
             </div>
-            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 0.9, marginBottom: '20px' }}>
+            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 1.02, marginBottom: '20px', marginTop: 0 }}>
               {t('home.cats.title1')}<br /><span style={{ opacity: 0.4 }}>{t('home.cats.title2')}</span>
             </h2>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(0.82rem,2vw,0.95rem)', maxWidth: '540px', lineHeight: 1.9, marginTop: '16px' }}>
@@ -396,8 +395,8 @@ export default function Landing() {
         <div ref={clubReveal.ref} style={{ opacity: clubReveal.visible ? 1 : 0, transform: clubReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
           <div className="club-grid">
             <div style={{ position: 'relative' }}>
-              <div style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.42)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>{t('home.about.eyebrow')}</div>
-              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,8vw,6rem)', lineHeight: 0.9, marginBottom: 'clamp(20px,4vw,40px)' }}>
+              <div className="section-eyebrow">{t('home.about.eyebrow')}</div>
+              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,8vw,6rem)', lineHeight: 1.02, marginTop: 0, marginBottom: 'clamp(20px,4vw,40px)' }}>
                 {t('home.about.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>{t('home.about.title2')}</span>
               </h2>
               <p style={{ fontSize: 'clamp(0.9rem,2.5vw,1.2rem)', lineHeight: 1.8, color: 'rgba(255,255,255,0.7)', marginBottom: '24px' }}>
@@ -431,8 +430,8 @@ export default function Landing() {
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: 'clamp(60px,10vw,100px) clamp(20px,5vw,60px) clamp(40px,6vw,60px)' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.42)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>{t('home.founders.eyebrow')}</div>
-              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5.5rem)', lineHeight: 0.88, margin: 0, letterSpacing: '-0.0em' }}>
+              <div className="section-eyebrow">{t('home.founders.eyebrow')}</div>
+              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5.5rem)', lineHeight: 1, margin: 0, letterSpacing: '-0.0em' }}>
                 {t('home.founders.title')}
               </h2>
             </div>
@@ -455,11 +454,10 @@ export default function Landing() {
         <div aria-hidden style={{ position: 'absolute', top: 0, left: '15%', width: '70%', height: '380px', background: 'radial-gradient(ellipse at center top, rgba(255,255,255,0.05) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
         <div ref={systemReveal.ref} style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <div style={{ marginBottom: 'clamp(48px,8vw,88px)', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-              <div style={{ width: '28px', height: '2px', background: 'rgba(255,255,255,0.4)' }} />
-              <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.system.eyebrow')}</span>
+            <div className="section-eyebrow">
+              <span>{t('home.system.eyebrow')}</span>
             </div>
-            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 0.9 }}>{t('home.system.title')}</h2>
+            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 1.02, marginTop: 0 }}>{t('home.system.title')}</h2>
           </div>
           <div className="features-grid">
             {FEATURES.map((f, i) => (
@@ -489,12 +487,10 @@ export default function Landing() {
 
         {/* 1400px: na 1000px "LEAVE YOUR" nije stalo u redak pa se naslov lomio na tri retka */}
         <div style={{ position: 'relative', zIndex: 2, padding: '0 20px', maxWidth: '1400px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '22px' }}>
-            <span style={{ width: '26px', height: '1.5px', background: 'rgba(255,255,255,0.4)' }} />
-            <span style={{ fontSize: '0.6rem', letterSpacing: '0.42em', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.cta.eyebrow')}</span>
-            <span style={{ width: '26px', height: '1.5px', background: 'rgba(255,255,255,0.4)' }} />
+          <div className="section-eyebrow">
+            <span>{t('home.cta.eyebrow')}</span>
           </div>
-          <h2 className="cta-glow-text" style={{ fontFamily: 'var(--fd)', fontWeight: 800, fontSize: 'clamp(3rem,12vw,11rem)', lineHeight: 0.86, letterSpacing: '-0.03em', margin: 0 }}>
+          <h2 className="cta-glow-text" style={{ fontFamily: 'var(--fd)', fontWeight: 800, fontSize: 'clamp(3rem,12vw,11rem)', lineHeight: 0.98, letterSpacing: '-0.03em', margin: 0 }}>
             {/* Uvijek dva retka: zadnja riječ ide u drugi red, ostatak u prvi.
                 Vrijedi za oba jezika — "OSTAVI SVOJ / TRAG", "LEAVE YOUR / MARK". */}
             {(() => {

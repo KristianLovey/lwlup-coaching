@@ -13,8 +13,8 @@ export default function TreneriPage() {
       <section style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '160px 24px 100px', position: 'relative', textAlign: 'center' }}>
         <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)', width: '900px', maxWidth: '100%', height: '500px', background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 1, maxWidth: '720px' }}>
-          <div style={{ fontSize: '0.72rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.4)', marginBottom: '22px' }}>{t('coaches.eyebrow')}</div>
-          <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3.5rem, 11vw, 8rem)', lineHeight: 0.9, margin: '0 0 28px' }}>
+          <div className="section-eyebrow">{t('coaches.eyebrow')}</div>
+          <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3.5rem, 11vw, 8rem)', lineHeight: 1.02, margin: '0 0 28px' }}>
             {t('coaches.title')}
           </h1>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', padding: '10px 22px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.04)', marginBottom: '32px' }}>

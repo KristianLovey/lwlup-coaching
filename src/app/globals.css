@@ -47,9 +47,19 @@ p { color: var(--text-secondary); }
 h1, h2, h3, h4, h5 { color: var(--text-primary); }
 
 /* ── Stat labels / small caps tekst ─────────────────────────────── */
-.stat-label, .section-eyebrow {
-  color: var(--text-muted) !important;
-  letter-spacing: 0.4em;
+.stat-label { color: var(--text-muted) !important; letter-spacing: 0.4em; }
+
+/* Oznaka sekcije — jedan stil za sve javne stranice. Prije je svaka sekcija
+   imala svoje vrijednosti (0.5–0.75rem, tracking 0.35–0.5em, 5 različitih
+   prozirnosti), a tri su uz to imale i vodoravnu crticu ispred. */
+.section-eyebrow {
+  font-family: var(--fm);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 16px;
 }
 
 /* ── CTA Primary ─────────────────────────────────────────────────── */
