@@ -72,7 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           })}}
         />
       </head>
-      <body className={spaceGrotesk.className}>
+      <body className={inter.className}>
         <CapacitorDetect />
         <LanguageProvider>
           <ErrorBoundary label="App">{children}</ErrorBoundary>

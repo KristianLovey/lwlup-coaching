@@ -66,33 +66,31 @@ h1, h2, h3, h4, h5 { color: var(--text-primary); }
 .stat-card:hover .stat-value { filter: drop-shadow(0 0 20px rgba(255,255,255,0.3)); }
 
 /* ── Big Three Cards ─────────────────────────────────────────────── */
+/* Jedini izvor istine za .bt-* — komponenta je prije imala svoje duplikate
+   koji su se natezali s ovima (scale 1.05 vs 1.06, linija 50 vs 60px). */
 .bt-card {
   animation: fadeInUp 0.7s ease-out backwards;
-  transition: border-color 0.4s;
+  transition: border-color 0.4s, background 0.4s;
 }
-.bt-card:hover { border-color: rgba(255,255,255,0.22) !important; }
+.bt-card:hover { border-color: rgba(255,255,255,0.22) !important; background: #20202a !important; }
 .bt-num-col { transition: background 0.4s; }
 .bt-card:hover .bt-num-col { background: rgba(255,255,255,0.04) !important; }
-.bt-num { transition: color 0.4s; }
-.bt-card:hover .bt-num { color: rgba(255,255,255,0.55) !important; }
-.bt-lift-name { transition: transform 0.5s cubic-bezier(0.16,1,0.3,1); }
-.bt-card:hover .bt-lift-name { transform: translateX(8px); }
 .bt-img {
-  filter: grayscale(0.6) brightness(0.45);
+  /* brightness 0.45 + dva gradijenta preko = fotografija se praktički nije vidjela */
+  filter: grayscale(0.4) brightness(0.7);
   transition: transform 0.9s cubic-bezier(0.16,1,0.3,1), filter 0.5s;
 }
 .bt-card:hover .bt-img {
   transform: scale(1.06);
-  filter: grayscale(0) brightness(0.65) !important;
+  filter: grayscale(0) brightness(0.9) !important;
 }
-.bt-explore {
-  opacity: 0;
-  transform: translateX(-10px);
-  transition: opacity 0.4s cubic-bezier(0.16,1,0.3,1), transform 0.4s cubic-bezier(0.16,1,0.3,1);
-}
-.bt-card:hover .bt-explore { opacity: 1; transform: translateX(0); }
-.bt-explore-line { width: 40px; height: 1px; background: #fff; transition: width 0.4s; flex-shrink: 0; }
+/* Vidljivo i bez hovera: na dodirnom ekranu hovera nema pa je CTA bio trajno
+   nevidljiv, a u kartici je ostavljao praznu rupu. */
+.bt-explore { opacity: 0.62; transition: opacity 0.4s cubic-bezier(0.16,1,0.3,1); }
+.bt-card:hover .bt-explore { opacity: 1; }
+.bt-explore-line { width: 32px; height: 1px; background: #fff; transition: width 0.4s; flex-shrink: 0; }
 .bt-card:hover .bt-explore-line { width: 60px; }
+@media (hover: none) { .bt-explore { opacity: 1; } }
 
 /* ── Hotspots ────────────────────────────────────────────────────── */
 .hotspot { position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
@@ -214,9 +212,9 @@ body.nav-open .scroll-to-top-btn {
   .stat-card:nth-child(2) { border-right: none !important; }
   .stat-card:nth-child(3) { border-right: 1px solid rgba(255,255,255,0.1) !important; }
 
-  .bt-card { grid-template-columns: 48px 1fr !important; }
-  .bt-card > div:last-child { display: none !important; }
-  .bt-card > div:nth-child(2) { padding: 32px 24px !important; }
+  /* Mobilni raspored kartice drži sama komponenta (slika gore, tekst ispod).
+     Ovdje je prije stajalo "> div:last-child { display:none }", što je zbog veće
+     specifičnosti gasilo fotografiju unatoč .bt-img-col pravilima. */
   .bt-lift-name { font-size: 2.2rem !important; }
   .big-three-header { flex-direction: column !important; gap: 16px !important; align-items: flex-start !important; }
   .big-three-header p { text-align: left !important; max-width: 100% !important; }

@@ -59,6 +59,15 @@ const LIFT_DETAILS = {
 
 type LiftKey = keyof typeof LIFT_DETAILS
 
+// Kadar za usku vodoravnu kolonu kartice. Portretne fotke (squat/deadlift) prelijevaju
+// se po visini, pa postotak bira koji pojas se vidi: squat je centriran na dizača,
+// deadlift malo više gore da uhvati trup i šipku.
+const OBJECT_POS: Record<LiftKey, string> = {
+  SQUAT: 'center 50%',
+  'BENCH PRESS': 'center 30%',
+  DEADLIFT: 'center 35%',
+}
+
 // ── FIXED useReveal: fallback timer prevents cards from staying hidden ──
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null)
@@ -114,7 +123,7 @@ function LiftNameTag({ lift }: { lift: LiftKey }) {
   return (
     <div style={{ zIndex: 4 }}>
       <div style={{ fontSize: '0.55rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.6)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>{t('bt.technical')}</div>
-      <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.6rem,4vw,4rem)', fontWeight: 800, lineHeight: 0.88, letterSpacing: '-0.02em', textShadow: '0 4px 32px rgba(0,0,0,0.8)', color: '#fff' }}>{lift}</div>
+      <div className="bt-lift-name" style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.6rem,4vw,4rem)', fontWeight: 800, lineHeight: 0.88, letterSpacing: '-0.02em', textShadow: '0 4px 32px rgba(0,0,0,0.8)', color: '#fff' }}>{lift}</div>
     </div>
   )
 }
@@ -126,21 +135,25 @@ function PortraitModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
   return (
     <div className="bt-modal bt-modal-portrait" style={{ width: '100%', maxWidth: '1000px', background: '#1a1a20', border: '1px solid rgba(255,255,255,0.12)', display: 'grid', gridTemplateColumns: '1fr 380px', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.8)', animation: 'slideUp 0.45s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
       onClick={e => e.stopPropagation()}>
-      <div style={{ position: 'relative', background: '#000', overflowY: 'auto' }}>
-        <Image src={LIFT_DETAILS[lift].img} alt={lift} width={1000} height={1500} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} sizes="(max-width: 768px) 100vw, 620px" />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 55%, rgba(0,0,0,0.92) 100%)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, transparent 65%, #1a1a20 100%)' }} />
-        {LIFT_DETAILS[lift].points.map((p, i) => (
-          <div key={i} style={{ position: 'absolute', top: p.top, left: p.left, transform: 'translate(-50%, -50%)', zIndex: 3 }}
-            onMouseEnter={() => setHoveredHotspot(i)} onMouseLeave={() => setHoveredHotspot(null)}
-            onClick={e => { e.stopPropagation(); setHoveredHotspot(hoveredHotspot === i ? null : i) }}>
-            <div className={`hotspot${hoveredHotspot === i ? ' hotspot--active' : ''}`} style={{ transform: hoveredHotspot === i ? 'scale(1.3)' : 'scale(1)', transition: '0.3s' }}>
-              <div className="hotspot-core" /><div className="hotspot-ring" />
-              <div className="hotspot-label" style={{ opacity: hoveredHotspot === i ? 1 : 0, transform: hoveredHotspot === i ? 'translate(-50%, 8px)' : 'translate(-50%, 0)' }}>{t(p.label)}</div>
+      <div style={{ background: '#000', overflowY: 'auto' }}>
+        {/* Omotač je visok koliko i slika — bez njega bi se postoci hotspotova
+            računali prema visini kontejnera koji skrola i točke bi bile pomaknute. */}
+        <div style={{ position: 'relative' }}>
+          <Image src={LIFT_DETAILS[lift].img} alt={lift} width={1000} height={1500} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} sizes="(max-width: 768px) 100vw, 620px" />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 55%, rgba(0,0,0,0.92) 100%)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, transparent 65%, #1a1a20 100%)' }} />
+          {LIFT_DETAILS[lift].points.map((p, i) => (
+            <div key={i} style={{ position: 'absolute', top: p.top, left: p.left, transform: 'translate(-50%, -50%)', zIndex: 3 }}
+              onMouseEnter={() => setHoveredHotspot(i)} onMouseLeave={() => setHoveredHotspot(null)}
+              onClick={e => { e.stopPropagation(); setHoveredHotspot(hoveredHotspot === i ? null : i) }}>
+              <div className={`hotspot${hoveredHotspot === i ? ' hotspot--active' : ''}`} style={{ transform: hoveredHotspot === i ? 'scale(1.3)' : 'scale(1)', transition: '0.3s' }}>
+                <div className="hotspot-core" /><div className="hotspot-ring" />
+                <div className="hotspot-label" style={{ opacity: hoveredHotspot === i ? 1 : 0, transform: hoveredHotspot === i ? 'translate(-50%, 8px)' : 'translate(-50%, 0)' }}>{t(p.label)}</div>
+              </div>
             </div>
-          </div>
-        ))}
-        <div style={{ position: 'absolute', bottom: '32px', left: '36px', zIndex: 4 }}><LiftNameTag lift={lift} /></div>
+          ))}
+          <div style={{ position: 'absolute', bottom: '32px', left: '36px', zIndex: 4 }}><LiftNameTag lift={lift} /></div>
+        </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', borderLeft: '1px solid rgba(255,255,255,0.1)', height: '90vh' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
@@ -259,6 +272,8 @@ export default function BigThree() {
               const { meta } = LIFT_DETAILS[lift]
               return (
                 <div key={lift} onClick={() => setActiveLift(lift)} className="bt-card"
+                  role="button" tabIndex={0} aria-label={`${lift} — ${t('bt.explore')}`}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveLift(lift) } }}
                   style={{ display: 'grid', gridTemplateColumns: '80px 1fr 340px', alignItems: 'stretch', background: '#1a1a20', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', overflow: 'hidden', position: 'relative' }}>
                   <div className="bt-num-col" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)', padding: 'clamp(32px,4vw,48px) 0' }}>
                     <span style={{ fontFamily: 'var(--fd)', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.2)', writingMode: 'vertical-rl', transform: 'rotate(180deg)', transition: 'color 0.3s' }}>{meta.num}</span>
@@ -279,15 +294,15 @@ export default function BigThree() {
                       </div>
                     </div>
                     <div className="bt-explore" style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '8px' }}>
-                      <div className="bt-explore-line" style={{ height: '1px', background: '#fff', width: '30px', transition: 'width 0.4s' }} />
+                      <div className="bt-explore-line" />
                       <span style={{ fontSize: 'clamp(0.58rem,1.5vw,0.65rem)', letterSpacing: '0.35em', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' }}>{t('bt.explore')}</span>
                       <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>→</span>
                     </div>
                   </div>
                   <div className="bt-img-col" style={{ position: 'relative', overflow: 'hidden' }}>
-                    <Image src={LIFT_DETAILS[lift].img} alt={lift} fill quality={65} className="bt-img" style={{ objectFit: 'cover', objectPosition: lift === 'BENCH PRESS' ? 'center 30%' : 'center top', transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 100vw, 340px" />
+                    <Image src={LIFT_DETAILS[lift].img} alt={lift} fill quality={65} className="bt-img" style={{ objectFit: 'cover', objectPosition: OBJECT_POS[lift], transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 100vw, 340px" />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #1a1a20 0%, rgba(10,10,10,0.1) 40%, transparent 100%)' }} />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%)' }} />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.35) 0%, transparent 55%)' }} />
                     <div style={{ position: 'absolute', bottom: '24px', right: '24px', fontFamily: 'var(--fd)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.35em', color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase' }}>{lift}</div>
                   </div>
                 </div>
@@ -318,11 +333,7 @@ export default function BigThree() {
           align-items: start;
         }
 
-        /* ── Card hover ── */
-        .bt-card { transition: border-color 0.3s, background 0.3s; }
-        .bt-card:hover { border-color: rgba(255,255,255,0.2) !important; background: #1a1a20 !important; }
-        .bt-card:hover .bt-img { transform: scale(1.05); }
-        .bt-card:hover .bt-explore-line { width: 50px !important; }
+        /* ── Card hover ── (ostalo je u globals.css) */
         .bt-card:hover .bt-num-col span { color: rgba(255,255,255,0.5) !important; }
 
         /* ── Hotspots ── */
@@ -346,6 +357,7 @@ export default function BigThree() {
           /* Cards: stack vertically — image on top (natural size), content below */
           .bt-card { grid-template-columns: 1fr !important; }
           .bt-num-col { display: none !important; }
+          .bt-card > div:nth-child(2) { padding: 32px 24px !important; }
           .bt-img-col { order: -1; height: 180px !important; }
           .bt-img-col > img { width: 100% !important; height: 180px !important; object-fit: cover !important; }
 
