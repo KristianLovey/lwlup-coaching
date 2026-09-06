@@ -18,6 +18,17 @@
   --border-normal:  rgba(255,255,255,0.16);
   --border-subtle:  rgba(255,255,255,0.1);
 
+  /* ── Trening / Hub / Meet plohe ─────────────────────────────────
+     Isti kontrastni odnos kao Admin OS: neprozirne plohe iznad tamne
+     pozadine + vidljiv rub, umjesto jedva vidljivih bijelih overlaya. */
+  --t-bg:        #0a0a0a;
+  --t-s1:        #121212;  /* kartica na pozadini */
+  --t-s2:        #181818;  /* redak / polje unutar kartice */
+  --t-s3:        #202020;  /* istaknuto, hover, aktivno */
+  --t-hi:        #2a2a2a;  /* najviši sloj (odabrano) */
+  --t-border:    #232323;
+  --t-border-hi: #3a3a3a;
+
   /* Layered surfaces — blago podignut ugljen (bolja vidljivost oblika/teksta) */
   --bg-0: #131317;   /* page / sections base (podignut ugljen) */
   --bg-1: #1a1a20;   /* alternating section */

@@ -13,7 +13,7 @@ type PriorityConfig = Record<LiftKey, Record<string, CellConfig>>
 const PRIORITY_ORDER: Priority[] = ['none', 'primary', 'secondary', 'tertiary', 'quaternary', 'quinary']
 
 const PRIORITY_META: Record<Priority, { label: string; roman: string; color: string; bg: string; border: string }> = {
-  none:       { label: '—',           roman: '—',   color: 'rgba(255,255,255,0.3)',  bg: 'rgba(255,255,255,0.04)',    border: 'rgba(255,255,255,0.1)' },
+  none:       { label: '—',           roman: '—',   color: 'rgba(255,255,255,0.3)',  bg: 'rgba(255,255,255,0.04)',    border: 'var(--t-border)' },
   primary:    { label: 'PRIMARNI',    roman: 'I',   color: '#ef3535',               bg: 'rgba(239,53,53,0.22)',     border: 'rgba(239,53,53,0.5)' },
   secondary:  { label: 'SEKUNDARNI', roman: 'II',  color: '#f97316',               bg: 'rgba(249,115,22,0.22)',    border: 'rgba(249,115,22,0.45)' },
   tertiary:   { label: 'TERCIJARNI', roman: 'III', color: '#f59e0b',               bg: 'rgba(245,158,11,0.22)',    border: 'rgba(245,158,11,0.45)' },
@@ -171,19 +171,19 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
       <div ref={blockDropRef} style={{ position: 'relative', display: 'inline-block', marginBottom: '20px' }}>
         <button
           onClick={() => setBlockOpen(v => !v)}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.13)', borderRadius: '9px', cursor: 'pointer', color: '#f0f0f0', transition: 'all 0.15s' }}>
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: selectedBlock?.status === 'active' ? '#ef3535' : 'rgba(255,255,255,0.3)', flexShrink: 0, boxShadow: selectedBlock?.status === 'active' ? '0 0 6px rgba(239,53,53,0.5)' : 'none' }} />
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: 'var(--t-s3)', border: '1px solid var(--t-border-hi)', borderRadius: '9px', cursor: 'pointer', color: '#f0f0f0', transition: 'all 0.15s' }}>
+          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: selectedBlock?.status === 'active' ? '#ef3535' : 'var(--t-border-hi)', flexShrink: 0, boxShadow: selectedBlock?.status === 'active' ? '0 0 6px rgba(239,53,53,0.5)' : 'none' }} />
           <span style={{ fontSize: '0.72rem', fontFamily: FM, fontWeight: 600, letterSpacing: '-0.01em' }}>{selectedBlock?.name ?? '—'}</span>
           <ChevronDown size={12} color="rgba(255,255,255,0.4)" style={{ transform: blockOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
         </button>
         {blockOpen && (
-          <div style={{ position: 'absolute', top: 'calc(100% + 5px)', left: 0, zIndex: 60, background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '11px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.8)', minWidth: '220px', animation: 'dropDown 0.15s ease' }}>
+          <div style={{ position: 'absolute', top: 'calc(100% + 5px)', left: 0, zIndex: 60, background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '11px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.8)', minWidth: '220px', animation: 'dropDown 0.15s ease' }}>
             {blocks.map((b, i) => (
               <button key={b.id} onClick={() => { setSelectedBlockId(b.id); setBlockOpen(false) }}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 14px', background: b.id === selectedBlockId ? 'rgba(255,255,255,0.06)' : 'transparent', border: 'none', borderBottom: i < blocks.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', cursor: 'pointer', textAlign: 'left' as const, transition: 'background 0.12s' }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 14px', background: b.id === selectedBlockId ? 'var(--t-s3)' : 'transparent', border: 'none', borderBottom: i < blocks.length - 1 ? '1px solid var(--t-border)' : 'none', cursor: 'pointer', textAlign: 'left' as const, transition: 'background 0.12s' }}
                 onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'}
                 onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = b.id === selectedBlockId ? 'rgba(255,255,255,0.06)' : 'transparent'}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: b.status === 'active' ? '#ef3535' : 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: b.status === 'active' ? '#ef3535' : 'var(--t-border-hi)', flexShrink: 0 }} />
                 <div>
                   <div style={{ fontSize: '0.72rem', color: '#e0e0e0', fontFamily: FM, fontWeight: 500 }}>{b.name}</div>
                   <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginTop: '1px' }}>{b.start_date}</div>
@@ -254,7 +254,7 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
                       <td key={day.key} style={{ padding: '3px', verticalAlign: 'stretch' as const }}>
                         <div className="pa-cell-wrap" style={{
                           background: empty ? 'rgba(255,255,255,0.02)' : `linear-gradient(155deg, ${m.bg}, rgba(0,0,0,0.18))`,
-                          border: empty ? '1px dashed rgba(255,255,255,0.08)' : `1px solid ${m.border}`,
+                          border: empty ? '1px dashed var(--t-border)' : `1px solid ${m.border}`,
                           boxShadow: empty ? 'none' : `0 6px 18px -10px ${m.color}, inset 0 1px 0 rgba(255,255,255,0.05)`,
                           borderRadius: '12px',
                           display: 'flex', flexDirection: 'column' as const, overflow: 'hidden',
@@ -374,8 +374,8 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
       onTouchEnd={cancelHold}
       onTouchCancel={cancelHold}
       style={{
-        background: '#111111',
-        border: holding ? '1px solid rgba(239,53,53,0.45)' : '1px solid rgba(255,255,255,0.07)',
+        background: 'var(--t-s1)',
+        border: holding ? '1px solid rgba(239,53,53,0.45)' : '1px solid var(--t-border)',
         borderRadius: '20px', padding: '22px 24px', marginBottom: '12px',
         cursor: 'default', transition: 'border-color 0.2s',
         position: 'relative' as const,
@@ -401,7 +401,7 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
             {DAYS.filter(d => LIFTS.some(l => config[l.key][d.key].priority !== 'none')).map(d => (
-              <div key={d.key} className="pv-day-badge" style={{ padding: '3px 7px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '5px', fontSize: '0.42rem', color: 'rgba(255,255,255,0.4)', fontFamily: FM, letterSpacing: '0.1em' }}>
+              <div key={d.key} className="pv-day-badge" style={{ padding: '3px 7px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '5px', fontSize: '0.42rem', color: 'rgba(255,255,255,0.4)', fontFamily: FM, letterSpacing: '0.1em' }}>
                 {d.label}
               </div>
             ))}
@@ -440,7 +440,7 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
                         <div className="pv-cell" style={{
                           minWidth: '34px', minHeight: '54px', height: '100%',
                           background: empty ? 'rgba(255,255,255,0.018)' : `linear-gradient(155deg, ${m.bg}, rgba(0,0,0,0.18))`,
-                          border: empty ? '1px dashed rgba(255,255,255,0.06)' : `1px solid ${m.border}`,
+                          border: empty ? '1px dashed var(--t-border)' : `1px solid ${m.border}`,
                           boxShadow: empty ? 'none' : `0 6px 18px -10px ${m.color}, inset 0 1px 0 rgba(255,255,255,0.04)`,
                           borderRadius: '11px', overflow: 'hidden',
                           display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center',
@@ -481,7 +481,7 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
 
         {/* Legend */}
         {usedPriorities.length > 0 && (
-          <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' as const, marginTop: '14px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' as const, marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--t-border)', alignItems: 'center' }}>
             {usedPriorities.map(p => {
               const m = PRIORITY_META[p]
               return (

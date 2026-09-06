@@ -30,8 +30,8 @@ export function CalcInput({ label, value, onChange, color = '#6b8cff', type = 'n
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           style={{
-            width: '100%', background: focused ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
-            border: `1.5px solid ${focused ? color : 'rgba(255,255,255,0.1)'}`,
+            width: '100%', background: focused ? 'var(--t-s3)' : 'var(--t-s2)',
+            border: `1.5px solid ${focused ? color : 'var(--t-border)'}`,
             color: '#f0f0f5', padding: '11px 14px', borderRadius: '10px', outline: 'none',
             fontSize: '1rem', fontFamily: 'var(--fm)', boxSizing: 'border-box' as const,
             transition: 'border-color 0.2s, background 0.2s',
@@ -63,12 +63,12 @@ export function SectionTitle({ children, icon, color }: { children: React.ReactN
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
       {icon && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '6px', background: color ? `${color}18` : 'rgba(255,255,255,0.06)', color: color ?? 'rgba(255,255,255,0.4)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '6px', background: color ? `${color}18` : 'var(--t-s3)', color: color ?? 'rgba(255,255,255,0.4)', flexShrink: 0 }}>
           {icon}
         </div>
       )}
       <span style={{ fontSize: '0.62rem', fontWeight: 600, color: color ?? 'rgba(255,255,255,0.35)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>{children}</span>
-      <div style={{ height: '1px', flex: 1, background: color ? `${color}20` : 'rgba(255,255,255,0.07)' }} />
+      <div style={{ height: '1px', flex: 1, background: color ? `${color}20` : 'var(--t-border)' }} />
     </div>
   )
 }
@@ -116,13 +116,13 @@ export function RpeCalc() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <ResultCard label="Procijenjeni 1RM" value={orm} unit="kg" color="#f59e0b" sub={`iz ${w}kg × ${r} @RPE${rv}`} />
           {/* RPE breakdown */}
-          <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.08)', borderRadius: '14px' }}>
+          <div style={{ padding: '16px 20px', background: 'var(--t-s2)', border: '1.5px solid var(--t-border)', borderRadius: '14px' }}>
             <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '10px' }}>BREAKDOWN ZA {r} REPS</div>
             {[10,9,8,7].map(r2 => {
               const w2 = weightForRPE(orm, r, r2)
               const isActive = r2 === Math.round(rv)
               return (
-                <div key={r2} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: r2 > 7 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                <div key={r2} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: r2 > 7 ? '1px solid var(--t-border)' : 'none' }}>
                   <span style={{ fontSize: '0.65rem', color: isActive ? '#f59e0b' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: isActive ? 700 : 400 }}>@RPE {r2}</span>
                   <span style={{ fontSize: '0.9rem', fontWeight: 700, color: isActive ? '#f59e0b' : 'rgba(255,255,255,0.6)', fontFamily: 'var(--fd)' }}>{w2} kg</span>
                 </div>
@@ -185,8 +185,8 @@ export function GlCalc() {
         {(['male','female'] as const).map(sv => (
           <button key={sv} onClick={() => setSex(sv)} style={{
             padding: '11px', borderRadius: '10px', cursor: 'pointer', fontFamily: 'var(--fm)', fontWeight: 600, fontSize: '0.82rem', transition: 'all 0.2s',
-            background: sex === sv ? 'rgba(107,140,255,0.12)' : 'rgba(255,255,255,0.03)',
-            border: `1.5px solid ${sex === sv ? 'rgba(107,140,255,0.4)' : 'rgba(255,255,255,0.08)'}`,
+            background: sex === sv ? 'rgba(107,140,255,0.12)' : 'var(--t-s2)',
+            border: `1.5px solid ${sex === sv ? 'rgba(107,140,255,0.4)' : 'var(--t-border)'}`,
             color: sex === sv ? '#8ba8ff' : 'rgba(255,255,255,0.4)',
             boxShadow: sex === sv ? '0 0 0 3px rgba(107,140,255,0.1)' : 'none',
           }}>
@@ -200,8 +200,8 @@ export function GlCalc() {
         {([['lifts','Pojedini liftovi'],['total','Total']] as const).map(([mv, label]) => (
           <button key={mv} onClick={() => setMode(mv)} style={{
             padding: '9px', borderRadius: '10px', cursor: 'pointer', fontFamily: 'var(--fm)', fontWeight: 600, fontSize: '0.76rem', transition: 'all 0.2s',
-            background: mode === mv ? 'rgba(107,140,255,0.12)' : 'rgba(255,255,255,0.03)',
-            border: `1.5px solid ${mode === mv ? 'rgba(107,140,255,0.4)' : 'rgba(255,255,255,0.08)'}`,
+            background: mode === mv ? 'rgba(107,140,255,0.12)' : 'var(--t-s2)',
+            border: `1.5px solid ${mode === mv ? 'rgba(107,140,255,0.4)' : 'var(--t-border)'}`,
             color: mode === mv ? '#8ba8ff' : 'rgba(255,255,255,0.4)',
           }}>{label}</button>
         ))}
@@ -225,9 +225,9 @@ export function GlCalc() {
 
       {/* Auto total display — samo u načinu pojedinih liftova */}
       {mode === 'lifts' && total > 0 && (
-        <div className="gl-total-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1px', background: 'rgba(255,255,255,0.06)', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', animation: 'popIn 0.3s ease' }}>
+        <div className="gl-total-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1px', background: 'var(--t-s3)', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--t-border)', animation: 'popIn 0.3s ease' }}>
           {[['SQ', squat, '#f87171'], ['BP', bench, '#f59e0b'], ['DL', dead, '#6b8cff'], ['TOTAL', String(total), '#fff']].map(([l, v, c]) => (
-            <div key={l} style={{ padding: '14px 10px', background: '#09090e', textAlign: 'center' as const }}>
+            <div key={l} style={{ padding: '14px 10px', background: 'var(--t-s1)', textAlign: 'center' as const }}>
               <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', fontFamily: 'var(--fm)', marginBottom: '4px' }}>{l}</div>
               <div style={{ fontFamily: 'var(--fd)', fontSize: l === 'TOTAL' ? '1.6rem' : '1.3rem', fontWeight: 700, color: c as string, lineHeight: 1 }}>{v || '—'}</div>
             </div>
@@ -254,13 +254,13 @@ export function GlCalc() {
             </div>
           </div>
           {/* Progress bar */}
-          <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px' }}>
+          <div style={{ padding: '16px 20px', background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
               {['Beginner', 'Inter.', 'Advanced', 'Prof.', 'Elite', 'Monster'].map((l) => (
                 <span key={l} style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>{l}</span>
               ))}
             </div>
-            <div style={{ height: '6px', background: 'rgba(255,255,255,0.07)', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ height: '6px', background: 'var(--t-s3)', borderRadius: '3px', overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${pct}%`, background: `linear-gradient(90deg, #6b8cff, ${glC})`, borderRadius: '3px', transition: 'width 1s cubic-bezier(0.16,1,0.3,1)', boxShadow: `0 0 8px ${glC}66` }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
@@ -353,8 +353,8 @@ export function WaterCutCalc() {
             <>
               <button onClick={() => setShowPlan(!showPlan)} style={{
                 width: '100%', padding: '12px', borderRadius: '10px', cursor: 'pointer',
-                background: showPlan ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.03)',
-                border: `1.5px solid ${showPlan ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                background: showPlan ? 'rgba(34,197,94,0.08)' : 'var(--t-s2)',
+                border: `1.5px solid ${showPlan ? 'rgba(34,197,94,0.3)' : 'var(--t-border)'}`,
                 color: showPlan ? '#4ade80' : 'rgba(255,255,255,0.45)',
                 fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.04em', fontFamily: 'var(--fm)',
                 transition: 'all 0.2s', marginBottom: '10px',
@@ -365,9 +365,9 @@ export function WaterCutCalc() {
                 <span style={{ marginLeft: 'auto', transform: showPlan ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>↓</span>
               </button>
               {showPlan && (
-                <div style={{ border: '1.5px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden', animation: 'fadeUp 0.25s ease' }}>
+                <div style={{ border: '1.5px solid var(--t-border)', borderRadius: '12px', overflow: 'hidden', animation: 'fadeUp 0.25s ease' }}>
                   {/* Header */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '70px 70px 60px 1fr', padding: '9px 16px', background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '70px 70px 60px 1fr', padding: '9px 16px', background: 'var(--t-s3)', borderBottom: '1px solid var(--t-border)' }}>
                     {['Dan','Voda','Sol','Napomena'].map(h => (
                       <span key={h} style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.06em' }}>{h}</span>
                     ))}
@@ -376,7 +376,7 @@ export function WaterCutCalc() {
                     const isVaga = p.d === 0
                     const isLow  = p.d <= 2
                     return (
-                      <div key={i} style={{ display: 'grid', gridTemplateColumns: '70px 70px 60px 1fr', padding: '11px 16px', background: isVaga ? 'rgba(245,158,11,0.06)' : isLow ? 'rgba(248,113,113,0.04)' : 'transparent', borderBottom: i < PLAN.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', alignItems: 'center', transition: 'background 0.15s' }}>
+                      <div key={i} style={{ display: 'grid', gridTemplateColumns: '70px 70px 60px 1fr', padding: '11px 16px', background: isVaga ? 'rgba(245,158,11,0.06)' : isLow ? 'rgba(248,113,113,0.04)' : 'transparent', borderBottom: i < PLAN.length - 1 ? '1px solid var(--t-border)' : 'none', alignItems: 'center', transition: 'background 0.15s' }}>
                         <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isVaga ? '#f59e0b' : '#e0e0e0', fontFamily: 'var(--fm)' }}>{isVaga ? 'Vaga' : `${p.d}d`}</span>
                         <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#4ade80' }}>{p.w}L</span>
                         <span style={{ fontSize: '0.78rem', color: p.s === 0 ? '#f87171' : 'rgba(255,255,255,0.45)' }}>{p.s === 0 ? '✗' : `${p.s}g`}</span>
@@ -457,7 +457,7 @@ function BarLoader() {
           <input
             type="number" value={target} onChange={e => setTarget(e.target.value)}
             placeholder="npr. 100" min={baseKg} step={0.5}
-            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: `1px solid ${COLOR}33`, borderRadius: '8px', color: '#f0f0f5', padding: '12px 14px', fontFamily: 'var(--fm)', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' as const }}
+            style={{ width: '100%', background: 'var(--t-s3)', border: `1px solid ${COLOR}33`, borderRadius: '8px', color: '#f0f0f5', padding: '12px 14px', fontFamily: 'var(--fm)', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' as const }}
             onFocus={e => e.currentTarget.style.borderColor = `${COLOR}88`}
             onBlur={e  => e.currentTarget.style.borderColor = `${COLOR}33`}
           />
@@ -465,10 +465,10 @@ function BarLoader() {
         {/* Collar toggle */}
         <div>
           <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontWeight: 600 }}>COLLAR</div>
-          <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--t-border)' }}>
             {([['competition', '2.5 kg'], ['classic', '0 kg']] as const).map(([val, lbl]) => (
               <button key={val} onClick={() => setCollarType(val)}
-                style={{ padding: '11px 12px', background: collarType === val ? COLOR : 'rgba(255,255,255,0.03)', border: 'none', color: collarType === val ? '#000' : 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}>
+                style={{ padding: '11px 12px', background: collarType === val ? COLOR : 'var(--t-s2)', border: 'none', color: collarType === val ? '#000' : 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}>
                 {lbl}
               </button>
             ))}
@@ -482,7 +482,7 @@ function BarLoader() {
         <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' as const }}>
           {BL_BAR_PRESETS.map(kg => (
             <button key={kg} onClick={() => { setBarKg(kg); setCustomBar('') }}
-              style={{ padding: '5px 10px', background: barKg === kg && !customBar ? `${COLOR}18` : 'rgba(255,255,255,0.03)', border: `1px solid ${barKg === kg && !customBar ? COLOR : 'rgba(255,255,255,0.1)'}`, borderRadius: '6px', color: barKg === kg && !customBar ? COLOR : 'rgba(255,255,255,0.45)', cursor: 'pointer', fontSize: '0.7rem', fontFamily: 'var(--fm)', fontWeight: 600, transition: 'all 0.15s' }}>
+              style={{ padding: '5px 10px', background: barKg === kg && !customBar ? `${COLOR}18` : 'var(--t-s2)', border: `1px solid ${barKg === kg && !customBar ? COLOR : 'var(--t-border)'}`, borderRadius: '6px', color: barKg === kg && !customBar ? COLOR : 'rgba(255,255,255,0.45)', cursor: 'pointer', fontSize: '0.7rem', fontFamily: 'var(--fm)', fontWeight: 600, transition: 'all 0.15s' }}>
               {kg} kg
             </button>
           ))}
@@ -496,7 +496,7 @@ function BarLoader() {
             const v = parseFloat(e.target.value)
             if (!isNaN(v) && v > 0) setBarKg(v)
           }}
-          style={{ width: '72px', background: customBar ? `${COLOR}0a` : 'rgba(255,255,255,0.03)', border: `1px solid ${customBar ? COLOR : 'rgba(255,255,255,0.1)'}`, borderRadius: '6px', color: customBar ? COLOR : 'rgba(255,255,255,0.4)', padding: '5px 8px', fontFamily: 'var(--fm)', fontSize: '0.7rem', outline: 'none', transition: 'all 0.15s' }}
+          style={{ width: '72px', background: customBar ? `${COLOR}0a` : 'var(--t-s2)', border: `1px solid ${customBar ? COLOR : 'var(--t-border)'}`, borderRadius: '6px', color: customBar ? COLOR : 'rgba(255,255,255,0.4)', padding: '5px 8px', fontFamily: 'var(--fm)', fontSize: '0.7rem', outline: 'none', transition: 'all 0.15s' }}
           onFocus={e => e.currentTarget.style.borderColor = COLOR}
           onBlur={e  => e.currentTarget.style.borderColor = customBar ? COLOR : 'rgba(255,255,255,0.1)'}
         />
@@ -569,7 +569,7 @@ function BarLoader() {
           </div>
 
           {/* Plate list — per side */}
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '14px' }}>
+          <div style={{ borderTop: '1px solid var(--t-border)', paddingTop: '14px' }}>
             <div style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.25em', marginBottom: '10px', fontWeight: 600, textTransform: 'uppercase' as const }}>
               Po strani
             </div>
@@ -587,7 +587,7 @@ function BarLoader() {
             )}
 
             {/* Totals row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '8px', overflow: 'hidden' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '8px', overflow: 'hidden' }}>
               {[
                 { label: 'Šipka',   val: `${barKg} kg` },
                 { label: 'Collari', val: collarKg > 0 ? `${+(collarKg * 2).toFixed(2)} kg` : '—' },
@@ -604,7 +604,7 @@ function BarLoader() {
       )}
 
       {/* Plate legend */}
-      <div style={{ marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px' }}>
+      <div style={{ marginTop: '20px', borderTop: '1px solid var(--t-border)', paddingTop: '14px' }}>
         <div style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.25em', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase' as const }}>Dostupni utezi</div>
         <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '5px' }}>
           {BL_PLATES.map((p, i) => (
@@ -773,10 +773,10 @@ function WaterLog({ userId }: { userId: string }) {
     <div style={{ fontFamily: 'var(--fm)', display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '2px', background: 'rgba(255,255,255,0.04)', borderRadius: '9px', padding: '3px' }}>
+      <div style={{ display: 'flex', gap: '2px', background: 'var(--t-s3)', borderRadius: '9px', padding: '3px' }}>
         {([['log', 'DNEVNI LOG'], ['graph', 'GRAF NAPRETKA']] as const).map(([t, lbl]) => (
           <button key={t} onClick={() => setTab(t)}
-            style={{ flex: 1, padding: '7px', background: tab === t ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', borderRadius: '6px', color: tab === t ? '#f0f0f5' : 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '0.62rem', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.08em', transition: 'all 0.15s' }}>
+            style={{ flex: 1, padding: '7px', background: tab === t ? 'var(--t-hi)' : 'transparent', border: 'none', borderRadius: '6px', color: tab === t ? '#f0f0f5' : 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '0.62rem', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.08em', transition: 'all 0.15s' }}>
             {lbl}
           </button>
         ))}
@@ -825,7 +825,7 @@ function WaterLog({ userId }: { userId: string }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px', marginBottom: '8px' }}>
               {WL_QUICK.map(({ ml, label }) => (
                 <button key={ml} onClick={() => addWater(ml)}
-                  style={{ padding: '12px 6px 10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '11px', cursor: 'pointer', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '7px', transition: 'all 0.15s' }}
+                  style={{ padding: '12px 6px 10px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '11px', cursor: 'pointer', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '7px', transition: 'all 0.15s' }}
                   onMouseEnter={e => { e.currentTarget.style.background = `${COLOR}12`; e.currentTarget.style.borderColor = `${COLOR}44` }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}>
                   <WaterIcon ml={ml} />
@@ -837,7 +837,7 @@ function WaterLog({ userId }: { userId: string }) {
             <div style={{ display: 'flex', gap: '8px' }}>
               <input type="number" value={customMl} onChange={e => setCustomMl(e.target.value)}
                 placeholder="Specifični unos (ml)" min={1} step={50}
-                style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f0f0f5', padding: '9px 12px', fontFamily: 'var(--fm)', fontSize: '0.88rem', outline: 'none', transition: 'border-color 0.15s' }}
+                style={{ flex: 1, background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '8px', color: '#f0f0f5', padding: '9px 12px', fontFamily: 'var(--fm)', fontSize: '0.88rem', outline: 'none', transition: 'border-color 0.15s' }}
                 onFocus={e => e.currentTarget.style.borderColor = COLOR}
                 onBlur={e  => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
                 onKeyDown={e => { if (e.key === 'Enter') { const ml = parseInt(customMl); if (ml > 0) { addWater(ml); setCustomMl('') } } }}
@@ -2680,7 +2680,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
           <SectionTitle>{g.title}</SectionTitle>
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0' }}>
             {g.body.map((para, i) => (
-              <div key={i} style={{ padding: '14px 0', borderBottom: i < g.body.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+              <div key={i} style={{ padding: '14px 0', borderBottom: i < g.body.length - 1 ? '1px solid var(--t-border)' : 'none' }}>
                 <p style={{ fontSize: '0.85rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.65)', margin: 0, fontFamily: 'var(--fm)' }}>{para}</p>
               </div>
             ))}
@@ -2702,7 +2702,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
           style={{
             position: 'relative' as const,
             display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', textAlign: 'left' as const,
-            background: isUpcoming ? 'rgba(255,255,255,0.03)' : isActive ? `${c}18` : 'rgba(255,255,255,0.05)',
+            background: isUpcoming ? 'var(--t-s2)' : isActive ? `${c}18` : 'var(--t-s3)',
             border: `1.5px solid ${isUpcoming ? c + '18' : isActive ? c + '55' : c + '22'}`,
             borderRadius: isActive && isMobile ? '12px 12px 0 0' : '12px',
             cursor: isUpcoming ? 'default' : 'pointer', transition: 'all 0.2s',
@@ -2731,7 +2731,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
 
         {/* Inline expansion on mobile */}
         {isActive && isMobile && (
-          <div style={{ border: `1.5px solid ${c}44`, borderTop: 'none', borderRadius: '0 0 12px 12px', background: '#111111', padding: '20px 16px', animation: 'fadeUp 0.2s ease' }}>
+          <div style={{ border: `1.5px solid ${c}44`, borderTop: 'none', borderRadius: '0 0 12px 12px', background: 'var(--t-s1)', padding: '20px 16px', animation: 'fadeUp 0.2s ease' }}>
             {renderToolContent(tool.id)}
           </div>
         )}
@@ -2749,7 +2749,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Pretraži alate..."
-            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#f0f0f5', padding: '10px 14px 10px 36px', fontFamily: 'var(--fm)', fontSize: '0.82rem', outline: 'none', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
+            style={{ width: '100%', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '10px', color: '#f0f0f5', padding: '10px 14px 10px 36px', fontFamily: 'var(--fm)', fontSize: '0.82rem', outline: 'none', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' }}
             onFocus={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)' }}
             onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
           />
@@ -2762,7 +2762,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
         {userId && (
           <button onClick={openSettings}
             title="Prilagodi hub"
-            style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '7px', padding: '0 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.08em', transition: 'all 0.2s', whiteSpace: 'nowrap' as const }}
+            style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '7px', padding: '0 14px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '10px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.08em', transition: 'all 0.2s', whiteSpace: 'nowrap' as const }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.color = '#fff' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}>
             <SlidersHorizontal size={13} strokeWidth={2.2} />
@@ -2797,16 +2797,16 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
       {showSettings && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '0', backdropFilter: 'blur(6px)', animation: 'fadeIn 0.15s' }}
           onClick={() => setShowSettings(false)}>
-          <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: '520px', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' as const, boxShadow: '0 -20px 60px rgba(0,0,0,0.6)', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
+          <div style={{ background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: '520px', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' as const, boxShadow: '0 -20px 60px rgba(0,0,0,0.6)', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
             onClick={e => e.stopPropagation()}>
 
             {/* Header */}
-            <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+            <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--t-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
               <div>
                 <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f0f0f8', fontFamily: 'var(--fm)' }}>Prilagodi hub</div>
                 <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em', marginTop: '2px' }}>Odaberi što ti se prikazuje</div>
               </div>
-              <button onClick={() => setShowSettings(false)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#888', width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button onClick={() => setShowSettings(false)} style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: '#888', width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X size={14} />
               </button>
             </div>
@@ -2826,14 +2826,14 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
                         onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                         {/* Toggle pill */}
-                        <div style={{ width: '38px', height: '22px', borderRadius: '11px', background: isOn ? g.color : 'rgba(255,255,255,0.1)', border: `1.5px solid ${isOn ? g.color : 'rgba(255,255,255,0.12)'}`, position: 'relative', flexShrink: 0, transition: 'all 0.2s' }}>
-                          <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: isOn ? 'calc(100% - 17px)' : '3px', width: '14px', height: '14px', borderRadius: '50%', background: isOn ? '#fff' : 'rgba(255,255,255,0.35)', transition: 'left 0.2s, background 0.2s' }} />
+                        <div style={{ width: '38px', height: '22px', borderRadius: '11px', background: isOn ? g.color : 'var(--t-hi)', border: `1.5px solid ${isOn ? g.color : 'var(--t-border)'}`, position: 'relative', flexShrink: 0, transition: 'all 0.2s' }}>
+                          <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: isOn ? 'calc(100% - 17px)' : '3px', width: '14px', height: '14px', borderRadius: '50%', background: isOn ? '#fff' : 'var(--t-border-hi)', transition: 'left 0.2s, background 0.2s' }} />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: '0.78rem', fontWeight: 600, color: isOn ? '#f0f0f8' : 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}>{tool.label}</div>
                           <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>{tool.sub}</div>
                         </div>
-                        <span style={{ fontSize: '0.48rem', fontWeight: 700, color: isOn ? g.color : 'rgba(255,255,255,0.2)', background: isOn ? `${g.color}18` : 'rgba(255,255,255,0.04)', padding: '2px 7px', borderRadius: '4px', border: `1px solid ${isOn ? g.color + '30' : 'rgba(255,255,255,0.07)'}`, letterSpacing: '0.06em', fontFamily: 'var(--fm)', transition: 'all 0.2s', flexShrink: 0 }}>
+                        <span style={{ fontSize: '0.48rem', fontWeight: 700, color: isOn ? g.color : 'rgba(255,255,255,0.2)', background: isOn ? `${g.color}18` : 'var(--t-s3)', padding: '2px 7px', borderRadius: '4px', border: `1px solid ${isOn ? g.color + '30' : 'var(--t-border)'}`, letterSpacing: '0.06em', fontFamily: 'var(--fm)', transition: 'all 0.2s', flexShrink: 0 }}>
                           {tool.badge}
                         </span>
                       </button>
@@ -2844,8 +2844,8 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
             </div>
 
             {/* Footer */}
-            <div style={{ padding: '14px 20px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', gap: '8px', flexShrink: 0 }}>
-              <button onClick={() => { setDraftHidden([]); }} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.45)', borderRadius: '8px', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', fontFamily: 'var(--fm)' }}>
+            <div style={{ padding: '14px 20px', borderTop: '1px solid var(--t-border)', display: 'flex', gap: '8px', flexShrink: 0 }}>
+              <button onClick={() => { setDraftHidden([]); }} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.45)', borderRadius: '8px', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', fontFamily: 'var(--fm)' }}>
                 PRIKAŽI SVE
               </button>
               <button onClick={saveSettings} disabled={savingSettings}
@@ -2882,7 +2882,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
           onClick={e => { if (e.target === e.currentTarget) setActive(null) }}
           style={{ position: 'fixed', inset: 0, zIndex: 1010, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', animation: 'fadeIn 0.18s ease' }}>
           <div
-            style={{ width: '100%', maxWidth: '680px', maxHeight: '82vh', display: 'flex', flexDirection: 'column' as const, border: `1.5px solid ${activeTool.color}44`, borderRadius: '18px', overflow: 'hidden', boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px ${activeTool.color}18, 0 0 60px ${activeTool.color}10`, animation: 'panelIn 0.25s cubic-bezier(0.16,1,0.3,1)', background: '#111111' }}>
+            style={{ width: '100%', maxWidth: '680px', maxHeight: '82vh', display: 'flex', flexDirection: 'column' as const, border: `1.5px solid ${activeTool.color}44`, borderRadius: '18px', overflow: 'hidden', boxShadow: `0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px ${activeTool.color}18, 0 0 60px ${activeTool.color}10`, animation: 'panelIn 0.25s cubic-bezier(0.16,1,0.3,1)', background: 'var(--t-s1)' }}>
 
             {/* Modal header */}
             <div style={{ padding: '16px 20px', background: `${activeTool.color}14`, borderBottom: `1px solid ${activeTool.color}2a`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
@@ -2896,7 +2896,7 @@ export function HubTab({ athleteName, userId }: { athleteName: string; userId?: 
                 </div>
               </div>
               <button onClick={() => setActive(null)}
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}
+                style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.4)', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff' }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}>
                 <X size={14} />

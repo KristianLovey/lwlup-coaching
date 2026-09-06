@@ -444,7 +444,7 @@ export default function TrainingPage() {
   }, [block])
 
   return (
-    <div style={{ background: '#090909', color: '#f0f0f0', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
+    <div style={{ background: 'var(--t-bg)', color: '#f0f0f0', minHeight: '100vh', fontFamily: 'var(--fm)', overflowX: 'hidden' }}>
 
       {/* ── GRAIN ── */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.22, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E")`, backgroundSize: '200px 200px' }} />
@@ -457,7 +457,7 @@ export default function TrainingPage() {
         <div className='page-header' style={{ maxWidth: '1200px', margin: '0 auto', padding: '28px 32px 0', position: 'relative', zIndex: 1 }}>
 
           {/* ── TAB SWITCHER ── */}
-          <div className="tab-switcher" style={{ display: 'flex', gap: '4px', marginBottom: '32px', padding: '5px', background: '#1e1e1e', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.18)', width: 'fit-content', overflowX: 'auto' as const }}>
+          <div className="tab-switcher" style={{ display: 'flex', gap: '4px', marginBottom: '32px', padding: '5px', background: 'var(--t-s3)', borderRadius: '999px', border: '1px solid var(--t-border-hi)', width: 'fit-content', overflowX: 'auto' as const }}>
             {([['program','Program'],['hub','Hub i Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label]) => (
               <button key={tab} onClick={() => setActiveTab(tab as 'program'|'hub'|'meet')}
                 style={{ padding: '9px 22px', background: activeTab === tab ? '#f0f0f0' : 'transparent', border: 'none', borderRadius: '999px', cursor: 'pointer', fontSize: '0.7rem', fontFamily: 'var(--fm)', fontWeight: activeTab === tab ? 700 : 500, color: activeTab === tab ? '#090909' : 'rgba(255,255,255,0.65)', transition: 'all 0.18s', whiteSpace: 'nowrap' as const, letterSpacing: '0.14em', textTransform: 'uppercase' as const }}>
@@ -495,7 +495,7 @@ export default function TrainingPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '340px' }}>
                       {allBlocks.map((b: BlockSummary) => (
                         <button key={b.id} onClick={() => switchBlock(b.id)}
-                          style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 18px', borderRadius: '14px', background: '#111111', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', textAlign: 'left' as const, transition: 'all 0.15s' }}
+                          style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 18px', borderRadius: '14px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', cursor: 'pointer', textAlign: 'left' as const, transition: 'all 0.15s' }}
                           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.28)' }}
                           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)' }}>
                           <FolderOpen size={16} color="rgba(255,255,255,0.35)" style={{ flexShrink: 0 }} />
@@ -524,7 +524,7 @@ export default function TrainingPage() {
               {/* ── HERO TOGGLE BUTTON ── */}
               <button
                 onClick={() => setHeroOpen(v => !v)}
-                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 18px 8px 14px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.07)', cursor: 'pointer', marginBottom: heroOpen ? '20px' : '28px', transition: 'all 0.2s', width: 'fit-content' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 18px 8px 14px', borderRadius: '999px', border: '1px solid var(--t-border-hi)', background: 'var(--t-s3)', cursor: 'pointer', marginBottom: heroOpen ? '20px' : '28px', transition: 'all 0.2s', width: 'fit-content' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.35)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.12)' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.22)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)' }}>
                 <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef3535', boxShadow: '0 0 8px rgba(239,53,53,0.5)', flexShrink: 0, display: 'inline-block' }} />
@@ -542,7 +542,7 @@ export default function TrainingPage() {
                   <div className="hero-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '12px', marginBottom: '12px' }}>
 
                     {/* Name card */}
-                    <div style={{ padding: '36px 36px 28px', borderRadius: '24px', background: '#111111', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '200px', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ padding: '36px 36px 28px', borderRadius: '24px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '200px', position: 'relative', overflow: 'hidden' }}>
                       <div style={{ position: 'absolute', right: '-40px', bottom: '-40px', width: '180px', height: '180px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,53,53,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
                       <div style={{ fontSize: '0.56rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span style={{ display: 'inline-block', width: '20px', height: '1.5px', background: '#ef3535', borderRadius: '2px', flexShrink: 0 }} />
@@ -563,7 +563,7 @@ export default function TrainingPage() {
                     </div>
 
                     {/* Stats 4-col grid */}
-                    <div className="stats-4col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', borderRadius: '24px', overflow: 'hidden', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div className="stats-4col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', borderRadius: '24px', overflow: 'hidden', background: 'var(--t-s3)', border: '1px solid var(--t-border)' }}>
                       {[
                         { num: block.weeks?.length ?? 0, sub: '', label: 'TJEDANA', delta: 'u bloku' },
                         { num: completedWorkouts, sub: `/${totalWorkouts}`, label: 'TRENINGA', delta: `${totalWorkouts - completedWorkouts} preostalo` },
@@ -572,7 +572,7 @@ export default function TrainingPage() {
                       ].map((s, i) => (
                         <div key={i}
                           className="stats-item"
-                          style={{ background: '#111111', padding: '28px 20px 26px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '190px', transition: 'background 0.2s', cursor: 'default' }}
+                          style={{ background: 'var(--t-s1)', padding: '28px 20px 26px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '190px', transition: 'background 0.2s', cursor: 'default' }}
                           onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#181818'}
                           onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = '#111111'}>
                           <div>
@@ -594,11 +594,11 @@ export default function TrainingPage() {
                     <div style={{ position: 'relative' }} ref={blockSelectorRef}>
                       <button
                         onClick={() => setShowBlockSelector(!showBlockSelector)}
-                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '22px 24px', borderRadius: '20px', background: '#111111', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left' as const }}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '22px 24px', borderRadius: '20px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left' as const }}
                         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)' }}
                         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.08)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
-                          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <FolderOpen size={16} color="rgba(255,255,255,0.3)" />
                           </div>
                           <div style={{ minWidth: 0 }}>
@@ -626,13 +626,13 @@ export default function TrainingPage() {
 
                       {/* Block dropdown */}
                       {showBlockSelector && (
-                        <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 100, background: '#0e0e0e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', overflow: 'hidden', animation: 'dropDown 0.18s ease', maxHeight: '260px', overflowY: 'auto' }}>
+                        <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 100, background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', overflow: 'hidden', animation: 'dropDown 0.18s ease', maxHeight: '260px', overflowY: 'auto' }}>
                           {allBlocks.map((b: BlockSummary, i: number) => (
                             <button key={b.id} onClick={() => switchBlock(b.id)}
-                              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '13px 18px', background: b.id === block.id ? 'rgba(255,255,255,0.05)' : 'transparent', border: 'none', borderBottom: i < allBlocks.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', cursor: 'pointer', textAlign: 'left' as const, transition: 'background 0.12s' }}
+                              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '13px 18px', background: b.id === block.id ? 'var(--t-s3)' : 'transparent', border: 'none', borderBottom: i < allBlocks.length - 1 ? '1px solid var(--t-border)' : 'none', cursor: 'pointer', textAlign: 'left' as const, transition: 'background 0.12s' }}
                               onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'}
                               onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = b.id === block.id ? 'rgba(255,255,255,0.05)' : 'transparent'}>
-                              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.status === 'active' ? '#ef3535' : 'rgba(255,255,255,0.18)', flexShrink: 0 }} />
+                              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.status === 'active' ? '#ef3535' : 'var(--t-border-hi)', flexShrink: 0 }} />
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontSize: '0.84rem', fontWeight: 500, color: '#e0e0e0', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{b.name}</div>
                                 <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', marginTop: '1px' }}>{b.start_date} — {b.end_date}</div>
@@ -658,7 +658,7 @@ export default function TrainingPage() {
 
               {/* ── ADMIN/TRENER BANNER ── */}
               {(isAdmin || isCoach) && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '11px 16px', marginBottom: '20px', background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.18)', borderLeft: '3px solid #ef3535', borderRadius: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '11px 16px', marginBottom: '20px', background: 'var(--t-s3)', border: '1px solid var(--t-border-hi)', borderLeft: '3px solid #ef3535', borderRadius: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef3535', flexShrink: 0, boxShadow: '0 0 6px rgba(239,53,53,0.5)' }} />
                     <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--fm)', fontWeight: 500 }}>
@@ -669,7 +669,7 @@ export default function TrainingPage() {
                   </div>
                   <a
                     href={isCoach ? '/trainer' : '/admin'}
-                    style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', fontSize: '0.58rem', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.1em', color: '#f0f0f0', textDecoration: 'none', transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+                    style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '6px', fontSize: '0.58rem', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.1em', color: '#f0f0f0', textDecoration: 'none', transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
                     onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.25)' }}
                     onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.12)' }}>
                     {isCoach ? 'TRENER PANEL' : 'ADMIN PANEL'} →
@@ -812,16 +812,16 @@ export default function TrainingPage() {
       <div className="fab-nav" style={{ position: 'fixed', bottom: '24px', right: '20px', zIndex: 1000 }}>
         {navOpen && <div onClick={() => setNavOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: -1 }} />}
         {navOpen && (
-          <div style={{ position: 'absolute', bottom: '64px', right: 0, background: 'rgba(10,10,10,0.97)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.7)', backdropFilter: 'blur(24px)', animation: 'fadeUp 0.18s cubic-bezier(0.16,1,0.3,1)', minWidth: '160px' }}>
+          <div style={{ position: 'absolute', bottom: '64px', right: 0, background: 'rgba(10,10,10,0.97)', border: '1px solid var(--t-border)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.7)', backdropFilter: 'blur(24px)', animation: 'fadeUp 0.18s cubic-bezier(0.16,1,0.3,1)', minWidth: '160px' }}>
             {([['program','Program'],['hub','Hub i Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label]) => (
               <button key={tab} onClick={() => { setActiveTab(tab as 'program'|'hub'|'meet'); setNavOpen(false) }}
-                style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '14px 18px', background: activeTab === tab ? 'rgba(239,53,53,0.09)' : 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)', color: activeTab === tab ? '#fca5a5' : 'rgba(255,255,255,0.7)', fontFamily: 'var(--fm)', fontSize: '0.78rem', fontWeight: activeTab === tab ? 700 : 400, letterSpacing: '0.06em', cursor: 'pointer', textAlign: 'left' as const, borderLeft: activeTab === tab ? '3px solid #ef3535' : '3px solid transparent' }}>
+                style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '14px 18px', background: activeTab === tab ? 'rgba(239,53,53,0.09)' : 'transparent', border: 'none', borderBottom: '1px solid var(--t-border)', color: activeTab === tab ? '#fca5a5' : 'rgba(255,255,255,0.7)', fontFamily: 'var(--fm)', fontSize: '0.78rem', fontWeight: activeTab === tab ? 700 : 400, letterSpacing: '0.06em', cursor: 'pointer', textAlign: 'left' as const, borderLeft: activeTab === tab ? '3px solid #ef3535' : '3px solid transparent' }}>
                 {label}
               </button>
             ))}
           </div>
         )}
-        <button onClick={() => setNavOpen(v => !v)} style={{ width: '54px', height: '54px', borderRadius: '50%', background: navOpen ? 'rgba(239,53,53,0.9)' : 'rgba(18,18,18,0.95)', border: '1px solid rgba(255,255,255,0.15)', boxShadow: navOpen ? '0 4px 24px rgba(239,53,53,0.4)' : '0 4px 24px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', backdropFilter: 'blur(16px)' }}>
+        <button onClick={() => setNavOpen(v => !v)} style={{ width: '54px', height: '54px', borderRadius: '50%', background: navOpen ? 'rgba(239,53,53,0.9)' : 'rgba(18,18,18,0.95)', border: '1px solid var(--t-border-hi)', boxShadow: navOpen ? '0 4px 24px rgba(239,53,53,0.4)' : '0 4px 24px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', backdropFilter: 'blur(16px)' }}>
           {navOpen ? <X size={20} color="#fff" /> : <Menu size={20} color="rgba(255,255,255,0.85)" />}
         </button>
       </div>

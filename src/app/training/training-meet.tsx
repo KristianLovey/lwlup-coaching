@@ -50,8 +50,8 @@ function MeetInput({ label, value, onChange, color, disabled = false, placeholde
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           style={{
-            width: '100%', background: disabled ? 'rgba(255,255,255,0.02)' : focused ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.04)',
-            border: `1.5px solid ${focused ? color : disabled ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.1)'}`,
+            width: '100%', background: disabled ? 'var(--t-s1)' : focused ? 'var(--t-s3)' : 'var(--t-s2)',
+            border: `1.5px solid ${focused ? color : disabled ? 'var(--t-border)' : 'var(--t-border-hi)'}`,
             color: disabled ? 'rgba(255,255,255,0.35)' : '#f0f0f5', padding: '9px 12px',
             borderRadius: '9px', outline: 'none', fontSize: '0.95rem', fontFamily: 'var(--fm)',
             boxSizing: 'border-box' as const, transition: 'all 0.2s',
@@ -142,11 +142,11 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
   useEffect(() => { if (saveSignal > 0) save() }, [saveSignal])
 
   return (
-    <div style={{ border: `1.5px solid ${open ? meta.color + '55' : 'rgba(255,255,255,0.13)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'border-color 0.25s', boxShadow: open ? `0 4px 24px ${meta.color}18` : '0 2px 8px rgba(0,0,0,0.35)', background: '#111111' }}>
+    <div style={{ border: `1.5px solid ${open ? meta.color + '55' : 'var(--t-border-hi)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'border-color 0.25s', boxShadow: open ? `0 4px 24px ${meta.color}18` : '0 2px 8px rgba(0,0,0,0.35)', background: 'var(--t-s1)' }}>
 
       {/* Header */}
       <div onClick={() => setOpen(o => !o)}
-        style={{ padding: '14px 20px', background: open ? `${meta.color}18` : 'rgba(255,255,255,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px', userSelect: 'none' as const, transition: 'background 0.2s' }}>
+        style={{ padding: '14px 20px', background: open ? `${meta.color}18` : 'var(--t-s3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px', userSelect: 'none' as const, transition: 'background 0.2s' }}>
         {/* Short badge */}
         <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${meta.color}22`, border: `1.5px solid ${meta.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <span style={{ fontFamily: 'var(--fd)', fontSize: '0.8rem', fontWeight: 800, color: meta.color, letterSpacing: '-0.01em' }}>{meta.short}</span>
@@ -172,12 +172,12 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
 
       {/* Body */}
       {open && (
-        <div style={{ padding: '20px', background: '#111111', display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
+        <div style={{ padding: '20px', background: 'var(--t-s1)', display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
 
           {/* Warmups — admin fills, lifter reads */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-              <div style={{ height: '1px', width: '16px', background: 'rgba(255,255,255,0.12)' }} />
+              <div style={{ height: '1px', width: '16px', background: 'var(--t-border)' }} />
               <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>WARMUPS</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
@@ -208,7 +208,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
           {/* Attempt ranges — admin fills min/max, lifter sees */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-              <div style={{ height: '1px', width: '16px', background: 'rgba(255,255,255,0.12)' }} />
+              <div style={{ height: '1px', width: '16px', background: 'var(--t-border)' }} />
               <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>RASPONI POKUŠAJA</span>
               {!isAdmin && <span style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>od trenera</span>}
             </div>
@@ -219,7 +219,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
             ].map(row => {
               const hasRange = row.min || row.max
               return (
-                <div key={row.n} className={`meet-attempt-row${isAdmin ? ' meet-attempt-admin' : ''}`} style={{ display: 'grid', gridTemplateColumns: isAdmin ? '1fr 1fr 1fr 1fr 40px' : '1fr 1fr 40px', gap: '8px', alignItems: 'end', marginBottom: '8px', padding: '12px 14px', background: row.good === true ? 'rgba(34,197,94,0.05)' : row.good === false ? 'rgba(248,113,113,0.05)' : 'rgba(255,255,255,0.02)', border: `1px solid ${row.good === true ? 'rgba(34,197,94,0.15)' : row.good === false ? 'rgba(248,113,113,0.12)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', transition: 'all 0.2s' }}>
+                <div key={row.n} className={`meet-attempt-row${isAdmin ? ' meet-attempt-admin' : ''}`} style={{ display: 'grid', gridTemplateColumns: isAdmin ? '1fr 1fr 1fr 1fr 40px' : '1fr 1fr 40px', gap: '8px', alignItems: 'end', marginBottom: '8px', padding: '12px 14px', background: row.good === true ? 'rgba(34,197,94,0.05)' : row.good === false ? 'rgba(248,113,113,0.05)' : 'var(--t-s2)', border: `1px solid ${row.good === true ? 'rgba(34,197,94,0.15)' : row.good === false ? 'rgba(248,113,113,0.12)' : 'var(--t-border)'}`, borderRadius: '10px', transition: 'all 0.2s' }}>
                   <div className="meet-minmax" style={{ gridColumn: isAdmin ? '1 / 3' : '1 / 2' }}>
                     {isAdmin ? (
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -243,11 +243,11 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
                   <div className="meet-toggle" style={{ display: 'flex', flexDirection: 'column' as const, gap: '4px' }}>
                     <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', marginBottom: '2px', textAlign: 'center' as const }}>Ret</div>
                     <button onClick={() => row.setGood(row.good === true ? null : true)}
-                      style={{ padding: '7px', borderRadius: '7px', border: `1px solid ${row.good === true ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`, background: row.good === true ? 'rgba(34,197,94,0.12)' : 'transparent', cursor: 'pointer', fontSize: '0.7rem', transition: 'all 0.15s' }}>
+                      style={{ padding: '7px', borderRadius: '7px', border: `1px solid ${row.good === true ? 'rgba(34,197,94,0.4)' : 'var(--t-border)'}`, background: row.good === true ? 'rgba(34,197,94,0.12)' : 'transparent', cursor: 'pointer', fontSize: '0.7rem', transition: 'all 0.15s' }}>
                       <Check size={12} color={row.good === true ? '#4ade80' : 'rgba(255,255,255,0.3)'} strokeWidth={row.good === true ? 3 : 1.5} />
                     </button>
                     <button onClick={() => row.setGood(row.good === false ? null : false)}
-                      style={{ padding: '7px', borderRadius: '7px', border: `1px solid ${row.good === false ? 'rgba(248,113,113,0.4)' : 'rgba(255,255,255,0.1)'}`, background: row.good === false ? 'rgba(248,113,113,0.1)' : 'transparent', cursor: 'pointer', fontSize: '0.7rem', transition: 'all 0.15s' }}>
+                      style={{ padding: '7px', borderRadius: '7px', border: `1px solid ${row.good === false ? 'rgba(248,113,113,0.4)' : 'var(--t-border)'}`, background: row.good === false ? 'rgba(248,113,113,0.1)' : 'transparent', cursor: 'pointer', fontSize: '0.7rem', transition: 'all 0.15s' }}>
                       <span style={{ color: row.good === false ? '#f87171' : 'rgba(255,255,255,0.25)', fontSize: '0.65rem', lineHeight: 1 }}>✗</span>
                     </button>
                   </div>
@@ -259,13 +259,13 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
           {/* Admin notes — admin fills, lifter reads */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <div style={{ height: '1px', width: '16px', background: 'rgba(255,255,255,0.12)' }} />
+              <div style={{ height: '1px', width: '16px', background: 'var(--t-border)' }} />
               <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>NAPOMENE TRENERA</span>
             </div>
             {isAdmin ? (
               <textarea value={adminNotes} onChange={e => setAdminNotes(e.target.value)}
                 placeholder="Taktika, psihološke upute, specifičnosti nastupa..."
-                style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.1)', color: '#e0e0e0', padding: '10px 14px', borderRadius: '9px', outline: 'none', fontSize: '0.84rem', fontFamily: 'var(--fm)', resize: 'vertical', minHeight: '70px', boxSizing: 'border-box' as const, lineHeight: 1.6 }}
+                style={{ width: '100%', background: 'var(--t-s2)', border: '1.5px solid var(--t-border)', color: '#e0e0e0', padding: '10px 14px', borderRadius: '9px', outline: 'none', fontSize: '0.84rem', fontFamily: 'var(--fm)', resize: 'vertical', minHeight: '70px', boxSizing: 'border-box' as const, lineHeight: 1.6 }}
                 onFocus={e => e.target.style.borderColor = meta.color}
                 onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
             ) : adminNotes ? (

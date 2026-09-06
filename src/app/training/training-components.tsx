@@ -26,11 +26,11 @@ function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onCo
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
       onClick={onCancel}>
-      <div style={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', padding: '28px 32px', maxWidth: '340px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}
+      <div style={{ background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '14px', padding: '28px 32px', maxWidth: '340px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}
         onClick={e => e.stopPropagation()}>
         <p style={{ margin: '0 0 24px', color: 'rgba(255,255,255,0.85)', fontSize: '0.92rem', lineHeight: 1.5, textAlign: 'center', fontFamily: 'var(--fm)' }}>{message}</p>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-          <button onClick={onCancel} style={{ flex: 1, padding: '9px 0', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'var(--fm)', transition: 'all 0.15s' }}
+          <button onClick={onCancel} style={{ flex: 1, padding: '9px 0', borderRadius: '8px', border: '1px solid var(--t-border)', background: 'var(--t-s3)', color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'var(--fm)', transition: 'all 0.15s' }}
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.6)' }}>
             Odustani
@@ -125,7 +125,7 @@ function _TrainingNavDeprecated({ athleteName, isAdmin, onLogout, avatarIcon }: 
       display: 'flex', alignItems: 'center',
       padding: '0 clamp(16px,3vw,32px)',
       background: scrolled ? 'rgba(4,4,8,0.92)' : 'rgba(4,4,8,0.75)',
-      borderBottom: `1px solid ${scrolled ? 'rgba(255,255,255,0.09)' : 'rgba(255,255,255,0.05)'}`,
+      borderBottom: `1px solid ${scrolled ? 'var(--t-border-hi)' : 'var(--t-border)'}`,
       backdropFilter: 'blur(32px) saturate(180%)',
       WebkitBackdropFilter: 'blur(32px) saturate(180%)',
       transition: 'background 0.4s, border-color 0.4s',
@@ -166,11 +166,11 @@ function _TrainingNavDeprecated({ athleteName, isAdmin, onLogout, avatarIcon }: 
         {/* Avatar / profile button */}
         <div ref={dropRef} style={{ position: 'relative' }}>
           <button onClick={() => setProfileOpen(o => !o)}
-            style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '5px 10px 5px 5px', background: profileOpen ? 'rgba(255,255,255,0.08)' : 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', cursor: 'pointer', transition: 'all 0.2s' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '5px 10px 5px 5px', background: profileOpen ? 'var(--t-hi)' : 'transparent', border: '1px solid var(--t-border)', borderRadius: '24px', cursor: 'pointer', transition: 'all 0.2s' }}
             onMouseEnter={e => { if (!profileOpen) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)' } }}
             onMouseLeave={e => { if (!profileOpen) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' } }}>
             {/* Avatar */}
-            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #2a2a3e 0%, #16161e 100%)', border: '1.5px solid rgba(255,255,255,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.58rem', fontWeight: 800, color: '#d0d0f0', fontFamily: 'var(--fm)', flexShrink: 0 }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #2a2a3e 0%, #16161e 100%)', border: '1.5px solid var(--t-border-hi)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.58rem', fontWeight: 800, color: '#d0d0f0', fontFamily: 'var(--fm)', flexShrink: 0 }}>
               {avatarIcon ? <AvatarSvg iconId={avatarIcon} size={18} color="#b0b8ff" /> : initials}
             </div>
             <span className="tnav-name" style={{ fontSize: '0.78rem', fontWeight: 500, color: '#e0e0e8', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>{athleteName?.split(' ')[0] || 'Atleta'}</span>
@@ -179,11 +179,11 @@ function _TrainingNavDeprecated({ athleteName, isAdmin, onLogout, avatarIcon }: 
 
           {/* Dropdown */}
           {profileOpen && (
-            <div className="profile-dropdown" style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '220px', background: 'rgba(10,10,16,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)', zIndex: 300, animation: 'dropDown 0.2s cubic-bezier(0.16,1,0.3,1)', overflow: 'hidden', backdropFilter: 'blur(40px)' }}>
+            <div className="profile-dropdown" style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '220px', background: 'rgba(10,10,16,0.98)', border: '1px solid var(--t-border)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)', zIndex: 300, animation: 'dropDown 0.2s cubic-bezier(0.16,1,0.3,1)', overflow: 'hidden', backdropFilter: 'blur(40px)' }}>
               {/* Header */}
-              <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid var(--t-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #2a2a3e 0%, #16161e 100%)', border: '1.5px solid rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, color: '#d0d0f0' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #2a2a3e 0%, #16161e 100%)', border: '1.5px solid var(--t-border-hi)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, color: '#d0d0f0' }}>
                     {avatarIcon ? <AvatarSvg iconId={avatarIcon} size={22} color="#b0b8ff" /> : initials}
                   </div>
                   <div>
@@ -213,7 +213,7 @@ function _TrainingNavDeprecated({ athleteName, isAdmin, onLogout, avatarIcon }: 
                   </Link>
                 )}
               </div>
-              <div style={{ padding: '6px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+              <div style={{ padding: '6px', borderTop: '1px solid var(--t-border)' }}>
                 <button onClick={() => { setProfileOpen(false); onLogout() }} className="nav-menu-item nav-menu-logout">
                   <LogOut size={14}/><span>Odjava</span>
                 </button>
@@ -319,7 +319,7 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
       height: '56px', display: 'flex', alignItems: 'center',
       padding: '0 clamp(16px,3vw,32px)',
       background: scrolled ? 'rgba(4,4,8,0.95)' : 'rgba(4,4,8,0.75)',
-      borderBottom: `1px solid ${scrolled ? 'rgba(255,255,255,0.09)' : 'rgba(255,255,255,0.05)'}`,
+      borderBottom: `1px solid ${scrolled ? 'var(--t-border-hi)' : 'var(--t-border)'}`,
       backdropFilter: 'blur(32px) saturate(180%)',
       WebkitBackdropFilter: 'blur(32px) saturate(180%)',
       transition: 'background 0.4s, border-color 0.4s',
@@ -353,15 +353,15 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
         {!!userId && (
           <div ref={notifRef} style={{ position: 'relative' }}>
             <button onClick={() => { setShowNotifs(o => !o); if (!showNotifs) markAllRead() }}
-              style={{ position: 'relative', background: unread > 0 ? 'rgba(251,191,36,0.1)' : 'transparent', border: `1px solid ${unread > 0 ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '10px', padding: '7px 9px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: unread > 0 ? '#fbbf24' : 'rgba(255,255,255,0.45)', transition: 'all 0.2s' }}>
+              style={{ position: 'relative', background: unread > 0 ? 'rgba(251,191,36,0.1)' : 'transparent', border: `1px solid ${unread > 0 ? 'rgba(251,191,36,0.3)' : 'var(--t-border)'}`, borderRadius: '10px', padding: '7px 9px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: unread > 0 ? '#fbbf24' : 'rgba(255,255,255,0.45)', transition: 'all 0.2s' }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
               {unread > 0 && (
                 <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#fbbf24', color: '#000', fontSize: '0.45rem', fontWeight: 800, fontFamily: 'var(--fm)', borderRadius: '10px', padding: '1px 5px', minWidth: '16px', textAlign: 'center' }}>{unread}</span>
               )}
             </button>
             {showNotifs && (
-              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '300px', background: '#111111', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.9)', zIndex: 300, overflow: 'hidden', animation: 'appnavDrop 0.2s cubic-bezier(0.16,1,0.3,1)' }}>
-                <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '300px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.9)', zIndex: 300, overflow: 'hidden', animation: 'appnavDrop 0.2s cubic-bezier(0.16,1,0.3,1)' }}>
+                <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--t-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: '#fbbf24', fontFamily: 'var(--fm)', fontWeight: 700 }}>{isAdmin ? 'OBAVIJESTI' : 'OD TRENERA'}</span>
                   {notifs.length > 0 && (
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -374,7 +374,7 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
                   {notifs.length === 0 ? (
                     <div style={{ padding: '24px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', fontFamily: 'var(--fm)' }}>Nema novih obavijesti</div>
                   ) : notifs.map(n => (
-                    <div key={n.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: n.read ? 'transparent' : 'rgba(251,191,36,0.04)', transition: 'background 0.2s' }}>
+                    <div key={n.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '12px 16px', borderBottom: '1px solid var(--t-border)', background: n.read ? 'transparent' : 'rgba(251,191,36,0.04)', transition: 'background 0.2s' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: '0.78rem', color: n.read ? 'rgba(255,255,255,0.5)' : '#f0f0f5', fontFamily: 'var(--fm)', lineHeight: 1.5 }}>{n.message}</div>
                         <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', marginTop: '4px' }}>{new Date(n.created_at).toLocaleString('hr-HR')}</div>
@@ -396,10 +396,10 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
         {/* Avatar / dropdown */}
         <div ref={dropRef} style={{ position: 'relative' }}>
           <button onClick={() => setOpen(o => !o)}
-            style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '5px 10px 5px 5px', background: open ? 'rgba(255,255,255,0.08)' : 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', cursor: 'pointer', transition: 'all 0.2s' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '5px 10px 5px 5px', background: open ? 'var(--t-hi)' : 'transparent', border: '1px solid var(--t-border)', borderRadius: '24px', cursor: 'pointer', transition: 'all 0.2s' }}
             onMouseEnter={e => { if (!open) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)' } }}
             onMouseLeave={e => { if (!open) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' } }}>
-            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(255,255,255,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.58rem', fontWeight: 800, color: '#f0f0f0', fontFamily: 'var(--fm)', flexShrink: 0 }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--t-border)', border: '1.5px solid var(--t-border-hi)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.58rem', fontWeight: 800, color: '#f0f0f0', fontFamily: 'var(--fm)', flexShrink: 0 }}>
               {avatarIcon ? <AvatarSvg iconId={avatarIcon} size={18} color="rgba(255,255,255,0.85)" /> : initials}
             </div>
             <span className="appnav-name" style={{ fontSize: '0.78rem', fontWeight: 500, color: '#f0f0f0', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>{athleteName?.split(' ')[0] || ''}</span>
@@ -407,11 +407,11 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
           </button>
 
           {open && (
-            <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '220px', background: '#111111', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05)', zIndex: 300, animation: 'appnavDrop 0.2s cubic-bezier(0.16,1,0.3,1)', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '220px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05)', zIndex: 300, animation: 'appnavDrop 0.2s cubic-bezier(0.16,1,0.3,1)', overflow: 'hidden' }}>
               {/* Header */}
-              <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid var(--t-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--t-border)', border: '1.5px solid var(--t-border-hi)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {avatarIcon ? <AvatarSvg iconId={avatarIcon} size={22} color="rgba(255,255,255,0.85)" /> : <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#f0f0f0' }}>{initials}</span>}
                   </div>
                   <div>
@@ -443,7 +443,7 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
                   </Link>
                 )}
               </div>
-              <div style={{ padding: '6px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+              <div style={{ padding: '6px', borderTop: '1px solid var(--t-border)' }}>
                 <button onClick={() => { setOpen(false); onLogout() }} className="appnav-item appnav-logout">
                   <LogOut size={14}/><span>Odjava</span>
                 </button>
@@ -485,12 +485,12 @@ export function EditableField({ value, placeholder, onSave, type = 'text', small
       onChange={e => setVal(e.target.value)}
       onBlur={commit}
       onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
-      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#e0e0e0', padding: small ? '3px 8px' : '5px 10px', fontSize: small ? '0.72rem' : '0.85rem', outline: 'none', width: '100%', fontFamily: 'var(--fm)', borderRadius: '5px', minWidth: '60px', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}
+      style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: '#e0e0e0', padding: small ? '3px 8px' : '5px 10px', fontSize: small ? '0.72rem' : '0.85rem', outline: 'none', width: '100%', fontFamily: 'var(--fm)', borderRadius: '5px', minWidth: '60px', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}
     />
   )
   return (
     <span onClick={() => setEditing(true)}
-      style={{ cursor: 'text', color: value ? '#e0e0e0' : '#3a3a45', fontSize: small ? '0.72rem' : '0.85rem', fontFamily: 'var(--fm)', borderBottom: '1px dashed rgba(255,255,255,0.2)', paddingBottom: '1px', transition: 'color 0.15s' }}
+      style={{ cursor: 'text', color: value ? '#e0e0e0' : '#3a3a45', fontSize: small ? '0.72rem' : '0.85rem', fontFamily: 'var(--fm)', borderBottom: '1px dashed var(--t-border-hi)', paddingBottom: '1px', transition: 'color 0.15s' }}
       title="Klikni za uređivanje">
       {value ?? placeholder}
     </span>
@@ -510,27 +510,27 @@ export function ExercisePicker({ exercises, onSelect, onClose }: {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', animation: 'fadeIn 0.15s ease' }}
       onClick={onClose}>
-      <div style={{ width: '100%', maxWidth: '560px', background: '#09090e', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', maxHeight: '78vh', boxShadow: '0 32px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
+      <div style={{ width: '100%', maxWidth: '560px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', display: 'flex', flexDirection: 'column', maxHeight: '78vh', boxShadow: '0 32px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
         onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, background: 'rgba(255,255,255,0.02)' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--t-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, background: 'var(--t-s2)' }}>
           <span style={{ fontSize: '0.65rem', letterSpacing: '0.3em', color: '#888', fontFamily: 'var(--fm)' }}>ODABERI VJEŽBU</span>
-          <button onClick={onClose} style={{ background: '#1c1c20', border: '1px solid rgba(255,255,255,0.2)', color: '#888', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', borderRadius: '6px', transition: 'all 0.15s' }}
+          <button onClick={onClose} style={{ background: 'var(--t-s2)', border: '1px solid var(--t-border-hi)', color: '#888', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', borderRadius: '6px', transition: 'all 0.15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = '#2a2a35'; e.currentTarget.style.color = '#fff' }}
             onMouseLeave={e => { e.currentTarget.style.background = '#1c1c20'; e.currentTarget.style.color = '#888' }}>
             <X size={13} />
           </button>
         </div>
         {/* Search */}
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.09)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.09)', padding: '9px 14px', borderRadius: '8px', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.4)' }}>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--t-border)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--t-s2)', border: '1px solid var(--t-border)', padding: '9px 14px', borderRadius: '8px', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.4)' }}>
             <Search size={13} color="#555" />
             <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Pretraži vježbe..."
               style={{ background: 'transparent', border: 'none', outline: 'none', color: '#e0e0e0', fontSize: '0.88rem', width: '100%', fontFamily: 'var(--fm)' }} />
           </div>
         </div>
         {/* Cats — horizontal scroll so they never dominate the modal (esp. mobile) */}
-        <div className="ep-cats" style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.09)', display: 'flex', gap: '6px', flexWrap: 'nowrap', overflowX: 'auto', flexShrink: 0, WebkitOverflowScrolling: 'touch' as const }}>
+        <div className="ep-cats" style={{ padding: '10px 16px', borderBottom: '1px solid var(--t-border)', display: 'flex', gap: '6px', flexWrap: 'nowrap', overflowX: 'auto', flexShrink: 0, WebkitOverflowScrolling: 'touch' as const }}>
           <button onClick={() => setCat(null)} className={`ep-cat-btn${!cat ? ' ep-cat-btn-active' : ''}`}>SVE</button>
           {cats.map(c => <button key={c} onClick={() => setCat(c === cat ? null : c)} className={`ep-cat-btn${cat === c ? ' ep-cat-btn-active' : ''}`}>{c}</button>)}
         </div>
@@ -547,7 +547,7 @@ export function ExercisePicker({ exercises, onSelect, onClose }: {
             <div style={{ padding: '40px', textAlign: 'center', color: '#444', fontSize: '0.82rem', fontFamily: 'var(--fm)' }}>Nema rezultata</div>
           ) : filtered.map(ex => (
             <div key={ex.id} onClick={() => { onSelect(ex); onClose() }}
-              style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer', transition: 'background 0.12s' }}
+              style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--t-border)', cursor: 'pointer', transition: 'background 0.12s' }}
               onMouseEnter={e => e.currentTarget.style.background = '#111113'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
               <div>
@@ -635,7 +635,7 @@ export function CompetitionBanner({ userId }: { userId: string }) {
 
   return (
     <div ref={ref} style={{ position: 'relative', marginBottom: '20px', animation: 'fadeUp 0.4s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', border: '1px solid rgba(255,255,255,0.08)', borderLeft: '3px solid #ef3535', borderRadius: '20px', overflow: 'hidden', background: '#111111', boxShadow: '0 4px 24px rgba(0,0,0,0.4)', padding: '20px 24px', flexWrap: 'wrap', position: 'relative' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', border: '1px solid var(--t-border)', borderLeft: '3px solid #ef3535', borderRadius: '20px', overflow: 'hidden', background: 'var(--t-s1)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)', padding: '20px 24px', flexWrap: 'wrap', position: 'relative' }}>
         <div style={{ position: 'absolute', left: '-30px', top: '-30px', width: '140px', height: '140px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,53,53,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
         {/* Left: label + name + date + picker */}
@@ -671,7 +671,7 @@ export function CompetitionBanner({ userId }: { userId: string }) {
               { val: countdown.m, label: 'MIN'  },
               { val: countdown.s, label: 'SEK'  },
             ] as {val:number;label:string}[]).map(({ val, label }) => (
-              <div key={label} className="comp-chip" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '10px 14px', minWidth: '52px' }}>
+              <div key={label} className="comp-chip" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '12px', padding: '10px 14px', minWidth: '52px' }}>
                 <div style={{ fontFamily: 'var(--font-bg, var(--fd))', fontSize: '1.5rem', fontWeight: 700, lineHeight: 1, letterSpacing: '-0.04em', color: '#f0f0f0', fontVariantNumeric: 'tabular-nums' }}>{String(val).padStart(2,'0')}</div>
                 <div style={{ fontSize: '0.38rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 700, marginTop: '5px' }}>{label}</div>
               </div>
@@ -682,10 +682,10 @@ export function CompetitionBanner({ userId }: { userId: string }) {
 
       {/* Dropdown */}
       {open && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, background: '#0c0c0e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', boxShadow: '0 16px 48px rgba(0,0,0,0.7)', overflow: 'hidden', animation: 'dropDown 0.18s ease' }}>
+        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, background: '#0c0c0e', border: '1px solid var(--t-border)', borderRadius: '10px', boxShadow: '0 16px 48px rgba(0,0,0,0.7)', overflow: 'hidden', animation: 'dropDown 0.18s ease' }}>
           {competitions.map((comp, i) => (
             <button key={comp.id} onClick={() => pick(comp)}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '14px', padding: '13px 18px', background: selected?.id === comp.id ? 'rgba(255,255,255,0.05)' : 'transparent', border: 'none', borderBottom: i < competitions.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.12s' }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '14px', padding: '13px 18px', background: selected?.id === comp.id ? 'var(--t-s3)' : 'transparent', border: 'none', borderBottom: i < competitions.length - 1 ? '1px solid var(--t-border)' : 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.12s' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
               onMouseLeave={e => e.currentTarget.style.background = selected?.id === comp.id ? 'rgba(255,255,255,0.05)' : 'transparent'}>
               <div style={{ flex: 1 }}>

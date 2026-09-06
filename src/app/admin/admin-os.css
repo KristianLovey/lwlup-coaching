@@ -30,6 +30,16 @@
   --fm: var(--font-jb), 'JetBrains Mono', ui-monospace, monospace;
   --fd: var(--font-bg), 'Bricolage Grotesque', system-ui, sans-serif;
 
+  /* Trening editor i Meet Day se renderiraju i unutar OS-a — vežemo njihove
+     plohe na OS tokene da prate i svijetlu temu. */
+  --t-bg: var(--bg);
+  --t-s1: var(--surface-1);
+  --t-s2: var(--surface-2);
+  --t-s3: var(--surface-3);
+  --t-hi: var(--surface-hi);
+  --t-border: var(--border);
+  --t-border-hi: var(--border-strong);
+
   --radius-xs: 8px;
   --radius-sm: 12px;
   --radius-md: 18px;
