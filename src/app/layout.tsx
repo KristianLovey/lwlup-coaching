@@ -1,22 +1,22 @@
 import type { Metadata, Viewport } from 'next'
-import { Space_Grotesk, Bricolage_Grotesque, JetBrains_Mono } from 'next/font/google'
+import { Oswald, Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { LanguageProvider } from '@/context/LanguageContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { CapacitorDetect } from '@/app/components/CapacitorDetect'
 
-const spaceGrotesk = Space_Grotesk({
+// Naslovi — uski, visoki sportski sans (varijabilni font: cijeli raspon 200–700)
+const oswald = Oswald({
   subsets: ['latin'],
-  weight: ['300', '400', '700'],
   display: 'swap',
-  variable: '--font-sg',
+  variable: '--font-os',
 })
 
-const bricolage = Bricolage_Grotesque({
+// Tekst, tablice i brojke — neutralan i čitljiv na ekranu
+const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
   display: 'swap',
-  variable: '--font-bg',
+  variable: '--font-in',
 })
 
 // Mono — used by the admin "OS" design for labels / tabular numbers
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="hr" className={`${spaceGrotesk.variable} ${bricolage.variable} ${jetbrainsMono.variable}`}>
+    <html lang="hr" className={`${oswald.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
       <head>
         {/* preconnect: uspostavi DNS+TCP+TLS prema Supabaseu prije prvog API poziva */}
         <link rel="preconnect" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" crossOrigin="anonymous" />

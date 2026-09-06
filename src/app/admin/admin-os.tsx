@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutGrid, Users, Dumbbell, Trophy, Bell, Search, Plus, Check, Send,
   Loader2, PanelLeft, PanelRight, ChevronRight, ChevronLeft, ChevronDown, Settings, Trash2, LogOut, AlertCircle, SlidersHorizontal,
-  User, Activity, Menu, FolderOpen, Copy, Eye, EyeOff, KeyRound,
+  User, Activity, Menu, FolderOpen, Copy, Eye, EyeOff, KeyRound, Home,
   Calendar, FileText, Pencil, ClipboardList, Target, Scale, Droplets, Utensils,
 } from 'lucide-react'
 import type { AthleteProfile } from './athlete-panels'
@@ -89,6 +89,12 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
   const [adminName, setAdminName] = useState(isTrener ? 'Trener' : 'Admin')
   const [adminId, setAdminId] = useState('')
   const [profileOpen, setProfileOpen] = useState(false)
+  // Izbornik je position:fixed (rail ima overflow, apsolutni bi bio odrezan), pa mu
+  // poziciju mjerimo iz pločice. Fiksni "bottom" je radio samo na desktopu gdje je
+  // rail visok 100vh; u mobilnom draweru pločica nije na dnu ekrana pa je izbornik
+  // odlijetao gore.
+  const [profilePos, setProfilePos] = useState<{ left: number; top?: number; bottom?: number }>({ left: 14, bottom: 78 })
+  const profileOpenRef = useRef(false)
   const profileRef = useRef<HTMLDivElement>(null)
 
   const [athletes, setAthletes] = useState<AthleteProfile[]>([])
@@ -123,13 +129,34 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
   useEffect(() => { localStorage.setItem('adminos:navCollapsed', navCollapsed ? '1' : '0') }, [navCollapsed])
   useEffect(() => { localStorage.setItem('adminos:railHidden', railHidden ? '1' : '0') }, [railHidden])
 
+  const placeProfile = useCallback(() => {
+    const el = profileRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    const W = 224, GAP = 8, MENU_H = 300
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - W - 8))
+    // ako iznad pločice nema mjesta (drawer skrolan pri vrhu), otvori prema dolje
+    setProfilePos(r.top > MENU_H + GAP
+      ? { left, bottom: Math.round(window.innerHeight - r.top + GAP) }
+      : { left, top: Math.round(r.bottom + GAP) })
+  }, [])
+
   // close profile dropdown on outside click
   useEffect(() => {
+    profileOpenRef.current = profileOpen
     if (!profileOpen) return
+    placeProfile()
     const h = (e: MouseEvent) => { if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false) }
+    const reposition = () => { if (profileOpenRef.current) placeProfile() }
     document.addEventListener('mousedown', h)
-    return () => document.removeEventListener('mousedown', h)
-  }, [profileOpen])
+    window.addEventListener('resize', reposition)
+    window.addEventListener('scroll', reposition, true) // true: hvata i scroll unutar raila
+    return () => {
+      document.removeEventListener('mousedown', h)
+      window.removeEventListener('resize', reposition)
+      window.removeEventListener('scroll', reposition, true)
+    }
+  }, [profileOpen, placeProfile])
 
   // ── Load athletes — 2 parallel round-trips, userId avoids extra getUser() call ──
   const ATHLETES_CACHE_KEY = 'adminos:athletes:v2'
@@ -343,7 +370,7 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
               <ChevronDown size={14} style={{ marginLeft: 'auto', color: 'var(--text-muted)', transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
             {profileOpen && (
-              <div style={{ position: 'fixed', left: navCollapsed ? 12 : 14, bottom: 78, width: 224, maxWidth: 'calc(100vw - 24px)', background: 'var(--surface-1)', border: '1px solid var(--border-strong)', borderRadius: 14, boxShadow: '0 24px 64px rgba(0,0,0,0.7)', zIndex: 120, overflow: 'hidden', animation: 'os-fadeUp 0.18s ease' }}>
+              <div style={{ position: 'fixed', left: profilePos.left, ...(profilePos.top != null ? { top: profilePos.top } : { bottom: profilePos.bottom }), width: 224, maxWidth: 'calc(100vw - 24px)', maxHeight: 'calc(100vh - 24px)', overflowY: 'auto', background: 'var(--surface-1)', border: '1px solid var(--border-strong)', borderRadius: 14, boxShadow: '0 24px 64px rgba(0,0,0,0.7)', zIndex: 120, overflow: 'hidden', animation: 'os-fadeUp 0.18s ease' }}>
                 <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div className="avatar" style={{ width: 36, height: 36 }}>{initials(adminName)}</div>
                   <div>
@@ -353,6 +380,7 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
                 </div>
                 <div style={{ padding: 6 }}>
                   {[
+                    { href: '/', icon: <Home size={15} />, label: 'Početna' },
                     { href: '/profile', icon: <User size={15} />, label: 'Moj profil' },
                     { href: '/training', icon: <Activity size={15} />, label: 'Trening' },
                     { href: '/exercises', icon: <Dumbbell size={15} />, label: 'Baza vježbi' },

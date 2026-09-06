@@ -6,7 +6,7 @@ import Image from 'next/image'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
   GripVertical, Loader2, LogOut, Lock, TrendingDown,
-  User, Shield, X, Dumbbell, BarChart2, MessageSquare, Copy, CalendarDays, ArrowUp, ArrowDown,
+  User, Shield, X, Dumbbell, BarChart2, MessageSquare, Copy, CalendarDays, ArrowUp, ArrowDown, Home,
   Flame, Zap, Rocket, Gauge, Activity, Trophy, Medal, Crown, Star, Award, Gem,
   Target, Crosshair, Sword, Compass, Mountain, Anchor, Skull, Sparkles, Brain,
   Timer, Ghost, Forklift, Drama, Cat, Bird, PawPrint, Clover, Spade,
@@ -195,6 +195,7 @@ function _TrainingNavDeprecated({ athleteName, isAdmin, onLogout, avatarIcon }: 
               {/* Menu items */}
               <div style={{ padding: '6px' }}>
                 {[
+                  { href: '/', icon: <Home size={14}/>, label: 'Početna' },
                   { href: '/profile', icon: <User size={14}/>, label: 'Moj profil' },
                   { href: '/training', icon: <BarChart2 size={14}/>, label: 'Trening' },
                   { href: '/exercises', icon: <Dumbbell size={14}/>, label: 'Baza vježbi' },
@@ -425,6 +426,7 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
               {/* Menu items */}
               <div style={{ padding: '6px' }}>
                 {[
+                  { href: '/',          icon: <Home size={14}/>,     label: 'Početna'    },
                   { href: '/profile',   icon: <User size={14}/>,     label: 'Moj profil' },
                   { href: '/training',  icon: <BarChart2 size={14}/>, label: 'Trening'    },
                   { href: '/exercises', icon: <Dumbbell size={14}/>,  label: 'Baza vježbi'},
@@ -647,7 +649,7 @@ export function CompetitionBanner({ userId }: { userId: string }) {
           </div>
           {selected ? (
             <>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f0f0f0', fontFamily: 'var(--font-bg, var(--fm))', lineHeight: 1.2, display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.02em' }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f0f0f0', fontFamily: 'var(--fd)', lineHeight: 1.2, display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.02em' }}>
                 {selected.name}
                 <ChevronDown size={12} color="rgba(255,255,255,0.25)" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
               </div>
@@ -672,7 +674,7 @@ export function CompetitionBanner({ userId }: { userId: string }) {
               { val: countdown.s, label: 'SEK'  },
             ] as {val:number;label:string}[]).map(({ val, label }) => (
               <div key={label} className="comp-chip" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '12px', padding: '10px 14px', minWidth: '52px' }}>
-                <div style={{ fontFamily: 'var(--font-bg, var(--fd))', fontSize: '1.5rem', fontWeight: 700, lineHeight: 1, letterSpacing: '-0.04em', color: '#f0f0f0', fontVariantNumeric: 'tabular-nums' }}>{String(val).padStart(2,'0')}</div>
+                <div style={{ fontFamily: 'var(--fd)', fontSize: '1.5rem', fontWeight: 700, lineHeight: 1, letterSpacing: '-0.04em', color: '#f0f0f0', fontVariantNumeric: 'tabular-nums' }}>{String(val).padStart(2,'0')}</div>
                 <div style={{ fontSize: '0.38rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 700, marginTop: '5px' }}>{label}</div>
               </div>
             ))}

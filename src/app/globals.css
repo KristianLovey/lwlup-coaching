@@ -1,8 +1,9 @@
 /* Fonts loaded via <link> in layout.tsx for non-blocking delivery */
 
 :root {
-  --fm: var(--font-sg), 'Space Grotesk', sans-serif;
-  --fd: var(--font-bg), 'Bricolage Grotesque', sans-serif;
+  /* --fd = naslovi (Oswald), --fm = tekst / tablice / brojke (Inter) */
+  --fm: var(--font-in), Inter, system-ui, sans-serif;
+  --fd: var(--font-os), Oswald, system-ui, sans-serif;
 
   /* ── Global text opacity scale ─────────────────────────────────
      Koristimo ove varijable umjesto hardcoded rgba vrijednosti

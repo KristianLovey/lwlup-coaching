@@ -21,14 +21,14 @@
   --accent-glow:  rgba(239, 53, 53, 0.35);
   --shadow-card:  0 1px 0 rgba(255,255,255,0.04) inset, 0 24px 60px -28px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.4);
 
-  --font-display: var(--font-bg), 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-display: var(--font-os), Oswald, system-ui, sans-serif;
   --font-mono:    var(--font-jb), 'JetBrains Mono', ui-monospace, monospace;
-  --font-body:    var(--font-bg), 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body:    var(--font-in), Inter, system-ui, sans-serif;
 
   /* Remap the app's embedded-component font vars so reused admin/trainer screens
      (AthleteOverview, training editor) adopt the OS typography automatically. */
   --fm: var(--font-jb), 'JetBrains Mono', ui-monospace, monospace;
-  --fd: var(--font-bg), 'Bricolage Grotesque', system-ui, sans-serif;
+  --fd: var(--font-os), Oswald, system-ui, sans-serif;
 
   /* Trening editor i Meet Day se renderiraju i unutar OS-a — vežemo njihove
      plohe na OS tokene da prate i svijetlu temu. */

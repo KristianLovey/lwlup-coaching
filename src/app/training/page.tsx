@@ -485,7 +485,7 @@ export default function TrainingPage() {
             {/* No block */}
             {!loading && !block && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: '14px' }}>
-                <div style={{ fontFamily: 'var(--font-bg, var(--fm))', fontSize: '3.5rem', opacity: 0.1, lineHeight: 1 }}>—</div>
+                <div style={{ fontFamily: 'var(--fd)', fontSize: '3.5rem', opacity: 0.1, lineHeight: 1 }}>—</div>
                 {allBlocks.length > 0 ? (
                   <>
                     <div style={{ fontSize: '0.68rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700 }}>ODABERI SVOJ BLOK</div>
@@ -500,7 +500,7 @@ export default function TrainingPage() {
                           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)' }}>
                           <FolderOpen size={16} color="rgba(255,255,255,0.35)" style={{ flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--font-bg, var(--fm))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{b.name}</div>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--fd)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{b.name}</div>
                             <div style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', letterSpacing: '0.08em', marginTop: '2px' }}>{b.status === 'active' ? 'AKTIVAN' : b.status === 'completed' ? 'ZAVRŠEN' : 'PLANIRAN'}</div>
                           </div>
                           <ChevronRight size={15} color="rgba(255,255,255,0.25)" style={{ flexShrink: 0 }} />
@@ -548,7 +548,7 @@ export default function TrainingPage() {
                         <span style={{ display: 'inline-block', width: '20px', height: '1.5px', background: '#ef3535', borderRadius: '2px', flexShrink: 0 }} />
                         SPORTAŠ · AKTIVAN
                       </div>
-                      <h1 style={{ fontFamily: 'var(--font-bg, var(--fm))', fontWeight: 800, fontSize: 'clamp(40px, 4.5vw, 72px)', lineHeight: 0.9, letterSpacing: '-0.04em', margin: '20px 0 0', color: '#f0f0f0' }}>
+                      <h1 style={{ fontFamily: 'var(--fd)', fontWeight: 800, fontSize: 'clamp(40px, 4.5vw, 72px)', lineHeight: 0.9, letterSpacing: '-0.04em', margin: '20px 0 0', color: '#f0f0f0' }}>
                         {athleteName.split(' ')[0] || athleteName}
                         {athleteName.split(' ').length > 1 && (
                           <span style={{ display: 'block', color: 'rgba(255,255,255,0.28)', fontWeight: 500 }}>
@@ -576,7 +576,7 @@ export default function TrainingPage() {
                           onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#181818'}
                           onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = '#111111'}>
                           <div>
-                            <div style={{ fontFamily: 'var(--font-bg, var(--fm))', fontWeight: 700, fontSize: 'clamp(30px, 3vw, 52px)', lineHeight: 0.95, letterSpacing: '-0.04em', color: '#f0f0f0', fontVariantNumeric: 'tabular-nums' }}>
+                            <div style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: 'clamp(30px, 3vw, 52px)', lineHeight: 0.95, letterSpacing: '-0.04em', color: '#f0f0f0', fontVariantNumeric: 'tabular-nums' }}>
                               {s.num}<span style={{ fontSize: '0.42em', color: 'rgba(255,255,255,0.28)', fontWeight: 500 }}>{s.sub}</span>
                             </div>
                             <div style={{ fontFamily: 'var(--fm)', fontSize: '0.68rem', color: '#ef3535', marginTop: '8px', letterSpacing: '0.02em' }}>↗ {s.delta}</div>
@@ -603,7 +603,7 @@ export default function TrainingPage() {
                           </div>
                           <div style={{ minWidth: 0 }}>
                             <div style={{ fontSize: '0.46rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.22)', fontFamily: 'var(--fm)', marginBottom: '3px', textTransform: 'uppercase' as const }}>AKTIVNI BLOK</div>
-                            <div style={{ fontSize: '1rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--font-bg, var(--fm))', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{block.name}</div>
+                            <div style={{ fontSize: '1rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--fd)', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{block.name}</div>
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
@@ -679,7 +679,7 @@ export default function TrainingPage() {
 
               {/* ── SECTION HEADER ── */}
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '18px', padding: '0 2px' }}>
-                <h2 style={{ fontFamily: 'var(--font-bg, var(--fm))', fontWeight: 600, fontSize: '1.05rem', letterSpacing: '-0.01em', color: '#f0f0f0', margin: 0 }}>Trening program</h2>
+                <h2 style={{ fontFamily: 'var(--fd)', fontWeight: 600, fontSize: '1.05rem', letterSpacing: '-0.01em', color: '#f0f0f0', margin: 0 }}>Trening program</h2>
                 <span style={{ fontFamily: 'var(--fm)', fontSize: '0.56rem', color: 'rgba(255,255,255,0.22)', letterSpacing: '0.14em', textTransform: 'uppercase' as const }}>
                   {block.weeks?.length ?? 0} tjedana · {totalSets} serija
                 </span>
@@ -698,7 +698,7 @@ export default function TrainingPage() {
             <div key={block.id} style={{ animation: 'panelSlideIn 0.38s cubic-bezier(0.16,1,0.3,1)' }}>
             {(block.weeks?.length ?? 0) === 0 && (
               <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.12)' }}>
-                <div style={{ fontFamily: 'var(--font-bg, var(--fm))', fontSize: '4rem', marginBottom: '14px', opacity: 0.3 }}>—</div>
+                <div style={{ fontFamily: 'var(--fd)', fontSize: '4rem', marginBottom: '14px', opacity: 0.3 }}>—</div>
                 <div style={{ fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>PROGRAM JE PRAZAN</div>
               </div>
             )}

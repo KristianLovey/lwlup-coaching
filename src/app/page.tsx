@@ -245,7 +245,7 @@ export default function Landing() {
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '680px' }}>
 
             {/* Big headline */}
-            <h1 style={{ fontFamily: 'var(--fm)', fontSize: 'clamp(4.2rem, 10vw, 9.5rem)', lineHeight: 0.88, marginBottom: '24px', marginTop: 0, letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4.2rem, 10vw, 9.5rem)', lineHeight: 0.88, marginBottom: '24px', marginTop: 0, letterSpacing: '-0.02em' }}>
               <span className="hero-outline" style={{ display: 'block' }}>{'LWL UP '}</span>
               <span style={{ display: 'block', color: '#fff' }}>YOUR GAME.</span>
             </h1>
