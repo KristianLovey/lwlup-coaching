@@ -14,6 +14,9 @@ type FormData = {
   recovery_habits: string; coaching_history: string
   goals: string; injuries: string; additional: string
   chosen_coach: string
+  // Učlanjenje u klub
+  citizenship: string; residence: string; birth_date: string
+  category: string; comp_total: string; competitions: string; current_club: string
 }
 
 const EMPTY: FormData = {
@@ -25,10 +28,32 @@ const EMPTY: FormData = {
   recovery_habits: '', coaching_history: '',
   goals: '', injuries: '', additional: '',
   chosen_coach: '',
+  citizenship: '', residence: '', birth_date: '',
+  category: '', comp_total: '', competitions: '', current_club: '',
 }
 
 const BASE_STEPS = ['OSOBNO', 'TRENING', 'PRs', 'CILJEVI']
 const ADVANCED_STEPS = ['OSOBNO', 'TRENING', 'PRs', 'NAPREDNI', 'CILJEVI']
+const CLUB_STEPS = ['OSOBNO', 'NATJECANJA']
+
+// Polja koja postoje samo u obrascu za klub — ne šalju se u trenerski upitnik
+const CLUB_ONLY_KEYS: readonly string[] = ['citizenship', 'residence', 'birth_date', 'category', 'comp_total', 'competitions', 'current_club']
+
+// Težinske kategorije — iste kao na naslovnici
+const WEIGHT_CLASSES = [
+  { sex: 'M', label: 'MUŠKARCI', cats: ['-59', '-66', '-74', '-83', '-93', '-105', '-120', '+120'] },
+  { sex: 'Ž', label: 'ŽENE',     cats: ['-47', '-52', '-57', '-63', '-69', '-76', '-84', '+84'] },
+] as const
+
+// Dob iz datuma rođenja (YYYY-MM-DD); null ako datum nije ispravan ili je u budućnosti
+const ageFromBirthDate = (iso: string): number | null => {
+  const d = new Date(iso + 'T00:00:00')
+  const now = new Date()
+  if (isNaN(d.getTime()) || d > now) return null
+  let a = now.getFullYear() - d.getFullYear()
+  if (now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) a--
+  return a
+}
 
 // ── Validation helpers ─────────────────────────────────────────────
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim())
@@ -119,8 +144,11 @@ export default function SurveyPage() {
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormData, string>>>({})
   const contentRef = useRef<HTMLDivElement>(null)
 
-  const isAdvanced = form.experience === 'Napredni'
-  const STEPS = isAdvanced ? ADVANCED_STEPS : BASE_STEPS
+  // Što osoba prijavljuje: učlanjenje u klub ili trenerstvo kod Waltera
+  const [mode, setMode] = useState<'club' | 'coaching' | ''>('')
+  const isClub = mode === 'club'
+  const isAdvanced = !isClub && form.experience === 'Napredni'
+  const STEPS = isClub ? CLUB_STEPS : isAdvanced ? ADVANCED_STEPS : BASE_STEPS
 
   const set = (k: keyof FormData, v: string) => {
     setForm(p => ({ ...p, [k]: v }))
@@ -159,7 +187,41 @@ export default function SurveyPage() {
     return Object.keys(errs).length === 0
   }
 
+  // ── Učlanjenje u klub ─────────────────────────────────────────
+  const validateClubStep0 = (): boolean => {
+    const errs: Partial<Record<keyof FormData, string>> = {}
+    if (!form.full_name.trim()) errs.full_name = 'Unesi ime i prezime'
+    if (!form.birth_date) errs.birth_date = 'Unesi datum rođenja'
+    else {
+      const a = ageFromBirthDate(form.birth_date)
+      if (a === null || a < 10 || a > 100) errs.birth_date = 'Datum rođenja nije ispravan'
+    }
+    if (!form.citizenship.trim()) errs.citizenship = 'Unesi državljanstvo'
+    if (!form.residence.trim()) errs.residence = 'Unesi mjesto prebivališta'
+    if (!form.email.trim()) errs.email = 'Unesi email adresu'
+    else if (!isValidEmail(form.email)) errs.email = 'Email nije ispravan (npr. ime@domena.com)'
+    if (!form.phone_number.trim()) errs.phone_number = 'Unesi broj mobitela'
+    else if (!isValidPhone(form.phone_number)) errs.phone_number = 'Mobitel smije sadržavati samo brojeve'
+    setFieldErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
+  const validateClubStep1 = (): boolean => {
+    const errs: Partial<Record<keyof FormData, string>> = {}
+    if (!form.category) errs.category = 'Odaberi kategoriju'
+    const comps = Number(form.competitions)
+    if (form.competitions.trim() === '' || !Number.isInteger(comps) || comps < 0) errs.competitions = 'Unesi broj natjecanja (0 ako se još nisi natjecao/la)'
+    // Total je obavezan samo onome tko se već natjecao
+    if (form.comp_total.trim() ? !isValidLift(form.comp_total) : comps > 0) errs.comp_total = 'Unesi natjecateljski total (u koracima od 0,5 kg)'
+    setFieldErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
   const canNext = () => {
+    if (isClub) {
+      if (step === 0) return !!(form.full_name && form.birth_date && form.citizenship && form.residence && form.email && form.phone_number)
+      return !!(form.category && form.competitions)
+    }
     if (step === 0) return !!(form.full_name && form.email && form.age && form.gender && form.bodyweight)
     if (step === 1) return !!(form.experience && form.days_per_week)
     if (step === 2) return !!(form.squat && form.bench && form.deadlift)
@@ -171,8 +233,12 @@ export default function SurveyPage() {
     if (animating) return
     // Run validation before proceeding forward
     if (newStep > step) {
-      if (step === 0 && !validateStep0()) return
-      if (step === 2 && !validateStep2()) return
+      if (isClub) {
+        if (step === 0 && !validateClubStep0()) return
+      } else {
+        if (step === 0 && !validateStep0()) return
+        if (step === 2 && !validateStep2()) return
+      }
     }
     setDir(newStep > step ? 1 : -1)
     setAnimating(true)
@@ -183,15 +249,21 @@ export default function SurveyPage() {
   }
 
   const submit = async () => {
+    if (isClub && !validateClubStep1()) return
     setSending(true)
     setError('')
+    // Svaki obrazac šalje samo svoja polja — trenerski payload ostaje isti kao prije
+    const payload: Record<string, string> = {}
+    for (const [k, v] of Object.entries(form)) {
+      const clubOnly = CLUB_ONLY_KEYS.includes(k)
+      if (isClub ? clubOnly || k === 'full_name' || k === 'email' || k === 'phone_number' : !clubOnly) payload[k] = v
+    }
     // Normalise comma decimals to dots before sending
-    const payload = { ...form }
-    ;(['squat', 'bench', 'deadlift', 'bodyweight'] as const).forEach(k => {
-      payload[k] = payload[k].replace(',', '.')
-    })
+    for (const k of ['squat', 'bench', 'deadlift', 'bodyweight', 'comp_total']) {
+      if (payload[k]) payload[k] = payload[k].replace(',', '.')
+    }
     try {
-      const res = await fetch('/api/survey', {
+      const res = await fetch(isClub ? '/api/club-join' : '/api/survey', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -206,7 +278,9 @@ export default function SurveyPage() {
   }
 
   const totalVal = computeTotal(form.squat, form.bench, form.deadlift)
-  const totalDisplay = totalVal !== null ? totalVal : 0
+  // Klub nema SBD polja — u sidebaru se prikazuje upisani natjecateljski total
+  const clubTotal = isClub && isValidLift(form.comp_total) ? Math.round(parseWeight(form.comp_total) * 2) / 2 : 0
+  const totalDisplay = isClub ? clubTotal : totalVal !== null ? totalVal : 0
 
   // ── Shared styles ────────────────────────────────────────────────
   const inp = (name: string, hasError?: boolean): React.CSSProperties => ({
@@ -235,6 +309,16 @@ export default function SurveyPage() {
     onBlur: () => setFocused(null),
   }
 
+  // Polje obrasca za klub: labela + input + greška (props mogu zamijeniti onChange/style)
+  const clubInput = (name: keyof FormData, label: string, placeholder: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
+    <div>
+      <label style={lbl(name, !!fieldErrors[name])}>{label}</label>
+      <input name={name} style={inp(name, !!fieldErrors[name])} value={form[name]} onChange={e => set(name, e.target.value)} placeholder={placeholder} {...ff} {...props} />
+      {errMsg(fieldErrors[name])}
+    </div>
+  )
+  const today = new Date().toISOString().split('T')[0]
+
   // Površine i rubovi preuzeti s home pagea: #181818 + rgba(255,255,255,0.16) + 4px
   const chipBtn = (val: string, current: string, wide = false): React.CSSProperties => ({
     padding: wide ? '12px 28px' : '11px 20px',
@@ -262,7 +346,6 @@ export default function SurveyPage() {
   if (sent) return (
     <div style={{ minHeight: '100vh', background: '#131317', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "var(--fm)", overflow: 'hidden', position: 'relative' }}>
       <div className="star-field" />
-      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
       <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 24px', maxWidth: '560px', animation: 'successIn 0.8s cubic-bezier(0.16,1,0.3,1)' }}>
         <div style={{ position: 'relative', width: '100px', height: '100px', margin: '0 auto 48px' }}>
           <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
@@ -275,13 +358,16 @@ export default function SurveyPage() {
               style={{ animation: 'drawCheck 0.5s 0.6s cubic-bezier(0.16,1,0.3,1) both' }} />
           </svg>
         </div>
-        <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.45)', marginBottom: '20px' }}>PRIJAVA ZAPRIMLJENA</div>
+        <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.45)', marginBottom: '20px' }}>{isClub ? 'ZAHTJEV ZAPRIMLJEN' : 'PRIJAVA ZAPRIMLJENA'}</div>
         <h1 style={{ fontFamily: "var(--fd)", fontSize: 'clamp(3rem,8vw,5rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '24px', letterSpacing: '-0.01em' }}>
-          DOBRODOŠAO<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>U SUSTAV</span>
+          DOBRODOŠAO<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>{isClub ? 'U KLUB' : 'U SUSTAV'}</span>
         </h1>
         <p style={{ color: 'rgba(255,255,255,0.65)', lineHeight: 1.8, marginBottom: '48px', fontSize: '1rem' }}>
-          Tvoja prijava je uspješno zaprimljena.<br />
+          {isClub ? 'Tvoj zahtjev za učlanjenje u LWL UP je zaprimljen.' : 'Tvoja prijava je uspješno zaprimljena.'}<br />
           Javit ćemo ti se u najkraćem mogućem roku i dogovoriti sljedeće korake.
+          {isClub && form.current_club.trim() && (
+            <><br /><br />Ne zaboravi: prije učlanjenja moraš se ispisati iz kluba {form.current_club.trim()}.</>
+          )}
         </p>
         {totalVal !== null && totalVal > 0 && (
           <div className="survey-success-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '48px' }}>
@@ -315,7 +401,6 @@ export default function SurveyPage() {
   if (showIntro) return (
     <div style={{ minHeight: '100vh', background: '#131317', color: '#fff', fontFamily: "var(--fm)", position: 'relative', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div className="star-field" />
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px)', backgroundSize: '48px 48px', pointerEvents: 'none' }} />
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(20px,5vw,60px)', background: 'rgba(19,19,23,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
           <Image src="/slike/logopng.png" alt="LWL UP" width="82" height="60" style={{ height: '60px', width: 'auto' }} />
@@ -331,24 +416,26 @@ export default function SurveyPage() {
             POSTANI DIO<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>LWL UP TIMA</span>
           </h1>
           <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.85, marginBottom: '48px', fontWeight: 300 }}>
-            Ispunit ćeš kratki upitnik koji pomaže treneru da bolje razumije tvoje iskustvo, ciljeve i fizičke karakteristike. Na temelju tvojih odgovora, kontaktirat ćemo te i dogovoriti sve detalje.
+            Učlani se u klub ili se prijavi za individualno trenerstvo. Ispunit ćeš kratki obrazac, a mi ćemo te kontaktirati i dogovoriti sve detalje.
           </p>
 
           <div style={{ marginBottom: '40px' }}>
-            <div style={{ fontSize: '0.58rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.4)', marginBottom: '16px', fontWeight: 700 }}>ODABERI TRENERA</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              {[
-                { name: 'Walter', desc: 'Specijalist za tehniku i snagu' },
-                { name: 'Grezina', desc: 'Fokus na napredak i natjecanja' },
-              ].map(({ name, desc }) => (
-                <button key={name} onClick={() => setForm(p => ({ ...p, chosen_coach: name }))}
-                  style={{ padding: '20px', background: form.chosen_coach === name ? '#1f1f1f' : '#181818', border: `1px solid ${form.chosen_coach === name ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.16)'}`, borderRadius: '4px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', fontFamily: "var(--fm)", position: 'relative' }}>
-                  {form.chosen_coach === name && (
+            <div style={{ fontSize: '0.58rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.4)', marginBottom: '16px', fontWeight: 700 }}>ŠTO TE ZANIMA?</div>
+            <div className="survey-mode-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {([
+                { key: 'club', title: 'UČLANJENJE U KLUB', desc: 'Postani član LWL UP-a i natječi se za klub' },
+                { key: 'coaching', title: 'TRENERSTVO', desc: 'Individualni program — trener Walter Smajlović' },
+              ] as const).map(({ key, title, desc }) => (
+                <button key={key}
+                  // Trenerstvo je samo kod Waltera — chosen_coach ide u postojeći upitnik kao i prije
+                  onClick={() => { setMode(key); setForm(p => ({ ...p, chosen_coach: key === 'coaching' ? 'Walter' : '' })) }}
+                  style={{ padding: '20px', background: mode === key ? '#1f1f1f' : '#181818', border: `1px solid ${mode === key ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.16)'}`, borderRadius: '4px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', fontFamily: "var(--fm)", position: 'relative' }}>
+                  {mode === key && (
                     <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
                       <Check size={14} color="rgba(255,255,255,0.7)" />
                     </div>
                   )}
-                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', marginBottom: '6px', fontFamily: "var(--fd)", letterSpacing: '0.04em' }}>{name.toUpperCase()}</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', marginBottom: '6px', fontFamily: "var(--fd)", letterSpacing: '0.04em', paddingRight: '18px' }}>{title}</div>
                   <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>{desc}</div>
                 </button>
               ))}
@@ -356,13 +443,13 @@ export default function SurveyPage() {
           </div>
 
           <button
-            onClick={() => { if (form.chosen_coach) setShowIntro(false) }}
-            style={{ width: '100%', padding: '18px', background: form.chosen_coach ? '#fff' : 'rgba(255,255,255,0.06)', color: form.chosen_coach ? '#000' : 'rgba(255,255,255,0.2)', border: 'none', cursor: form.chosen_coach ? 'pointer' : 'not-allowed', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.25em', fontFamily: "var(--fm)", transition: 'all 0.25s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-            ZAPOČNI UPITNIK <ArrowRight size={14} />
+            onClick={() => { if (mode) { setStep(0); setFieldErrors({}); setShowIntro(false) } }}
+            style={{ width: '100%', padding: '18px', background: mode ? '#fff' : 'rgba(255,255,255,0.06)', color: mode ? '#000' : 'rgba(255,255,255,0.2)', border: 'none', cursor: mode ? 'pointer' : 'not-allowed', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.25em', fontFamily: "var(--fm)", transition: 'all 0.25s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+            {mode === 'club' ? 'ZAPOČNI PRIJAVU' : 'ZAPOČNI UPITNIK'} <ArrowRight size={14} />
           </button>
-          {!form.chosen_coach && (
+          {!mode && (
             <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.65rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>
-              Odaberi trenera za nastavak
+              Odaberi jednu opciju za nastavak
             </div>
           )}
         </div>
@@ -370,6 +457,7 @@ export default function SurveyPage() {
       <style>{`
         body { margin: 0; background: #131317; }
         @keyframes successIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 480px) { .survey-mode-grid { grid-template-columns: 1fr !important; } }
       `}</style>
     </div>
   )
@@ -378,7 +466,6 @@ export default function SurveyPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#131317', color: '#fff', fontFamily: "var(--fm)", position: 'relative', overflowX: 'hidden' }}>
       <div className="star-field" />
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px)', backgroundSize: '48px 48px', pointerEvents: 'none' }} />
       <div style={{ position: 'fixed', top: '20%', right: '-5%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,255,255,0.04) 0%,transparent 70%)', zIndex: 0, pointerEvents: 'none' }} />
       <div style={{ position: 'fixed', bottom: '-10%', left: '-5%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,255,255,0.02) 0%,transparent 70%)', zIndex: 0, pointerEvents: 'none' }} />
 
@@ -399,7 +486,7 @@ export default function SurveyPage() {
         {/* LEFT SIDEBAR */}
         <div className="survey-sidebar" style={{ borderRight: '1px solid rgba(255,255,255,0.1)', padding: '100px 40px 60px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', position: 'sticky', top: 0, height: '100vh', overflow: 'hidden' }}>
           <div>
-            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.45)', marginBottom: '40px' }}>PRISTUP PROGRAMU</div>
+            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.45)', marginBottom: '40px' }}>{isClub ? 'UČLANJENJE U KLUB' : 'PRISTUP PROGRAMU'}</div>
             <h1 style={{ fontFamily: "var(--fd)", fontSize: 'clamp(2.2rem,3.5vw,3.2rem)', fontWeight: 800, lineHeight: 0.92, marginBottom: '32px', letterSpacing: '-0.01em' }}>
               POSTANI DIO<br /><span style={{ color: 'rgba(255,255,255,0.2)' }}>LWL UP<br />TIMA</span>
             </h1>
@@ -476,6 +563,8 @@ export default function SurveyPage() {
             maxWidth: '540px',
           }}>
 
+            {/* Trenerski upitnik — nepromijenjen, samo omotan u mode === 'coaching' */}
+            {mode === 'coaching' && (<>
             {/* ── STEP 0: OSOBNI PODACI ─────────────────────── */}
             {step === 0 && (
               <div>
@@ -794,11 +883,90 @@ export default function SurveyPage() {
                 </div>
               </div>
             )}
+            </>)}
+
+            {/* ── KLUB · STEP 0: OSOBNI PODACI ─────────────── */}
+            {isClub && step === 0 && (
+              <div>
+                <h2 style={{ fontFamily: "var(--fd)", fontSize: 'clamp(2.4rem,5vw,3.8rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '48px', letterSpacing: '-0.01em' }}>
+                  UPOZNAJMO<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>SE</span>
+                </h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                  {clubInput('full_name', 'Ime i prezime', 'Ime i prezime')}
+                  {clubInput('birth_date', 'Datum rođenja', '', {
+                    type: 'date', max: today,
+                    // colorScheme: tamni izbornik datuma u pregledniku, da ne iskoči bijeli
+                    style: { ...inp('birth_date', !!fieldErrors.birth_date), colorScheme: 'dark' },
+                  })}
+                  <div className="club-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                    {clubInput('citizenship', 'Državljanstvo', 'npr. Hrvatsko')}
+                    {clubInput('residence', 'Mjesto prebivališta', 'npr. Zagreb')}
+                  </div>
+                  {clubInput('email', 'Email adresa', 'tvoj@email.com', { type: 'email' })}
+                  {clubInput('phone_number', 'Mobitel', '091 234 567', {
+                    type: 'tel',
+                    onChange: e => set('phone_number', e.target.value.replace(/[^0-9\s\+\-\(\)]/g, '')),
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── KLUB · STEP 1: NATJECANJA ────────────────── */}
+            {isClub && step === 1 && (
+              <div>
+                <h2 style={{ fontFamily: "var(--fd)", fontSize: 'clamp(2.4rem,5vw,3.8rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '48px', letterSpacing: '-0.01em' }}>
+                  NATJECATELJSKI<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>PROFIL</span>
+                </h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
+                  <div>
+                    <label style={lbl('category', !!fieldErrors.category)}>Težinska kategorija</label>
+                    {WEIGHT_CLASSES.map(g => (
+                      <div key={g.sex} style={{ marginTop: '12px' }}>
+                        <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', fontWeight: 700 }}>{g.label}</div>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          {g.cats.map(c => {
+                            const v = `${g.sex} ${c} kg`
+                            return <button key={v} onClick={() => set('category', v)} style={chipBtn(v, form.category)}>{c}</button>
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                    {errMsg(fieldErrors.category)}
+                  </div>
+
+                  <div>
+                    <div className="club-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                      {clubInput('competitions', 'Broj natjecanja', '0', {
+                        inputMode: 'numeric',
+                        onChange: e => set('competitions', e.target.value.replace(/[^0-9]/g, '').slice(0, 3)),
+                      })}
+                      {clubInput('comp_total', 'Total (kg)', 'npr. 542,5', {
+                        inputMode: 'decimal',
+                        onChange: e => setLift('comp_total', e.target.value),
+                      })}
+                    </div>
+                    <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', marginTop: '12px', lineHeight: 1.6 }}>
+                      Najbolji natjecateljski total. Ako se još nisi natjecao/la, upiši 0 natjecanja i ostavi total prazan.
+                    </p>
+                  </div>
+
+                  <div>
+                    {clubInput('current_club', 'Trenutni klub (ako postoji)', 'Ostavi prazno ako nisi član kluba')}
+                    {form.current_club.trim() && (
+                      <div style={{ marginTop: '12px', padding: '12px 16px', background: 'rgba(250,204,21,0.06)', border: '1px solid rgba(250,204,21,0.25)', borderRadius: '4px', fontSize: '0.74rem', color: 'rgba(250,204,21,0.85)', lineHeight: 1.6, animation: 'fadeUp 0.3s ease' }}>
+                        Članstvo u LWL UP-u moguće je tek nakon ispisa iz trenutnog kluba.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── NAVIGATION ──────────────────────────────────── */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '56px', maxWidth: '540px' }}>
-            <button onClick={() => navigate(step - 1)} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', padding: '13px 22px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.2em', fontFamily: "var(--fm)", transition: 'all 0.2s', visibility: step === 0 ? 'hidden' : 'visible' }}
+            {/* Na prvom koraku NATRAG vodi na odabir (klub / trenerstvo) */}
+            <button onClick={() => step === 0 ? setShowIntro(true) : navigate(step - 1)} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', padding: '13px 22px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.2em', fontFamily: "var(--fm)", transition: 'all 0.2s' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
             ><ArrowLeft size={13} /> NATRAG</button>
@@ -856,6 +1024,7 @@ export default function SurveyPage() {
         }
         @media (max-width: 480px) {
           nav { padding: 0 16px !important; }
+          .club-two-col { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>

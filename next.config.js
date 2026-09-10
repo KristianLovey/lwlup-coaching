@@ -10,6 +10,9 @@ const securityHeaders = [
   { key: 'Strict-Transport-Security', value: 'max-age=15552000; includeSubDomains' },
 ]
 
+// `next dev` → 'development', `next build` / `next start` / Vercel → 'production'
+const isProd = process.env.NODE_ENV === 'production'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
@@ -38,20 +41,36 @@ const nextConfig = {
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
-      {
-        // Next.js statički bundle (JS, CSS, fontovi) — immutable po defaultu, eksplicitno postavljeno
-        source: '/_next/static/(.*)',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-        ],
-      },
-      {
-        // Next.js optimizirane slike
-        source: '/_next/image(.*)',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=2592000, stale-while-revalidate=86400' },
-        ],
-      },
+      // Samo u produkciji. U devu Turbopack zadržava ISTO ime chunka nakon izmjene,
+      // pa "immutable" tjera preglednik da godinu dana vrti stari JS → hydration
+      // greške (stari tekst u pregledniku, novi sa servera). Next na to i upozorava.
+      // U produkciji su imena hashirana po sadržaju, pa je immutable tamo ispravan.
+      ...(isProd ? [
+        {
+          // Next.js statički bundle (JS, CSS, fontovi) — immutable po defaultu, eksplicitno postavljeno
+          source: '/_next/static/(.*)',
+          headers: [
+            { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+          ],
+        },
+        {
+          // Next.js optimizirane slike
+          source: '/_next/image(.*)',
+          headers: [
+            { key: 'Cache-Control', value: 'public, max-age=2592000, stale-while-revalidate=86400' },
+          ],
+        },
+      ] : []),
+      // PRIVREMENO, samo dev: dok su gornja pravila vrijedila i u devu, preglednik je
+      // spremio JS kao "immutable" na godinu dana i više ga ne provjerava. Ovo mu kaže
+      // da obriše HTTP keš za localhost (cookieji i localStorage ostaju). Maknuti čim
+      // stare kopije nestanu — inače se keš briše pri svakom otvaranju stranice.
+      ...(!isProd ? [
+        {
+          source: '/:path((?!_next|api).*)',
+          headers: [{ key: 'Clear-Site-Data', value: '"cache"' }],
+        },
+      ] : []),
       {
         // Favicon i ikone
         source: '/(favicon.ico|icon.png|apple-touch-icon.png)',
