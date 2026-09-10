@@ -1,10 +1,11 @@
 'use client'
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Plus, Check, FolderOpen, ChevronDown, ChevronRight, X, Menu } from 'lucide-react'
+import { Loader2, Plus, Check, FolderOpen, ChevronDown, ChevronRight, X, Menu, History as HistoryIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { Block, BlockSummary, Week, Exercise, WorkoutExercise, Workout } from './types'
 import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-components'
+import { PrevBlockLiftsModal } from './PrevBlockLifts'
 import { totalTonnage } from './training-setplan'
 import { HubTab } from './training-hub'
 import { MeetDayTab } from './training-meet'
@@ -17,6 +18,7 @@ const supabase = createClient()
 export default function TrainingPage() {
   const [block, setBlock] = useState<Block | null>(null)
   const [allBlocks, setAllBlocks] = useState<BlockSummary[]>([])
+  const [showPrevLifts, setShowPrevLifts] = useState(false)
   const [showBlockSelector, setShowBlockSelector] = useState(false)
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [loading, setLoading] = useState(true)
@@ -622,6 +624,13 @@ export default function TrainingPage() {
                             setAllBlocks(bs => bs.map(b2 => b2.id === block.id ? { ...b2, name: v } : b2) as BlockSummary[])
                           }} />
                         {saving && <Loader2 size={11} color="#444" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />}
+                        <button onClick={() => setShowPrevLifts(true)} title="Kilaže squata, bencha i deadlifta iz prošlog bloka"
+                          style={{ marginLeft: 'auto', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '20px', color: 'rgba(255,255,255,0.55)', fontSize: '0.5rem', letterSpacing: '0.16em', fontWeight: 700, fontFamily: 'var(--fm)', cursor: 'pointer' }}>
+                          <HistoryIcon size={11} /> PROŠLI BLOK
+                        </button>
+                        {showPrevLifts && effectiveAthleteId && (
+                          <PrevBlockLiftsModal athleteId={effectiveAthleteId} currentBlockId={block.id} onClose={() => setShowPrevLifts(false)} />
+                        )}
                       </div>
 
                       {/* Block dropdown */}
