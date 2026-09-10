@@ -206,6 +206,15 @@ h1, h2, h3, h4, h5 { color: var(--text-primary); }
 @keyframes dropDown   { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 @keyframes panelSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 
+/* EditableField marquee — predugačak naziv dana ide tamo-amo, s pauzom na oba kraja.
+   --mq-dist i --mq-dur postavlja komponenta prema tome koliko teksta ne stane. */
+@keyframes efMarquee {
+  0%, 15%   { transform: translateX(0); }
+  85%, 100% { transform: translateX(var(--mq-dist)); }
+}
+.ef-marquee { animation: efMarquee var(--mq-dur, 6s) ease-in-out infinite alternate; will-change: transform; }
+@media (prefers-reduced-motion: reduce) { .ef-marquee { animation: none; } }
+
 /* Hide scroll-to-top button while mobile nav is open */
 body.nav-open .scroll-to-top-btn {
   opacity: 0 !important;

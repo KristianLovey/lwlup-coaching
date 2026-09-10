@@ -471,16 +471,33 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
 }
 
 // ─── EDITABLE FIELD ───────────────────────────────────────────────
-export function EditableField({ value, placeholder, onSave, type = 'text', small = false }: {
+export function EditableField({ value, placeholder, onSave, type = 'text', small = false, marquee = false }: {
   value: string | number | null; placeholder: string; onSave: (v: string) => void; type?: string; small?: boolean
+  /** Predugačak tekst se polako pomiče tamo-amo umjesto da se odreže. */
+  marquee?: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const [val, setVal] = useState(String(value ?? ''))
   const inputRef = useRef<HTMLInputElement>(null)
+  const boxRef = useRef<HTMLSpanElement>(null)
+  const textRef = useRef<HTMLSpanElement>(null)
+  const [overflow, setOverflow] = useState(0)
   useEffect(() => { if (editing) inputRef.current?.focus() }, [editing])
   // Dok se tipka, prop ne smije pregaziti unos: parent se osvježava optimistički i
   // preko realtimea, pa bi "207.5" usred tipkanja skočilo natrag na staru vrijednost.
   useEffect(() => { if (!editing) setVal(String(value ?? '')) }, [value, editing])
+  // Koliko px teksta ne stane = put koji marquee prelazi. ResizeObserver hvata
+  // i okretanje ekrana i font koji se učita nakon prvog mjerenja.
+  useEffect(() => {
+    if (!marquee || editing) return
+    const box = boxRef.current, text = textRef.current
+    if (!box || !text) return
+    const measure = () => setOverflow(Math.max(0, Math.ceil(text.scrollWidth - box.clientWidth)))
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(box); ro.observe(text)
+    return () => ro.disconnect()
+  }, [marquee, editing, value])
   const commit = () => { setEditing(false); onSave(val) }
   if (editing) return (
     <input ref={inputRef} type={type} value={val}
@@ -490,11 +507,25 @@ export function EditableField({ value, placeholder, onSave, type = 'text', small
       style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: '#e0e0e0', padding: small ? '3px 8px' : '5px 10px', fontSize: small ? '0.72rem' : '0.85rem', outline: 'none', width: '100%', fontFamily: 'var(--fm)', borderRadius: '5px', minWidth: '60px', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}
     />
   )
+  // "" i razmaci moraju pokazati placeholder. `value ?? placeholder` hvata samo
+  // null — obrisano ime ostajalo je span širine 0 u koji se više nije moglo kliknuti.
+  const isEmpty = value == null || String(value).trim() === ''
+  const shown = isEmpty ? placeholder : value
+  const textStyle: React.CSSProperties = { cursor: 'text', color: isEmpty || !value ? '#3a3a45' : '#e0e0e0', fontSize: small ? '0.72rem' : '0.85rem', fontFamily: 'var(--fm)', borderBottom: '1px dashed var(--t-border-hi)', paddingBottom: '1px', transition: 'color 0.15s' }
+
+  if (marquee) return (
+    <span ref={boxRef} onClick={() => setEditing(true)} title={isEmpty ? 'Klikni za uređivanje' : `${shown} — klikni za uređivanje`}
+      style={{ display: 'block', overflow: 'hidden', whiteSpace: 'nowrap', cursor: 'text' }}>
+      <span ref={textRef} className={overflow > 0 ? 'ef-marquee' : undefined}
+        style={{ ...textStyle, display: 'inline-block', '--mq-dist': `-${overflow}px`, '--mq-dur': `${Math.max(4, overflow / 25 + 2)}s` } as React.CSSProperties}>
+        {shown}
+      </span>
+    </span>
+  )
+
   return (
-    <span onClick={() => setEditing(true)}
-      style={{ cursor: 'text', color: value ? '#e0e0e0' : '#3a3a45', fontSize: small ? '0.72rem' : '0.85rem', fontFamily: 'var(--fm)', borderBottom: '1px dashed var(--t-border-hi)', paddingBottom: '1px', transition: 'color 0.15s' }}
-      title="Klikni za uređivanje">
-      {value ?? placeholder}
+    <span onClick={() => setEditing(true)} style={textStyle} title="Klikni za uređivanje">
+      {shown}
     </span>
   )
 }
@@ -1910,12 +1941,16 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
 
           <div className='workout-header-inner' style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px' }}>
             {/* Workout name — large, bold */}
-            <div style={{ flex: 1 }} onClick={e => e.stopPropagation()}>
+            {/* minWidth 0: bez njega flex dijete ne može biti uže od teksta, pa dugo
+                ime gura kontrole udesno umjesto da se prelije i pokrene marquee */}
+            <div style={{ flex: 1, minWidth: 0 }} onClick={e => e.stopPropagation()}>
               <div style={{ fontSize: '0.47rem', fontWeight: 700, fontFamily: 'var(--fm)', letterSpacing: '0.2em', color: workout.completed ? 'rgba(134,239,172,0.45)' : 'rgba(255,255,255,0.25)', textTransform: 'uppercase' as const, marginBottom: '3px' }}>
                 TRENING
               </div>
               <div style={{ fontSize: '1rem', fontWeight: 900, color: workout.completed ? '#86efac' : '#f0f0ff', fontFamily: 'var(--fd)', letterSpacing: '0.02em', textTransform: 'uppercase' as const }}>
-                <EditableField value={workout.day_name} placeholder="DAN TRENINGA" onSave={v => onUpdateWorkout(workout.id, { day_name: v })} />
+                {/* Prazno ime se ne sprema — polje se vrati na staro umjesto dana bez naziva */}
+                <EditableField marquee value={workout.day_name} placeholder="DAN TRENINGA"
+                  onSave={v => { const name = v.trim(); if (name && name !== workout.day_name) onUpdateWorkout(workout.id, { day_name: name }) }} />
               </div>
               {workout.completion_date && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
