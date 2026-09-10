@@ -111,15 +111,21 @@ async function loadPrevBlock(athleteId: string, currentBlockId: string | null): 
 
       weekSet.add(m.week)
       let row = byName.get(m.name)
-      if (!row) { row = { name: m.name, category: m.category, weeks: {}, heaviest: top, bestE1rm: null }; byName.set(m.name, row) }
-      const cur = row.weeks[m.week]
-      if (!cur || heavier(cur, top)) row.weeks[m.week] = top
-      if (heavier(row.heaviest, top)) row.heaviest = top
+      if (!row) { row = { name: m.name, category: m.category, weeks: {}, best: [], bestE1rm: null }; byName.set(m.name, row) }
+      if (!row.weeks[m.week]) row.weeks[m.week] = []
+      row.weeks[m.week].push(top)
+      row.best.push(top)
       if (top.e1rm != null && (row.bestE1rm == null || top.e1rm > row.bestE1rm)) row.bestE1rm = top.e1rm
     }
     if (byName.size === 0) continue
 
-    return { blockName: cand.name, weeks: [...weekSet].sort((a, b) => a - b), rows: [...byName.values()], skipped: i }
+    // Tek kad su skupljeni svi setovi, svedi svaki tjedan i cijeli blok na top setove
+    const rows: ExRow[] = [...byName.values()].map(r => ({
+      ...r,
+      weeks: Object.fromEntries(Object.entries(r.weeks).map(([w, s]) => [w, topSets(s)])),
+      best: topSets(r.best),
+    }))
+    return { blockName: cand.name, weeks: [...weekSet].sort((a, b) => a - b), rows, skipped: i }
   }
   return null
 }
@@ -137,6 +143,15 @@ function SetCell({ t, strong = false }: { t: Top; strong?: boolean }) {
       {t.reps && <span style={{ fontSize: '0.64rem', color: t.fromPlan ? '#666' : '#aaa', marginLeft: '2px' }}>×{t.reps}{t.fromPlan ? '*' : ''}</span>}
       {t.rpe != null && <span style={{ fontSize: '0.56rem', color: '#facc15', marginLeft: '4px' }}>@{t.rpe}</span>}
     </span>
+  )
+}
+
+// Više top setova u istoj ćeliji (npr. jedinica i petica) — jedan ispod drugog
+function SetList({ sets, strong = false }: { sets: Top[]; strong?: boolean }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+      {sets.map((t, i) => <SetCell key={i} t={t} strong={strong} />)}
+    </div>
   )
 }
 
@@ -163,7 +178,7 @@ export function PrevBlockLiftsModal({ athleteId, currentBlockId, onClose }: {
   }, [onClose])
 
   const data = state.status === 'done' ? state.data : null
-  const hasPlanReps = !!data?.rows.some(r => Object.values(r.weeks).some(t => t.fromPlan) || r.heaviest.fromPlan)
+  const hasPlanReps = !!data?.rows.some(r => Object.values(r.weeks).some(s => s.some(t => t.fromPlan)) || r.best.some(t => t.fromPlan))
 
   // Portal na <body>: modal izgleda isto na stranici treninga i u admin panelu
   // (admin remapira --t-* tokene) i ne može ga zarobiti roditelj s transformom.
@@ -231,7 +246,7 @@ export function PrevBlockLiftsModal({ athleteId, currentBlockId, onClose }: {
                         <tr>
                           <th style={thSticky}>VJEŽBA</th>
                           {data.weeks.map(w => <th key={w} style={th}>TJ {w}</th>)}
-                          <th style={th}>NAJTEŽE</th>
+                          <th style={th}>NAJBOLJE U BLOKU</th>
                           <th style={{ ...th, color: '#4ade80' }}>e1RM</th>
                         </tr>
                       </thead>
@@ -244,8 +259,8 @@ export function PrevBlockLiftsModal({ athleteId, currentBlockId, onClose }: {
                                 {r.category === lift.comp ? 'COMP' : 'VARIJACIJA'}
                               </div>
                             </td>
-                            {data.weeks.map(w => <td key={w} style={td}>{r.weeks[w] ? <SetCell t={r.weeks[w]} /> : dash}</td>)}
-                            <td style={td}><SetCell t={r.heaviest} strong /></td>
+                            {data.weeks.map(w => <td key={w} style={td}>{r.weeks[w]?.length ? <SetList sets={r.weeks[w]} /> : dash}</td>)}
+                            <td style={td}><SetList sets={r.best} strong /></td>
                             <td style={td}>
                               {r.bestE1rm != null ? (
                                 <span style={{ fontFamily: 'var(--fd)', fontWeight: 800, color: '#4ade80', fontSize: '0.9rem' }}>
@@ -265,7 +280,8 @@ export function PrevBlockLiftsModal({ athleteId, currentBlockId, onClose }: {
 
           {data && (
             <div style={{ padding: '12px 20px 0', fontSize: '0.6rem', color: '#666', lineHeight: 1.6 }}>
-              Po tjednu je prikazan najteži odrađeni set (kg × ponavljanja @RPE).
+              Prikazani su top setovi (kg × ponavljanja @RPE): najteži set za svaki broj ponavljanja, npr. jedinica i petica.
+              Set koji je lakši i s manje ponavljanja od nekog drugog se ne prikazuje.
               {hasPlanReps && <><br />* ponavljanja nisu upisana — prikazana su planirana</>}
             </div>
           )}
