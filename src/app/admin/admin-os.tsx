@@ -312,9 +312,42 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
       <div className="admin-shell">
         {/* ── NAV ── */}
         <aside className={'nav' + (navCollapsed ? ' nav--collapsed' : '') + (navMobileOpen ? ' mobile-open' : '')}>
-          <div className="nav-logo">
-            <div className="mark">L</div>
-            <div className="txt">LWL UP<small>{isTrener ? 'TRENER · OS' : 'ADMIN · OS'}</small></div>
+          {/* ── Profil + izbornik na vrhu (umjesto loga); gumb za sklapanje ostaje desno.
+                 placeProfile() otvara izbornik prema dolje kad iznad nema mjesta — ovdje uvijek. ── */}
+          <div className="nav-logo nav-top">
+            <div className="nav-profile" ref={profileRef}>
+              <button className="nav-coach" onClick={() => setProfileOpen(v => !v)} title="Izbornik" style={{ width: '100%', cursor: 'pointer' }}>
+                <div className="avatar">{initials(adminName)}</div>
+                <div className="meta"><div className="n">{adminName}</div><div className="r">{isTrener ? 'Trener' : 'Administrator'}</div></div>
+                <ChevronDown size={14} style={{ marginLeft: 'auto', flexShrink: 0, color: 'var(--text-muted)', transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+              </button>
+              {profileOpen && (
+                <div style={{ position: 'fixed', left: profilePos.left, ...(profilePos.top != null ? { top: profilePos.top } : { bottom: profilePos.bottom }), width: 224, maxWidth: 'calc(100vw - 24px)', maxHeight: 'calc(100vh - 24px)', overflowY: 'auto', background: 'var(--surface-1)', border: '1px solid var(--border-strong)', borderRadius: 14, boxShadow: '0 24px 64px rgba(0,0,0,0.7)', zIndex: 120, overflow: 'hidden', animation: profilePos.top != null ? 'dropDown 0.18s ease' : 'os-fadeUp 0.18s ease' }}>
+                  <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div className="avatar" style={{ width: 36, height: 36 }}>{initials(adminName)}</div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-display)' }}>{adminName}</div>
+                      <div style={{ fontSize: 11, color: isTrener ? '#f59e0b' : '#ef4444', fontFamily: 'var(--font-mono)', marginTop: 1 }}>● {isTrener ? 'Trener' : 'Administrator'}</div>
+                    </div>
+                  </div>
+                  <div style={{ padding: 6 }}>
+                    {[
+                      { href: '/', icon: <Home size={15} />, label: 'Početna' },
+                      { href: '/profile', icon: <User size={15} />, label: 'Moj profil' },
+                      { href: '/training', icon: <Activity size={15} />, label: 'Trening' },
+                      { href: '/exercises', icon: <Dumbbell size={15} />, label: 'Baza vježbi' },
+                    ].map(it => (
+                      <Link key={it.href} href={it.href} onClick={() => setProfileOpen(false)} style={{ textDecoration: 'none' }}>
+                        <button className="os-menu-item">{it.icon}<span>{it.label}</span></button>
+                      </Link>
+                    ))}
+                  </div>
+                  <div style={{ padding: 6, borderTop: '1px solid var(--border)' }}>
+                    <button className="os-menu-item os-menu-logout" onClick={() => { setProfileOpen(false); handleLogout() }}><LogOut size={15} /><span>Odjava</span></button>
+                  </div>
+                </div>
+              )}
+            </div>
             <button className="nav-collapse" onClick={() => setNavCollapsed(v => !v)} aria-label="Skupi izbornik"><PanelLeft size={18} /></button>
           </div>
           {/* ── Odabir liftera — sve sekcije ispod odnose se na njega ── */}
@@ -363,39 +396,6 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
               <span className="nav-label">Postavke</span>
             </button>
           </nav>
-          <div className="nav-foot" ref={profileRef} style={{ position: 'relative' }}>
-            <button className="nav-coach" onClick={() => setProfileOpen(v => !v)} title="Izbornik" style={{ width: '100%', cursor: 'pointer' }}>
-              <div className="avatar">{initials(adminName)}</div>
-              <div className="meta"><div className="n">{adminName}</div><div className="r">{isTrener ? 'Trener' : 'Administrator'}</div></div>
-              <ChevronDown size={14} style={{ marginLeft: 'auto', color: 'var(--text-muted)', transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-            </button>
-            {profileOpen && (
-              <div style={{ position: 'fixed', left: profilePos.left, ...(profilePos.top != null ? { top: profilePos.top } : { bottom: profilePos.bottom }), width: 224, maxWidth: 'calc(100vw - 24px)', maxHeight: 'calc(100vh - 24px)', overflowY: 'auto', background: 'var(--surface-1)', border: '1px solid var(--border-strong)', borderRadius: 14, boxShadow: '0 24px 64px rgba(0,0,0,0.7)', zIndex: 120, overflow: 'hidden', animation: 'os-fadeUp 0.18s ease' }}>
-                <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div className="avatar" style={{ width: 36, height: 36 }}>{initials(adminName)}</div>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-display)' }}>{adminName}</div>
-                    <div style={{ fontSize: 11, color: isTrener ? '#f59e0b' : '#ef4444', fontFamily: 'var(--font-mono)', marginTop: 1 }}>● {isTrener ? 'Trener' : 'Administrator'}</div>
-                  </div>
-                </div>
-                <div style={{ padding: 6 }}>
-                  {[
-                    { href: '/', icon: <Home size={15} />, label: 'Početna' },
-                    { href: '/profile', icon: <User size={15} />, label: 'Moj profil' },
-                    { href: '/training', icon: <Activity size={15} />, label: 'Trening' },
-                    { href: '/exercises', icon: <Dumbbell size={15} />, label: 'Baza vježbi' },
-                  ].map(it => (
-                    <Link key={it.href} href={it.href} onClick={() => setProfileOpen(false)} style={{ textDecoration: 'none' }}>
-                      <button className="os-menu-item">{it.icon}<span>{it.label}</span></button>
-                    </Link>
-                  ))}
-                </div>
-                <div style={{ padding: 6, borderTop: '1px solid var(--border)' }}>
-                  <button className="os-menu-item os-menu-logout" onClick={() => { setProfileOpen(false); handleLogout() }}><LogOut size={15} /><span>Odjava</span></button>
-                </div>
-              </div>
-            )}
-          </div>
         </aside>
 
         {/* ── MAIN ── */}

@@ -152,7 +152,11 @@
   background: var(--surface-3); padding: 2px 8px; border-radius: 999px;
 }
 .lwl-admin-os .nav-item.active .count { background: var(--surface-hi); color: var(--text-dim); }
-.lwl-admin-os .nav-foot { margin-top: auto; padding-top: 16px; }
+/* Profil na vrhu izbornika (umjesto loga) + gumb za sklapanje desno */
+.lwl-admin-os .nav-top { padding: 0 0 18px; gap: 8px; }
+.lwl-admin-os .nav-profile { position: relative; flex: 1; min-width: 0; }
+.lwl-admin-os .nav-top .nav-coach .meta { min-width: 0; text-align: left; }
+.lwl-admin-os .nav-top .nav-coach .meta .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lwl-admin-os .nav-coach {
   display: flex; align-items: center; gap: 11px; padding: 10px; border-radius: 12px;
   border: 1px solid var(--border); background: var(--surface-2);
@@ -599,6 +603,7 @@
 .lwl-admin-os .nav--collapsed .nav-coach .meta { display: none; }
 .lwl-admin-os .nav--collapsed .nav-coach .avatar { margin: 0 auto; flex: 0 0 auto; }
 .lwl-admin-os .nav--collapsed .nav-coach > svg { display: none; }
+.lwl-admin-os .nav--collapsed .nav-profile { flex: 0 0 auto; width: 100%; }
 .lwl-admin-os .nav-collapse svg { transition: transform 0.25s; }
 .lwl-admin-os .nav--collapsed .nav-collapse svg { transform: rotate(180deg); }
 
@@ -650,7 +655,7 @@
   .lwl-admin-os .nav .nav-collapse { display: none; }
   .lwl-admin-os .nav .nav-logo { flex-direction: row; justify-content: flex-start; gap: 12px; padding: 4px 8px 18px; }
   .lwl-admin-os .nav .nav-logo .txt { display: block; }
-  .lwl-admin-os .nav .nav-foot { margin-top: 16px; }
+  .lwl-admin-os .nav .nav-top { padding: 0 0 16px; }
   .lwl-admin-os .nav .nav-coach { padding: 10px; }
   .lwl-admin-os .nav .nav-coach .avatar { margin: 0; }
   .lwl-admin-os .nav .nav-coach > svg { display: block; }
