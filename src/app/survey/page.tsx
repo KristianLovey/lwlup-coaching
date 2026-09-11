@@ -403,7 +403,7 @@ export default function SurveyPage() {
       <div className="star-field" />
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(20px,5vw,60px)', background: 'rgba(19,19,23,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <Image src="/slike/logopng.png" alt="LWL UP" width="82" height="60" style={{ height: '60px', width: 'auto' }} />
+          <Image src="/slike/logopng.png" alt="LWL UP" width="82" height="60" loading="eager" style={{ height: '60px', width: 'auto' }} />
         </Link>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '0.7rem', letterSpacing: '0.25em', fontWeight: 600, fontFamily: "var(--fm)" }}>
           <ArrowLeft size={13} /> NATRAG
@@ -472,7 +472,7 @@ export default function SurveyPage() {
       {/* NAVBAR */}
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(20px,5vw,60px)', background: 'rgba(19,19,23,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.4)' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <Image src="/slike/logopng.png" alt="LWL UP" width="82" height="60" style={{ height: '60px', width: 'auto' }} />
+          <Image src="/slike/logopng.png" alt="LWL UP" width="82" height="60" loading="eager" style={{ height: '60px', width: 'auto' }} />
         </Link>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '0.7rem', letterSpacing: '0.25em', fontWeight: 600, transition: '0.2s', fontFamily: "var(--fm)" }}
           onMouseEnter={e => e.currentTarget.style.color = '#fff'}

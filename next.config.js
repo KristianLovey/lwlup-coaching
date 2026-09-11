@@ -61,16 +61,6 @@ const nextConfig = {
           ],
         },
       ] : []),
-      // PRIVREMENO, samo dev: dok su gornja pravila vrijedila i u devu, preglednik je
-      // spremio JS kao "immutable" na godinu dana i više ga ne provjerava. Ovo mu kaže
-      // da obriše HTTP keš za localhost (cookieji i localStorage ostaju). Maknuti čim
-      // stare kopije nestanu — inače se keš briše pri svakom otvaranju stranice.
-      ...(!isProd ? [
-        {
-          source: '/:path((?!_next|api).*)',
-          headers: [{ key: 'Clear-Site-Data', value: '"cache"' }],
-        },
-      ] : []),
       {
         // Favicon i ikone
         source: '/(favicon.ico|icon.png|apple-touch-icon.png)',

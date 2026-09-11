@@ -56,7 +56,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="hr" className={`${oswald.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
+    // data-scroll-behavior: Next privremeno gasi glatko skrolanje (globals.css) dok mijenja stranicu
+    <html lang="hr" data-scroll-behavior="smooth" className={`${oswald.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
       <head>
         {/* preconnect: uspostavi DNS+TCP+TLS prema Supabaseu prije prvog API poziva */}
         <link rel="preconnect" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" crossOrigin="anonymous" />

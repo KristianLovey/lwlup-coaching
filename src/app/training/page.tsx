@@ -14,6 +14,28 @@ import { cacheSet, meetKeys } from '@/lib/meetCache'
 
 const supabase = createClient()
 
+// ─── LOADER ───────────────────────────────────────────────────────
+// Kostur treninga dok stižu podaci — umjesto "Nema bloka", koji bi bljesnuo
+// prije nego što baza uopće odgovori.
+function TrainingLoader() {
+  return (
+    <div role="status" aria-live="polite" style={{ padding: '8px 0 60px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', color: 'rgba(255,255,255,0.45)' }}>
+        <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+        <span style={{ fontSize: '0.62rem', letterSpacing: '0.22em', fontFamily: 'var(--fm)', fontWeight: 700 }}>UČITAVAMO TVOJ TRENING…</span>
+      </div>
+      {[0, 1, 2].map(i => (
+        <div key={i} className="t-skel" style={{ height: i === 0 ? '120px' : '74px', borderRadius: '14px', marginBottom: '10px', animationDelay: `${i * 0.15}s` }} />
+      ))}
+      <style>{`
+        .t-skel { background: linear-gradient(90deg, var(--t-s1) 0%, var(--t-s3) 50%, var(--t-s1) 100%); background-size: 200% 100%; border: 1px solid var(--t-border); animation: tSkel 1.4s ease-in-out infinite; }
+        @keyframes tSkel { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+        @media (prefers-reduced-motion: reduce) { .t-skel { animation: none; } }
+      `}</style>
+    </div>
+  )
+}
+
 // ─── MAIN PAGE ────────────────────────────────────────────────────
 export default function TrainingPage() {
   const [block, setBlock] = useState<Block | null>(null)
@@ -22,6 +44,8 @@ export default function TrainingPage() {
   const [showBlockSelector, setShowBlockSelector] = useState(false)
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [loading, setLoading] = useState(true)
+  // Prikazani su podaci iz keša, a svježi se još dohvaćaju iz baze
+  const [refreshing, setRefreshing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [athleteName, setAthleteName] = useState('')
@@ -74,6 +98,7 @@ export default function TrainingPage() {
         })
 
         const CACHE_KEY = `lwl:training:${uid}`
+        let hadCache = false
         try {
           const raw = localStorage.getItem(CACHE_KEY)
           if (raw) {
@@ -87,14 +112,21 @@ export default function TrainingPage() {
             if (c.userRole) setUserRole(c.userRole)
             setAvatarIcon(c.avatarIcon ?? 'barbell')
             setLoading(false)
+            // Keš je odmah na ekranu, a svježi podaci tek stižu → prikaži "dohvaćamo"
+            hadCache = true
+            setRefreshing(true)
           }
         } catch { /* corrupt cache */ }
 
+        const fetchFailed = () => setError(hadCache
+          ? 'Nije uspjelo dohvaćanje najnovijih podataka — prikazani su zadnji spremljeni.'
+          : 'Greška pri učitavanju treninga. Provjeri vezu i osvježi stranicu.')
+
         const [
           { data: profile },
-          { data: exData },
-          { data: rawBlock },
-          { data: ab },
+          { data: exData, error: exErr },
+          { data: rawBlock, error: blockErr },
+          { data: ab, error: abErr },
         ] = await Promise.all([
           supabase.from('lifters').select('full_name, role, avatar_icon').eq('id', uid).single(),
           supabase.from('exercises').select('id, name, category, notes').order('category').order('name'),
@@ -106,6 +138,10 @@ export default function TrainingPage() {
             .eq('athlete_id', uid).order('created_at', { ascending: false }),
         ])
 
+        // Neuspio upit NIJE isto što i "nema bloka". Bez ovoga bi mrežna greška
+        // prikazala "Nema bloka" i još ga spremila u keš za sljedeći ulazak.
+        if (blockErr || abErr) { fetchFailed(); return }
+
         const role = profile?.role
         const athleteNameVal = profile?.full_name ?? session.user.email?.split('@')[0] ?? 'Atleta'
         const isAdminVal = role === 'admin' || role === 'trener'
@@ -115,16 +151,17 @@ export default function TrainingPage() {
         setIsCoach(isCoachVal)
         if (role === 'admin' || role === 'trener') setUserRole(role as 'admin' | 'trener')
         setAvatarIcon(profile?.avatar_icon ?? 'barbell')
-        setExercises(exData ?? [])
+        if (!exErr) setExercises(exData ?? []) // greška ne smije obrisati popis vježbi iz keša
         setAllBlocks((ab ?? []) as BlockSummary[])
 
         // Fallback: nema bloka sa statusom 'active' (npr. plan kopiran iz predloška ostaje
         // 'planned') → prikaži najnoviji blok koji lifter ima, da uvijek nešto vidi.
         let blockData = rawBlock
         if (!blockData && (ab?.length ?? 0) > 0) {
-          const { data: fb } = await supabase.from('blocks')
+          const { data: fb, error: fbErr } = await supabase.from('blocks')
             .select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(id, name, category, notes))))')
             .eq('id', (ab as BlockSummary[])[0].id).maybeSingle()
+          if (fbErr) { fetchFailed(); return }
           blockData = fb
         }
         if (blockData?.weeks) {
@@ -137,6 +174,7 @@ export default function TrainingPage() {
 
         setBlock(blockData)
         setLoading(false)
+        setRefreshing(false)
 
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify({
@@ -149,7 +187,7 @@ export default function TrainingPage() {
         if (blockData?.weeks) {
           injectSetProgress(blockData, uid).then(injected => setBlock(injected))
         }
-      } catch { setError('Greška pri učitavanju.') } finally { setLoading(false) }
+      } catch { setError('Greška pri učitavanju.') } finally { setLoading(false); setRefreshing(false) }
     }
     init()
   }, [])
@@ -458,8 +496,9 @@ export default function TrainingPage() {
       <div style={{ paddingTop: '56px', position: 'relative', zIndex: 1 }}>
         <div className='page-header' style={{ maxWidth: '1200px', margin: '0 auto', padding: '28px 32px 0', position: 'relative', zIndex: 1 }}>
 
-          {/* ── TAB SWITCHER ── */}
-          <div className="tab-switcher" style={{ display: 'flex', gap: '4px', marginBottom: '32px', padding: '5px', background: 'var(--t-s3)', borderRadius: '999px', border: '1px solid var(--t-border-hi)', width: 'fit-content', overflowX: 'auto' as const }}>
+          {/* ── TAB SWITCHER (+ indikator osvježavanja sa strane) ── */}
+          <div className="tab-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '32px' }}>
+          <div className="tab-switcher" style={{ display: 'flex', gap: '4px', padding: '5px', background: 'var(--t-s3)', borderRadius: '999px', border: '1px solid var(--t-border-hi)', width: 'fit-content', overflowX: 'auto' as const }}>
             {([['program','Program'],['hub','Hub i Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label]) => (
               <button key={tab} onClick={() => setActiveTab(tab as 'program'|'hub'|'meet')}
                 style={{ padding: '9px 22px', background: activeTab === tab ? '#f0f0f0' : 'transparent', border: 'none', borderRadius: '999px', cursor: 'pointer', fontSize: '0.7rem', fontFamily: 'var(--fm)', fontWeight: activeTab === tab ? 700 : 500, color: activeTab === tab ? '#090909' : 'rgba(255,255,255,0.65)', transition: 'all 0.18s', whiteSpace: 'nowrap' as const, letterSpacing: '0.14em', textTransform: 'uppercase' as const }}>
@@ -467,25 +506,28 @@ export default function TrainingPage() {
               </button>
             ))}
           </div>
+            {refreshing && activeTab === 'program' && block && (
+              <div role="status" aria-live="polite" className="t-refresh-pill"
+                style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px', borderRadius: '999px', border: '1px solid var(--t-border-hi)', background: 'var(--t-s3)', color: 'rgba(255,255,255,0.55)', fontSize: '0.6rem', letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700, whiteSpace: 'nowrap' as const, animation: 'fadeIn 0.2s ease' }}>
+                <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+                DOHVAĆAMO NAJNOVIJE PODATKE
+              </div>
+            )}
+          </div>
 
           {/* ── PROGRAM TAB ── */}
           {activeTab === 'program' && (<>
 
-            {/* Loading */}
-            {loading && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '100px 0', color: 'rgba(255,255,255,0.2)' }}>
-                <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
-                <span style={{ fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>UČITAVANJE...</span>
-              </div>
-            )}
+            {/* Loading — i dok se osvježava keš u kojem nije bilo bloka */}
+            {(loading || (refreshing && !block)) && <TrainingLoader />}
 
             {/* Error */}
             {error && (
               <div style={{ padding: '14px 18px', background: 'rgba(239,53,53,0.06)', border: '1px solid rgba(239,53,53,0.18)', color: '#ff8080', fontSize: '0.84rem', borderRadius: '10px', marginBottom: '24px' }}>{error}</div>
             )}
 
-            {/* No block */}
-            {!loading && !block && (
+            {/* No block — tek kad je baza stvarno odgovorila, ne dok se još dohvaća */}
+            {!loading && !refreshing && !block && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: '14px' }}>
                 <div style={{ fontFamily: 'var(--fd)', fontSize: '3.5rem', opacity: 0.1, lineHeight: 1 }}>—</div>
                 {allBlocks.length > 0 ? (
@@ -786,6 +828,10 @@ export default function TrainingPage() {
           .page-header  { padding: 14px 16px 0 !important; }
           .page-content { padding: 0 16px 100px !important; }
           .tab-switcher { display:none !important; }
+          /* Tabovi su na mobitelu skriveni → prazan red ne smije ostaviti razmak;
+             kad se osvježava, razmak nosi sam indikator */
+          .tab-row { margin-bottom: 0 !important; }
+          .t-refresh-pill { margin-bottom: 14px; }
         }
         @media (max-width:760px) {
           .hero-grid { grid-template-columns: 1fr !important; }

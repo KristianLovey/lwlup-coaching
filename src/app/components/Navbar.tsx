@@ -175,8 +175,11 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
         {/* Logo */}
         <Link href="/" onClick={() => setMenuOpen(false)}
           style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#fff', zIndex: 1 }}>
-          <Image src="/slike/logopng.png" alt="LWL UP" width={98} height={72} priority
-            className="nav-logo-img" style={{ height: '72px', width: 'auto' }} />
+          {/* Atributi moraju pratiti omjer datoteke (1481×1080 ≈ 1.3713): 73 px → 100.1 px,
+              pa je širina 100 i kad preglednik zaokružuje i kad odsijeca. Kod 72 px (98.7)
+              ispadne 99 ≠ 98 i Next javlja "width or height modified, but not the other". */}
+          <Image src="/slike/logopng.png" alt="LWL UP" width={100} height={73} priority
+            className="nav-logo-img" style={{ height: '73px', width: 'auto' }} />
         </Link>
 
         {/* Desktop nav */}
