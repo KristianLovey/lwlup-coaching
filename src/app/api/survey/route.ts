@@ -4,6 +4,10 @@ import { surveyEmail, val, total } from '@/lib/email-templates'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+// Pošiljatelj: postavi MAIL_FROM (npr. "LWL UP <forma@mail.lwlup.com>") kad domena
+// prođe verifikaciju u Resendu. Dok je fallback na resend.dev, Gmail baca u spam.
+const FROM = process.env.MAIL_FROM ?? 'LWL UP Forma <onboarding@resend.dev>'
+
 // ── security helpers ──────────────────────────────────────────────
 // Escape HTML entities — user input goes straight into the e-mail HTML,
 // so without this an attacker could inject markup/links (phishing) into
@@ -46,8 +50,9 @@ export async function POST(req: NextRequest) {
     const subject = `Nova prijava — ${val(data.full_name)}${tot ? ` · ${tot}kg total` : ''}${data.experience === 'Napredni' ? ' ★' : ''}`
 
     const { error } = await resend.emails.send({
-      from: 'LWL UP Forma <onboarding@resend.dev>', // zamijeni s tvojom domenom kad verificiraš
+      from: FROM,
       to: process.env.CONTACT_EMAIL!,
+      replyTo: data.email, // odgovor iz inboxa ide ravno prijavitelju
       subject,
       html: surveyEmail(data),
     })

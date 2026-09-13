@@ -8,6 +8,10 @@ import { clubJoinEmail, val } from '@/lib/email-templates'
 // ── security helpers ──────────────────────────────────────────────
 // Escape HTML entities — korisnički unos ide ravno u HTML maila, pa bi bez
 // ovoga netko mogao ubaciti markup/linkove (phishing) u mail koji klub prima.
+// Pošiljatelj: postavi MAIL_FROM (npr. "LWL UP <forma@mail.lwlup.com>") kad domena
+// prođe verifikaciju u Resendu. Dok je fallback na resend.dev, Gmail baca u spam.
+const FROM = process.env.MAIL_FROM ?? 'LWL UP Forma <onboarding@resend.dev>'
+
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 
@@ -58,8 +62,9 @@ export async function POST(req: NextRequest) {
     const subject = `Učlanjenje u klub — ${val(d.full_name)}${d.category ? ` · ${d.category}` : ''}${d.current_club ? ' · ispis iz drugog kluba' : ''}`
 
     const { error } = await resend.emails.send({
-      from: 'LWL UP Forma <onboarding@resend.dev>', // zamijeni s tvojom domenom kad verificiraš
+      from: FROM,
       to,
+      replyTo: d.email, // odgovor iz inboxa ide ravno prijavitelju
       subject,
       html: clubJoinEmail(d),
     })
