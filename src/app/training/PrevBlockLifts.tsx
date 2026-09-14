@@ -17,7 +17,7 @@ import { estimate1RM } from './training-setplan'
  * uglavnom trenerove planirane backoff kilaže, ne ono što je lifter stvarno digao.
  */
 
-const LIFTS = [
+export const LIFTS = [
   { label: 'SQUAT',    comp: 'Squat',    variation: 'Squat Variation' },
   { label: 'BENCH',    comp: 'Bench',    variation: 'Bench Variation' },
   { label: 'DEADLIFT', comp: 'Deadlift', variation: 'Deadlift Variation' },
@@ -25,13 +25,13 @@ const LIFTS = [
 const MAIN_CATS = new Set<string>(LIFTS.flatMap(l => [l.comp, l.variation]))
 const MAX_CANDIDATES = 6
 
-type Top = { kg: number; reps: string; fromPlan: boolean; rpe: number | null; e1rm: number | null }
+export type Top = { kg: number; reps: string; fromPlan: boolean; rpe: number | null; e1rm: number | null }
 // weeks i best su već svedeni na top setove (vidi topSets)
 type ExRow = { name: string; category: string; weeks: Record<number, Top[]>; best: Top[]; bestE1rm: number | null }
 type Result = { blockName: string; weeks: number[]; rows: ExRow[]; skipped: number }
 
 // m2o embed stiže kao objekt, ali ga supabase-js bez generiranih tipova zna vratiti kao niz
-const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? v[0] ?? null : v ?? null)
+export const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? v[0] ?? null : v ?? null)
 
 const repsOf = (t: Top) => parseFloat(t.reps) || 0
 
@@ -41,7 +41,7 @@ const repsOf = (t: Top) => parseFloat(t.reps) || 0
  * ostaju (jedinica i petica), a 200×3 otpada jer je 220×5 teži s više ponavljanja.
  * Poredano od jedinica prema većem broju ponavljanja.
  */
-function topSets(sets: Top[]): Top[] {
+export function topSets(sets: Top[]): Top[] {
   const byReps = new Map<number, Top>()
   for (const t of sets) {
     const cur = byReps.get(repsOf(t))

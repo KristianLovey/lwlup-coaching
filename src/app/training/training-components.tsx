@@ -667,51 +667,56 @@ export function CompetitionBanner({ userId }: { userId: string }) {
   if (competitions.length === 0) return null
 
   return (
-    <div ref={ref} style={{ position: 'relative', marginBottom: '20px', animation: 'fadeUp 0.4s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', border: '1px solid var(--t-border)', borderLeft: '3px solid #ef3535', borderRadius: '20px', overflow: 'hidden', background: 'var(--t-s1)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)', padding: '20px 24px', flexWrap: 'wrap', position: 'relative' }}>
-        <div style={{ position: 'absolute', left: '-30px', top: '-30px', width: '140px', height: '140px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,53,53,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+    <div ref={ref} style={{ position: 'relative', height: '100%', animation: 'fadeUp 0.4s ease' }}>
+      <div className="comp-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', border: '1px solid var(--t-border)', borderLeft: '3px solid #ef3535', borderRadius: '14px', overflow: 'hidden', background: 'var(--t-s1)', padding: '10px 12px 10px 14px', flexWrap: 'wrap', position: 'relative', height: '100%', boxSizing: 'border-box' }}>
 
-        {/* Left: label + name + date + picker */}
+        {/* Lijevo: oznaka + ime + datum (otvara izbor natjecanja) */}
         <button onClick={() => setOpen(o => !o)}
-          style={{ background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, minWidth: '160px', padding: 0, position: 'relative' }}>
-          <div style={{ fontSize: '0.48rem', letterSpacing: '0.38em', color: 'rgba(239,53,53,0.7)', fontFamily: 'var(--fm)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ display: 'inline-block', width: '14px', height: '1.5px', background: '#ef3535' }} />
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '3px', flex: '1 1 150px', minWidth: 0, padding: 0, position: 'relative' }}>
+          <div style={{ fontSize: '0.44rem', letterSpacing: '0.32em', color: 'rgba(239,53,53,0.75)', fontFamily: 'var(--fm)', fontWeight: 700 }}>
             SLJEDEĆE NATJECANJE
           </div>
           {selected ? (
             <>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f0f0f0', fontFamily: 'var(--fd)', lineHeight: 1.2, display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.02em' }}>
-                {selected.name}
+              <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#f0f0f0', fontFamily: 'var(--fd)', lineHeight: 1.2, display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.name}</span>
                 <ChevronDown size={12} color="rgba(255,255,255,0.25)" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
               </div>
-              <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', letterSpacing: '0.06em' }}>
+              <div style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {new Date(selected.date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long', year: 'numeric' })}{selected.location ? ` · ${selected.location}` : ''}
               </div>
             </>
           ) : (
-            <div style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               Odaberi natjecanje... <ChevronDown size={12} />
             </div>
           )}
         </button>
 
-        {/* Right: countdown chips */}
+        {/* Desno: odbrojavanje. Grid s minmax(0,1fr) se smije stisnuti — prije su
+            čipovi imali minWidth 52px + flexShrink 0 pa su sekunde izlazile iz okvira. */}
         {selected && (
-          <div className="comp-chips" style={{ display: 'flex', gap: '6px', flexShrink: 0, flexWrap: 'wrap' as const }}>
+          <div className="comp-chips" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', flex: '0 1 196px', minWidth: 0 }}>
             {([
               { val: countdown.d, label: 'DANA' },
               { val: countdown.h, label: 'SATI' },
               { val: countdown.m, label: 'MIN'  },
               { val: countdown.s, label: 'SEK'  },
             ] as {val:number;label:string}[]).map(({ val, label }) => (
-              <div key={label} className="comp-chip" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '12px', padding: '10px 14px', minWidth: '52px' }}>
-                <div style={{ fontFamily: 'var(--fd)', fontSize: '1.5rem', fontWeight: 700, lineHeight: 1, letterSpacing: '-0.04em', color: '#f0f0f0', fontVariantNumeric: 'tabular-nums' }}>{String(val).padStart(2,'0')}</div>
-                <div style={{ fontSize: '0.38rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 700, marginTop: '5px' }}>{label}</div>
+              <div key={label} className="comp-chip" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '8px', padding: '6px 2px', minWidth: 0 }}>
+                <div style={{ fontFamily: 'var(--fd)', fontSize: '1.05rem', fontWeight: 700, lineHeight: 1, color: '#f0f0f0', fontVariantNumeric: 'tabular-nums' }}>{String(val).padStart(2,'0')}</div>
+                <div style={{ fontSize: '0.36rem', letterSpacing: '0.16em', color: 'rgba(255,255,255,0.32)', fontFamily: 'var(--fm)', fontWeight: 700, marginTop: '4px' }}>{label}</div>
               </div>
             ))}
           </div>
         )}
       </div>
+      <style>{`
+        /* uski ekran: odbrojavanje ide ispod naziva, preko cijele širine kartice */
+        @media (max-width: 480px) {
+          .comp-chips { flex: 1 1 100% !important; }
+        }
+      `}</style>
 
       {/* Dropdown */}
       {open && (

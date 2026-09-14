@@ -5,13 +5,14 @@ import {
   Plus, Trash2, ChevronDown, Check, Pencil,
   Loader2,
   FolderOpen, Copy,
-  ChevronLeft, Trophy, History as HistoryIcon,
+  ChevronLeft, Trophy, History as HistoryIcon, Target,
 } from 'lucide-react'
 import { WeekPanel, EditableField } from '../training/training-components'
 import { MeetDayTab } from '../training/training-meet'
 import { LiftPriorityAdmin } from '../training/training-priority'
 import { estimate1RM } from '../training/training-setplan'
 import { PrevBlockLiftsModal } from '../training/PrevBlockLifts'
+import { BlockProjectionsModal } from '../training/BlockProjections'
 import type { Block, Week, Workout, WorkoutExercise, Exercise, BlockSummary } from '../training/types'
 
 const supabase = createClient()
@@ -972,6 +973,7 @@ export function AthletePanel({
   const [block, setBlock] = useState<Block | null>(null)
   const [allBlocks, setAllBlocks] = useState<BlockSummary[]>([])
   const [showPrevLifts, setShowPrevLifts] = useState(false)
+  const [showProjections, setShowProjections] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loadingBlock, setLoadingBlock] = useState(false)
   const [showBlockSelector, setShowBlockSelector] = useState(false)
@@ -1555,6 +1557,17 @@ export function AthletePanel({
                 </button>
               )}
               {showPrevLifts && <PrevBlockLiftsModal athleteId={athlete.id} currentBlockId={block.id} onClose={() => setShowPrevLifts(false)} />}
+              {/* Projekcija kilaža za kraj bloka — trener/admin upisuje, lifter vidi na svom treningu */}
+              {!goalFilter && (
+                <button onClick={() => setShowProjections(true)} className="block-action-btn"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#4ade80'; e.currentTarget.style.background = '#111113' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}
+                  title="Projekcija kilaža squata, bencha i deadlifta za kraj bloka">
+                  <Target size={13} /><span className="block-btn-label"> PROJEKCIJE</span>
+                </button>
+              )}
+              {showProjections && <BlockProjectionsModal athleteId={athlete.id} blockId={block.id} blockName={block.name} canEdit onClose={() => setShowProjections(false)} />}
               <button onClick={copyBlock} className="block-action-btn"
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
                 onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = '#111113' }}

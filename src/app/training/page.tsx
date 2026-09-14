@@ -1,11 +1,12 @@
 'use client'
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Plus, Check, FolderOpen, ChevronDown, ChevronRight, X, Menu, History as HistoryIcon } from 'lucide-react'
+import { Loader2, Plus, Check, FolderOpen, ChevronDown, ChevronRight, X, Menu, History as HistoryIcon, Target } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { Block, BlockSummary, Week, Exercise, WorkoutExercise, Workout } from './types'
 import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-components'
 import { PrevBlockLiftsModal } from './PrevBlockLifts'
+import { BlockProjectionsModal } from './BlockProjections'
 import { totalTonnage } from './training-setplan'
 import { HubTab } from './training-hub'
 import { MeetDayTab } from './training-meet'
@@ -41,6 +42,7 @@ export default function TrainingPage() {
   const [block, setBlock] = useState<Block | null>(null)
   const [allBlocks, setAllBlocks] = useState<BlockSummary[]>([])
   const [showPrevLifts, setShowPrevLifts] = useState(false)
+  const [showProjections, setShowProjections] = useState(false)
   const [showBlockSelector, setShowBlockSelector] = useState(false)
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [loading, setLoading] = useState(true)
@@ -580,124 +582,123 @@ export default function TrainingPage() {
 
               {/* ── HERO SECTION (collapsible) ── */}
               {heroOpen && (
-                <div style={{ animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1)' }}>
+                <div style={{ animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1)', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
 
-                  {/* Row 1: Name card + Stats grid */}
-                  <div className="hero-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '12px', marginBottom: '12px' }}>
-
-                    {/* Name card */}
-                    <div style={{ padding: '36px 36px 28px', borderRadius: '24px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '200px', position: 'relative', overflow: 'hidden' }}>
-                      <div style={{ position: 'absolute', right: '-40px', bottom: '-40px', width: '180px', height: '180px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,53,53,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
-                      <div style={{ fontSize: '0.56rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ display: 'inline-block', width: '20px', height: '1.5px', background: '#ef3535', borderRadius: '2px', flexShrink: 0 }} />
-                        SPORTAŠ · AKTIVAN
-                      </div>
-                      <h1 style={{ fontFamily: 'var(--fd)', fontWeight: 800, fontSize: 'clamp(40px, 4.5vw, 72px)', lineHeight: 1.02, letterSpacing: '-0.04em', margin: '20px 0 0', color: '#f0f0f0' }}>
-                        {athleteName.split(' ')[0] || athleteName}
-                        {athleteName.split(' ').length > 1 && (
-                          <span style={{ display: 'block', color: 'rgba(255,255,255,0.28)', fontWeight: 500 }}>
-                            {athleteName.split(' ').slice(1).join(' ')}
-                          </span>
-                        )}
-                      </h1>
-                      <div style={{ fontSize: '0.56rem', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.22)', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '10px', marginTop: '18px' }}>
-                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef3535', flexShrink: 0, animation: 'pulse-dot 2s infinite' }} />
-                        POWERLIFTER
-                      </div>
-                    </div>
-
-                    {/* Stats 4-col grid */}
-                    <div className="stats-4col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', borderRadius: '24px', overflow: 'hidden', background: 'var(--t-s3)', border: '1px solid var(--t-border)' }}>
-                      {[
-                        { num: block.weeks?.length ?? 0, sub: '', label: 'TJEDANA', delta: 'u bloku' },
-                        { num: completedWorkouts, sub: `/${totalWorkouts}`, label: 'TRENINGA', delta: `${totalWorkouts - completedWorkouts} preostalo` },
-                        { num: doneSets, sub: `/${totalSets}`, label: 'SERIJA', delta: `${pct}% complete` },
-                        { num: pct, sub: '%', label: 'NAPREDAK', delta: pct >= 75 ? 'odlično' : pct >= 50 ? 'on track' : 'u tijeku' },
-                      ].map((s, i) => (
-                        <div key={i}
-                          className="stats-item"
-                          style={{ background: 'var(--t-s1)', padding: '28px 20px 26px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '190px', transition: 'background 0.2s', cursor: 'default' }}
-                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#181818'}
-                          onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = '#111111'}>
-                          <div>
-                            <div style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: 'clamp(30px, 3vw, 52px)', lineHeight: 1.05, letterSpacing: '-0.04em', color: '#f0f0f0', fontVariantNumeric: 'tabular-nums' }}>
-                              {s.num}<span style={{ fontSize: '0.42em', color: 'rgba(255,255,255,0.28)', fontWeight: 500 }}>{s.sub}</span>
-                            </div>
-                            <div style={{ fontFamily: 'var(--fm)', fontSize: '0.68rem', color: '#ef3535', marginTop: '8px', letterSpacing: '0.02em' }}>↗ {s.delta}</div>
-                          </div>
-                          <div style={{ fontFamily: 'var(--fm)', fontSize: '0.54rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase' as const }}>{s.label}</div>
-                        </div>
-                      ))}
+                  {/* Red 1: ime + status */}
+                  <div className="hero-name" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', padding: '14px 18px', borderRadius: '14px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', right: '-30px', top: '-50px', width: '140px', height: '140px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,53,53,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+                    <h1 style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: 'clamp(26px, 3.2vw, 40px)', lineHeight: 1.05, margin: 0, color: '#f0f0f0', minWidth: 0 }}>
+                      {athleteName.split(' ')[0] || athleteName}
+                      {athleteName.split(' ').length > 1 && (
+                        <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}> {athleteName.split(' ').slice(1).join(' ')}</span>
+                      )}
+                    </h1>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 11px', borderRadius: '999px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', flexShrink: 0 }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef3535', flexShrink: 0, animation: 'pulse-dot 2s infinite' }} />
+                      <span style={{ fontSize: '0.52rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--fm)', fontWeight: 700 }}>SPORTAŠ · AKTIVAN</span>
                     </div>
                   </div>
 
-                  {/* Row 2: Block card + Competition countdown */}
-                  <div className="hero-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '12px', marginBottom: '28px' }}>
+                  {/* Red 2: 4 statistike — uvijek u jednom redu, i na mobitelu */}
+                  <div className="stats-4col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '1px', borderRadius: '14px', overflow: 'hidden', background: 'var(--t-border)', border: '1px solid var(--t-border)' }}>
+                    {[
+                      { num: block.weeks?.length ?? 0, sub: '', label: 'TJEDANA', delta: 'u bloku' },
+                      { num: completedWorkouts, sub: `/${totalWorkouts}`, label: 'TRENINGA', delta: `${totalWorkouts - completedWorkouts} preostalo` },
+                      { num: doneSets, sub: `/${totalSets}`, label: 'SERIJA', delta: `${pct}% gotovo` },
+                      { num: pct, sub: '%', label: 'NAPREDAK', delta: pct >= 75 ? 'odlično' : pct >= 50 ? 'na putu' : 'u tijeku' },
+                    ].map((s, i) => (
+                      <div key={i} className="stats-item" style={{ background: 'var(--t-s1)', padding: '12px 14px', minWidth: 0 }}>
+                        <div className="stats-label" style={{ fontFamily: 'var(--fm)', fontSize: '0.5rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.32)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.label}</div>
+                        <div className="stats-num" style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: 'clamp(22px, 2.6vw, 34px)', lineHeight: 1.05, color: '#f0f0f0', fontVariantNumeric: 'tabular-nums', marginTop: '6px', whiteSpace: 'nowrap' }}>
+                          {s.num}<span style={{ fontSize: '0.5em', color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>{s.sub}</span>
+                        </div>
+                        <div className="stats-delta" style={{ fontFamily: 'var(--fm)', fontSize: '0.6rem', color: '#ef3535', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>↗ {s.delta}</div>
+                      </div>
+                    ))}
+                  </div>
 
-                    {/* Block card */}
-                    <div style={{ position: 'relative' }} ref={blockSelectorRef}>
+                  {/* Red 3: aktivni blok (dropdown) + odbrojavanje do natjecanja */}
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'stretch' }}>
+                    <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 0 }} ref={blockSelectorRef}>
                       <button
                         onClick={() => setShowBlockSelector(!showBlockSelector)}
-                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '22px 24px', borderRadius: '20px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left' as const }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)' }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.08)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
-                          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <FolderOpen size={16} color="rgba(255,255,255,0.3)" />
+                        style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '10px 14px', borderRadius: '14px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', cursor: 'pointer', transition: 'border-color 0.2s', textAlign: 'left' as const, boxSizing: 'border-box' as const }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--t-border-hi)' }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--t-border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '9px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <FolderOpen size={14} color="rgba(255,255,255,0.35)" />
                           </div>
                           <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: '0.46rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.22)', fontFamily: 'var(--fm)', marginBottom: '3px', textTransform: 'uppercase' as const }}>AKTIVNI BLOK</div>
-                            <div style={{ fontSize: '1rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--fd)', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{block.name}</div>
+                            <div style={{ fontSize: '0.44rem', letterSpacing: '0.32em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--fm)', marginBottom: '2px' }}>AKTIVNI BLOK</div>
+                            <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--fd)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{block.name}</div>
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                          <span style={{ fontSize: '0.48rem', fontFamily: 'var(--fm)', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.18)' }}>{block.weeks?.length ?? 0} TJ.</span>
-                          <ChevronDown size={14} color="rgba(255,255,255,0.18)" style={{ transform: showBlockSelector ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                          {saving && <Loader2 size={11} color="#555" style={{ animation: 'spin 1s linear infinite' }} />}
+                          <span style={{ fontSize: '0.48rem', fontFamily: 'var(--fm)', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.25)' }}>{block.weeks?.length ?? 0} TJ.</span>
+                          <ChevronDown size={14} color="rgba(255,255,255,0.25)" style={{ transform: showBlockSelector ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                         </div>
                       </button>
 
-                      {/* Block name editor */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 24px 0' }}>
-                        <span style={{ fontSize: '0.43rem', color: 'rgba(255,255,255,0.15)', fontFamily: 'var(--fm)', letterSpacing: '0.2em', flexShrink: 0 }}>NAZIV:</span>
-                        <EditableField value={block.name} placeholder="Naziv programa"
-                          onSave={async v => {
-                            await supabase.from('blocks').update({ name: v }).eq('id', block.id)
-                            setBlock(b => b ? { ...b, name: v } : b)
-                            setAllBlocks(bs => bs.map(b2 => b2.id === block.id ? { ...b2, name: v } : b2) as BlockSummary[])
-                          }} />
-                        {saving && <Loader2 size={11} color="#444" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />}
-                        <button onClick={() => setShowPrevLifts(true)} title="Kilaže squata, bencha i deadlifta iz prošlog bloka"
-                          style={{ marginLeft: 'auto', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '20px', color: 'rgba(255,255,255,0.55)', fontSize: '0.5rem', letterSpacing: '0.16em', fontWeight: 700, fontFamily: 'var(--fm)', cursor: 'pointer' }}>
-                          <HistoryIcon size={11} /> PROŠLI BLOK
-                        </button>
-                        {showPrevLifts && effectiveAthleteId && (
-                          <PrevBlockLiftsModal athleteId={effectiveAthleteId} currentBlockId={block.id} onClose={() => setShowPrevLifts(false)} />
-                        )}
-                      </div>
-
-                      {/* Block dropdown */}
+                      {/* Dropdown: izbor bloka + preimenovanje (upravljanje blokom na jednom mjestu) */}
                       {showBlockSelector && (
-                        <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 100, background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', overflow: 'hidden', animation: 'dropDown 0.18s ease', maxHeight: '260px', overflowY: 'auto' }}>
-                          {allBlocks.map((b: BlockSummary, i: number) => (
-                            <button key={b.id} onClick={() => switchBlock(b.id)}
-                              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '13px 18px', background: b.id === block.id ? 'var(--t-s3)' : 'transparent', border: 'none', borderBottom: i < allBlocks.length - 1 ? '1px solid var(--t-border)' : 'none', cursor: 'pointer', textAlign: 'left' as const, transition: 'background 0.12s' }}
-                              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'}
-                              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = b.id === block.id ? 'rgba(255,255,255,0.05)' : 'transparent'}>
-                              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.status === 'active' ? '#ef3535' : 'var(--t-border-hi)', flexShrink: 0 }} />
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '0.84rem', fontWeight: 500, color: '#e0e0e0', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{b.name}</div>
-                                <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', marginTop: '1px' }}>{b.start_date} — {b.end_date}</div>
-                              </div>
-                              {b.id === block.id && <Check size={12} color="#ef3535" />}
-                            </button>
-                          ))}
+                        <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 100, background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '12px', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', overflow: 'hidden', animation: 'dropDown 0.18s ease' }}>
+                          <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
+                            {allBlocks.map((b: BlockSummary, i: number) => (
+                              <button key={b.id} onClick={() => switchBlock(b.id)}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: b.id === block.id ? 'var(--t-s3)' : 'transparent', border: 'none', borderBottom: i < allBlocks.length - 1 ? '1px solid var(--t-border)' : 'none', cursor: 'pointer', textAlign: 'left' as const, transition: 'background 0.12s' }}
+                                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--t-s3)'}
+                                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = b.id === block.id ? 'var(--t-s3)' : 'transparent'}>
+                                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.status === 'active' ? '#ef3535' : 'var(--t-border-hi)', flexShrink: 0 }} />
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: '0.82rem', fontWeight: 500, color: '#e0e0e0', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{b.name}</div>
+                                  <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.25)', marginTop: '1px' }}>{b.start_date} — {b.end_date}</div>
+                                </div>
+                                {b.id === block.id && <Check size={12} color="#ef3535" />}
+                              </button>
+                            ))}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderTop: '1px solid var(--t-border)', background: 'var(--t-s2)' }}>
+                            <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', letterSpacing: '0.2em', flexShrink: 0 }}>NAZIV:</span>
+                            <EditableField value={block.name} placeholder="Naziv programa"
+                              onSave={async v => {
+                                await supabase.from('blocks').update({ name: v }).eq('id', block.id)
+                                setBlock(b => b ? { ...b, name: v } : b)
+                                setAllBlocks(bs => bs.map(b2 => b2.id === block.id ? { ...b2, name: v } : b2) as BlockSummary[])
+                              }} />
+                          </div>
                         </div>
                       )}
                     </div>
 
-                    {/* Competition countdown */}
-                    <div>{userId && <CompetitionBanner userId={userId} />}</div>
+                    {/* Kad nema nadolazećih natjecanja banner vrati null → prazan div se skriva (:empty) i blok zauzme cijeli red */}
+                    <div className="hero-comp" style={{ flex: '1.3 1 300px', minWidth: 0 }}>{userId && <CompetitionBanner userId={userId} />}</div>
                   </div>
+
+                  {/* Red 4: dvije veće, jasno odvojene tipke */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}>
+                    <button onClick={() => setShowPrevLifts(true)} className="hero-action hero-action-prev">
+                      <span className="hero-action-ico"><HistoryIcon size={15} /></span>
+                      <span style={{ minWidth: 0, textAlign: 'left' as const }}>
+                        <span className="hero-action-title">PROŠLI BLOK</span>
+                        <span className="hero-action-sub">kilaže iz prošlog bloka</span>
+                      </span>
+                    </button>
+                    <button onClick={() => setShowProjections(true)} className="hero-action hero-action-proj">
+                      <span className="hero-action-ico"><Target size={15} /></span>
+                      <span style={{ minWidth: 0, textAlign: 'left' as const }}>
+                        <span className="hero-action-title">PROJEKCIJE BLOKA</span>
+                        <span className="hero-action-sub">cilj i skokovi po tjednima</span>
+                      </span>
+                    </button>
+                  </div>
+                  {showPrevLifts && effectiveAthleteId && (
+                    <PrevBlockLiftsModal athleteId={effectiveAthleteId} currentBlockId={block.id} onClose={() => setShowPrevLifts(false)} />
+                  )}
+                  {showProjections && effectiveAthleteId && (
+                    <BlockProjectionsModal athleteId={effectiveAthleteId} blockId={block.id} blockName={block.name} canEdit={false} onClose={() => setShowProjections(false)} />
+                  )}
 
                   {/* ── PRIORITY TABLE ── */}
                   {userId && block && (
@@ -833,12 +834,29 @@ export default function TrainingPage() {
           .tab-row { margin-bottom: 0 !important; }
           .t-refresh-pill { margin-bottom: 14px; }
         }
-        @media (max-width:760px) {
-          .hero-grid { grid-template-columns: 1fr !important; }
-        }
+        /* Zaglavlje treninga: redovi ime → 4 statistike → blok + natjecanje → tipke.
+           4 statistike ostaju u jednom redu i na mobitelu — samo se stisnu. */
+        .hero-comp:empty { display: none; }
+        .hero-action { display:flex; align-items:center; gap:12px; width:100%; padding:14px 16px; border-radius:14px; background:var(--t-s1); border:1px solid var(--t-border); cursor:pointer; color:#e8e8e8; font-family:var(--fm); transition:border-color 0.2s, background 0.2s, transform 0.15s; box-sizing:border-box; }
+        .hero-action:hover { background:var(--t-s2); transform:translateY(-1px); }
+        .hero-action:active { transform:scale(0.98); }
+        .hero-action-ico { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; flex-shrink:0; background:var(--t-s3); border:1px solid var(--t-border); }
+        .hero-action-title { display:block; font-size:0.66rem; letter-spacing:0.18em; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .hero-action-sub { display:block; font-size:0.58rem; color:rgba(255,255,255,0.4); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .hero-action-prev .hero-action-ico { color:#facc15; }
+        .hero-action-prev:hover { border-color:rgba(250,204,21,0.45); }
+        .hero-action-proj .hero-action-ico { color:#4ade80; }
+        .hero-action-proj:hover { border-color:rgba(74,222,128,0.45); }
         @media (max-width:540px) {
-          .stats-4col { grid-template-columns: repeat(2,1fr) !important; border-radius:16px !important; }
-          .stats-item { min-height:130px !important; padding:18px 16px 16px !important; }
+          .hero-name { padding: 12px 14px !important; }
+          .stats-item { padding: 10px 8px !important; }
+          .stats-num { font-size: 20px !important; }
+          .stats-label { font-size: 0.42rem !important; letter-spacing: 0.1em !important; }
+          .stats-delta { font-size: 0.5rem !important; }
+          .hero-action { padding: 12px; gap: 10px; }
+          .hero-action-ico { width: 30px; height: 30px; }
+          .hero-action-title { font-size: 0.56rem; letter-spacing: 0.12em; }
+          .hero-action-sub { display: none; }
         }
         @media (max-width:640px) {
           .page-header { padding: 20px 16px 0 !important; }
