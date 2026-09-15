@@ -285,9 +285,9 @@ export default function TeamPage() {
             <p style={{ fontSize: '1.15rem', color: 'rgba(255,255,255,0.65)', maxWidth: '700px', margin: '0 auto 60px', lineHeight: 1.85, fontWeight: 300 }}>
               {t('team.desc')}
             </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginBottom: '60px' }}>
+            <div className="team-filters" style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginBottom: '60px' }}>
               {([['ALL', t('team.filter.all')], ['MEN', t('team.filter.men')], ['WOMEN', t('team.filter.women')]] as [string,string][]).map(([f, label]) => (
-                <button key={f} onClick={() => setFilter(f)}
+                <button key={f} onClick={() => setFilter(f)} className="team-filter-btn"
                   style={{ padding: '11px 30px', background: filter === f ? '#fff' : 'rgba(255,255,255,0.04)', color: filter === f ? '#000' : 'rgba(255,255,255,0.55)', border: filter === f ? 'none' : '1px solid rgba(255,255,255,0.12)', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.2em', cursor: 'pointer', transition: '0.25s', fontFamily: 'var(--fm)' }}
                   onMouseEnter={e => { if (filter !== f) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; e.currentTarget.style.color = '#fff' } }}
                   onMouseLeave={e => { if (filter !== f) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' } }}>
@@ -612,6 +612,8 @@ export default function TeamPage() {
           .team-members-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
         }
         @media (max-width: 480px) {
+          .team-filters { gap: 8px !important; max-width: 340px; margin-left: auto; margin-right: auto; margin-bottom: 40px !important; }
+          .team-filter-btn { flex: 1 1 0; min-width: 0; padding: 10px 6px !important; letter-spacing: 0.12em !important; font-size: 0.64rem !important; }
           .team-hero-inner { padding: 0 16px !important; }
           section { padding-left: 16px !important; padding-right: 16px !important; }
         }
