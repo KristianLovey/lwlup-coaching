@@ -36,6 +36,8 @@ const fmtProj = (p: Projection) => (p.max == null ? fmtKg(p.min) : `${fmtKg(p.mi
 const half = (n: number) => Math.round(n * 2) / 2
 const repsNum = (r: string) => parseFloat(r) || 0
 const plate = (n: number) => Math.round(n / 2.5) * 2.5
+/** 170, 175 → "170–175"; isti brojevi → "170" */
+const rng = (a: number, b: number) => (a === b ? fmtKg(a) : `${fmtKg(Math.min(a, b))}–${fmtKg(Math.max(a, b))}`)
 
 /** Linearni plan od zadnjeg odrađenog tjedna do cilja, zaokružen na 2.5 kg.
  *  Zadnji tjedan je točno cilj; tjedni prije sidra su već odrađeni pa nemaju plan. */
@@ -201,25 +203,33 @@ function LiftCard({ label, data, totalWeeks, editor }: {
   const lastW = weeks.length ? weeks[weeks.length - 1] : null
   const last = lastW ? lastW.top.kg : null
 
-  // Kod raspona se planira prema SREDINI, zaokruženoj na 2.5 kg (147.5–155 → 152.5).
-  // Prije se uzimala donja granica, pa je cijeli blok ciljao na najslabiji ishod.
-  const goal = p ? (p.max != null ? plate((p.min + p.max) / 2) : p.min) : null
-  const rem = goal != null && last != null ? goal - last : null
-  const reached = rem != null && rem <= 0
+  // Raspon cilja (200-205) = dva plana, do donje i do gornje granice. Sve izvedene
+  // brojke (preostalo, po tjednu, kilaže po tjednima) prikazuju se kao raspon.
+  const lo = p ? p.min : null
+  const hi = p ? (p.max ?? p.min) : null
+  const remLo = lo != null && last != null ? Math.max(0, lo - last) : null
+  const remHi = hi != null && last != null ? hi - last : null
+  const reached = remHi != null && remHi <= 0
   const weeksLeft = lastW ? Math.max(0, totalWeeks - lastW.week) : totalWeeks
-  const perWeek = rem != null && rem > 0 && weeksLeft > 0 ? half(rem / weeksLeft) : null
-  const pct = goal != null && first != null && last != null
-    ? (goal > first ? Math.max(0, Math.min(1, (last - first) / (goal - first))) : 1)
+  const perLo = remLo != null && weeksLeft > 0 ? half(remLo / weeksLeft) : null
+  const perHi = remHi != null && remHi > 0 && weeksLeft > 0 ? half(remHi / weeksLeft) : null
+  const pct = lo != null && first != null && last != null
+    ? (lo > first ? Math.max(0, Math.min(1, (last - first) / (lo - first))) : 1)
     : 0
 
   // Kockice pokrivaju sve tjedne bloka; odrađeni pokazuju stvarnu kilažu, ostali plan do cilja
   const lastWeek = Math.max(totalWeeks, ...weeks.map(w => w.week), 0)
   const weekNums = lastWeek > 0 ? Array.from({ length: lastWeek }, (_, i) => i + 1) : []
   const actual = new Map(weeks.map(w => [w.week, w.top]))
-  // cilj je već dosegnut → nema plana, inače bi kockice pokazivale pad prema cilju
-  const planned = goal != null && !reached && lastW && last != null
-    ? plannedWeeks(lastW.week, last, goal, lastWeek)
+  // cilj je već dosegnut → nema plana, inače bi kockice pokazivale pad prema cilju.
+  // Donja granica ispod zadnje kilaže → donji plan stoji na zadnjoj kilaži, ne pada.
+  const plannedLo = lo != null && !reached && lastW && last != null
+    ? plannedWeeks(lastW.week, last, Math.max(lo, last), lastWeek)
     : new Map<number, number>()
+  const plannedHi = hi != null && !reached && lastW && last != null
+    ? plannedWeeks(lastW.week, last, hi, lastWeek)
+    : new Map<number, number>()
+  const isRange = p?.max != null
 
   return (
     <section style={{ padding: '14px 18px 16px', borderTop: '1px solid var(--t-border)' }}>
@@ -227,7 +237,7 @@ function LiftCard({ label, data, totalWeeks, editor }: {
         <span style={{ fontSize: '0.66rem', letterSpacing: '0.3em', fontWeight: 800, color: '#f0f0f0' }}>{label}</span>
         <span style={{ fontSize: '0.64rem', color: p ? '#4ade80' : '#666', letterSpacing: '0.06em' }}>
           {p ? <>CILJ <strong style={{ fontFamily: 'var(--fd)', fontSize: '1rem', color: '#4ade80' }}>{fmtProj(p)}</strong> kg
-            {p.max != null && goal != null && <span style={{ color: '#666', marginLeft: '6px' }}>· plan {fmtKg(goal)}</span>}</> : 'cilj nije upisan'}
+            </> : 'cilj nije upisan'}
         </span>
       </div>
 
@@ -242,25 +252,27 @@ function LiftCard({ label, data, totalWeeks, editor }: {
         <RowStat label="1. tj" value={first != null ? fmtKg(first) : '—'} />
         <RowStat label={lastW ? `Zadnje · tj ${lastW.week}` : 'Zadnje'} value={last != null ? fmtKg(last) : '—'} />
         <RowStat label="Preostalo" tone={reached ? '#4ade80' : undefined}
-          value={reached ? 'dosegnut' : rem != null ? fmtKg(rem) : '—'} />
+          value={reached ? 'dosegnut' : remLo != null && remHi != null ? rng(remLo, remHi) : '—'} />
         <RowStat label={weeksLeft > 0 ? `Po tjednu · ${weeksLeft} tj` : 'Po tjednu'}
-          value={perWeek != null ? `≈${fmtKg(perWeek)}` : '—'} />
+          value={perHi != null ? `≈${rng(perLo ?? 0, perHi)}` : '—'} />
       </div>
 
       {weekNums.length > 0 ? (
         <>
           <div style={{ ...eyebrow, marginTop: '14px', marginBottom: '7px' }}>Kilaže po tjednima</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))', gap: '7px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isRange ? 118 : 88}px, 1fr))`, gap: '7px' }}>
             {weekNums.map(w => {
               const done = actual.get(w)
-              const plan = planned.get(w)
-              const kg = done ? done.kg : plan ?? null
+              const pLo = plannedLo.get(w)
+              const pHi = plannedHi.get(w)
+              const plan = pLo != null && pHi != null ? rng(pLo, pHi) : null
+              const kg = done ? fmtKg(done.kg) : plan
               return (
                 <div key={w} style={{ background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '10px', padding: '9px 10px', minWidth: 0 }}>
                   <div style={{ ...eyebrow, fontSize: '0.45rem' }}>TJ {w}</div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', marginTop: '3px' }}>
-                    <span style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '1.05rem', lineHeight: 1.1, fontVariantNumeric: 'tabular-nums', color: kg == null ? '#555' : done ? '#f0f0f0' : '#4ade80' }}>
-                      {kg != null ? fmtKg(kg) : '—'}
+                    <span style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: !done && pLo !== pHi ? '0.9rem' : '1.05rem', lineHeight: 1.1, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', color: kg == null ? '#555' : done ? '#f0f0f0' : '#4ade80' }}>
+                      {kg ?? '—'}
                     </span>
                     {kg != null && <span style={{ fontSize: '0.5rem', color: '#666' }}>kg</span>}
                   </div>
@@ -369,7 +381,7 @@ export function BlockProjectionsModal({ athleteId, blockId, blockName, canEdit, 
                 Tjedna kilaža je najteži odrađeni set natjecateljske varijante (bez varijacija). „Po tjednu" je preostala kilaža
                 podijeljena s tjednima koji su ostali do kraja bloka, zaokruženo na 0.5 kg.
                 Kockice: odrađeni tjedni pokazuju stvarni najteži set, a idući plan od zadnjeg odrađenog do cilja, zaokružen na 2.5 kg.
-                Kod raspona (147.5–155) plan ide na sredinu raspona, zaokruženu na 2.5 kg.
+                Kod raspona (200-205) računaju se dva plana, do donje i do gornje granice, pa su i tjedne kilaže, preostalo i skok po tjednu raspon.
                 {hasPlanReps && <><br />* ponavljanja nisu upisana — prikazana su planirana</>}
               </div>
             </>
