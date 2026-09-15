@@ -133,13 +133,13 @@ async function loadProjections(athleteId: string, blockId: string): Promise<Load
 
 // ── stilovi ───────────────────────────────────────────────────────
 const eyebrow: CSSProperties = { fontSize: '0.5rem', letterSpacing: '0.22em', color: '#777', fontWeight: 700, textTransform: 'uppercase', whiteSpace: 'nowrap' }
-/** Jedna stavka sažetka — labela i broj u istom retku, sitno. */
+/** Jedna stavka sažetka — labela gore, broj ispod (labela se smije prelomiti da sve stane). */
 function RowStat({ label, value, tone }: { label: string; value: ReactNode; tone?: string }) {
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '5px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-      <span style={{ ...eyebrow, fontSize: '0.45rem', color: '#666' }}>{label}</span>
-      <span style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.8rem', color: tone ?? '#e8e8e8', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
-    </span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 }}>
+      <span style={{ ...eyebrow, fontSize: '0.45rem', letterSpacing: '0.12em', color: '#666', whiteSpace: 'normal', lineHeight: 1.3 }}>{label}</span>
+      <span style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.85rem', lineHeight: 1.1, color: tone ?? '#e8e8e8', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{value}</span>
+    </div>
   )
 }
 
@@ -238,7 +238,7 @@ function LiftCard({ label, data, totalWeeks, editor }: {
       )}
 
       {/* Sažetak u jednom redu, tamnija traka — brojke po tjednima su u kockicama ispod */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--t-border)', borderRadius: '9px', padding: '7px 11px', marginTop: '12px', overflowX: 'auto' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', alignItems: 'end', gap: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--t-border)', borderRadius: '9px', padding: '8px 11px', marginTop: '12px' }}>
         <RowStat label="1. tj" value={first != null ? fmtKg(first) : '—'} />
         <RowStat label={lastW ? `Zadnje · tj ${lastW.week}` : 'Zadnje'} value={last != null ? fmtKg(last) : '—'} />
         <RowStat label="Preostalo" tone={reached ? '#4ade80' : undefined}
