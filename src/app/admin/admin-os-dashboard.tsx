@@ -72,6 +72,32 @@ function fillSeries(weeks: string[], perWeek: Record<string, number>): number[] 
 type Best = { e1: number; date: string; name: string; day: string; kg: number; reps: number; rpe: number | null }
 type Raw = { workouts: any[]; sets: any[]; bw: { date: string; weight_kg: number }[]; wb: any[]; water: { log_date: string; amount_ml: number }[]; nut: any[]; meets: any[]; blocks: any[]; comps: any[]; profile: any | null; phases: any[]; compSel: any | null }
 
+// Kartica dashboarda. MORA biti izvan AthleteDashboard: definirana unutra dobiva novi
+// tip komponente pri svakom renderu, pa React obriše i ponovno ubaci sve kartice —
+// svaki padajući izbornik (i izbornik profila u roditelju) tako je iznova pokretao
+// animaciju ulaska cijelog dashboarda.
+function DashCard({ id, title, head, children, cards, setCard }: {
+  id: CardId; title: string; head?: React.ReactNode; children: React.ReactNode
+  cards: DashCards; setCard: (id: CardId, patch: Partial<CardState>) => void
+}) {
+  const st = cards[id]
+  if (st.hidden) return null
+  return (
+    <div className={'card' + (st.collapsed ? ' is-collapsed' : '')}>
+      <div className="card-head">
+        <span className="t">{title}</span>
+        <div className="card-tools">
+          {!st.collapsed && head}
+          <button className="card-min" onClick={() => setCard(id, { collapsed: !st.collapsed })} title={st.collapsed ? 'Proširi' : 'Minimiziraj'}>
+            {st.collapsed ? <Plus size={13} /> : <Minus size={13} />}
+          </button>
+        </div>
+      </div>
+      {!st.collapsed && children}
+    </div>
+  )
+}
+
 export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onViewAllTraining }: {
   athleteId: string; athleteName: string; cards: DashCards; setCard: (id: CardId, patch: Partial<CardState>) => void
   onViewAllTraining?: () => void
@@ -399,28 +425,6 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
   const bwSeries = bwEntries.map(r => Number(r.weight_kg))
   const bwDates = bwEntries.map(r => fmtDate(r.date))
 
-  const Card = ({ id, title, head, children }: { id: CardId; title: string; head?: React.ReactNode; children: React.ReactNode }) => {
-    const st = cards[id]
-    if (st.hidden) return null
-    return (
-      <div className={'card' + (st.collapsed ? ' is-collapsed' : '')}>
-        <div className="card-head">
-          <span className="t">{title}</span>
-          <div className="card-tools">
-            {!st.collapsed && head}
-            <button className="card-min" onClick={() => setCard(id, { collapsed: !st.collapsed })} title={st.collapsed ? 'Proširi' : 'Minimiziraj'}>
-              {st.collapsed ? <Plus size={13} /> : <Minus size={13} />}
-            </button>
-          </div>
-        </div>
-        {!st.collapsed && children}
-      </div>
-    )
-  }
-  const RangeSel = ({ id }: { id: CardId }) => (
-    <RangeSelect id={id} value={cards[id].range} onChange={n => setCard(id, { range: n })} />
-  )
-
   const toggleExp = (k: typeof exp) => setExp(p => p === k ? null : k)
 
   return (
@@ -466,7 +470,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
 
       {/* Plan blokova — timeline + countdown + kalendar */}
       <div className="grid c1">
-        <Card id="blockplan" title="Plan blokova">
+        <DashCard cards={cards} setCard={setCard} id="blockplan" title="Plan blokova">
           {(() => {
             const now = new Date(); const curYear = now.getFullYear()
             // Godišnji timeline: pozicija po DANU u godini (ne po mjesecu) → cijela
@@ -571,13 +575,13 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
               </div>
             )
           })()}
-        </Card>
+        </DashCard>
       </div>
 
       {/* row 1: progress | compliance */}
       <div className="grid c2feat">
-        <Card id="progress" title={`Pregled napretka — ${athleteName.split(' ')[0]}`}
-          head={<><div className="seg">{(['sq', 'bp', 'dl'] as LiftK[]).map(k => <button key={k} className={lift === k ? 'on' : ''} onClick={() => setLift(k)}>{liftNames[k]}</button>)}</div><RangeSel id="progress" /></>}>
+        <DashCard cards={cards} setCard={setCard} id="progress" title={`Pregled napretka — ${athleteName.split(' ')[0]}`}
+          head={<><div className="seg">{(['sq', 'bp', 'dl'] as LiftK[]).map(k => <button key={k} className={lift === k ? 'on' : ''} onClick={() => setLift(k)}>{liftNames[k]}</button>)}</div><RangeSelect id="progress" value={cards.progress.range} onChange={n => setCard('progress', { range: n })} /></>}>
           {e1Series.length < 2 && doneSeries.length < 2 ? (
             <div className="os-empty">Nema dovoljno comp setova (RPE ≥ 5) za {liftNames[lift]}</div>
           ) : (
@@ -608,25 +612,25 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
               </div>
             </div>
           )}
-        </Card>
+        </DashCard>
 
-        <Card id="compliance" title="Zadnji treninzi">
+        <DashCard cards={cards} setCard={setCard} id="compliance" title="Zadnji treninzi">
           <RecentTraining athleteId={athleteId} onViewAll={onViewAllTraining} />
-        </Card>
+        </DashCard>
       </div>
 
       {/* row 2: volume | bodyweight */}
       <div className="grid c2">
-        <Card id="volume" title="Volumen po liftu"
+        <DashCard cards={cards} setCard={setCard} id="volume" title="Volumen po liftu"
           head={<><div className="seg">
             <button className={volLift === 'all' ? 'on' : ''} onClick={() => setVolLift('all')}>SVE</button>
             {(['sq', 'bp', 'dl'] as LiftK[]).map(k => <button key={k} className={volLift === k ? 'on' : ''} onClick={() => setVolLift(k)}>{liftNames[k]}</button>)}
-          </div><RangeSel id="volume" /></>}>
+          </div><RangeSelect id="volume" value={cards.volume.range} onChange={n => setCard('volume', { range: n })} /></>}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 6 }}>TONAŽA (kg) · po tjednu · {volLift === 'all' ? 'glavni liftovi' : `${liftNames[volLift]} varijacije`}</div>
           <StackedBarChart series={volSeries} dates={volDates} segments={volSegments} weekNos={volWeeks.map(w => data.weekNoByWeek[w] ?? null)} height={250} />
-        </Card>
+        </DashCard>
 
-        <Card id="bodyweight" title="Trend tjelesne težine" head={<RangeSel id="bodyweight" />}>
+        <DashCard cards={cards} setCard={setCard} id="bodyweight" title="Trend tjelesne težine" head={<RangeSelect id="bodyweight" value={cards.bodyweight.range} onChange={n => setCard('bodyweight', { range: n })} />}>
           {bwSeries.length < 2 ? <div className="os-empty">Premalo unosa težine</div> : (
             <>
               <LineChart data={bwSeries} dates={bwDates} labels={bwDates.length > 2 ? [bwDates[0], bwDates[bwDates.length - 1]] : bwDates} accent height={200} />
@@ -636,12 +640,12 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
               </div>
             </>
           )}
-        </Card>
+        </DashCard>
       </div>
 
       {/* row 3: recovery | balance */}
       <div className="grid c2">
-        <Card id="recovery" title="Oporavak">
+        <DashCard cards={cards} setCard={setCard} id="recovery" title="Oporavak">
           {!data.wbHistory.length ? <div className="os-empty">Nema wellbeing unosa</div> : (() => {
             // zajednička os datuma — zadnjih 14 unosa, kronološki
             const rows = (data.wbHistory.slice(-14) as any[])
@@ -691,9 +695,9 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
               </div>
             )
           })()}
-        </Card>
+        </DashCard>
 
-        <Card id="balance" title="Balans snage">
+        <DashCard cards={cards} setCard={setCard} id="balance" title="Balans snage">
           {!data.bestE1.sq ? <div className="os-empty">Nema dovoljno e1RM podataka</div> : (
             <>
               <StrengthRadar balance={data.balance} e1={data.bestE1} />
@@ -705,13 +709,13 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
               </div>
             </>
           )}
-        </Card>
+        </DashCard>
       </div>
 
       {/* row 4: macro & activity | water */}
       <div className="grid c2">
         <MacroCard data={data} cards={cards} setCard={setCard} />
-        <Card id="water" title="Unos tekućine">
+        <DashCard cards={cards} setCard={setCard} id="water" title="Unos tekućine">
           {(() => {
             const byDay: Record<string, number> = {}
             for (const r of data.waterLogs as any[]) byDay[r.log_date] = (byDay[r.log_date] ?? 0) + Number(r.amount_ml)
@@ -738,7 +742,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
               </>
             )
           })()}
-        </Card>
+        </DashCard>
       </div>
     </div>
   )

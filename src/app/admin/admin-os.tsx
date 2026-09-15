@@ -566,13 +566,16 @@ function LifteriSection({ athletes, search, setSearch, onPick, onAdded, onDelete
           const active = (a.blocks as Block[])?.find(b => b.status === 'active')
           return (
             <div className="lifter-cell" key={a.id} onClick={() => !manage && onPick(a.id)} style={{ position: 'relative', cursor: manage ? 'default' : 'pointer' }}>
-              {manage && a.role !== 'admin' && (
-                <>
-                  <button className="icon-sm danger" onClick={e => { e.stopPropagation(); setConfirmId(a.id) }}
-                    style={{ position: 'absolute', top: 10, right: 10 }} title="Obriši korisnika"><Trash2 size={14} /></button>
-                  <button className="icon-sm" onClick={e => { e.stopPropagation(); setResetId(a.id) }}
-                    style={{ position: 'absolute', top: 10, right: 44 }} title="Promijeni lozinku"><KeyRound size={14} /></button>
-                </>
+              {/* Gumbi u vlastitom redu iznad avatara — apsolutno pozicionirani prekrivali su
+                  profilnu na uskim karticama. Admin nema gumbe, ali dobije prazan red iste
+                  visine da sve kartice ostanu poravnate. */}
+              {manage && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, height: 30, margin: '-12px -6px 8px' }}>
+                  {a.role !== 'admin' && <>
+                    <button className="icon-sm" onClick={e => { e.stopPropagation(); setResetId(a.id) }} title="Promijeni lozinku"><KeyRound size={14} /></button>
+                    <button className="icon-sm danger" onClick={e => { e.stopPropagation(); setConfirmId(a.id) }} title="Obriši korisnika"><Trash2 size={14} /></button>
+                  </>}
+                </div>
               )}
               <div className="circle">{initials(a.full_name)}<span className={'sdot ' + (active ? 'on-track' : 'monitor')} /></div>
               <div className="n">{a.full_name}</div>

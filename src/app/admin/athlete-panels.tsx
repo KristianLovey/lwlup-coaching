@@ -5,7 +5,7 @@ import {
   Plus, Trash2, ChevronDown, Check, Pencil,
   Loader2,
   FolderOpen, Copy,
-  ChevronLeft, Trophy, History as HistoryIcon, Target,
+  ChevronLeft, Trophy, History as HistoryIcon, TrendingUp,
 } from 'lucide-react'
 import { WeekPanel, EditableField } from '../training/training-components'
 import { MeetDayTab } from '../training/training-meet'
@@ -45,6 +45,18 @@ export type AthleteProfile = {
 
 
 // ── Athlete Overview ───────────────────────────────────────────────
+// Izvan AthleteOverview: definirana unutra dobiva novi tip pri svakom renderu, pa bi
+// svaki padajući izbornik u pregledu iznova montirao sadržaj i pokretao animacije.
+const Section = ({ title, open, onToggle, children, accent = 'rgba(255,255,255,0.4)' }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode; accent?: string }) => (
+  <div style={{ background: 'var(--surface-1)', border: `1px solid var(--border)`, borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
+    <button onClick={onToggle} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', color: '#fff' }}>
+      <span style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: accent, fontFamily: 'var(--fm)', fontWeight: 700 }}>{title}</span>
+      <ChevronDown size={14} color={accent} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+    </button>
+    {open && <div style={{ padding: '0 16px 16px' }}>{children}</div>}
+  </div>
+)
+
 export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
   athlete: AthleteProfile; onBack?: () => void; onGoTraining: () => void
   // fixedTab: prikaži samo jedan tab bez tab bara — sekcije u novom sidebaru
@@ -209,15 +221,6 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
     await supabase.from('athlete_training_phases').delete().eq('id', id)
   }
 
-  const Section = ({ title, open, onToggle, children, accent = 'rgba(255,255,255,0.4)' }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode; accent?: string }) => (
-    <div style={{ background: 'var(--surface-1)', border: `1px solid var(--border)`, borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
-      <button onClick={onToggle} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', color: '#fff' }}>
-        <span style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: accent, fontFamily: FM, fontWeight: 700 }}>{title}</span>
-        <ChevronDown size={14} color={accent} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-      </button>
-      {open && <div style={{ padding: '0 16px 16px' }}>{children}</div>}
-    </div>
-  )
 
   // competition_athletes rows — one per (athlete, competition) — used for ZADNJA NATJECANJA
 
@@ -1564,7 +1567,7 @@ export function AthletePanel({
                   onMouseEnter={e => { e.currentTarget.style.color = '#4ade80'; e.currentTarget.style.background = '#111113' }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}
                   title="Projekcija kilaža squata, bencha i deadlifta za kraj bloka">
-                  <Target size={13} /><span className="block-btn-label"> PROJEKCIJE</span>
+                  <TrendingUp size={13} /><span className="block-btn-label"> PROJEKCIJE</span>
                 </button>
               )}
               {showProjections && <BlockProjectionsModal athleteId={athlete.id} blockId={block.id} blockName={block.name} canEdit onClose={() => setShowProjections(false)} />}

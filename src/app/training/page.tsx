@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Plus, Check, FolderOpen, ChevronDown, ChevronRight, X, Menu, History as HistoryIcon, Target } from 'lucide-react'
+import { Loader2, Plus, Check, FolderOpen, ChevronDown, ChevronRight, X, Menu, History as HistoryIcon, TrendingUp } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { Block, BlockSummary, Week, Exercise, WorkoutExercise, Workout } from './types'
 import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-components'
@@ -686,7 +686,7 @@ export default function TrainingPage() {
                       </span>
                     </button>
                     <button onClick={() => setShowProjections(true)} className="hero-action hero-action-proj">
-                      <span className="hero-action-ico"><Target size={15} /></span>
+                      <span className="hero-action-ico"><TrendingUp size={15} /></span>
                       <span style={{ minWidth: 0, textAlign: 'left' as const }}>
                         <span className="hero-action-title">PROJEKCIJE BLOKA</span>
                         <span className="hero-action-sub">cilj i skokovi po tjednima</span>
