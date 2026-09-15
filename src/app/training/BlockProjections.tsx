@@ -35,6 +35,19 @@ const fmtKg = (n: number) => String(Math.round(n * 100) / 100)
 const fmtProj = (p: Projection) => (p.max == null ? fmtKg(p.min) : `${fmtKg(p.min)}–${fmtKg(p.max)}`)
 const half = (n: number) => Math.round(n * 2) / 2
 const repsNum = (r: string) => parseFloat(r) || 0
+const plate = (n: number) => Math.round(n / 2.5) * 2.5
+
+/** Linearni plan od zadnjeg odrađenog tjedna do cilja, zaokružen na 2.5 kg.
+ *  Zadnji tjedan je točno cilj; tjedni prije sidra su već odrađeni pa nemaju plan. */
+function plannedWeeks(anchorWeek: number, anchorKg: number, target: number, lastWeek: number): Map<number, number> {
+  const out = new Map<number, number>()
+  if (lastWeek <= anchorWeek) return out
+  const span = lastWeek - anchorWeek
+  for (let w = anchorWeek + 1; w <= lastWeek; w++) {
+    out.set(w, w === lastWeek ? target : plate(anchorKg + (target - anchorKg) * (w - anchorWeek) / span))
+  }
+  return out
+}
 
 /** "150", "147,5", "145-150", "145 – 150 kg" → projekcija; prazno → null (briše cilj). */
 function parseProjection(raw: string): Projection | null | 'invalid' {
@@ -120,23 +133,12 @@ async function loadProjections(athleteId: string, blockId: string): Promise<Load
 
 // ── stilovi ───────────────────────────────────────────────────────
 const eyebrow: CSSProperties = { fontSize: '0.5rem', letterSpacing: '0.22em', color: '#777', fontWeight: 700, textTransform: 'uppercase', whiteSpace: 'nowrap' }
-const bigNum: CSSProperties = { fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '1.15rem', color: '#f0f0f0', lineHeight: 1.1, marginTop: '4px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
-
-function Stat({ label, value, tone }: { label: string; value: ReactNode; tone?: string }) {
+/** Jedna stavka sažetka — labela i broj u istom retku, sitno. */
+function RowStat({ label, value, tone }: { label: string; value: ReactNode; tone?: string }) {
   return (
-    <div style={{ background: 'var(--t-s1)', padding: '10px 12px', minWidth: 0 }}>
-      <div style={eyebrow}>{label}</div>
-      <div style={{ ...bigNum, color: tone ?? bigNum.color }}>{value}</div>
-    </div>
-  )
-}
-
-function SetText({ t }: { t: Top }) {
-  return (
-    <span style={{ whiteSpace: 'nowrap' }}>
-      <span style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.9rem', color: '#f0f0f0' }}>{fmtKg(t.kg)}</span>
-      {t.reps && <span style={{ fontSize: '0.64rem', color: t.fromPlan ? '#666' : '#aaa', marginLeft: '3px' }}>×{t.reps}{t.fromPlan ? '*' : ''}</span>}
-      {t.rpe != null && <span style={{ fontSize: '0.58rem', color: '#facc15', marginLeft: '5px' }}>@{t.rpe}</span>}
+    <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '5px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+      <span style={{ ...eyebrow, fontSize: '0.45rem', color: '#666' }}>{label}</span>
+      <span style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.8rem', color: tone ?? '#e8e8e8', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
     </span>
   )
 }
@@ -178,7 +180,7 @@ function ProjectionInput({ blockId, lift, value, onSaved }: {
         <span style={{ ...eyebrow, color: '#4ade80' }}>CILJ ZA KRAJ BLOKA</span>
         <input value={text} onChange={e => { setText(e.target.value); if (status === 'error') setStatus('idle') }}
           onBlur={commit} onKeyDown={e => { if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur() }}
-          placeholder="npr. 150 ili 145-150" inputMode="decimal" aria-label={`Cilj za ${lift}`}
+          placeholder="npr. 150 ili 145-150" inputMode="text" aria-label={`Cilj za ${lift}`}
           style={{ flex: 1, minWidth: 0, background: 'var(--t-s2)', border: `1px solid ${status === 'error' ? '#f87171' : 'var(--t-border)'}`, borderRadius: '8px', padding: '8px 10px', color: '#f0f0f0', fontFamily: 'var(--fm)', fontSize: '0.8rem', outline: 'none' }} />
         <span style={{ fontSize: '0.6rem', color: '#666', flexShrink: 0 }}>kg</span>
         <span style={{ width: '16px', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
@@ -199,22 +201,33 @@ function LiftCard({ label, data, totalWeeks, editor }: {
   const lastW = weeks.length ? weeks[weeks.length - 1] : null
   const last = lastW ? lastW.top.kg : null
 
-  const remMin = p && last != null ? p.min - last : null
-  const remMax = p && p.max != null && last != null ? p.max - last : null
-  const reached = remMin != null && remMin <= 0
+  // Kod raspona se planira prema SREDINI, zaokruženoj na 2.5 kg (147.5–155 → 152.5).
+  // Prije se uzimala donja granica, pa je cijeli blok ciljao na najslabiji ishod.
+  const goal = p ? (p.max != null ? plate((p.min + p.max) / 2) : p.min) : null
+  const rem = goal != null && last != null ? goal - last : null
+  const reached = rem != null && rem <= 0
   const weeksLeft = lastW ? Math.max(0, totalWeeks - lastW.week) : totalWeeks
-  const perMin = remMin != null && remMin > 0 && weeksLeft > 0 ? half(remMin / weeksLeft) : null
-  const perMax = remMax != null && remMax > 0 && weeksLeft > 0 ? half(remMax / weeksLeft) : null
-  const pct = p && first != null && last != null
-    ? (p.min > first ? Math.max(0, Math.min(1, (last - first) / (p.min - first))) : 1)
+  const perWeek = rem != null && rem > 0 && weeksLeft > 0 ? half(rem / weeksLeft) : null
+  const pct = goal != null && first != null && last != null
+    ? (goal > first ? Math.max(0, Math.min(1, (last - first) / (goal - first))) : 1)
     : 0
+
+  // Kockice pokrivaju sve tjedne bloka; odrađeni pokazuju stvarnu kilažu, ostali plan do cilja
+  const lastWeek = Math.max(totalWeeks, ...weeks.map(w => w.week), 0)
+  const weekNums = lastWeek > 0 ? Array.from({ length: lastWeek }, (_, i) => i + 1) : []
+  const actual = new Map(weeks.map(w => [w.week, w.top]))
+  // cilj je već dosegnut → nema plana, inače bi kockice pokazivale pad prema cilju
+  const planned = goal != null && !reached && lastW && last != null
+    ? plannedWeeks(lastW.week, last, goal, lastWeek)
+    : new Map<number, number>()
 
   return (
     <section style={{ padding: '14px 18px 16px', borderTop: '1px solid var(--t-border)' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
         <span style={{ fontSize: '0.66rem', letterSpacing: '0.3em', fontWeight: 800, color: '#f0f0f0' }}>{label}</span>
         <span style={{ fontSize: '0.64rem', color: p ? '#4ade80' : '#666', letterSpacing: '0.06em' }}>
-          {p ? <>CILJ <strong style={{ fontFamily: 'var(--fd)', fontSize: '1rem', color: '#4ade80' }}>{fmtProj(p)}</strong> kg</> : 'cilj nije upisan'}
+          {p ? <>CILJ <strong style={{ fontFamily: 'var(--fd)', fontSize: '1rem', color: '#4ade80' }}>{fmtProj(p)}</strong> kg
+            {p.max != null && goal != null && <span style={{ color: '#666', marginLeft: '6px' }}>· plan {fmtKg(goal)}</span>}</> : 'cilj nije upisan'}
         </span>
       </div>
 
@@ -224,31 +237,43 @@ function LiftCard({ label, data, totalWeeks, editor }: {
         </div>
       )}
 
-      <div className="bp-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '1px', background: 'var(--t-border)', border: '1px solid var(--t-border)', borderRadius: '10px', overflow: 'hidden', marginTop: '12px' }}>
-        <Stat label="1. tjedan" value={first != null ? fmtKg(first) : '—'} />
-        <Stat label={lastW ? `Zadnje · tj ${lastW.week}` : 'Zadnje'} value={last != null ? fmtKg(last) : '—'} />
-        <Stat label="Preostalo" tone={reached ? '#4ade80' : undefined}
-          value={reached ? 'dosegnut' : remMin != null ? (remMax != null ? `${fmtKg(remMin)}–${fmtKg(remMax)}` : fmtKg(remMin)) : '—'} />
-        <Stat label={weeksLeft > 0 ? `Po tjednu · ${weeksLeft} tj` : 'Po tjednu'}
-          value={perMin != null ? (perMax != null ? `≈${fmtKg(perMin)}–${fmtKg(perMax)}` : `≈${fmtKg(perMin)}`) : '—'} />
+      {/* Sažetak u jednom redu, tamnija traka — brojke po tjednima su u kockicama ispod */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--t-border)', borderRadius: '9px', padding: '7px 11px', marginTop: '12px', overflowX: 'auto' }}>
+        <RowStat label="1. tj" value={first != null ? fmtKg(first) : '—'} />
+        <RowStat label={lastW ? `Zadnje · tj ${lastW.week}` : 'Zadnje'} value={last != null ? fmtKg(last) : '—'} />
+        <RowStat label="Preostalo" tone={reached ? '#4ade80' : undefined}
+          value={reached ? 'dosegnut' : rem != null ? fmtKg(rem) : '—'} />
+        <RowStat label={weeksLeft > 0 ? `Po tjednu · ${weeksLeft} tj` : 'Po tjednu'}
+          value={perWeek != null ? `≈${fmtKg(perWeek)}` : '—'} />
       </div>
 
-      {weeks.length > 0 ? (
-        <div style={{ marginTop: '10px' }}>
-          {weeks.map((w, i) => {
-            const jump = i > 0 ? w.top.kg - weeks[i - 1].top.kg : null
-            return (
-              <div key={w.week} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 2px', borderBottom: i < weeks.length - 1 ? '1px solid var(--t-border)' : 'none' }}>
-                <span style={{ ...eyebrow, width: '38px', flexShrink: 0 }}>TJ {w.week}</span>
-                <span style={{ flex: 1, minWidth: 0 }}><SetText t={w.top} /></span>
-                <span style={{ fontSize: '0.68rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums', flexShrink: 0,
-                  color: jump == null ? '#555' : jump > 0 ? '#4ade80' : jump < 0 ? '#f87171' : '#777' }}>
-                  {jump == null ? 'start' : jump > 0 ? `+${fmtKg(jump)}` : jump < 0 ? fmtKg(jump) : '='}
-                </span>
-              </div>
-            )
-          })}
-        </div>
+      {weekNums.length > 0 ? (
+        <>
+          <div style={{ ...eyebrow, marginTop: '14px', marginBottom: '7px' }}>Kilaže po tjednima</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))', gap: '7px' }}>
+            {weekNums.map(w => {
+              const done = actual.get(w)
+              const plan = planned.get(w)
+              const kg = done ? done.kg : plan ?? null
+              return (
+                <div key={w} style={{ background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '10px', padding: '9px 10px', minWidth: 0 }}>
+                  <div style={{ ...eyebrow, fontSize: '0.45rem' }}>TJ {w}</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', marginTop: '3px' }}>
+                    <span style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '1.05rem', lineHeight: 1.1, fontVariantNumeric: 'tabular-nums', color: kg == null ? '#555' : done ? '#f0f0f0' : '#4ade80' }}>
+                      {kg != null ? fmtKg(kg) : '—'}
+                    </span>
+                    {kg != null && <span style={{ fontSize: '0.5rem', color: '#666' }}>kg</span>}
+                  </div>
+                  <div style={{ fontSize: '0.5rem', letterSpacing: '0.14em', color: done ? '#777' : '#4a7a5c', marginTop: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {done
+                      ? `${done.reps ? `×${done.reps}${done.fromPlan ? '*' : ''}` : 'odrađeno'}${done.rpe != null ? ` @${done.rpe}` : ''}`
+                      : plan != null ? 'PLAN' : '—'}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
       ) : (
         <div style={{ fontSize: '0.66rem', color: '#666', marginTop: '10px' }}>Još nema odrađenih setova za ovaj lift u bloku.</div>
       )}
@@ -343,17 +368,14 @@ export function BlockProjectionsModal({ athleteId, blockId, blockName, canEdit, 
               <div style={{ padding: '10px 18px 0', fontSize: '0.6rem', color: '#666', lineHeight: 1.6 }}>
                 Tjedna kilaža je najteži odrađeni set natjecateljske varijante (bez varijacija). „Po tjednu" je preostala kilaža
                 podijeljena s tjednima koji su ostali do kraja bloka, zaokruženo na 0.5 kg.
+                Kockice: odrađeni tjedni pokazuju stvarni najteži set, a idući plan od zadnjeg odrađenog do cilja, zaokružen na 2.5 kg.
+                Kod raspona (147.5–155) plan ide na sredinu raspona, zaokruženu na 2.5 kg.
                 {hasPlanReps && <><br />* ponavljanja nisu upisana — prikazana su planirana</>}
               </div>
             </>
           )}
         </div>
       </div>
-      <style>{`
-        @media (max-width: 460px) {
-          .bp-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-        }
-      `}</style>
     </div>,
     document.body,
   )
