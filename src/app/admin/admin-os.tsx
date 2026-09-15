@@ -18,7 +18,8 @@ import {
 } from 'lucide-react'
 import type { AthleteProfile } from './athlete-panels'
 import type { Block, Exercise } from '../training/types'
-import { AthleteDashboard, SettingsDrawer, defaultCards, type DashCards, type CardId, type CardState } from './admin-os-dashboard'
+import { defaultCards, type DashCards, type CardId, type CardState } from './dashboard-settings'
+import { SettingsDrawer } from './dashboard-settings-drawer'
 
 const supabase = createClient()
 
@@ -26,6 +27,7 @@ const supabase = createClient()
 const SectionLoader = () => (
   <div className="os-empty" style={{ display: 'flex', justifyContent: 'center' }}><Loader2 size={20} className="os-spin" /></div>
 )
+const AthleteDashboard = dynamic(() => import('./admin-os-dashboard').then(module => module.AthleteDashboard), { ssr: false, loading: SectionLoader })
 const AthleteOverview = dynamic(() => import('./athlete-panels').then(m => ({ default: m.AthleteOverview })), { ssr: false, loading: SectionLoader })
 const AthletePanel = dynamic(() => import('./athlete-panels').then(m => ({ default: m.AthletePanel })), { ssr: false, loading: SectionLoader })
 const CompetitionsManager = dynamic(() => import('./competitions-manager').then(m => ({ default: m.CompetitionsManager })), { ssr: false, loading: SectionLoader })

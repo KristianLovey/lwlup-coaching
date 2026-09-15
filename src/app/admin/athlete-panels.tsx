@@ -1,5 +1,6 @@
 'use client'
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/client'
 import {
   Plus, Trash2, ChevronDown, Check, Pencil,
@@ -8,14 +9,17 @@ import {
   ChevronLeft, Trophy, History as HistoryIcon, TrendingUp,
 } from 'lucide-react'
 import { WeekPanel, EditableField } from '../training/training-components'
-import { MeetDayTab } from '../training/training-meet'
-import { LiftPriorityAdmin } from '../training/training-priority'
 import { estimate1RM } from '../training/training-setplan'
 import { PrevBlockLiftsModal } from '../training/PrevBlockLifts'
 import { BlockProjectionsModal } from '../training/BlockProjections'
 import type { Block, Week, Workout, WorkoutExercise, Exercise, BlockSummary } from '../training/types'
 
 const supabase = createClient()
+const SectionLoader = () => (
+  <div className="os-empty" role="status" aria-label="Učitavanje" style={{ display: 'flex', justifyContent: 'center' }}><Loader2 size={20} className="os-spin" /></div>
+)
+const MeetDayTab = dynamic(() => import('../training/training-meet').then(module => module.MeetDayTab), { ssr: false, loading: SectionLoader })
+const LiftPriorityAdmin = dynamic(() => import('../training/training-priority').then(module => module.LiftPriorityAdmin), { ssr: false, loading: SectionLoader })
 
 export type AthleteNote = {
   id: string

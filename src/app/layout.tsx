@@ -22,7 +22,8 @@ const inter = Inter({
 // Mono — used by the admin "OS" design for labels / tabular numbers
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: 'variable',
+  preload: false,
   display: 'swap',
   variable: '--font-jb',
 })
@@ -34,6 +35,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://lwlup.com'),
   title: 'LWL UP Coaching',
   description: 'Powerlifting klub i sustav treninga iz Hrvatske. Individualni program, analiza tehnike i natjecateljski fokus — LWL UP YOUR GAME.',
   icons: {
@@ -51,6 +53,12 @@ export const metadata: Metadata = {
     siteName: 'LWL UP Coaching',
     images: [{ url: 'https://lwlup.com/icon.png', width: 1302, height: 980, alt: 'LWL UP Coaching Logo' }],
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'LWL UP Coaching',
+    description: 'Powerlifting klub i individualni programi treninga iz Hrvatske.',
+    images: ['/icon.png'],
   },
 }
 

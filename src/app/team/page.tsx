@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Trophy, TrendingUp, Award, Instagram, Loader2, Pencil, Plus, X } from 'lucide-react'
 import Footer from '@/app/components/Footer'
 import Navbar from '@/app/components/Navbar'
@@ -350,9 +351,12 @@ export default function TeamPage() {
                 {/* IMAGE */}
                 <div style={{ height: '400px', overflow: 'hidden', position: 'relative', background: '#000' }}>
                   {member.img ? (
-                    <img
+                    <Image
                       src={member.img}
                       alt={member.name}
+                      fill
+                      sizes="(max-width: 768px) calc(100vw - 40px), (max-width: 1200px) 50vw, 500px"
+                      unoptimized={!member.img.startsWith('/slike/')}
                       loading="lazy"
                       decoding="async"
                       style={{ width: '100%', height: '100%', objectFit: 'cover', filter: hoveredMember === member.id ? 'grayscale(0.2) brightness(0.75)' : 'grayscale(0.6) brightness(0.6)', transform: hoveredMember === member.id ? 'scale(1.08)' : 'scale(1)', transition: '0.8s cubic-bezier(0.16,1,0.3,1)' }}

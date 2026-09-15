@@ -5,48 +5,17 @@ import { createClient } from '@/lib/supabase/client'
 import { Loader2, Minus, Plus, ChevronDown, X, RotateCcw, Eye, EyeOff } from 'lucide-react'
 import { Spark, LineChart, StackedBarChart, Donut, StrengthRadar } from './admin-os-charts'
 import { estimate1RM } from '../training/training-setplan'
+import { type CardId, type CardState, type DashCards } from './dashboard-settings'
+import { RangeSelect } from './dashboard-settings-drawer'
+export { SettingsDrawer } from './dashboard-settings-drawer'
+export { CARD_META, defaultCards, type CardId, type CardState, type DashCards } from './dashboard-settings'
 
 const supabase = createClient()
-
-// ── Card settings model ──
-export type CardId = 'blockplan' | 'progress' | 'compliance' | 'volume' | 'bodyweight' | 'recovery' | 'balance' | 'macro' | 'water'
-export type CardState = { hidden: boolean; collapsed: boolean; range: number }
-export type DashCards = Record<CardId, CardState>
-export const CARD_META: { id: CardId; label: string; series: boolean }[] = [
-  { id: 'blockplan',  label: 'Plan blokova',       series: false },
-  { id: 'progress',   label: 'Pregled napretka',   series: true },
-  { id: 'compliance', label: 'Zadnji treninzi',      series: false },
-  { id: 'volume',     label: 'Volumen & intenzitet', series: true },
-  { id: 'bodyweight', label: 'Trend težine',        series: true },
-  { id: 'recovery',   label: 'Oporavak',            series: false },
-  { id: 'balance',    label: 'Balans snage',        series: false },
-  { id: 'macro',      label: 'Makro & aktivnost',   series: false },
-  { id: 'water',      label: 'Unos tekućine',       series: false },
-]
-export function defaultCards(): DashCards {
-  const o = {} as DashCards
-  CARD_META.forEach(c => { o[c.id] = { hidden: false, collapsed: false, range: c.id === 'progress' ? 0 : c.id === 'bodyweight' ? 8 : 12 } })
-  return o
-}
 
 // Progress card: range = broj zadnjih blokova (0 = svi). Stare spremljene
 // vrijednosti u tjednima (8/12) normaliziraju se na "svi blokovi".
 const BLOCK_RANGE_OPTS = [1, 2, 3, 4]
 const normBlockRange = (n: number) => BLOCK_RANGE_OPTS.includes(n) ? n : 0
-
-function RangeSelect({ id, value, onChange }: { id: CardId; value: number; onChange: (n: number) => void }) {
-  const byBlocks = id === 'progress'
-  return (
-    <div className="range-select">
-      <select value={byBlocks ? normBlockRange(value) : value} onChange={e => onChange(Number(e.target.value))}>
-        {byBlocks
-          ? <><option value={1}>1 blok</option><option value={2}>2 bloka</option><option value={3}>3 bloka</option><option value={4}>4 bloka</option><option value={0}>Svi blokovi</option></>
-          : <><option value={4}>4 tj.</option><option value={8}>8 tj.</option><option value={12}>12 tj.</option></>}
-      </select>
-      <span className="rs-caret"><ChevronDown size={11} /></span>
-    </div>
-  )
-}
 
 type LiftK = 'sq' | 'bp' | 'dl'
 const liftKey = (cat: string): LiftK | null =>
@@ -871,47 +840,3 @@ function KpiCard({ label, num, unit, sub, data, accent, open, onClick, detail }:
   )
 }
 
-// ── Settings drawer ──
-export function SettingsDrawer({ open, onClose, cards, setCard, onReset }: {
-  open: boolean; onClose: () => void; cards: DashCards; setCard: (id: CardId, patch: Partial<CardState>) => void; onReset: () => void
-}) {
-  return (
-    <>
-      <aside className={'settings-drawer' + (open ? ' open' : '')}>
-        <div className="sd-head">
-          <div>
-            <div className="eyebrow" style={{ marginBottom: 6 }}>Postavke</div>
-            <div className="sd-title">Dashboard</div>
-          </div>
-          <button className="icon-sm" onClick={onClose} aria-label="zatvori"><X size={16} /></button>
-        </div>
-        <div className="sd-scroll">
-          <div className="sd-section">
-            <div className="sd-label">Kartice na dashboardu</div>
-            <div className="sd-cards">
-              {CARD_META.map(c => {
-                const st = cards[c.id]
-                return (
-                  <div className={'sd-card-row' + (st.hidden ? ' off' : '')} key={c.id}>
-                    <button className="sd-eye" onClick={() => setCard(c.id, { hidden: !st.hidden })} title={st.hidden ? 'Prikaži' : 'Sakrij'}>
-                      {st.hidden ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                    <span className="sd-card-name">{c.label}</span>
-                    {c.series
-                      ? <RangeSelect id={c.id} value={st.range} onChange={n => setCard(c.id, { range: n })} />
-                      : <span className="sd-na">—</span>}
-                    <button className="sd-min" onClick={() => setCard(c.id, { collapsed: !st.collapsed })} title={st.collapsed ? 'Proširi' : 'Minimiziraj'}>
-                      {st.collapsed ? <Plus size={13} /> : <Minus size={13} />}
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-          <button className="sd-reset" onClick={onReset}><RotateCcw size={15} /> Vrati zadano</button>
-        </div>
-      </aside>
-      {open && <div className="sd-scrim" onClick={onClose} />}
-    </>
-  )
-}
