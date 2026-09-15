@@ -242,9 +242,16 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
           // e1RM estimation is only valid for RPE >= 5 — ignore lighter/easier sets entirely
           const validRpe = s.rpe != null && Number(s.rpe) >= 5
           const e = validRpe ? (estimate1RM(kg, reps, s.rpe) ?? 0) : 0
+          // Trenutni total (bestE1): SAMO natjecateljski squat / bench / deadlift, bez varijacija.
+          // Set bez RPE-a (prazno ili 0) računa se Epleyem, ali samo do 5 ponavljanja — lifteri koji
+          // ne upisuju RPE inače nisu imali nikakav total. Eksplicitno lagani setovi (RPE 1–4.5) se ne broje.
+          if (isComp) {
+            const noRpe = s.rpe == null || Number(s.rpe) === 0
+            const t = validRpe ? e : (noRpe && reps <= 5 ? (estimate1RM(kg, reps, null) ?? 0) : 0)
+            if (t > bestE1[lk]) { bestE1[lk] = t; bestSrc[lk] = { e1: t, date: workoutDate, name: nm, day: '', kg, reps, rpe: validRpe ? s.rpe : null } }
+          }
           if (e > 0) {
             if (!e1[lk][wk] || e > e1[lk][wk]) e1[lk][wk] = e
-            if (e > bestE1[lk]) { bestE1[lk] = e; bestSrc[lk] = { e1: e, date: workoutDate, name: nm, day: '', kg, reps, rpe: s.rpe ?? null } }
             if (isComp && (!dayE1[lk][workoutDate] || e > dayE1[lk][workoutDate].e1)) dayE1[lk][workoutDate] = { e1: e, kg, reps, rpe: s.rpe ?? null, blockId, week: weekNo, day: dayNm }
           }
           // "odrađeno": heaviest actual weight lifted on the comp lift that day
@@ -431,7 +438,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
     <div>
       {/* KPI strip — klik otvara detalje unutar kartice (ne u zasebnom panelu) */}
       <div className="kpi-strip" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(168px, 1fr))', alignItems: 'start' }}>
-        <KpiCard label="Trenutni total" num={data.curTotal || '—'} unit={data.curTotal ? 'kg' : ''} sub="najbolji e1RM zbroj" data={totalSpark} open={exp === 'total'} onClick={() => toggleExp('total')}
+        <KpiCard label="Trenutni total" num={data.curTotal || '—'} unit={data.curTotal ? 'kg' : ''} sub="zbroj e1RM · čučanj, bench, dl" data={totalSpark} open={exp === 'total'} onClick={() => toggleExp('total')}
           detail={<>
             {(['sq', 'bp', 'dl'] as LiftK[]).map(lk => { const b = data.bestSrc[lk]; return (
               <div key={lk} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '5px 0', borderBottom: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
