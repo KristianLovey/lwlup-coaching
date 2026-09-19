@@ -102,3 +102,15 @@ export function estimate1RM(
   // fallback (no/invalid RPE or reps > 15) — Epley
   return roundToPlate(reps1 <= 1 ? w : w * (1 + reps1 / 30))
 }
+
+// ── RPE tablica za kalkulator sekundarnih liftova ──────────────────
+/** Redovi RPE tablice, od najtežeg prema lakšem (kao u trenerskoj tablici). */
+export const RPE_ROWS = ['10', '9.5', '9', '8.5', '8', '7.5', '7', '6.5', '6', '5.5', '5', '4.5', '4'] as const
+
+/** Kilaža za zadani 1RM, broj ponavljanja i RPE — ista RTS tablica koju koristi
+ *  i estimate1RM, samo u suprotnom smjeru. Zaokruženo na 2.5 kg. */
+export function weightFromRpe(oneRm: number, reps: number, rpe: string | number): number | null {
+  const pct = RPE_PCT[String(rpe)]?.[Math.max(1, Math.round(reps)) - 1]
+  if (!pct || !oneRm) return null
+  return roundToPlate(oneRm * pct)
+}

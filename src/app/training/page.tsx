@@ -2,12 +2,13 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Plus, Check, FolderOpen, ChevronDown, ChevronRight, X, Menu, History as HistoryIcon, TrendingUp } from 'lucide-react'
+import { Loader2, Plus, Check, FolderOpen, ChevronDown, ChevronRight, X, Menu, History as HistoryIcon, TrendingUp, Calculator } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { Block, BlockSummary, Week, Exercise, WorkoutExercise, Workout } from './types'
 import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-components'
 import { PrevBlockLiftsModal } from './PrevBlockLifts'
 import { BlockProjectionsModal } from './BlockProjections'
+import { SecondaryLiftCalcModal } from './SecondaryLiftCalc'
 import { totalTonnage } from './training-setplan'
 import { LiftPriorityView } from './training-priority'
 import { cacheSet, meetKeys } from '@/lib/meetCache'
@@ -44,6 +45,7 @@ export default function TrainingPage() {
   const [allBlocks, setAllBlocks] = useState<BlockSummary[]>([])
   const [showPrevLifts, setShowPrevLifts] = useState(false)
   const [showProjections, setShowProjections] = useState(false)
+  const [showCalc, setShowCalc] = useState(false)
   const [showBlockSelector, setShowBlockSelector] = useState(false)
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [loading, setLoading] = useState(true)
@@ -677,8 +679,8 @@ export default function TrainingPage() {
                     <div className="hero-comp" style={{ flex: '1.3 1 300px', minWidth: 0 }}>{userId && <CompetitionBanner userId={userId} />}</div>
                   </div>
 
-                  {/* Red 4: dvije veće, jasno odvojene tipke */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}>
+                  {/* Red 4: tipke se same slažu u 2 ili 3 stupca, ovisno o širini */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
                     <button onClick={() => setShowPrevLifts(true)} className="hero-action hero-action-prev">
                       <span className="hero-action-ico"><HistoryIcon size={15} /></span>
                       <span style={{ minWidth: 0, textAlign: 'left' as const }}>
@@ -693,7 +695,17 @@ export default function TrainingPage() {
                         <span className="hero-action-sub">cilj i skokovi po tjednima</span>
                       </span>
                     </button>
+                    <button onClick={() => setShowCalc(true)} className="hero-action hero-action-calc">
+                      <span className="hero-action-ico"><Calculator size={15} /></span>
+                      <span style={{ minWidth: 0, textAlign: 'left' as const }}>
+                        <span className="hero-action-title">KALKULATOR</span>
+                        <span className="hero-action-sub">1RM varijacija i RPE tablica</span>
+                      </span>
+                    </button>
                   </div>
+                  {showCalc && effectiveAthleteId && (
+                    <SecondaryLiftCalcModal athleteId={effectiveAthleteId} athleteName={athleteName} onClose={() => setShowCalc(false)} />
+                  )}
                   {showPrevLifts && effectiveAthleteId && (
                     <PrevBlockLiftsModal athleteId={effectiveAthleteId} currentBlockId={block.id} onClose={() => setShowPrevLifts(false)} />
                   )}
@@ -847,6 +859,8 @@ export default function TrainingPage() {
         .hero-action-prev .hero-action-ico { color:#facc15; }
         .hero-action-prev:hover { border-color:rgba(250,204,21,0.45); }
         .hero-action-proj .hero-action-ico { color:#4ade80; }
+        .hero-action-calc .hero-action-ico { color:#60a5fa; }
+        .hero-action-calc:hover { border-color:rgba(96,165,250,0.45); }
         .hero-action-proj:hover { border-color:rgba(74,222,128,0.45); }
         @media (max-width:540px) {
           .hero-name { padding: 12px 14px !important; }
