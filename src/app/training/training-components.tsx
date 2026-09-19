@@ -14,6 +14,7 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import type { Exercise, WorkoutExercise, Workout, Week, SetLog, Competition, SetPlanRow, SetMode } from './types'
 import { computeWeights, defaultRow, estimate1RM, totalTonnage } from './training-setplan'
+import { useSuggestFn } from './block-suggestions'
 import {
   scopeKey, fieldKey, markIntent, markSaved, isSuperseded, localWins,
   reconcileLogs, enqueue, parseDecimal, type FieldVal,
@@ -745,10 +746,12 @@ export function CompetitionBanner({ userId }: { userId: string }) {
 // Polja seta koja se sinkroniziraju s bazom (i čuvaju u localStorageu do potvrde).
 const SYNC_FIELDS = ['weight_kg', 'reps', 'rpe', 'completed', 'is_top_set'] as const
 
-export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
-  we: WorkoutExercise; userId: string; isAdmin: boolean
+export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpdate }: {
+  we: WorkoutExercise; userId: string; isAdmin: boolean; weekNumber?: number
   onAggregateUpdate: (data: Partial<WorkoutExercise>) => void
 }) {
+  // Prijedlog kilaže (sivi tekst) za top seriju — iz projekcije bloka i 1. tjedna
+  const suggestWeight = useSuggestFn()
   const plannedSets = we.planned_sets ?? 3
   const [logs, setLogs] = useState<SetLog[]>([])
   const [planRows, setPlanRows] = useState<SetPlanRow[]>(() =>
@@ -1240,7 +1243,12 @@ export function SetLogSection({ we, userId, isAdmin, onAggregateUpdate }: {
                     onChange={e => editField(log.set_number, 'weight_kg', e.target.value)}
                     onFocus={e => { focusedKey.current = `${log.set_number}_weight_kg`; e.target.style.borderBottomColor = 'rgba(255,255,255,0.5)' }}
                     onBlur={e => { focusedKey.current = null; e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)'; flushField(log.set_number, 'weight_kg', e.target.value) }}
-                    placeholder={we.planned_weight_kg ? String(we.planned_weight_kg) : 'upiši'}
+                    placeholder={suggestWeight({
+                      category: we.exercise?.category, exerciseName: we.exercise?.name, weekNumber,
+                      reps: localVals[`${log.set_number}_reps`] ?? log.reps ?? we.planned_reps,
+                      rpe: Number(localVals[`${log.set_number}_rpe`] ?? log.rpe ?? targetRpe) || null,
+                      isTopSet: !!log.is_top_set,
+                    }) ?? (we.planned_weight_kg ? String(we.planned_weight_kg) : 'upiši')}
                     style={{ ...inputStyle, color: 'rgba(255,255,255,0.85)' }}
                   />
                 )}
@@ -1773,7 +1781,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
       {setsOpen && (
         <div style={{ animation: 'fadeUp 0.18s ease' }}>
           <SetLogSection
-            we={we} userId={userId} isAdmin={isAdmin}
+            we={we} userId={userId} isAdmin={isAdmin} weekNumber={weekNumber}
             onAggregateUpdate={data => onUpdate(we.id, data)}
           />
         </div>

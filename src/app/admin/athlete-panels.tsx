@@ -13,6 +13,7 @@ import { estimate1RM } from '../training/training-setplan'
 import { PrevBlockLiftsModal } from '../training/PrevBlockLifts'
 import { BlockProjectionsModal } from '../training/BlockProjections'
 import { SecondaryLiftCalcModal } from '../training/SecondaryLiftCalc'
+import { BlockSuggestionsProvider } from '../training/block-suggestions'
 import type { Block, Week, Workout, WorkoutExercise, Exercise, BlockSummary } from '../training/types'
 
 const supabase = createClient()
@@ -1651,6 +1652,8 @@ export function AthletePanel({
               BLOK JE PRAZAN — DODAJ TJEDAN
             </div>
           )}
+          {/* Prijedlozi kilaža (sivi tekst) za top serije — jedno učitavanje po bloku */}
+          <BlockSuggestionsProvider athleteId={athlete.id} blockId={block.id}>
           {block.weeks?.map(week => (
             <WeekPanel
               key={week.id}
@@ -1673,6 +1676,7 @@ export function AthletePanel({
               onCopyWorkoutToWeek={copyWorkoutToWeek}
             />
           ))}
+          </BlockSuggestionsProvider>
           <button onClick={addWeek}
             style={{ width: '100%', padding: '14px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '0.68rem', letterSpacing: '0.3em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', borderRadius: '8px' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'; e.currentTarget.style.color = '#f0f0f0' }}

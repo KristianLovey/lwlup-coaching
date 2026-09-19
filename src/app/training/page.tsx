@@ -9,6 +9,7 @@ import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-
 import { PrevBlockLiftsModal } from './PrevBlockLifts'
 import { BlockProjectionsModal } from './BlockProjections'
 import { SecondaryLiftCalcModal } from './SecondaryLiftCalc'
+import { BlockSuggestionsProvider } from './block-suggestions'
 import { totalTonnage } from './training-setplan'
 import { LiftPriorityView } from './training-priority'
 import { cacheSet, meetKeys } from '@/lib/meetCache'
@@ -767,12 +768,15 @@ export default function TrainingPage() {
                 <div style={{ fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>PROGRAM JE PRAZAN</div>
               </div>
             )}
+            {/* Prijedlozi kilaža (sivi tekst) za top serije — jedno učitavanje po bloku */}
+            <BlockSuggestionsProvider athleteId={effectiveAthleteId ?? ''} blockId={block.id}>
             {block.weeks?.map(week => (
               <WeekPanel key={week.id} week={week} exercises={exercises} isAdmin={canEdit} userId={userId ?? ''}
                 onDeleteWeek={deleteWeek} onCopyWeek={copyWeek} onUpdateWeek={updateWeek} onAddWorkout={addWorkout}
                 onUpdateWorkout={updateWorkout} onDeleteWorkout={deleteWorkout}
                 onAddExercise={addExercise} onUpdateExercise={updateExercise} onDeleteExercise={deleteExercise} />
             ))}
+            </BlockSuggestionsProvider>
             {canEdit && (
               <button onClick={addWeek} className="add-week-btn">
                 <Plus size={13} /> DODAJ TJEDAN {block.weeks ? block.weeks.length + 1 : 1}
