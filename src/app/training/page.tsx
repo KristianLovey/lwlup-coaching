@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Plus, Check, FolderOpen, ChevronDown, ChevronRight, X, Menu, History as HistoryIcon, TrendingUp } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -8,12 +9,12 @@ import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-
 import { PrevBlockLiftsModal } from './PrevBlockLifts'
 import { BlockProjectionsModal } from './BlockProjections'
 import { totalTonnage } from './training-setplan'
-import { HubTab } from './training-hub'
-import { MeetDayTab } from './training-meet'
 import { LiftPriorityView } from './training-priority'
 import { cacheSet, meetKeys } from '@/lib/meetCache'
 
 const supabase = createClient()
+const HubTab = dynamic(() => import('./training-hub').then(module => module.HubTab), { ssr: false, loading: TrainingLoader })
+const MeetDayTab = dynamic(() => import('./training-meet').then(module => module.MeetDayTab), { ssr: false, loading: TrainingLoader })
 
 // ─── LOADER ───────────────────────────────────────────────────────
 // Kostur treninga dok stižu podaci — umjesto "Nema bloka", koji bi bljesnuo

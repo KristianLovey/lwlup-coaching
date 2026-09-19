@@ -26,7 +26,7 @@ type NavbarProps = {
 
 export default function Navbar({ variant = 'transparent', backLink, simple }: NavbarProps) {
   const pathname = usePathname()
-  const [scrollY, setScrollY]         = useState(0)
+  const [pastScrollThreshold, setPastScrollThreshold] = useState(false)
   const [menuOpen, setMenuOpen]       = useState(false)
   const [homeOpen, setHomeOpen]       = useState(false)
   const [mHomeOpen, setMHomeOpen]     = useState(false) // isti dropdown, mobilna verzija
@@ -72,7 +72,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
   // ── Scroll listener ───────────────────────────────────────────────
   useEffect(() => {
     if (variant !== 'transparent') return
-    const fn = () => setScrollY(window.scrollY)
+    const fn = () => setPastScrollThreshold(window.scrollY > 80)
     window.addEventListener('scroll', fn, { passive: true })
     return () => window.removeEventListener('scroll', fn)
   }, [variant])
@@ -91,7 +91,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
     return () => { document.body.style.overflow = ''; document.body.classList.remove('nav-open') }
   }, [menuOpen])
 
-  const solid = variant === 'solid' || scrollY > 80
+  const solid = variant === 'solid' || pastScrollThreshold
 
   // ── Language toggle ───────────────────────────────────────────────
   const LangToggle = ({ mobile = false }: { mobile?: boolean }) => (
@@ -178,7 +178,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
           {/* Atributi moraju pratiti omjer datoteke (1481×1080 ≈ 1.3713): 73 px → 100.1 px,
               pa je širina 100 i kad preglednik zaokružuje i kad odsijeca. Kod 72 px (98.7)
               ispadne 99 ≠ 98 i Next javlja "width or height modified, but not the other". */}
-          <Image src="/slike/logopng.png" alt="LWL UP" width={100} height={73} priority
+          <Image src="/slike/logopng.png" alt="LWL UP" width={100} height={73} loading="eager"
             className="nav-logo-img" style={{ height: '73px', width: 'auto' }} />
         </Link>
 

@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Trophy, TrendingUp, Award, Instagram, Loader2, Pencil, Plus, X } from 'lucide-react'
 import Footer from '@/app/components/Footer'
 import Navbar from '@/app/components/Navbar'
@@ -284,9 +285,9 @@ export default function TeamPage() {
             <p style={{ fontSize: '1.15rem', color: 'rgba(255,255,255,0.65)', maxWidth: '700px', margin: '0 auto 60px', lineHeight: 1.85, fontWeight: 300 }}>
               {t('team.desc')}
             </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginBottom: '60px' }}>
+            <div className="team-filters" style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginBottom: '60px' }}>
               {([['ALL', t('team.filter.all')], ['MEN', t('team.filter.men')], ['WOMEN', t('team.filter.women')]] as [string,string][]).map(([f, label]) => (
-                <button key={f} onClick={() => setFilter(f)}
+                <button key={f} onClick={() => setFilter(f)} className="team-filter-btn"
                   style={{ padding: '11px 30px', background: filter === f ? '#fff' : 'rgba(255,255,255,0.04)', color: filter === f ? '#000' : 'rgba(255,255,255,0.55)', border: filter === f ? 'none' : '1px solid rgba(255,255,255,0.12)', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.2em', cursor: 'pointer', transition: '0.25s', fontFamily: 'var(--fm)' }}
                   onMouseEnter={e => { if (filter !== f) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; e.currentTarget.style.color = '#fff' } }}
                   onMouseLeave={e => { if (filter !== f) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' } }}>
@@ -350,9 +351,12 @@ export default function TeamPage() {
                 {/* IMAGE */}
                 <div style={{ height: '400px', overflow: 'hidden', position: 'relative', background: '#000' }}>
                   {member.img ? (
-                    <img
+                    <Image
                       src={member.img}
                       alt={member.name}
+                      fill
+                      sizes="(max-width: 768px) calc(100vw - 40px), (max-width: 1200px) 50vw, 500px"
+                      unoptimized={!member.img.startsWith('/slike/')}
                       loading="lazy"
                       decoding="async"
                       style={{ width: '100%', height: '100%', objectFit: 'cover', filter: hoveredMember === member.id ? 'grayscale(0.2) brightness(0.75)' : 'grayscale(0.6) brightness(0.6)', transform: hoveredMember === member.id ? 'scale(1.08)' : 'scale(1)', transition: '0.8s cubic-bezier(0.16,1,0.3,1)' }}
@@ -608,6 +612,8 @@ export default function TeamPage() {
           .team-members-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
         }
         @media (max-width: 480px) {
+          .team-filters { gap: 8px !important; max-width: 340px; margin-left: auto; margin-right: auto; margin-bottom: 40px !important; }
+          .team-filter-btn { flex: 1 1 0; min-width: 0; padding: 10px 6px !important; letter-spacing: 0.12em !important; font-size: 0.64rem !important; }
           .team-hero-inner { padding: 0 16px !important; }
           section { padding-left: 16px !important; padding-right: 16px !important; }
         }

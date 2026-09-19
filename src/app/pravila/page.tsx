@@ -1,5 +1,8 @@
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
+import { publicPageMetadata } from '@/lib/page-metadata'
+
+export const metadata = publicPageMetadata('Pravila privatnosti i korištenja', 'Pravila privatnosti, zaštita osobnih podataka i uvjeti korištenja platforme LWL UP.', '/pravila')
 
 const SECTIONS = [
   {
