@@ -7,16 +7,29 @@ import type { SetPlanRow } from './types'
  *
  * Primarni lift: linearno od kilaže na početku bloka do kilaže na kraju, po
  * tjednima, zaokruženo na 2.5 kg. Trener smije bilo koji tjedan pregaziti ručnim
- * upisom top seta (week_overrides) — tada taj tjedan koristi njegovu kilažu.
+ * upisom top seta (weekOverrides) — tada taj tjedan koristi njegovu kilažu.
  *
- * Sekundarni lift: 1RM varijacije = natjecateljski 1RM × postotak varijacije
- * (lift-variations.ts, isti izvor koji koristi i kalkulator), a kilaža po tjednu
- * ide kroz RPE tablicu za zadani broj ponavljanja, s RPE-om koji linearno raste
- * od početnog do završnog.
+ * Dodatni liftovi (sekundarni, tercijarni… — trener ih ima i po četiri tjedno):
+ * 1RM varijacije = natjecateljski 1RM × postotak varijacije (lift-variations.ts,
+ * isti izvor koji koristi i RPE tablica), a kilaža po tjednu ide kroz RPE tablicu
+ * za zadani broj ponavljanja, s RPE-om koji linearno raste od početnog do završnog.
  *
- * Backoff serije: svaka sljedeća serija je postotak PRETHODNE (kaskadno), što je
- * točno ono što set_plan već podržava (mode 'backoff', ref = prethodna serija).
+ * Serije: svaka sljedeća je postotak PRETHODNE (kaskadno) — ispod 100 % je pad
+ * (backoff), iznad 100 % je skok (ascending). To set_plan već podržava.
  */
+
+export type ExtraLift = {
+  /** stabilan ključ liste (React) — ne dolazi iz baze */
+  id: string
+  exerciseId: string | null
+  exerciseName: string | null
+  oneRm: number | null
+  reps: number
+  startRpe: number | null
+  endRpe: number | null
+  backoffSets: number
+  backoffPct: number
+}
 
 export type LiftPlan = {
   weeks: number
@@ -26,14 +39,7 @@ export type LiftPlan = {
   primaryReps: number
   primaryBackoffSets: number
   primaryBackoffPct: number
-  secondaryExerciseId: string | null
-  secondaryExerciseName: string | null
-  secondary1rm: number | null
-  secondaryReps: number
-  secondaryStartRpe: number | null
-  secondaryEndRpe: number | null
-  secondaryBackoffSets: number
-  secondaryBackoffPct: number
+  extras: ExtraLift[]
   weekOverrides: Record<string, number>
 }
 
@@ -42,19 +48,54 @@ export type WeekRow = {
   primaryKg: number | null
   /** kilaža dolazi iz ručnog upisa, ne iz izračuna */
   primaryManual: boolean
-  secondaryKg: number | null
-  secondaryRpe: number | null
+  /** po jedan unos za svaki dodatni lift, istim redoslijedom kao plan.extras */
+  extras: { kg: number | null; rpe: number | null }[]
 }
+
+const uid = () =>
+  (globalThis.crypto?.randomUUID?.() ?? `x${Date.now()}${Math.random().toString(36).slice(2, 8)}`)
+
+export const newExtra = (): ExtraLift => ({
+  id: uid(),
+  exerciseId: null, exerciseName: null, oneRm: null,
+  reps: 3, startRpe: null, endRpe: null,
+  backoffSets: 0, backoffPct: 92.5,
+})
 
 export const emptyPlan = (weeks: number): LiftPlan => ({
   weeks,
   primary1rm: null, startKg: null, endKg: null,
   primaryReps: 3, primaryBackoffSets: 0, primaryBackoffPct: 92.5,
-  secondaryExerciseId: null, secondaryExerciseName: null, secondary1rm: null,
-  secondaryReps: 3, secondaryStartRpe: null, secondaryEndRpe: null,
-  secondaryBackoffSets: 0, secondaryBackoffPct: 92.5,
+  extras: [],
   weekOverrides: {},
 })
+
+/** Iz baze (jsonb) u tipiziranu listu — nedostajuće vrijednosti dobiju zadane. */
+export function extrasFromJson(raw: unknown, nameOf: (id: string) => string | null): ExtraLift[] {
+  if (!Array.isArray(raw)) return []
+  return raw.map((e: any) => {
+    const exerciseId = e?.exerciseId ?? null
+    return {
+      id: e?.id ?? uid(),
+      exerciseId,
+      exerciseName: exerciseId ? nameOf(exerciseId) : null,
+      oneRm: e?.oneRm != null ? Number(e.oneRm) : null,
+      reps: e?.reps != null ? Number(e.reps) : 3,
+      startRpe: e?.startRpe != null ? Number(e.startRpe) : null,
+      endRpe: e?.endRpe != null ? Number(e.endRpe) : null,
+      backoffSets: e?.backoffSets != null ? Number(e.backoffSets) : 0,
+      backoffPct: e?.backoffPct != null ? Number(e.backoffPct) : 92.5,
+    }
+  })
+}
+
+/** Natrag u jsonb — ime vježbe se ne sprema, izvodi se iz exerciseId. */
+export const extrasToJson = (extras: ExtraLift[]) =>
+  extras.map(e => ({
+    id: e.id, exerciseId: e.exerciseId, oneRm: e.oneRm, reps: e.reps,
+    startRpe: e.startRpe, endRpe: e.endRpe,
+    backoffSets: e.backoffSets, backoffPct: e.backoffPct,
+  }))
 
 /** Linearno od početne do završne kilaže: 1. tjedan = početak, zadnji = kraj. */
 export function rampKg(start: number, end: number, week: number, weeks: number): number {
@@ -70,15 +111,19 @@ export function rampRpe(start: number, end: number, week: number, weeks: number)
 }
 
 /** 1RM varijacije iz natjecateljskog 1RM-a; null ako varijacija nema zadan postotak. */
-export function autoSecondary1rm(primary1rm: number | null, exerciseName: string | null): number | null {
+export function autoExtra1rm(primary1rm: number | null, exerciseName: string | null): number | null {
   const pct = pctForExercise(exerciseName)
   if (!primary1rm || !pct) return null
   return roundToPlate(primary1rm * pct / 100)
 }
 
+/** 1RM koji se stvarno koristi za dodatni lift: ručni ako postoji, inače izračunat. */
+export const extra1rm = (plan: LiftPlan, e: ExtraLift): number | null =>
+  e.oneRm ?? autoExtra1rm(plan.primary1rm, e.exerciseName)
+
 /**
  * set_plan za jednu vježbu: prva serija je top set (ručna kilaža), a svaka
- * sljedeća je `pct` % prethodne. Bez backoff serija vraća samo top set.
+ * sljedeća je `pct` % prethodne. Bez dodatnih serija vraća samo top set.
  */
 export function backoffRows(backoffSets: number, pct: number): SetPlanRow[] {
   const rows: SetPlanRow[] = [{ mode: 'manual', pct, ref: 1 }]
@@ -88,8 +133,8 @@ export function backoffRows(backoffSets: number, pct: number): SetPlanRow[] {
 
 /** Kilaže po tjednima — točno ono što se prikaže u tablici i upiše u blok. */
 export function planWeeks(plan: LiftPlan): WeekRow[] {
+  const oneRms = plan.extras.map(e => extra1rm(plan, e))
   const out: WeekRow[] = []
-  const sec1rm = plan.secondary1rm ?? autoSecondary1rm(plan.primary1rm, plan.secondaryExerciseName)
 
   for (let w = 1; w <= Math.max(0, plan.weeks); w++) {
     const override = plan.weekOverrides[String(w)]
@@ -101,12 +146,13 @@ export function planWeeks(plan: LiftPlan): WeekRow[] {
         ? rampKg(plan.startKg, plan.endKg, w, plan.weeks)
         : null
 
-    const rpe = plan.secondaryStartRpe != null && plan.secondaryEndRpe != null
-      ? rampRpe(plan.secondaryStartRpe, plan.secondaryEndRpe, w, plan.weeks)
-      : null
-    const secondaryKg = sec1rm != null && rpe != null ? weightFromRpe(sec1rm, plan.secondaryReps, rpe) : null
+    const extras = plan.extras.map((e, i) => {
+      const rpe = e.startRpe != null && e.endRpe != null ? rampRpe(e.startRpe, e.endRpe, w, plan.weeks) : null
+      const oneRm = oneRms[i]
+      return { kg: oneRm != null && rpe != null ? weightFromRpe(oneRm, e.reps, rpe) : null, rpe }
+    })
 
-    out.push({ week: w, primaryKg, primaryManual: hasOverride, secondaryKg, secondaryRpe: rpe })
+    out.push({ week: w, primaryKg, primaryManual: hasOverride, extras })
   }
   return out
 }
@@ -115,11 +161,14 @@ export function planWeeks(plan: LiftPlan): WeekRow[] {
 export function planReady(plan: LiftPlan): { ok: boolean; reason?: string } {
   if (!plan.weeks) return { ok: false, reason: 'Blok nema tjedana.' }
   if (plan.startKg == null || plan.endKg == null) return { ok: false, reason: 'Upiši kilažu na početku i na kraju bloka.' }
-  if (plan.secondaryExerciseId) {
-    const sec1rm = plan.secondary1rm ?? autoSecondary1rm(plan.primary1rm, plan.secondaryExerciseName)
-    if (sec1rm == null) return { ok: false, reason: 'Sekundarni lift nema 1RM — upiši ga ili upiši natjecateljski 1RM.' }
-    if (plan.secondaryStartRpe == null || plan.secondaryEndRpe == null) {
-      return { ok: false, reason: 'Upiši početni i završni RPE za sekundarni lift.' }
+
+  for (const [i, e] of plan.extras.entries()) {
+    if (!e.exerciseId) return { ok: false, reason: `${i + 1}. dodatni lift nema odabranu vježbu.` }
+    if (extra1rm(plan, e) == null) {
+      return { ok: false, reason: `${e.exerciseName ?? `${i + 1}. dodatni lift`}: nedostaje 1RM — upiši ga ili upiši natjecateljski 1RM.` }
+    }
+    if (e.startRpe == null || e.endRpe == null) {
+      return { ok: false, reason: `${e.exerciseName ?? `${i + 1}. dodatni lift`}: upiši početni i završni RPE.` }
     }
   }
   return { ok: true }

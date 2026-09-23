@@ -1574,7 +1574,7 @@ export function AthletePanel({
                   <TrendingUp size={13} /><span className="block-btn-label"> PROJEKCIJE</span>
                 </button>
               )}
-              {showProjections && <BlockProjectionsModal athleteId={athlete.id} blockId={block.id} blockName={block.name} canEdit onClose={() => setShowProjections(false)} />}
+              {showProjections && <BlockProjectionsModal athleteId={athlete.id} blockId={block.id} blockName={block.name} canEdit onApplied={loadData} onClose={() => setShowProjections(false)} />}
               <button onClick={copyBlock} className="block-action-btn"
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
                 onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = '#111113' }}

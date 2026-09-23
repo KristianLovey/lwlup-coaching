@@ -14,6 +14,17 @@ import { LiftPriorityView } from './training-priority'
 import { cacheSet, meetKeys } from '@/lib/meetCache'
 
 const supabase = createClient()
+
+// Stablo bloka — samo kolone koje UI stvarno čita. Prije je bio select('*') na
+// svakoj razini (a u switchBlock i exercise:exercises(*)), što je vuklo
+// created_at/updated_at/video_url i notes vježbe koje nitko ne prikazuje.
+const BLOCK_SELECT = 'id, athlete_id, name, start_date, end_date, goal, status, notes, '
+  + 'weeks(id, block_id, week_number, start_date, end_date, notes, '
+  + 'workouts(id, week_id, athlete_id, day_name, workout_date, completed, completion_date, notes, overall_rpe, duration_minutes, '
+  + 'workout_exercises(id, workout_id, exercise_id, exercise_order, planned_sets, planned_reps, planned_weight_kg, '
+  + 'planned_rpe, planned_rest_seconds, planned_tempo, target_rpe, coach_note, actual_sets, actual_reps, '
+  + 'actual_weight_kg, actual_rpe, actual_note, notes, completed, set_plan, '
+  + 'exercise:exercises(id, name, category))))'
 const HubTab = dynamic(() => import('./training-hub').then(module => module.HubTab), { ssr: false, loading: TrainingLoader })
 const MeetDayTab = dynamic(() => import('./training-meet').then(module => module.MeetDayTab), { ssr: false, loading: TrainingLoader })
 
@@ -90,17 +101,6 @@ export default function TrainingPage() {
         if (!uid) { setError('Nisi prijavljen/a.'); setLoading(false); return }
         setUserId(uid)
 
-        // Prefetch Meet Day data in background so the tab opens instantly
-        Promise.all([
-          supabase.from('competitions').select('id,name,date,location,status').order('date', { ascending: false }),
-          supabase.from('meet_attempts').select('*').eq('athlete_id', uid).order('created_at', { ascending: false }),
-          supabase.from('lifters').select('body_weight, sex').eq('id', uid).single(),
-        ]).then(([comps, atts, prof]) => {
-          if (comps.data)  cacheSet(meetKeys.competitions(),  comps.data, 5 * 60_000)
-          if (atts.data)   cacheSet(meetKeys.attempts(uid),   atts.data,  30_000)
-          if (prof.data)   cacheSet(meetKeys.profile(uid),    prof.data,  2 * 60_000)
-        })
-
         const CACHE_KEY = `lwl:training:${uid}`
         let hadCache = false
         try {
@@ -128,14 +128,12 @@ export default function TrainingPage() {
 
         const [
           { data: profile },
-          { data: exData, error: exErr },
           { data: rawBlock, error: blockErr },
           { data: ab, error: abErr },
         ] = await Promise.all([
           supabase.from('lifters').select('full_name, role, avatar_icon').eq('id', uid).single(),
-          supabase.from('exercises').select('id, name, category, notes').order('category').order('name'),
           supabase.from('blocks')
-            .select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(id, name, category, notes))))')
+            .select(BLOCK_SELECT)
             .eq('athlete_id', uid).eq('status', 'active')
             .order('created_at', { ascending: false }).limit(1).maybeSingle(),
           supabase.from('blocks').select('id, name, status, start_date, end_date')
@@ -155,7 +153,11 @@ export default function TrainingPage() {
         setIsCoach(isCoachVal)
         if (role === 'admin' || role === 'trener') setUserRole(role as 'admin' | 'trener')
         setAvatarIcon(profile?.avatar_icon ?? 'barbell')
-        if (!exErr) setExercises(exData ?? []) // greška ne smije obrisati popis vježbi iz keša
+        // katalog treba samo biraču vježbi (admin) — dohvaća se tek ako je uređivanje uključeno
+        if (canEdit) {
+          supabase.from('exercises').select('id, name, category').order('category').order('name')
+            .then(({ data, error }) => { if (!error) setExercises((data ?? []) as Exercise[]) })
+        }
         setAllBlocks((ab ?? []) as BlockSummary[])
 
         // Fallback: nema bloka sa statusom 'active' (npr. plan kopiran iz predloška ostaje
@@ -163,7 +165,7 @@ export default function TrainingPage() {
         let blockData = rawBlock
         if (!blockData && (ab?.length ?? 0) > 0) {
           const { data: fb, error: fbErr } = await supabase.from('blocks')
-            .select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(id, name, category, notes))))')
+            .select(BLOCK_SELECT)
             .eq('id', (ab as BlockSummary[])[0].id).maybeSingle()
           if (fbErr) { fetchFailed(); return }
           blockData = fb
@@ -182,7 +184,7 @@ export default function TrainingPage() {
 
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify({
-            block: blockData, exercises: exData, allBlocks: ab,
+            block: blockData, allBlocks: ab,
             athleteName: athleteNameVal, isAdmin: isAdminVal, isCoach: isCoachVal,
             userRole: isAdminVal ? role : undefined, avatarIcon: profile?.avatar_icon ?? 'barbell',
           }))
@@ -191,6 +193,18 @@ export default function TrainingPage() {
         if (blockData?.weeks) {
           injectSetProgress(blockData, uid).then(injected => setBlock(injected))
         }
+
+        // Meet Day u pozadini — tek sad, da na prvom prikazu ne otima veze
+        // kritičnim upitima (prije je kretao prvi, i prije samog bloka).
+        Promise.all([
+          supabase.from('competitions').select('id,name,date,location,status').order('date', { ascending: false }),
+          supabase.from('meet_attempts').select('*').eq('athlete_id', uid).order('created_at', { ascending: false }),
+          supabase.from('lifters').select('body_weight, sex').eq('id', uid).single(),
+        ]).then(([comps, atts, prof]) => {
+          if (comps.data)  cacheSet(meetKeys.competitions(),  comps.data, 5 * 60_000)
+          if (atts.data)   cacheSet(meetKeys.attempts(uid),   atts.data,  30_000)
+          if (prof.data)   cacheSet(meetKeys.profile(uid),    prof.data,  2 * 60_000)
+        })
       } catch { setError('Greška pri učitavanju.') } finally { setLoading(false); setRefreshing(false) }
     }
     init()
@@ -287,7 +301,7 @@ export default function TrainingPage() {
     await supabase.from('blocks').update({ status: 'active' }).eq('id', blockId)
     setAllBlocks(bs => bs.map(b => b.id === blockId ? { ...b, status: 'active' } : b))
 
-    const { data } = await supabase.from('blocks').select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))').eq('id', blockId).single()
+    const { data } = await supabase.from('blocks').select(BLOCK_SELECT).eq('id', blockId).single()
     if (data) {
       data.weeks?.sort((a: Week, b: Week) => a.week_number - b.week_number)
       data.weeks?.forEach((w: Week) => {

@@ -25,7 +25,16 @@ const adminClient = createClient(
 
 type SetPlanRow = { mode: 'manual' | 'backoff'; pct: number; ref: number }
 type ExercisePlan = { exerciseId: string; kg: number | null; reps: number; sets: number; rpe: number | null; setPlan: SetPlanRow[] }
-type WeekPlan = { week: number; primary: ExercisePlan | null; secondary: ExercisePlan | null }
+type WeekPlan = {
+  week: number
+  entries?: (ExercisePlan | null)[]
+  /** stari oblik — podrzan dok se ne osvjeze otvorene sesije */
+  primary?: ExercisePlan | null
+  secondary?: ExercisePlan | null
+}
+
+const entriesOf = (wp: WeekPlan): ExercisePlan[] =>
+  (wp.entries ?? [wp.primary, wp.secondary]).filter((e): e is ExercisePlan => !!e)
 
 const norm = (s: string | null | undefined) => (s ?? '').trim().toLowerCase()
 
@@ -71,8 +80,8 @@ export async function POST(req: NextRequest) {
     // Dan u kojem lift već živi — po njemu se slaže tjedan u kojem vježba fali
     const refDay = new Map<string, string>()
     for (const wp of weeks) {
-      for (const p of [wp.primary, wp.secondary]) {
-        if (!p || refDay.has(p.exerciseId)) continue
+      for (const p of entriesOf(wp)) {
+        if (refDay.has(p.exerciseId)) continue
         for (const wo of byWeek.get(wp.week) ?? []) {
           if (wo.workout_exercises?.some(we => we.exercise_id === p.exerciseId)) {
             refDay.set(p.exerciseId, norm(wo.day_name))
@@ -85,7 +94,13 @@ export async function POST(req: NextRequest) {
     let updated = 0, created = 0
     const skipped: string[] = []
 
-    const applyOne = async (weekNo: number, p: ExercisePlan | null) => {
+    const updates: { id: string; fields: Record<string, unknown> }[] = []
+    const inserts: Record<string, unknown>[] = []
+    // koliko je redova vec planirano u pojedini trening — da dva nova (primarni i
+    // sekundarni u istom danu) ne dobiju isti exercise_order
+    const nextOrder = new Map<string, number>()
+
+    const planOne = (weekNo: number, p: ExercisePlan | null) => {
       if (!p) return
       const workouts = byWeek.get(weekNo) ?? []
       if (workouts.length === 0) { skipped.push(`tjedan ${weekNo}: nema treninga`); return }
@@ -101,24 +116,37 @@ export async function POST(req: NextRequest) {
       const host = workouts.find(wo => wo.workout_exercises?.some(we => we.exercise_id === p.exerciseId))
       if (host) {
         const we = host.workout_exercises.find(x => x.exercise_id === p.exerciseId)!
-        const { error } = await adminClient.from('workout_exercises').update(fields).eq('id', we.id)
-        if (error) { skipped.push(`tjedan ${weekNo}: ${error.message}`); return }
-        updated++
+        updates.push({ id: we.id, fields })
         return
       }
 
       const day = refDay.get(p.exerciseId)
       const target = (day ? workouts.find(wo => norm(wo.day_name) === day) : null) ?? workouts[0]
-      const order = Math.max(0, ...(target.workout_exercises ?? []).map(x => x.exercise_order ?? 0)) + 1
-      const { error } = await adminClient.from('workout_exercises')
-        .insert({ workout_id: target.id, exercise_id: p.exerciseId, exercise_order: order, ...fields })
-      if (error) { skipped.push(`tjedan ${weekNo}: ${error.message}`); return }
-      created++
+      if (!nextOrder.has(target.id)) {
+        nextOrder.set(target.id, Math.max(0, ...(target.workout_exercises ?? []).map(x => x.exercise_order ?? 0)) + 1)
+      }
+      const order = nextOrder.get(target.id)!
+      nextOrder.set(target.id, order + 1)
+      inserts.push({ workout_id: target.id, exercise_id: p.exerciseId, exercise_order: order, ...fields })
     }
 
     for (const wp of weeks) {
-      await applyOne(wp.week, wp.primary)
-      await applyOne(wp.week, wp.secondary)
+      for (const p of entriesOf(wp)) planOne(wp.week, p)
+    }
+
+    const results = await Promise.all(
+      updates.map(u => adminClient.from('workout_exercises').update(u.fields).eq('id', u.id)),
+    )
+    results.forEach((r, i) => {
+      if (r.error) skipped.push(`izmjena ${i + 1}: ${r.error.message}`)
+      else updated++
+    })
+
+    if (inserts.length > 0) {
+      // broj redova je poznat unaprijed, pa ne ovisimo o count opciji klijenta
+      const { error } = await adminClient.from('workout_exercises').insert(inserts)
+      if (error) skipped.push(`dodavanje vjezbi: ${error.message}`)
+      else created += inserts.length
     }
 
     return NextResponse.json({ data: { updated, created, skipped } })
