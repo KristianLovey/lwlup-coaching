@@ -162,7 +162,9 @@ export default function TrainingPage() {
 
         // Fallback: nema bloka sa statusom 'active' (npr. plan kopiran iz predloška ostaje
         // 'planned') → prikaži najnoviji blok koji lifter ima, da uvijek nešto vidi.
-        let blockData = rawBlock
+        // BLOCK_SELECT je spojen iz dijelova pa ga supabase-js ne zna parsirati
+        // (tip ispadne GenericStringError) — oblik stabla opisuju Week/Workout tipovi
+        let blockData: any = rawBlock
         if (!blockData && (ab?.length ?? 0) > 0) {
           const { data: fb, error: fbErr } = await supabase.from('blocks')
             .select(BLOCK_SELECT)
@@ -301,7 +303,8 @@ export default function TrainingPage() {
     await supabase.from('blocks').update({ status: 'active' }).eq('id', blockId)
     setAllBlocks(bs => bs.map(b => b.id === blockId ? { ...b, status: 'active' } : b))
 
-    const { data } = await supabase.from('blocks').select(BLOCK_SELECT).eq('id', blockId).single()
+    const { data: raw } = await supabase.from('blocks').select(BLOCK_SELECT).eq('id', blockId).single()
+    const data: any = raw
     if (data) {
       data.weeks?.sort((a: Week, b: Week) => a.week_number - b.week_number)
       data.weeks?.forEach((w: Week) => {
