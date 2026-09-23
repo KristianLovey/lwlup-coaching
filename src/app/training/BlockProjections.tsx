@@ -70,9 +70,12 @@ async function loadProjections(athleteId: string, blockId: string): Promise<Load
     supabase.from('weeks').select('week_number').eq('block_id', blockId),
     // Pripadnost bloku isključivo relacijom workout → week → block (datumi blokova su nepouzdani)
     supabase.from('workout_exercises')
-      .select('id, planned_reps, exercises(id, name, category), workouts!inner(athlete_id, weeks!inner(week_number, block_id))')
+      // setovi dolaze u istom upitu — prije je to bio drugi, uzastopni round-trip
+      .select('id, planned_reps, exercises(id, name, category), workouts!inner(athlete_id, weeks!inner(week_number, block_id)), set_logs(weight_kg, reps, rpe, completed)')
       .eq('workouts.athlete_id', athleteId)
-      .eq('workouts.weeks.block_id', blockId),
+      .eq('workouts.weeks.block_id', blockId)
+      .eq('set_logs.completed', true)
+      .not('set_logs.weight_kg', 'is', null),
     supabase.from('exercises').select('id, name, category')
       .in('category', ['Squat', 'Bench', 'Deadlift', 'Squat Variation', 'Bench Variation', 'Deadlift Variation']),
   ])
@@ -115,6 +118,7 @@ async function loadProjections(athleteId: string, blockId: string): Promise<Load
   // comp vježbe koje su stvarno u bloku + najteži odrađeni set po tjednu
   const compInBlock: Partial<Record<LiftKey, ExRow>> = {}
   const meta = new Map<string, { key: LiftKey; week: number; plannedReps: string | null }>()
+  const sets: any[] = []
   for (const r of (wesRes.data ?? []) as any[]) {
     const ex = one<any>(r.exercises)
     const wk = one<any>(one<any>(r.workouts)?.weeks)
@@ -124,6 +128,7 @@ async function loadProjections(athleteId: string, blockId: string): Promise<Load
     if (COMP_CATEGORIES.has(ex.category) && !compInBlock[key]) compInBlock[key] = { id: ex.id, name: ex.name, category: ex.category }
     if (!COMP_CATEGORIES.has(ex.category)) continue
     meta.set(r.id, { key, week: wk.week_number, plannedReps: r.planned_reps })
+    for (const sl of (r.set_logs ?? []) as any[]) sets.push({ ...sl, workout_exercise_id: r.id })
   }
   // blok još nema taj lift → zadana comp vježba iz baze
   for (const k of Object.keys(lifts) as LiftKey[]) {
@@ -133,17 +138,9 @@ async function loadProjections(athleteId: string, blockId: string): Promise<Load
     }
   }
 
-  if (meta.size > 0) {
-    const { data: sets, error } = await supabase.from('set_logs')
-      .select('workout_exercise_id, weight_kg, reps, rpe')
-      .in('workout_exercise_id', [...meta.keys()])
-      .eq('completed', true)
-      .not('weight_kg', 'is', null)
-      .limit(2000)
-    if (error) throw error
-
+  if (sets.length > 0) {
     const best = new Map<string, WeekTop & { key: LiftKey }>()
-    for (const s of (sets ?? []) as any[]) {
+    for (const s of sets) {
       const m = meta.get(s.workout_exercise_id)
       if (!m) continue
       const kg = Number(s.weight_kg)
@@ -176,6 +173,9 @@ const inputBase: CSSProperties = { background: 'var(--t-s2)', border: '1px solid
 const th: CSSProperties = { fontSize: '0.5rem', letterSpacing: '0.16em', color: '#777', fontWeight: 700, padding: '6px 8px', whiteSpace: 'nowrap', textAlign: 'center' }
 const td: CSSProperties = { padding: '7px 8px', textAlign: 'center', whiteSpace: 'nowrap', fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.8rem', color: '#e8e8e8', fontVariantNumeric: 'tabular-nums' }
 const REPS_COLS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+/** Walter ih zove po redu: primarni, sekundarni, tercijarni, kvartarni… */
+const ORDINAL = ['SEKUNDARNI', 'TERCIJARNI', 'KVARTARNI', 'KVINTARNI']
+const extraLabel = (i: number) => ORDINAL[i] ?? `${i + 2}. LIFT`
 
 function RowStat({ label, value, tone }: { label: string; value: ReactNode; tone?: string }) {
   return (
@@ -371,7 +371,7 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
         return (
           <div key={e.id} style={{ border: '1px solid var(--t-border)', borderRadius: '10px', padding: '12px', marginTop: '14px', background: 'rgba(0,0,0,0.18)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '9px' }}>
-              <span style={{ ...eyebrow, color: '#f0f0f0', fontSize: '0.56rem' }}>{i + 2}. LIFT · {label}</span>
+              <span style={{ ...eyebrow, color: '#f0f0f0', fontSize: '0.56rem' }}>{extraLabel(i)} · {label}</span>
               <button type="button" onClick={() => removeExtra(e.id)} aria-label="Ukloni lift"
                 style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 9px', borderRadius: '7px', background: 'transparent', border: '1px solid var(--t-border)', color: '#888', cursor: 'pointer', fontFamily: 'var(--fm)', fontSize: '0.5rem', letterSpacing: '0.14em', fontWeight: 700 }}>
                 <Trash2 size={11} /> UKLONI
@@ -409,7 +409,7 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
       })}
       <button type="button" onClick={addExtra}
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', width: '100%', marginTop: '12px', padding: '11px', borderRadius: '10px', background: 'transparent', border: '1px dashed var(--t-border-hi)', color: '#aaa', cursor: 'pointer', fontFamily: 'var(--fm)', fontSize: '0.58rem', letterSpacing: '0.18em', fontWeight: 700 }}>
-        <Plus size={13} /> DODAJ LIFT
+        <Plus size={13} /> DODAJ {extraLabel(plan.extras.length)} LIFT
       </button>
 
       {/* RASPORED PO TJEDNIMA */}
@@ -452,7 +452,7 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
               {plan.extras.map((e, i) => (
                 <tr key={e.id} style={{ borderTop: '1px solid var(--t-border)' }}>
                   <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#888', maxWidth: '130px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {e.exerciseName ?? (i + 2) + '. LIFT'}
+                    {e.exerciseName ?? extraLabel(i)}
                   </td>
                   {rows.map(r => {
                     const w = r.extras[i]

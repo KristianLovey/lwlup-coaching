@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Check, Search,
-  GripVertical, Loader2, LogOut, Lock, TrendingDown,
+  GripVertical, Loader2, LogOut, Lock, TrendingDown, TrendingUp,
   User, Shield, X, Dumbbell, BarChart2, MessageSquare, Copy, CalendarDays, ArrowUp, ArrowDown, Home,
   Flame, Zap, Rocket, Gauge, Activity, Trophy, Medal, Crown, Star, Award, Gem,
   Target, Crosshair, Sword, Compass, Mountain, Anchor, Skull, Sparkles, Brain,
@@ -1233,7 +1233,7 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
                       {compVal != null ? compVal : '—'}
                     </span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', fontSize: '0.4rem', color: 'rgba(107,140,255,0.85)', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.04em', background: 'rgba(107,140,255,0.12)', borderRadius: '3px', padding: '1px 4px' }}>
-                      <TrendingDown size={7} strokeWidth={2.5} />{row.pct}%
+                      {row.pct > 100 ? <TrendingUp size={7} strokeWidth={2.5} /> : <TrendingDown size={7} strokeWidth={2.5} />}{row.pct}%
                     </span>
                   </div>
                 ) : (
