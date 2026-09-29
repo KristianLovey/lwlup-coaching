@@ -74,7 +74,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|slike|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  // Samo rute koje proxy stvarno gatea. Prije je matcher hvatao SVE stranice, pa je
+  // svaka javna posjeta (naslovnica, /team, /records…) plaćala mrežni poziv na
+  // Supabase Auth API kroz getUser(). Na javnim rutama nema što provjeravati, a
+  // osvježavanje sessiona u pregledniku ionako radi supabase klijent.
+  matcher: ['/training/:path*', '/admin/:path*', '/trainer/:path*', '/auth'],
 }
