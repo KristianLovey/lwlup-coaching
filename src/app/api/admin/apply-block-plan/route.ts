@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { buildWrites, type WeekPlan, type WoRow } from './layout'
 
 /**
  * Upisuje izračunati plan bloka (planer kilaža) u same vježbe.
@@ -7,6 +8,10 @@ import { createClient } from '@supabase/supabase-js'
  * Klijent šalje gotove kilaže po tjednima — one iste koje trener vidi u tablici —
  * pa je upisano točno ono što je na ekranu. Ruta samo pronalazi vježbu u svakom
  * tjednu i postavlja kilažu, ponavljanja, broj serija i backoff (set_plan).
+ *
+ * Ista vježba smije doći dvaput u istom tjednu (top set ponavljanja + fatigue
+ * single). Unosi stižu u željenom redoslijedu, svaki dobiva svoj red u bloku, a
+ * exercise_order se dodjeljuje tek kad su svi unosi tog dana složeni.
  *
  * Ako vježba u nekom tjednu fali, dodaje se u dan istog naziva kao u tjednu gdje
  * lift postoji (dani se zovu neujednačeno — "heavy", "Heavy", "vol+tech" — pa se
@@ -22,21 +27,6 @@ const adminClient = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   { auth: { autoRefreshToken: false, persistSession: false } },
 )
-
-type SetPlanRow = { mode: 'manual' | 'backoff'; pct: number; ref: number }
-type ExercisePlan = { exerciseId: string; kg: number | null; reps: number; sets: number; rpe: number | null; setPlan: SetPlanRow[] }
-type WeekPlan = {
-  week: number
-  entries?: (ExercisePlan | null)[]
-  /** stari oblik — podrzan dok se ne osvjeze otvorene sesije */
-  primary?: ExercisePlan | null
-  secondary?: ExercisePlan | null
-}
-
-const entriesOf = (wp: WeekPlan): ExercisePlan[] =>
-  (wp.entries ?? [wp.primary, wp.secondary]).filter((e): e is ExercisePlan => !!e)
-
-const norm = (s: string | null | undefined) => (s ?? '').trim().toLowerCase()
 
 export async function POST(req: NextRequest) {
   try {
@@ -67,72 +57,17 @@ export async function POST(req: NextRequest) {
     // Cijeli blok odjednom: tjedni → treninzi → vježbe
     const { data: weekRows, error: wErr } = await adminClient
       .from('weeks')
-      .select('id, week_number, workouts(id, day_name, workout_exercises(id, exercise_id, exercise_order))')
+      .select('id, week_number, workouts(id, day_name, workout_exercises(id, exercise_id, exercise_order, planned_reps))')
       .eq('block_id', blockId)
     if (wErr) return NextResponse.json({ error: wErr.message }, { status: 500 })
 
-    type WoRow = { id: string; day_name: string | null; workout_exercises: { id: string; exercise_id: string; exercise_order: number }[] }
     const byWeek = new Map<number, WoRow[]>()
     for (const w of (weekRows ?? []) as any[]) {
       byWeek.set(Number(w.week_number), (w.workouts ?? []) as WoRow[])
     }
 
-    // Dan u kojem lift već živi — po njemu se slaže tjedan u kojem vježba fali
-    const refDay = new Map<string, string>()
-    for (const wp of weeks) {
-      for (const p of entriesOf(wp)) {
-        if (refDay.has(p.exerciseId)) continue
-        for (const wo of byWeek.get(wp.week) ?? []) {
-          if (wo.workout_exercises?.some(we => we.exercise_id === p.exerciseId)) {
-            refDay.set(p.exerciseId, norm(wo.day_name))
-            break
-          }
-        }
-      }
-    }
-
+    const { updates, inserts, skipped } = buildWrites(weeks, byWeek)
     let updated = 0, created = 0
-    const skipped: string[] = []
-
-    const updates: { id: string; fields: Record<string, unknown> }[] = []
-    const inserts: Record<string, unknown>[] = []
-    // koliko je redova vec planirano u pojedini trening — da dva nova (primarni i
-    // sekundarni u istom danu) ne dobiju isti exercise_order
-    const nextOrder = new Map<string, number>()
-
-    const planOne = (weekNo: number, p: ExercisePlan | null) => {
-      if (!p) return
-      const workouts = byWeek.get(weekNo) ?? []
-      if (workouts.length === 0) { skipped.push(`tjedan ${weekNo}: nema treninga`); return }
-
-      const fields = {
-        planned_weight_kg: p.kg,
-        planned_reps: String(p.reps),
-        planned_sets: Math.max(1, p.sets),
-        target_rpe: p.rpe,
-        set_plan: { rows: p.setPlan },
-      }
-
-      const host = workouts.find(wo => wo.workout_exercises?.some(we => we.exercise_id === p.exerciseId))
-      if (host) {
-        const we = host.workout_exercises.find(x => x.exercise_id === p.exerciseId)!
-        updates.push({ id: we.id, fields })
-        return
-      }
-
-      const day = refDay.get(p.exerciseId)
-      const target = (day ? workouts.find(wo => norm(wo.day_name) === day) : null) ?? workouts[0]
-      if (!nextOrder.has(target.id)) {
-        nextOrder.set(target.id, Math.max(0, ...(target.workout_exercises ?? []).map(x => x.exercise_order ?? 0)) + 1)
-      }
-      const order = nextOrder.get(target.id)!
-      nextOrder.set(target.id, order + 1)
-      inserts.push({ workout_id: target.id, exercise_id: p.exerciseId, exercise_order: order, ...fields })
-    }
-
-    for (const wp of weeks) {
-      for (const p of entriesOf(wp)) planOne(wp.week, p)
-    }
 
     const results = await Promise.all(
       updates.map(u => adminClient.from('workout_exercises').update(u.fields).eq('id', u.id)),

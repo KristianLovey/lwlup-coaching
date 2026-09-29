@@ -18,6 +18,43 @@ import type { SetPlanRow } from './types'
  * (backoff), iznad 100 % je skok (ascending). To set_plan već podržava.
  */
 
+/**
+ * Drugi top set iste vježbe u istom danu — npr. serija ponavljanja pa fatigue
+ * single. Kilaža je postotak PRVOG top seta tog tjedna (iznad 100 % za single,
+ * ispod za lakši drugi ulazak). Ponavljanja su svoja, zato ovo u bloku završi
+ * kao zaseban red vježbe, a ne kao dodatna serija — planned_reps je jedna
+ * vrijednost po redu, pa bi se single inače prikazao kao 3 ponavljanja.
+ */
+export type TopSet2 = {
+  enabled: boolean
+  /** ponavljanja drugog top seta; 1 = single */
+  reps: number
+  /** postotak kilaže prvog top seta */
+  pct: number
+  /** true = ide PRIJE prvog top seta u danu (potenciranje), false = poslije (fatigue) */
+  before: boolean
+}
+
+export const newTop2 = (): TopSet2 => ({ enabled: false, reps: 1, pct: 105, before: false })
+
+export function top2FromJson(raw: unknown): TopSet2 {
+  const d = newTop2()
+  const t = raw as any
+  if (!t || typeof t !== 'object') return d
+  return {
+    enabled: !!t.enabled,
+    reps: t.reps != null ? Math.max(1, Math.round(Number(t.reps))) : d.reps,
+    pct: t.pct != null ? Number(t.pct) : d.pct,
+    before: !!t.before,
+  }
+}
+
+export const top2ToJson = (t: TopSet2) => ({ enabled: t.enabled, reps: t.reps, pct: t.pct, before: t.before })
+
+/** Kilaža drugog top seta: postotak prvog, zaokružen na ploču. Null ako je isključen. */
+export const top2Kg = (t: TopSet2, topKg: number | null): number | null =>
+  t.enabled && topKg != null && t.pct > 0 ? roundToPlate(topKg * t.pct / 100) : null
+
 export type ExtraLift = {
   /** stabilan ključ liste (React) — ne dolazi iz baze */
   id: string
@@ -29,6 +66,7 @@ export type ExtraLift = {
   endRpe: number | null
   backoffSets: number
   backoffPct: number
+  top2: TopSet2
 }
 
 export type LiftPlan = {
@@ -39,6 +77,7 @@ export type LiftPlan = {
   primaryReps: number
   primaryBackoffSets: number
   primaryBackoffPct: number
+  primaryTop2: TopSet2
   extras: ExtraLift[]
   weekOverrides: Record<string, number>
 }
@@ -48,8 +87,10 @@ export type WeekRow = {
   primaryKg: number | null
   /** kilaža dolazi iz ručnog upisa, ne iz izračuna */
   primaryManual: boolean
+  /** drugi top set primarnog lifta; null kad je isključen */
+  primaryTop2Kg: number | null
   /** po jedan unos za svaki dodatni lift, istim redoslijedom kao plan.extras */
-  extras: { kg: number | null; rpe: number | null }[]
+  extras: { kg: number | null; rpe: number | null; top2Kg: number | null }[]
 }
 
 const uid = () =>
@@ -60,12 +101,14 @@ export const newExtra = (): ExtraLift => ({
   exerciseId: null, exerciseName: null, oneRm: null,
   reps: 3, startRpe: null, endRpe: null,
   backoffSets: 0, backoffPct: 92.5,
+  top2: newTop2(),
 })
 
 export const emptyPlan = (weeks: number): LiftPlan => ({
   weeks,
   primary1rm: null, startKg: null, endKg: null,
   primaryReps: 3, primaryBackoffSets: 0, primaryBackoffPct: 92.5,
+  primaryTop2: newTop2(),
   extras: [],
   weekOverrides: {},
 })
@@ -85,6 +128,7 @@ export function extrasFromJson(raw: unknown, nameOf: (id: string) => string | nu
       endRpe: e?.endRpe != null ? Number(e.endRpe) : null,
       backoffSets: e?.backoffSets != null ? Number(e.backoffSets) : 0,
       backoffPct: e?.backoffPct != null ? Number(e.backoffPct) : 92.5,
+      top2: top2FromJson(e?.top2),
     }
   })
 }
@@ -95,6 +139,7 @@ export const extrasToJson = (extras: ExtraLift[]) =>
     id: e.id, exerciseId: e.exerciseId, oneRm: e.oneRm, reps: e.reps,
     startRpe: e.startRpe, endRpe: e.endRpe,
     backoffSets: e.backoffSets, backoffPct: e.backoffPct,
+    top2: top2ToJson(e.top2),
   }))
 
 /** Linearno od početne do završne kilaže: 1. tjedan = početak, zadnji = kraj. */
@@ -149,10 +194,15 @@ export function planWeeks(plan: LiftPlan): WeekRow[] {
     const extras = plan.extras.map((e, i) => {
       const rpe = e.startRpe != null && e.endRpe != null ? rampRpe(e.startRpe, e.endRpe, w, plan.weeks) : null
       const oneRm = oneRms[i]
-      return { kg: oneRm != null && rpe != null ? weightFromRpe(oneRm, e.reps, rpe) : null, rpe }
+      const kg = oneRm != null && rpe != null ? weightFromRpe(oneRm, e.reps, rpe) : null
+      return { kg, rpe, top2Kg: top2Kg(e.top2, kg) }
     })
 
-    out.push({ week: w, primaryKg, primaryManual: hasOverride, extras })
+    out.push({
+      week: w, primaryKg, primaryManual: hasOverride,
+      primaryTop2Kg: top2Kg(plan.primaryTop2, primaryKg),
+      extras,
+    })
   }
   return out
 }
@@ -170,6 +220,12 @@ export function planReady(plan: LiftPlan): { ok: boolean; reason?: string } {
     if (e.startRpe == null || e.endRpe == null) {
       return { ok: false, reason: `${e.exerciseName ?? `${i + 1}. dodatni lift`}: upiši početni i završni RPE.` }
     }
+    if (e.top2.enabled && !(e.top2.pct > 0)) {
+      return { ok: false, reason: `${e.exerciseName ?? `${i + 1}. dodatni lift`}: drugi top set nema postotak.` }
+    }
+  }
+  if (plan.primaryTop2.enabled && !(plan.primaryTop2.pct > 0)) {
+    return { ok: false, reason: 'Drugi top set primarnog lifta nema postotak.' }
   }
   return { ok: true }
 }

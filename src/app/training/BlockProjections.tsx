@@ -8,7 +8,8 @@ import { RPE_ROWS, weightFromRpe } from './training-setplan'
 import { COMP_CATEGORIES, LIFT_OF_CATEGORY, pctForExercise, type LiftK } from './lift-variations'
 import {
   autoExtra1rm, backoffRows, emptyPlan, extra1rm, extrasFromJson, extrasToJson,
-  newExtra, planReady, planWeeks, type ExtraLift, type LiftPlan,
+  newExtra, planReady, planWeeks, top2FromJson, top2ToJson,
+  type ExtraLift, type LiftPlan, type TopSet2,
 } from './block-planner-calc'
 
 /**
@@ -110,6 +111,7 @@ async function loadProjections(athleteId: string, blockId: string): Promise<Load
       primaryReps: p.primary_reps ?? 3,
       primaryBackoffSets: p.primary_backoff_sets ?? 0,
       primaryBackoffPct: n(p.primary_backoff_pct) ?? 92.5,
+      primaryTop2: top2FromJson(p.primary_top2),
       extras: extrasFromJson(p.extra_lifts, id => exById.get(id)?.name ?? null),
       weekOverrides: (p.week_overrides ?? {}) as Record<string, number>,
     }
@@ -239,6 +241,60 @@ function DirToggle({ pct, onChange }: { pct: number; onChange: (v: number) => vo
   )
 }
 
+/**
+ * Drugi top set iste vjezbe u istom danu — npr. serija ponavljanja pa fatigue
+ * single. Kilaza je postotak prvog top seta, pa se racuna i kad top set dolazi
+ * iz rucnog upisa. Prekidac po liftu bira ide li prije ili poslije top seta.
+ */
+function Top2Fields({ value, onChange, previewKg }: {
+  value: TopSet2; onChange: (patch: Partial<TopSet2>) => void; previewKg: number | null
+}) {
+  const on = value.enabled
+  const posBtn = (active: boolean): CSSProperties => ({
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px',
+    padding: '6px 9px', borderRadius: '7px', cursor: 'pointer', flex: 1, minWidth: 0,
+    background: active ? 'var(--t-s3)' : 'transparent',
+    border: `1px solid ${active ? '#22d3ee' : 'var(--t-border)'}`,
+    color: active ? '#22d3ee' : '#888',
+    fontFamily: 'var(--fm)', fontSize: '0.52rem', letterSpacing: '0.12em', fontWeight: 700,
+  })
+  return (
+    <div style={{ marginTop: '9px', padding: '10px', borderRadius: '9px', border: `1px solid ${on ? '#22d3ee44' : 'var(--t-border)'}`, background: on ? 'rgba(34,211,238,0.05)' : 'transparent' }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+        <input type="checkbox" checked={on} onChange={e => onChange({ enabled: e.target.checked })}
+          style={{ width: '15px', height: '15px', accentColor: '#22d3ee', cursor: 'pointer', flexShrink: 0 }} />
+        <span style={{ ...eyebrow, fontSize: '0.5rem', color: on ? '#22d3ee' : '#777' }}>DRUGI TOP SET</span>
+        {on && previewKg != null && (
+          <span style={{ marginLeft: 'auto', fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.78rem', color: '#22d3ee', fontVariantNumeric: 'tabular-nums' }}>
+            {fmtKg(previewKg)} kg <span style={{ color: '#666', fontSize: '0.6rem' }}>· 1. tj.</span>
+          </span>
+        )}
+      </label>
+      {on && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: '9px', marginTop: '9px' }}>
+            <NumField label="Ponavljanja" value={value.reps}
+              onCommit={v => onChange({ reps: Math.max(1, Math.round(v ?? 1)) })} />
+            <NumField label="% top seta" value={value.pct} suffix="%"
+              onCommit={v => onChange({ pct: v ?? 105 })} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '9px' }}>
+            <span style={{ ...eyebrow, fontSize: '0.45rem', letterSpacing: '0.12em' }}>Mjesto u danu</span>
+            <div style={{ display: 'flex', gap: '5px' }}>
+              <button type="button" style={posBtn(!value.before)} onClick={() => onChange({ before: false })} aria-pressed={!value.before}>
+                POSLIJE
+              </button>
+              <button type="button" style={posBtn(value.before)} onClick={() => onChange({ before: true })} aria-pressed={value.before}>
+                PRIJE
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 /** Broj serija — plus/minus, jer se u Excelu to klikalo strelicama. */
 function Stepper({ label, value, onChange, min = 0, max = 10 }: {
   label: string; value: number; onChange: (v: number) => void; min?: number; max?: number
@@ -292,6 +348,7 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
       primary_reps: plan.primaryReps,
       primary_backoff_sets: plan.primaryBackoffSets,
       primary_backoff_pct: plan.primaryBackoffPct,
+      primary_top2: top2ToJson(plan.primaryTop2),
       extra_lifts: extrasToJson(plan.extras),
       week_overrides: plan.weekOverrides,
     }, { onConflict: 'block_id,lift' })
@@ -309,23 +366,35 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
     setApply('busy'); setApplyMsg('')
     await save()
 
+    // Lift s dva top seta daje DVA reda iste vjezbe; redoslijed u nizu je
+    // redoslijed u danu, pa `before` odlucuje ide li single prije ili poslije.
+    const pairOf = (
+      exerciseId: string | null, kg: number | null, reps: number, backoffSets: number,
+      backoffPct: number, rpe: number | null, t2: TopSet2, t2Kg: number | null,
+    ) => {
+      if (exerciseId == null) return []
+      const main = kg == null ? null : {
+        exerciseId, kg, reps, sets: 1 + backoffSets, rpe,
+        setPlan: backoffRows(backoffSets, backoffPct),
+      }
+      const second = t2.enabled && t2Kg != null ? {
+        exerciseId, kg: t2Kg, reps: t2.reps, sets: 1, rpe: null,
+        setPlan: backoffRows(0, t2.pct),
+      } : null
+      return (t2.before ? [second, main] : [main, second]).filter(Boolean)
+    }
+
     const payload = {
       blockId,
       weeks: rows.map(r => ({
         week: r.week,
         entries: [
-          r.primaryKg == null ? null : {
-            exerciseId: compEx.id, kg: r.primaryKg, reps: plan.primaryReps,
-            sets: 1 + plan.primaryBackoffSets, rpe: null,
-            setPlan: backoffRows(plan.primaryBackoffSets, plan.primaryBackoffPct),
-          },
-          ...plan.extras.map((e, i) => {
+          ...pairOf(compEx.id, r.primaryKg, plan.primaryReps, plan.primaryBackoffSets,
+            plan.primaryBackoffPct, null, plan.primaryTop2, r.primaryTop2Kg),
+          ...plan.extras.flatMap((e, i) => {
             const w = r.extras[i]
-            return e.exerciseId == null || w?.kg == null ? null : {
-              exerciseId: e.exerciseId, kg: w.kg, reps: e.reps,
-              sets: 1 + e.backoffSets, rpe: w.rpe,
-              setPlan: backoffRows(e.backoffSets, e.backoffPct),
-            }
+            return pairOf(e.exerciseId, w?.kg ?? null, e.reps, e.backoffSets,
+              e.backoffPct, w?.rpe ?? null, e.top2, w?.top2Kg ?? null)
           }),
         ],
       })),
@@ -362,6 +431,8 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
         <NumField label="% prethodne serije" value={plan.primaryBackoffPct} suffix="%" onCommit={v => set({ primaryBackoffPct: v ?? 92.5 })} />
         <DirToggle pct={plan.primaryBackoffPct} onChange={v => set({ primaryBackoffPct: v })} />
       </div>
+      <Top2Fields value={plan.primaryTop2} previewKg={rows[0]?.primaryTop2Kg ?? null}
+        onChange={patch => set({ primaryTop2: { ...plan.primaryTop2, ...patch } })} />
 
       {/* DODATNI LIFTOVI — koliko god ih treba (npr. četiri bencha tjedno) */}
       {plan.extras.map((e, i) => {
@@ -404,6 +475,8 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
               <NumField label="% prethodne serije" value={e.backoffPct} suffix="%" onCommit={v => setExtra(e.id, { backoffPct: v ?? 92.5 })} />
               <DirToggle pct={e.backoffPct} onChange={v => setExtra(e.id, { backoffPct: v })} />
             </div>
+            <Top2Fields value={e.top2} previewKg={rows[0]?.extras[i]?.top2Kg ?? null}
+              onChange={patch => setExtra(e.id, { top2: { ...e.top2, ...patch } })} />
           </div>
         )
       })}
@@ -434,6 +507,18 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
                   </td>
                 ))}
               </tr>
+              {plan.primaryTop2.enabled && (
+                <tr style={{ borderTop: '1px solid var(--t-border)' }}>
+                  <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#22d3ee' }}>
+                    {plan.primaryTop2.before ? '↑ ' : '↓ '}{plan.primaryTop2.reps}× · {plan.primaryTop2.pct}%
+                  </td>
+                  {rows.map(r => (
+                    <td key={r.week} style={{ ...td, color: r.primaryTop2Kg != null ? '#22d3ee' : '#555' }}>
+                      {r.primaryTop2Kg != null ? fmtKg(r.primaryTop2Kg) : '—'}
+                    </td>
+                  ))}
+                </tr>
+              )}
               <tr style={{ borderTop: '1px solid var(--t-border)' }}>
                 <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#666' }}>RUČNO</td>
                 {rows.map(r => (
@@ -467,6 +552,18 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
                   })}
                 </tr>
               ))}
+              {plan.extras.map((e, i) => e.top2.enabled ? (
+                <tr key={e.id + ':top2'} style={{ borderTop: '1px solid var(--t-border)' }}>
+                  <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#22d3ee', maxWidth: '130px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {e.top2.before ? '↑ ' : '↓ '}{e.exerciseName ?? extraLabel(i)} {e.top2.reps}×
+                  </td>
+                  {rows.map(r => (
+                    <td key={r.week} style={{ ...td, color: r.extras[i]?.top2Kg != null ? '#22d3ee' : '#555' }}>
+                      {r.extras[i]?.top2Kg != null ? fmtKg(r.extras[i].top2Kg!) : '—'}
+                    </td>
+                  ))}
+                </tr>
+              ) : null)}
               <tr style={{ borderTop: '1px solid var(--t-border)' }}>
                 <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#666' }}>ODRAĐENO</td>
                 {rows.map(r => {
@@ -496,7 +593,9 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
       {applyMsg && <div style={{ fontSize: '0.64rem', color: apply === 'done' ? '#4ade80' : '#f87171', marginTop: '8px', lineHeight: 1.6 }}>{applyMsg}</div>}
       <div style={{ fontSize: '0.58rem', color: '#666', marginTop: '10px', lineHeight: 1.6 }}>
         Top set ide linearno od početka do kraja bloka, zaokruženo na 2.5 kg; ručni upis nadjačava izračun (žuto).
-        Backoff serije su postotak prethodne serije. „Upiši u blok" postavlja kilažu, ponavljanja, broj serija i backoff
+        Backoff serije su postotak prethodne serije. Drugi top set (plavo) je postotak top seta tog tjedna i u blok ide
+        kao zaseban red iste vježbe — zato ima svoja ponavljanja, pa fatigue single ostaje single.
+        „Upiši u blok" postavlja kilažu, ponavljanja, broj serija i backoff
         u {compEx?.name ?? 'natjecateljsku vježbu'}{plan.extras.length > 0 ? ' i ' + plan.extras.length + ' dodatnih liftova' : ''} — ništa se ne briše.
       </div>
 
