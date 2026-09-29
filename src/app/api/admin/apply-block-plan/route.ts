@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { buildWrites, type WeekPlan, type WoRow } from './layout'
+import { buildWrites, type WeekPlan, type WoRow } from './plan-layout'
 
 /**
  * Upisuje izračunati plan bloka (planer kilaža) u same vježbe.
