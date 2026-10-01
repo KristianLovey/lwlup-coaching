@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Send, Check } from 'lucide-react'
+import { CONSENT, CONSENT_VERSION } from '@/lib/legal'
 
 // ── Types ──────────────────────────────────────────────────────────
 type FormData = {
@@ -130,6 +131,21 @@ function Counter({ value }: { value: number }) {
   return <>{display % 1 === 0 ? display : display.toFixed(1).replace('.', ',')}</>
 }
 
+// ── Okvir privole ──────────────────────────────────────────────────
+// Nativni <input type="checkbox"> u <label>: dolazi s fokusom, tipkom razmak i
+// čitačem ekrana besplatno, pa se ne gradi vlastiti okvir kao drugdje u obrascu.
+function ConsentCheck({ id, checked, onChange, children }: {
+  id: string; checked: boolean; onChange: (v: boolean) => void; children: React.ReactNode
+}) {
+  return (
+    <label htmlFor={id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' }}>
+      <input id={id} type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)}
+        style={{ width: '17px', height: '17px', flexShrink: 0, marginTop: '3px', accentColor: '#fff', cursor: 'pointer' }} />
+      <span style={{ fontSize: '0.78rem', lineHeight: 1.75, color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--fm)' }}>{children}</span>
+    </label>
+  )
+}
+
 export default function SurveyPage() {
   const [showIntro, setShowIntro] = useState(true)
   const [step, setStep] = useState(0)
@@ -248,8 +264,27 @@ export default function SurveyPage() {
     }, 320)
   }
 
+  // ── Privola ────────────────────────────────────────────────────
+  // Opća privola traži se uvijek. Zdravstveni podaci (čl. 9. GDPR-a) i
+  // maloljetnost traže zasebnu, izričitu potvrdu, pa se ta dva okvira pojavljuju
+  // samo kad su stvarno potrebna — izričita privola na zalihu ne vrijedi.
+  const [consent, setConsent] = useState(false)
+  const [healthConsent, setHealthConsent] = useState(false)
+  const [guardianConsent, setGuardianConsent] = useState(false)
+
+  // Promjena obrasca poništava privolu: pristanak vrijedi za ono što je bilo na ekranu
+  useEffect(() => { setConsent(false); setHealthConsent(false); setGuardianConsent(false) }, [mode])
+
+  const applicantAge = isClub
+    ? ageFromBirthDate(form.birth_date)
+    : form.age.trim() && !isNaN(Number(form.age)) ? Number(form.age) : null
+  const isMinor = applicantAge !== null && applicantAge < 18
+  const hasHealthData = !isClub && form.injuries.trim().length > 0
+  const consentOk = consent && (!hasHealthData || healthConsent) && (!isMinor || guardianConsent)
+
   const submit = async () => {
     if (isClub && !validateClubStep1()) return
+    if (!consentOk) { setError('Za slanje prijave potrebno je potvrditi privolu.'); return }
     setSending(true)
     setError('')
     // Svaki obrazac šalje samo svoja polja — trenerski payload ostaje isti kao prije
@@ -262,6 +297,13 @@ export default function SurveyPage() {
     for (const k of ['squat', 'bench', 'deadlift', 'bodyweight', 'comp_total']) {
       if (payload[k]) payload[k] = payload[k].replace(',', '.')
     }
+    // Zapis privole putuje uz prijavu — bez njega je ruta odbija, a u mailu
+    // ostaje trag na što je točno osoba pristala i kada
+    payload.consent = 'da'
+    payload.consent_version = CONSENT_VERSION
+    payload.consent_at = new Date().toISOString()
+    if (hasHealthData) payload.consent_health = 'da'
+    if (isMinor) payload.consent_guardian = 'da'
     try {
       const res = await fetch(isClub ? '/api/club-join' : '/api/survey', {
         method: 'POST',
@@ -358,9 +400,9 @@ export default function SurveyPage() {
               style={{ animation: 'drawCheck 0.5s 0.6s cubic-bezier(0.16,1,0.3,1) both' }} />
           </svg>
         </div>
-        <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.45)', marginBottom: '20px' }}>{isClub ? 'ZAHTJEV ZAPRIMLJEN' : 'PRIJAVA ZAPRIMLJENA'}</div>
+        <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.55)', marginBottom: '20px' }}>{isClub ? 'ZAHTJEV ZAPRIMLJEN' : 'PRIJAVA ZAPRIMLJENA'}</div>
         <h1 style={{ fontFamily: "var(--fd)", fontSize: 'clamp(3rem,8vw,5rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '24px', letterSpacing: '-0.01em' }}>
-          DOBRODOŠAO<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>{isClub ? 'U KLUB' : 'U SUSTAV'}</span>
+          DOBRODOŠAO<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>{isClub ? 'U KLUB' : 'U SUSTAV'}</span>
         </h1>
         <p style={{ color: 'rgba(255,255,255,0.65)', lineHeight: 1.8, marginBottom: '48px', fontSize: '1rem' }}>
           {isClub ? 'Tvoj zahtjev za učlanjenje u LWL UP je zaprimljen.' : 'Tvoja prijava je uspješno zaprimljena.'}<br />
@@ -373,9 +415,9 @@ export default function SurveyPage() {
           <div className="survey-success-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '48px' }}>
             {[['SQUAT', form.squat], ['BENCH', form.bench], ['DEAD', form.deadlift], ['TOTAL', String(totalVal)]].map(([l, v]) => (
               <div key={l} style={{ padding: '20px 12px', background: '#131317', textAlign: 'center' }}>
-                <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>{l}</div>
+                <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', marginBottom: '6px' }}>{l}</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: "var(--fd)" }}>
-                  {v.replace('.', ',')}<span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginLeft: '2px' }}>kg</span>
+                  {v.replace('.', ',')}<span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)', marginLeft: '2px' }}>kg</span>
                 </div>
               </div>
             ))}
@@ -405,22 +447,22 @@ export default function SurveyPage() {
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
           <Image src="/slike/logopng.png" alt="LWL UP" width="82" height="60" loading="eager" style={{ height: '60px', width: 'auto' }} />
         </Link>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '0.7rem', letterSpacing: '0.25em', fontWeight: 600, fontFamily: "var(--fm)" }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', fontSize: '0.7rem', letterSpacing: '0.25em', fontWeight: 600, fontFamily: "var(--fm)" }}>
           <ArrowLeft size={13} /> NATRAG
         </Link>
       </nav>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(90px,12vh,120px) clamp(20px,5vw,60px) 60px', position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: '620px', width: '100%', animation: 'successIn 0.7s cubic-bezier(0.16,1,0.3,1)' }}>
-          <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.35)', marginBottom: '20px' }}>LWL UP · PRIJAVA</div>
+          <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.55)', marginBottom: '20px' }}>LWL UP · PRIJAVA</div>
           <h1 style={{ fontFamily: "var(--fd)", fontSize: 'clamp(2.8rem,8vw,5rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '24px', letterSpacing: '-0.01em' }}>
-            POSTANI DIO<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>LWL UP TIMA</span>
+            POSTANI DIO<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>LWL UP TIMA</span>
           </h1>
           <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.85, marginBottom: '48px', fontWeight: 300 }}>
             Učlani se u klub ili se prijavi za individualno trenerstvo. Ispunit ćeš kratki obrazac, a mi ćemo te kontaktirati i dogovoriti sve detalje.
           </p>
 
           <div style={{ marginBottom: '40px' }}>
-            <div style={{ fontSize: '0.58rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.4)', marginBottom: '16px', fontWeight: 700 }}>ŠTO TE ZANIMA?</div>
+            <div style={{ fontSize: '0.58rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.55)', marginBottom: '16px', fontWeight: 700 }}>ŠTO TE ZANIMA?</div>
             <div className="survey-mode-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               {([
                 { key: 'club', title: 'UČLANJENJE U KLUB', desc: 'Postani član LWL UP-a i natječi se za klub' },
@@ -436,7 +478,7 @@ export default function SurveyPage() {
                     </div>
                   )}
                   <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', marginBottom: '6px', fontFamily: "var(--fd)", letterSpacing: '0.04em', paddingRight: '18px' }}>{title}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>{desc}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>{desc}</div>
                 </button>
               ))}
             </div>
@@ -448,7 +490,7 @@ export default function SurveyPage() {
             {mode === 'club' ? 'ZAPOČNI PRIJAVU' : 'ZAPOČNI UPITNIK'} <ArrowRight size={14} />
           </button>
           {!mode && (
-            <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.65rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>
+            <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.65rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em' }}>
               Odaberi jednu opciju za nastavak
             </div>
           )}
@@ -474,7 +516,7 @@ export default function SurveyPage() {
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
           <Image src="/slike/logopng.png" alt="LWL UP" width="82" height="60" loading="eager" style={{ height: '60px', width: 'auto' }} />
         </Link>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '0.7rem', letterSpacing: '0.25em', fontWeight: 600, transition: '0.2s', fontFamily: "var(--fm)" }}
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', fontSize: '0.7rem', letterSpacing: '0.25em', fontWeight: 600, transition: '0.2s', fontFamily: "var(--fm)" }}
           onMouseEnter={e => e.currentTarget.style.color = '#fff'}
           onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}
         ><ArrowLeft size={13} /> NATRAG</Link>
@@ -486,9 +528,9 @@ export default function SurveyPage() {
         {/* LEFT SIDEBAR */}
         <div className="survey-sidebar" style={{ borderRight: '1px solid rgba(255,255,255,0.1)', padding: '100px 40px 60px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', position: 'sticky', top: 0, height: '100vh', overflow: 'hidden' }}>
           <div>
-            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.45)', marginBottom: '40px' }}>{isClub ? 'UČLANJENJE U KLUB' : 'PRISTUP PROGRAMU'}</div>
+            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.55)', marginBottom: '40px' }}>{isClub ? 'UČLANJENJE U KLUB' : 'PRISTUP PROGRAMU'}</div>
             <h1 style={{ fontFamily: "var(--fd)", fontSize: 'clamp(2.2rem,3.5vw,3.2rem)', fontWeight: 800, lineHeight: 0.92, marginBottom: '32px', letterSpacing: '-0.01em' }}>
-              POSTANI DIO<br /><span style={{ color: 'rgba(255,255,255,0.2)' }}>LWL UP<br />TIMA</span>
+              POSTANI DIO<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>LWL UP<br />TIMA</span>
             </h1>
             <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, marginBottom: '48px' }}>
               Ispuni kratki upitnik. Javit ćemo ti se i dogovoriti sve detalje.
@@ -510,7 +552,7 @@ export default function SurveyPage() {
                   <div style={{ paddingBottom: i < STEPS.length - 1 ? '32px' : '0', paddingTop: '4px' }}>
                     <div style={{ fontSize: '0.65rem', letterSpacing: '0.25em', fontWeight: 700, color: i === step ? '#fff' : i < step ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)', transition: 'color 0.4s' }}>
                       {s}
-                      {s === 'NAPREDNI' && <span style={{ marginLeft: '8px', fontSize: '0.5rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.07)', padding: '2px 6px' }}>EXTRA</span>}
+                      {s === 'NAPREDNI' && <span style={{ marginLeft: '8px', fontSize: '0.5rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.55)', background: 'rgba(255,255,255,0.07)', padding: '2px 6px' }}>EXTRA</span>}
                     </div>
                   </div>
                 </div>
@@ -522,7 +564,7 @@ export default function SurveyPage() {
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: '24px', animation: 'fadeUp 0.4s ease' }}>
               <div style={{ fontSize: '0.55rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>TVOJ TOTAL</div>
               <div style={{ fontFamily: "var(--fd)", fontSize: '3.5rem', fontWeight: 800, lineHeight: 1 }}>
-                <Counter value={totalDisplay} /><span style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.3)', marginLeft: '6px' }}>kg</span>
+                <Counter value={totalDisplay} /><span style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.55)', marginLeft: '6px' }}>kg</span>
               </div>
             </div>
           )}
@@ -569,7 +611,7 @@ export default function SurveyPage() {
             {step === 0 && (
               <div>
                 <h2 style={{ fontFamily: "var(--fd)", fontSize: 'clamp(2.4rem,5vw,3.8rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '48px', letterSpacing: '-0.01em' }}>
-                  UPOZNAJMO<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>SE</span>
+                  UPOZNAJMO<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>SE</span>
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                   <div>
@@ -629,7 +671,7 @@ export default function SurveyPage() {
             {step === 1 && (
               <div>
                 <h2 style={{ fontFamily: "var(--fd)", fontSize: 'clamp(2.4rem,5vw,3.8rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '48px', letterSpacing: '-0.01em' }}>
-                  TVOJ<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>TRENING</span>
+                  TVOJ<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>TRENING</span>
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
                   <div>
@@ -695,13 +737,13 @@ export default function SurveyPage() {
             {step === 2 && (
               <div>
                 <h2 style={{ fontFamily: "var(--fd)", fontSize: 'clamp(2.4rem,5vw,3.8rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '16px', letterSpacing: '-0.01em' }}>
-                  TVOJE<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>BROJKE</span>
+                  TVOJE<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>BROJKE</span>
                 </h2>
-                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', lineHeight: 1.7 }}>
+                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', marginBottom: '8px', lineHeight: 1.7 }}>
                   Unesi procijenjene 1RM maksimale ili zadnji težak set.
                 </p>
-                <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.2)', marginBottom: '36px', letterSpacing: '0.05em' }}>
-                  Decimale upiši zarezom — npr. <span style={{ color: 'rgba(255,255,255,0.4)' }}>142,5</span>
+                <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', marginBottom: '36px', letterSpacing: '0.05em' }}>
+                  Decimale upiši zarezom — npr. <span style={{ color: 'rgba(255,255,255,0.55)' }}>142,5</span>
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
                   {([
@@ -723,7 +765,7 @@ export default function SurveyPage() {
                             {...ff}
                           />
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)', paddingBottom: '14px', letterSpacing: '0.1em' }}>KG</div>
+                        <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', paddingBottom: '14px', letterSpacing: '0.1em' }}>KG</div>
                       </div>
                       {errMsg(fieldErrors[f.key])}
                     </div>
@@ -731,9 +773,9 @@ export default function SurveyPage() {
 
                   {totalVal !== null && totalVal > 0 && (
                     <div style={{ marginTop: '8px', padding: '20px 24px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', animation: 'fadeUp 0.3s ease' }}>
-                      <div style={{ fontSize: '0.6rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.3)' }}>TOTAL</div>
+                      <div style={{ fontSize: '0.6rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.55)' }}>TOTAL</div>
                       <div style={{ fontFamily: "var(--fd)", fontSize: '2.2rem', fontWeight: 800 }}>
-                        <Counter value={totalDisplay} /><span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)', marginLeft: '6px' }}>kg</span>
+                        <Counter value={totalDisplay} /><span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.55)', marginLeft: '6px' }}>kg</span>
                       </div>
                     </div>
                   )}
@@ -745,7 +787,7 @@ export default function SurveyPage() {
             {step === 3 && isAdvanced && (
               <div>
                 <h2 style={{ fontFamily: "var(--fd)", fontSize: 'clamp(2.4rem,5vw,3.8rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '16px', letterSpacing: '-0.01em', margin: '0 0 16px' }}>
-                  NAPREDNIJI<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>PROFIL</span>
+                  NAPREDNIJI<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>PROFIL</span>
                 </h2>
                 <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginBottom: '40px', lineHeight: 1.7 }}>
                   Budući da imaš iskustva, želimo znati više kako bismo program što bolje prilagodili.
@@ -772,7 +814,7 @@ export default function SurveyPage() {
                         >
                           <div>
                             <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', marginBottom: '2px' }}>{val}</div>
-                            <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)' }}>{sub}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)' }}>{sub}</div>
                           </div>
                           {form.training_style === val && <Check size={15} color="rgba(255,255,255,0.6)" />}
                         </button>
@@ -859,7 +901,7 @@ export default function SurveyPage() {
             {((step === 3 && !isAdvanced) || (step === 4 && isAdvanced)) && (
               <div>
                 <h2 style={{ fontFamily: "var(--fd)", fontSize: 'clamp(2.4rem,5vw,3.8rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '16px', letterSpacing: '-0.01em' }}>
-                  TVOJI<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>CILJEVI</span>
+                  TVOJI<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>CILJEVI</span>
                 </h2>
                 <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginBottom: '40px', lineHeight: 1.7 }}>
                   Ovo je opcionalno — ali što više znaš nam reći, bolje možemo prilagoditi program.
@@ -889,7 +931,7 @@ export default function SurveyPage() {
             {isClub && step === 0 && (
               <div>
                 <h2 style={{ fontFamily: "var(--fd)", fontSize: 'clamp(2.4rem,5vw,3.8rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '48px', letterSpacing: '-0.01em' }}>
-                  UPOZNAJMO<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>SE</span>
+                  UPOZNAJMO<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>SE</span>
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                   {clubInput('full_name', 'Ime i prezime', 'Ime i prezime')}
@@ -915,14 +957,14 @@ export default function SurveyPage() {
             {isClub && step === 1 && (
               <div>
                 <h2 style={{ fontFamily: "var(--fd)", fontSize: 'clamp(2.4rem,5vw,3.8rem)', fontWeight: 800, lineHeight: 0.9, marginBottom: '48px', letterSpacing: '-0.01em' }}>
-                  NATJECATELJSKI<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>PROFIL</span>
+                  NATJECATELJSKI<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>PROFIL</span>
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
                   <div>
                     <label style={lbl('category', !!fieldErrors.category)}>Težinska kategorija</label>
                     {WEIGHT_CLASSES.map(g => (
                       <div key={g.sex} style={{ marginTop: '12px' }}>
-                        <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', fontWeight: 700 }}>{g.label}</div>
+                        <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', marginBottom: '8px', fontWeight: 700 }}>{g.label}</div>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                           {g.cats.map(c => {
                             const v = `${g.sex} ${c} kg`
@@ -945,7 +987,7 @@ export default function SurveyPage() {
                         onChange: e => setLift('comp_total', e.target.value),
                       })}
                     </div>
-                    <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', marginTop: '12px', lineHeight: 1.6 }}>
+                    <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', marginTop: '12px', lineHeight: 1.6 }}>
                       Najbolji natjecateljski total. Ako se još nisi natjecao/la, upiši 0 natjecanja i ostavi total prazan.
                     </p>
                   </div>
@@ -963,10 +1005,45 @@ export default function SurveyPage() {
             )}
           </div>
 
+          {/* ── PRIVOLA ─────────────────────────────────────── */}
+          {step === STEPS.length - 1 && (
+            <div style={{ marginTop: '48px', maxWidth: '540px', padding: 'clamp(20px,4vw,24px)', border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.02)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontWeight: 700 }}>PRIVOLA</div>
+
+              <ConsentCheck id="consent-general" checked={consent} onChange={setConsent}>
+                {CONSENT.general}
+              </ConsentCheck>
+
+              {hasHealthData && (
+                <ConsentCheck id="consent-health" checked={healthConsent} onChange={setHealthConsent}>
+                  {CONSENT.health}
+                </ConsentCheck>
+              )}
+
+              {isMinor && (
+                <ConsentCheck id="consent-guardian" checked={guardianConsent} onChange={setGuardianConsent}>
+                  {CONSENT.guardian}
+                </ConsentCheck>
+              )}
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px', alignItems: 'baseline', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.09)' }}>
+                <Link href="/pravila" target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: '0.7rem', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.25)', paddingTop: '10px' }}>
+                  PRAVILA PRIVATNOSTI I KORIŠTENJA
+                </Link>
+                {hasHealthData && (
+                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, paddingTop: '10px' }}>
+                    Polje o ozljedama možeš i isprazniti — prijava se šalje i bez njega.
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ── NAVIGATION ──────────────────────────────────── */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '56px', maxWidth: '540px' }}>
             {/* Na prvom koraku NATRAG vodi na odabir (klub / trenerstvo) */}
-            <button onClick={() => step === 0 ? setShowIntro(true) : navigate(step - 1)} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', padding: '13px 22px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.2em', fontFamily: "var(--fm)", transition: 'all 0.2s' }}
+            <button onClick={() => step === 0 ? setShowIntro(true) : navigate(step - 1)} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)', padding: '13px 22px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.2em', fontFamily: "var(--fm)", transition: 'all 0.2s' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
             ><ArrowLeft size={13} /> NATRAG</button>
@@ -977,8 +1054,10 @@ export default function SurveyPage() {
                 onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
               >DALJE <ArrowRight size={13} /></button>
             ) : (
-              <button onClick={submit} disabled={sending} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: sending ? 'rgba(255,255,255,0.08)' : '#fff', color: sending ? 'rgba(255,255,255,0.3)' : '#000', border: 'none', padding: '15px 40px', cursor: sending ? 'not-allowed' : 'pointer', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.2em', fontFamily: "var(--fm)", transition: 'all 0.25s' }}
-                onMouseEnter={e => { if (!sending) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 35px rgba(255,255,255,0.2)' } }}
+              <button onClick={submit} disabled={sending || !consentOk}
+                title={!consentOk ? 'Potvrdi privolu da bi prijava mogla otići' : undefined}
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', background: sending || !consentOk ? 'rgba(255,255,255,0.08)' : '#fff', color: sending || !consentOk ? 'rgba(255,255,255,0.3)' : '#000', border: 'none', padding: '15px 40px', cursor: sending || !consentOk ? 'not-allowed' : 'pointer', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.2em', fontFamily: "var(--fm)", transition: 'all 0.25s' }}
+                onMouseEnter={e => { if (!sending && consentOk) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 35px rgba(255,255,255,0.2)' } }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
               >
                 {sending
@@ -1000,7 +1079,7 @@ export default function SurveyPage() {
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #131317; }
-        input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.2); }
+        input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.55); }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
         textarea { color: rgba(255,255,255,0.85) !important; }
         @keyframes stepOutLeft  { from{opacity:1;transform:translateX(0)}    to{opacity:0;transform:translateX(-40px)} }

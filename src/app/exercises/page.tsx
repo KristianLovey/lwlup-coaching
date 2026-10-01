@@ -160,17 +160,17 @@ function ExCard({ ex, index, onClick }: { ex: Exercise; index: number; onClick: 
 
         {/* Notes preview */}
         {ex.notes ? (
-          <p style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.65, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          <p style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.65, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {ex.notes}
           </p>
         ) : (
-          <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.18)', margin: 0, fontStyle: 'italic' }}>{t('ex.noNotes')}</p>
+          <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', margin: 0, fontStyle: 'italic' }}>{t('ex.noNotes')}</p>
         )}
 
         {/* Footer arrow */}
         <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.06)' }} />
-          <span style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>{t('ex.details')}</span>
+          <span style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.2em', fontFamily: 'var(--fm)' }}>{t('ex.details')}</span>
           <ChevronRight size={11} color="rgba(255,255,255,0.25)" />
         </div>
       </div>
@@ -231,7 +231,7 @@ function ExModal({ ex, onClose }: { ex: Exercise; onClose: () => void }) {
           <div style={{ width: '52px', height: '52px', borderRadius: '50%', border: `1.5px solid ${color}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, background: `${color}10` }}>
             <div style={{ width: 0, height: 0, borderStyle: 'solid', borderWidth: '9px 0 9px 16px', borderColor: `transparent transparent transparent ${color}99`, marginLeft: '3px' }} />
           </div>
-          <span style={{ fontSize: '0.6rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', position: 'relative', zIndex: 1 }}>{t('ex.video')}</span>
+          <span style={{ fontSize: '0.6rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', position: 'relative', zIndex: 1 }}>{t('ex.video')}</span>
         </div>
 
         {/* Notes */}
@@ -374,13 +374,13 @@ export default function ExerciseLibraryPage() {
           {/* Overline */}
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(16px)', transition: 'all 0.6s ease', display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
             <div style={{ height: '1px', width: '32px', background: 'rgba(255,255,255,0.2)' }} />
-            <span style={{ fontSize: '0.56rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700 }}>POWERLIFTING KNOWLEDGE BASE</span>
+            <span style={{ fontSize: '0.56rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700 }}>POWERLIFTING KNOWLEDGE BASE</span>
           </div>
 
           {/* Title row */}
           <div className="ex-hero-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '24px', marginBottom: 'clamp(36px,5vw,56px)' }}>
             <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3.5rem,9vw,7.5rem)', fontWeight: 800, lineHeight: 1, margin: 0, letterSpacing: '-0.03em', opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(24px)', transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s' }}>
-              {t('ex.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.32)', display: 'block', marginTop: '4px' }}>{t('ex.title2')}</span>
+              {t('ex.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.55)', display: 'block', marginTop: '4px' }}>{t('ex.title2')}</span>
             </h1>
 
             {/* Stats */}
@@ -392,7 +392,7 @@ export default function ExerciseLibraryPage() {
               ].map((s, i) => (
                 <div key={i} style={{ padding: '14px 22px', background: 'rgba(255,255,255,0.02)', textAlign: 'center', borderRight: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
                   <div style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', fontWeight: 800, color: '#e0e0e0', lineHeight: 1 }}>{s.val}</div>
-                  <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.22em', marginTop: '4px' }}>{s.label}</div>
+                  <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.22em', marginTop: '4px' }}>{s.label}</div>
                 </div>
               ))}
             </div>

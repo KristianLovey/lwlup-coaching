@@ -10,7 +10,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         <div style={{ color: '#fff', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui, sans-serif', padding: '40px 24px', textAlign: 'center' }}>
           <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>⚠️</div>
           <div style={{ fontSize: '1rem', fontWeight: 700, color: 'rgba(255,255,255,0.75)', marginBottom: '8px' }}>Kritična greška aplikacije</div>
-          <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', marginBottom: '28px' }}>Nešto je ozbiljno pošlo po zlu. Osvježi stranicu.</div>
+          <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.55)', marginBottom: '28px' }}>Nešto je ozbiljno pošlo po zlu. Osvježi stranicu.</div>
           <button onClick={reset} style={{ padding: '12px 28px', background: '#fff', color: '#000', border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.15em' }}>
             OSVJEŽI
           </button>

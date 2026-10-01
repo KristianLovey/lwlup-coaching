@@ -46,7 +46,7 @@ export default function ForbiddenPage() {
         <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--fd)', marginBottom: '8px', letterSpacing: '-0.01em' }}>
           Nemate admin ovlasti.
         </div>
-        <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.25)', maxWidth: '300px', margin: '0 auto 40px', lineHeight: 1.6 }}>
+        <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', maxWidth: '300px', margin: '0 auto 40px', lineHeight: 1.6 }}>
           Ova stranica dostupna je samo administratorima sustava.
         </div>
 
@@ -56,7 +56,7 @@ export default function ForbiddenPage() {
             onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.background = '#fff'}>
             <Home size={13} /> POČETNA
           </Link>
-          <Link href="/training" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 28px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', fontSize: '0.68rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}
+          <Link href="/training" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 28px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', fontSize: '0.68rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}
             onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.3)'; (e.currentTarget as HTMLAnchorElement).style.color = '#fff' }}
             onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.4)' }}>
             MOJ TRENING

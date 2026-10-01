@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Trash2, Check, Loader2, ChevronDown, Users, Trophy, Calendar, MapPin, X, Edit3 } from 'lucide-react'
+import { clickable } from '@/lib/a11y'
 
 const supabase = createClient()
 
@@ -122,7 +123,7 @@ export function CompetitionsManager() {
   const STATUS_COLORS = { announced: '#facc15', ongoing: '#4ade80', completed: 'rgba(255,255,255,0.3)' }
 
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '60px 0', color: 'rgba(255,255,255,0.3)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '60px 0', color: 'rgba(255,255,255,0.55)' }}>
       <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
       <span style={{ fontSize: '0.75rem', letterSpacing: '0.2em' }}>UČITAVANJE...</span>
     </div>
@@ -133,7 +134,7 @@ export function CompetitionsManager() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div>
-          <div style={{ fontSize: '0.52rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.2)', marginBottom: '4px' }}>UPRAVLJANJE</div>
+          <div style={{ fontSize: '0.52rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.55)', marginBottom: '4px' }}>UPRAVLJANJE</div>
           <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)' }}>NATJECANJA</div>
         </div>
         <button onClick={() => setShowNewForm(!showNewForm)}
@@ -146,7 +147,7 @@ export function CompetitionsManager() {
       {/* New competition form */}
       {showNewForm && (
         <div style={{ marginBottom: '20px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)', padding: '24px', animation: 'fadeUp 0.25s ease' }}>
-          <div style={{ fontSize: '0.55rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.25)', marginBottom: '18px', fontFamily: 'var(--fm)' }}>NOVO NATJECANJE</div>
+          <div style={{ fontSize: '0.55rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.55)', marginBottom: '18px', fontFamily: 'var(--fm)' }}>NOVO NATJECANJE</div>
           <div className="comp-new-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             {[
               { key: 'name', placeholder: 'Naziv natjecanja', label: 'NAZIV *' },
@@ -154,14 +155,14 @@ export function CompetitionsManager() {
               { key: 'location', placeholder: 'Zagreb, Hrvatska', label: 'LOKACIJA' },
             ].map(f => (
               <div key={f.key}>
-                <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.25)', marginBottom: '6px', fontFamily: 'var(--fm)' }}>{f.label}</div>
+                <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', marginBottom: '6px', fontFamily: 'var(--fm)' }}>{f.label}</div>
                 <input type={f.type ?? 'text'} value={(newComp as any)[f.key]} onChange={e => setNewComp(x => ({ ...x, [f.key]: e.target.value }))} placeholder={f.placeholder}
                   style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 14px', fontSize: '0.85rem', fontFamily: 'var(--fm)', outline: 'none', boxSizing: 'border-box' }} />
               </div>
             ))}
           </div>
           <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.25)', marginBottom: '6px', fontFamily: 'var(--fm)' }}>STATUS</div>
+            <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', marginBottom: '6px', fontFamily: 'var(--fm)' }}>STATUS</div>
             <div style={{ display: 'flex', gap: '6px' }}>
               {(['announced','ongoing','completed'] as Competition['status'][]).map(s => (
                 <button key={s} onClick={() => setNewComp(x => ({ ...x, status: s }))}
@@ -172,7 +173,7 @@ export function CompetitionsManager() {
             </div>
           </div>
           <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.25)', marginBottom: '6px', fontFamily: 'var(--fm)' }}>OPIS</div>
+            <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', marginBottom: '6px', fontFamily: 'var(--fm)' }}>OPIS</div>
             <textarea value={newComp.description} onChange={e => setNewComp(x => ({ ...x, description: e.target.value }))} placeholder="Kratki opis natjecanja..."
               style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 14px', fontSize: '0.85rem', fontFamily: 'var(--fm)', outline: 'none', resize: 'vertical', minHeight: '80px', boxSizing: 'border-box' }} />
           </div>
@@ -186,7 +187,7 @@ export function CompetitionsManager() {
 
       {/* Sort controls */}
       <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.2)', alignSelf: 'center', fontFamily: 'var(--fm)', marginRight: '4px' }}>SORTIRAJ</div>
+        <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.55)', alignSelf: 'center', fontFamily: 'var(--fm)', marginRight: '4px' }}>SORTIRAJ</div>
         {([
           ['date-desc', 'DATUM ↓'],
           ['date-asc',  'DATUM ↑'],
@@ -222,7 +223,7 @@ export function CompetitionsManager() {
       `}</style>
 
       {competitions.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.2)', border: '1px dashed rgba(255,255,255,0.08)', fontSize: '0.78rem', letterSpacing: '0.2em' }}>
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.55)', border: '1px dashed rgba(255,255,255,0.08)', fontSize: '0.78rem', letterSpacing: '0.2em' }}>
           NEMA NATJECANJA — KREIRAJ PRVO
         </div>
       ) : [...competitions].sort((a, b) => {
@@ -248,9 +249,9 @@ export function CompetitionsManager() {
                   <span style={{ fontSize: '0.55rem', color: STATUS_COLORS[comp.status], letterSpacing: '0.2em', fontWeight: 700, flexShrink: 0 }}>{STATUS_LABELS[comp.status]}</span>
                 </div>
                 <div className="comp-meta-row" style={{ display: 'flex', gap: '12px', paddingLeft: '15px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.66rem', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={11} />{comp.date}</span>
-                  {comp.location && <span style={{ fontSize: '0.66rem', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={11} />{comp.location}</span>}
-                  <span style={{ fontSize: '0.66rem', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}><Users size={11} />{athleteIds.size} lifera</span>
+                  <span style={{ fontSize: '0.66rem', color: 'rgba(255,255,255,0.55)', display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={11} />{comp.date}</span>
+                  {comp.location && <span style={{ fontSize: '0.66rem', color: 'rgba(255,255,255,0.55)', display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={11} />{comp.location}</span>}
+                  <span style={{ fontSize: '0.66rem', color: 'rgba(255,255,255,0.55)', display: 'flex', alignItems: 'center', gap: '4px' }}><Users size={11} />{athleteIds.size} lifera</span>
                 </div>
               </div>
 
@@ -271,7 +272,7 @@ export function CompetitionsManager() {
                 </button>
 
                 <button onClick={() => deleteComp(comp.id)}
-                  style={{ padding: '7px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', transition: 'color 0.2s', flexShrink: 0 }}
+                  style={{ padding: '7px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', transition: 'color 0.2s', flexShrink: 0 }}
                   onMouseEnter={e => e.currentTarget.style.color = '#ff4444'}
                   onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}>
                   <Trash2 size={14} />
@@ -282,7 +283,7 @@ export function CompetitionsManager() {
             {/* Athletes checkboxes + results */}
             {isExpanded && (
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '20px', animation: 'fadeUp 0.25s ease' }}>
-                <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.2)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>
+                <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.55)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>
                   ODABERI LIFERE {comp.status === 'completed' && '— UNESI REZULTATE'}
                 </div>
                 <div className="comp-athletes-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '10px' }}>
@@ -293,7 +294,8 @@ export function CompetitionsManager() {
                     return (
                       <div key={athlete.id} className="comp-athlete-anim" style={{ border: `1px solid ${isSelected ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', background: isSelected ? 'rgba(255,255,255,0.04)' : 'transparent', transition: 'all 0.2s', animationDelay: `${Math.min(ai * 0.03, 0.4)}s` }}>
                         {/* Athlete row */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', cursor: 'pointer' }} onClick={() => toggleAthlete(comp.id, athlete.id)}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', cursor: 'pointer' }}
+                          {...clickable(() => toggleAthlete(comp.id, athlete.id), { label: athlete.name ?? 'Sportaš', pressed: isSelected })}>
                           <div style={{ width: '22px', height: '22px', border: `1px solid ${isSelected ? '#fff' : 'rgba(255,255,255,0.2)'}`, background: isSelected ? '#fff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>
                             {isSelected && <Check size={13} color="#000" />}
                           </div>
@@ -303,7 +305,7 @@ export function CompetitionsManager() {
                           </div>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)' }}>{athlete.name}</div>
-                            <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>{athlete.category}</div>
+                            <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em' }}>{athlete.category}</div>
                           </div>
                         </div>
 
@@ -319,7 +321,7 @@ export function CompetitionsManager() {
                                 { key: 'result_place', label: '#' },
                               ].map(f => (
                                 <div key={f.key}>
-                                  <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.2em', marginBottom: '5px', textAlign: 'center', fontFamily: 'var(--fm)' }}>{f.label}</div>
+                                  <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.2em', marginBottom: '5px', textAlign: 'center', fontFamily: 'var(--fm)' }}>{f.label}</div>
                                   <input
                                     type="number"
                                     defaultValue={(compAthlete as any)?.[f.key] ?? ''}

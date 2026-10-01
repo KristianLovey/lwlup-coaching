@@ -261,7 +261,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
           {simple ? (
             <Link href="/" onClick={() => setMenuOpen(false)} style={mobileItemStyle(0)}>
               {t('nav.home')}
-              <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
+              <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.55)' }}>→</span>
             </Link>
           ) : (
             <>
@@ -272,7 +272,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
                 style={{ ...mobileItemStyle(0), background: 'transparent', border: 'none',
                   borderBottom: '1px solid rgba(255,255,255,0.07)', width: '100%', cursor: 'pointer' }}>
                 {t('nav.home')}
-                <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.35)', transform: mHomeOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }}>▾</span>
+                <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.55)', transform: mHomeOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }}>▾</span>
               </button>
               <div style={{
                 maxHeight: mHomeOpen ? '340px' : '0px', opacity: mHomeOpen ? 1 : 0, overflow: 'hidden',
@@ -287,7 +287,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
                         // zadnja nema crtu — inače se udvostruči s rubom sljedeće stavke
                         borderBottom: ai < HOME_ANCHORS.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
                       {label}
-                      <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.18)' }}>→</span>
+                      <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.55)' }}>→</span>
                     </a>
                   ))}
                 </div>
@@ -298,7 +298,7 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
                   onClick={() => setMenuOpen(false)}
                   style={mobileItemStyle(i + 1)}>
                   {label}
-                  <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
+                  <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.55)' }}>→</span>
                 </Link>
               ))}
             </>
@@ -329,14 +329,14 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
 
           {backLink && (
             <Link href={backLink.href} onClick={() => setMenuOpen(false)}
-              style={{ display: 'flex', justifyContent: 'center', marginTop: '8px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontSize: '0.72rem', letterSpacing: '0.2em' }}>
+              style={{ display: 'flex', justifyContent: 'center', marginTop: '8px', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', fontSize: '0.72rem', letterSpacing: '0.2em' }}>
               ← {backLink.label}
             </Link>
           )}
 
           <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>LWL UP @ 2026</span>
-            <span style={{ fontSize: '0.6rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>{t('nav.rights')}</span>
+            <span style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)' }}>LWL UP @ 2026</span>
+            <span style={{ fontSize: '0.6rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)' }}>{t('nav.rights')}</span>
           </div>
         </div>
       </div>

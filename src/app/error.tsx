@@ -7,9 +7,9 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
   return (
     <div style={{ background: '#08080a', color: '#fff', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fm)', padding: '40px 24px', textAlign: 'center' }}>
       <div style={{ fontSize: '3rem', marginBottom: '16px' }}>⚠️</div>
-      <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.25)', marginBottom: '12px' }}>GREŠKA</div>
+      <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.55)', marginBottom: '12px' }}>GREŠKA</div>
       <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'rgba(255,255,255,0.75)', marginBottom: '8px' }}>Nešto je pošlo po zlu.</div>
-      <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.3)', maxWidth: '320px', lineHeight: 1.6, marginBottom: '32px' }}>
+      <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.55)', maxWidth: '320px', lineHeight: 1.6, marginBottom: '32px' }}>
         Stranica nije mogla učitati podatke. Pokušaj ponovo ili se vrati na početnu.
       </div>
       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>

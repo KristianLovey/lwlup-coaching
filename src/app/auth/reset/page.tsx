@@ -89,10 +89,10 @@ export default function ResetPasswordPage() {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '32px 0' }}>
             <CheckCircle2 size={48} style={{ color: '#4ade80' }} />
             <div style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '0.05em' }}>Lozinka uspješno promijenjena!</div>
-            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.35)' }}>Preusmjeravamo te na trening...</div>
+            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.55)' }}>Preusmjeravamo te na trening...</div>
           </div>
         ) : !ready ? (
-          <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.85rem', lineHeight: 1.7 }}>
+          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.85rem', lineHeight: 1.7 }}>
             Učitavanje... Ako se stranica ne učita, klikni link iz emaila ponovo.
           </div>
         ) : (
@@ -108,7 +108,7 @@ export default function ResetPasswordPage() {
                     placeholder="••••••••" style={inp('password')}
                     onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                   />
-                  <button onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: '4px' }}
+                  <button onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', padding: '4px' }}
                     onMouseEnter={e => e.currentTarget.style.color = '#fff'}
                     onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.3)'}
                   >
@@ -127,7 +127,7 @@ export default function ResetPasswordPage() {
                     placeholder="••••••••" style={inp('confirm')}
                     onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                   />
-                  <button onClick={() => setShowConfirm(!showConfirm)} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: '4px' }}
+                  <button onClick={() => setShowConfirm(!showConfirm)} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', padding: '4px' }}
                     onMouseEnter={e => e.currentTarget.style.color = '#fff'}
                     onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.3)'}
                   >

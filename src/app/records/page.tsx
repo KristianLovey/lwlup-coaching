@@ -361,7 +361,7 @@ function isClubMember(name: string, members: string[]) {
 function RecordCell({ entry, highlight, clubMembers }: { entry: RecordEntry | null; highlight: boolean; clubMembers: string[] }) {
   if (!entry) {
     return (
-      <td style={{ padding: '14px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.28)', fontSize: '0.75rem', textAlign: 'center' }}>
+      <td style={{ padding: '14px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.55)', fontSize: '0.75rem', textAlign: 'center' }}>
         —
       </td>
     )
@@ -380,7 +380,7 @@ function RecordCell({ entry, highlight, clubMembers }: { entry: RecordEntry | nu
             <span style={{ fontSize: '0.48rem', letterSpacing: '0.2em', padding: '2px 6px', background: 'rgba(250,204,21,0.15)', color: '#facc15', border: '1px solid rgba(250,204,21,0.3)', fontWeight: 700, flexShrink: 0 }}>LWL UP</span>
           )}
         </span>
-        <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.42)', letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.05em' }}>
           {new Date(entry.date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: 'numeric' })} · {entry.fed}
         </span>
       </div>
@@ -442,7 +442,7 @@ export default function RecordsPage() {
           </div>
           <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,8vw,6rem)', lineHeight: 1, margin: '0 0 40px', letterSpacing: '-0.02em' }}>
             <span className="rec-t1">{t('rec.title1')}</span><br />
-            <span className="rec-t2" style={{ color: 'rgba(255,255,255,0.3)' }}>{t('rec.title2')}</span>
+            <span className="rec-t2" style={{ color: 'rgba(255,255,255,0.55)' }}>{t('rec.title2')}</span>
           </h1>
 
           {/* Controls — 3 rows */}
@@ -502,7 +502,7 @@ export default function RecordsPage() {
       {/* TABLE */}
       <section style={{ maxWidth: '1300px', margin: '0 auto', padding: '0 clamp(16px,4vw,60px) 80px', position: 'relative', zIndex: 1, marginTop: '8px' }}>
         {matchingClasses.length === 0 ? (
-          <div className="rec-empty" style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.2)' }}>
+          <div className="rec-empty" style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.55)' }}>
             <Trophy size={36} style={{ opacity: 0.15, display: 'block', margin: '0 auto 16px' }} />
             <div style={{ fontSize: '0.75rem', letterSpacing: '0.3em' }}>{t('rec.noResults')} "{search}"</div>
           </div>
@@ -536,7 +536,7 @@ export default function RecordsPage() {
                       </div>
 
                       {!hasAny ? (
-                        <div style={{ padding: '14px 0', color: 'rgba(255,255,255,0.35)', fontSize: '0.7rem', letterSpacing: '0.2em' }}>
+                        <div style={{ padding: '14px 0', color: 'rgba(255,255,255,0.55)', fontSize: '0.7rem', letterSpacing: '0.2em' }}>
                           {t('rec.noRecords')}
                         </div>
                       ) : (
@@ -575,7 +575,7 @@ export default function RecordsPage() {
       <Footer />
 
       <style>{`
-        input::placeholder { color: rgba(255,255,255,0.38); }
+        input::placeholder { color: rgba(255,255,255,0.55); }
         @media (max-width: 768px) { table { font-size: 0.85rem; } }
 
         /* Ulaz stranice: hero se slaže odozdo, pa kaskada težinskih kategorija. */

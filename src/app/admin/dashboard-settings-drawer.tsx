@@ -1,6 +1,7 @@
 'use client'
 import { ChevronDown, Eye, EyeOff, Minus, Plus, RotateCcw, X } from 'lucide-react'
 import { CARD_META, type CardId, type CardState, type DashCards } from './dashboard-settings'
+import { useEscapeKey } from '@/lib/a11y'
 
 export function RangeSelect({ id, value, onChange }: { id: CardId; value: number; onChange: (value: number) => void }) {
   const byBlocks = id === 'progress'
@@ -19,6 +20,8 @@ export function RangeSelect({ id, value, onChange }: { id: CardId; value: number
 export function SettingsDrawer({ open, onClose, cards, setCard, onReset }: {
   open: boolean; onClose: () => void; cards: DashCards; setCard: (id: CardId, patch: Partial<CardState>) => void; onReset: () => void
 }) {
+  useEscapeKey(onClose, open)
+
   return (
     <>
       <aside className={'settings-drawer' + (open ? ' open' : '')}>

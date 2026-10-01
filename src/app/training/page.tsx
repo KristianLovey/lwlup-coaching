@@ -34,7 +34,7 @@ const MeetDayTab = dynamic(() => import('./training-meet').then(module => module
 function TrainingLoader() {
   return (
     <div role="status" aria-live="polite" style={{ padding: '8px 0 60px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', color: 'rgba(255,255,255,0.45)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', color: 'rgba(255,255,255,0.55)' }}>
         <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
         <span style={{ fontSize: '0.62rem', letterSpacing: '0.22em', fontFamily: 'var(--fm)', fontWeight: 700 }}>UČITAVAMO TVOJ TRENING…</span>
       </div>
@@ -553,8 +553,8 @@ export default function TrainingPage() {
                 <div style={{ fontFamily: 'var(--fd)', fontSize: '3.5rem', opacity: 0.1, lineHeight: 1 }}>—</div>
                 {allBlocks.length > 0 ? (
                   <>
-                    <div style={{ fontSize: '0.68rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700 }}>ODABERI SVOJ BLOK</div>
-                    <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', textAlign: 'center', maxWidth: '320px', lineHeight: 1.6, marginBottom: '6px' }}>
+                    <div style={{ fontSize: '0.68rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700 }}>ODABERI SVOJ BLOK</div>
+                    <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', textAlign: 'center', maxWidth: '320px', lineHeight: 1.6, marginBottom: '6px' }}>
                       Klikni blok koji želiš trenirati.
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '340px' }}>
@@ -566,7 +566,7 @@ export default function TrainingPage() {
                           <FolderOpen size={16} color="rgba(255,255,255,0.35)" style={{ flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--fd)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{b.name}</div>
-                            <div style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', letterSpacing: '0.08em', marginTop: '2px' }}>{b.status === 'active' ? 'AKTIVAN' : b.status === 'completed' ? 'ZAVRŠEN' : 'PLANIRAN'}</div>
+                            <div style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', letterSpacing: '0.08em', marginTop: '2px' }}>{b.status === 'active' ? 'AKTIVAN' : b.status === 'completed' ? 'ZAVRŠEN' : 'PLANIRAN'}</div>
                           </div>
                           <ChevronRight size={15} color="rgba(255,255,255,0.25)" style={{ flexShrink: 0 }} />
                         </button>
@@ -575,8 +575,8 @@ export default function TrainingPage() {
                   </>
                 ) : (
                   <>
-                    <div style={{ fontSize: '0.68rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--fm)', fontWeight: 700 }}>NEMA AKTIVNOG PROGRAMA</div>
-                    <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.22)', fontFamily: 'var(--fm)', textAlign: 'center', maxWidth: '300px', lineHeight: 1.6 }}>
+                    <div style={{ fontSize: '0.68rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700 }}>NEMA AKTIVNOG PROGRAMA</div>
+                    <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', textAlign: 'center', maxWidth: '300px', lineHeight: 1.6 }}>
                       Tvoj trener još nije kreirao program. Javi se treneru za više informacija.
                     </div>
                   </>
@@ -609,7 +609,7 @@ export default function TrainingPage() {
                     <h1 style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: 'clamp(26px, 3.2vw, 40px)', lineHeight: 1.05, margin: 0, color: '#f0f0f0', minWidth: 0 }}>
                       {athleteName.split(' ')[0] || athleteName}
                       {athleteName.split(' ').length > 1 && (
-                        <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}> {athleteName.split(' ').slice(1).join(' ')}</span>
+                        <span style={{ color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}> {athleteName.split(' ').slice(1).join(' ')}</span>
                       )}
                     </h1>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 11px', borderRadius: '999px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', flexShrink: 0 }}>
@@ -627,9 +627,9 @@ export default function TrainingPage() {
                       { num: pct, sub: '%', label: 'NAPREDAK', delta: pct >= 75 ? 'odlično' : pct >= 50 ? 'na putu' : 'u tijeku' },
                     ].map((s, i) => (
                       <div key={i} className="stats-item" style={{ background: 'var(--t-s1)', padding: '12px 14px', minWidth: 0 }}>
-                        <div className="stats-label" style={{ fontFamily: 'var(--fm)', fontSize: '0.5rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.32)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.label}</div>
+                        <div className="stats-label" style={{ fontFamily: 'var(--fm)', fontSize: '0.5rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.55)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.label}</div>
                         <div className="stats-num" style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: 'clamp(22px, 2.6vw, 34px)', lineHeight: 1.05, color: '#f0f0f0', fontVariantNumeric: 'tabular-nums', marginTop: '6px', whiteSpace: 'nowrap' }}>
-                          {s.num}<span style={{ fontSize: '0.5em', color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>{s.sub}</span>
+                          {s.num}<span style={{ fontSize: '0.5em', color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}>{s.sub}</span>
                         </div>
                         <div className="stats-delta" style={{ fontFamily: 'var(--fm)', fontSize: '0.6rem', color: '#ef3535', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>↗ {s.delta}</div>
                       </div>
@@ -649,13 +649,13 @@ export default function TrainingPage() {
                             <FolderOpen size={14} color="rgba(255,255,255,0.35)" />
                           </div>
                           <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: '0.44rem', letterSpacing: '0.32em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--fm)', marginBottom: '2px' }}>AKTIVNI BLOK</div>
+                            <div style={{ fontSize: '0.44rem', letterSpacing: '0.32em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', marginBottom: '2px' }}>AKTIVNI BLOK</div>
                             <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--fd)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{block.name}</div>
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                           {saving && <Loader2 size={11} color="#555" style={{ animation: 'spin 1s linear infinite' }} />}
-                          <span style={{ fontSize: '0.48rem', fontFamily: 'var(--fm)', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.25)' }}>{block.weeks?.length ?? 0} TJ.</span>
+                          <span style={{ fontSize: '0.48rem', fontFamily: 'var(--fm)', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.55)' }}>{block.weeks?.length ?? 0} TJ.</span>
                           <ChevronDown size={14} color="rgba(255,255,255,0.25)" style={{ transform: showBlockSelector ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                         </div>
                       </button>
@@ -672,14 +672,14 @@ export default function TrainingPage() {
                                 <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.status === 'active' ? '#ef3535' : 'var(--t-border-hi)', flexShrink: 0 }} />
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ fontSize: '0.82rem', fontWeight: 500, color: '#e0e0e0', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{b.name}</div>
-                                  <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.25)', marginTop: '1px' }}>{b.start_date} — {b.end_date}</div>
+                                  <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.55)', marginTop: '1px' }}>{b.start_date} — {b.end_date}</div>
                                 </div>
                                 {b.id === block.id && <Check size={12} color="#ef3535" />}
                               </button>
                             ))}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderTop: '1px solid var(--t-border)', background: 'var(--t-s2)' }}>
-                            <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', letterSpacing: '0.2em', flexShrink: 0 }}>NAZIV:</span>
+                            <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', letterSpacing: '0.2em', flexShrink: 0 }}>NAZIV:</span>
                             <EditableField value={block.name} placeholder="Naziv programa"
                               onSave={async v => {
                                 await supabase.from('blocks').update({ name: v }).eq('id', block.id)
@@ -751,7 +751,7 @@ export default function TrainingPage() {
               {/* ── SECTION HEADER ── */}
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '18px', padding: '0 2px' }}>
                 <h2 style={{ fontFamily: 'var(--fd)', fontWeight: 600, fontSize: '1.05rem', letterSpacing: '-0.01em', color: '#f0f0f0', margin: 0 }}>Trening program</h2>
-                <span style={{ fontFamily: 'var(--fm)', fontSize: '0.56rem', color: 'rgba(255,255,255,0.22)', letterSpacing: '0.14em', textTransform: 'uppercase' as const }}>
+                <span style={{ fontFamily: 'var(--fm)', fontSize: '0.56rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.14em', textTransform: 'uppercase' as const }}>
                   {block.weeks?.length ?? 0} tjedana · {totalSets} serija
                 </span>
               </div>
@@ -814,19 +814,19 @@ export default function TrainingPage() {
 
         .icon-btn-danger { background: transparent; border: none; cursor:pointer; color:#555; padding:4px; display:flex; align-items:center; justify-content:center; transition:color 0.15s; border-radius:4px; }
         .icon-btn-danger:hover { color:#ef4444; background: #1a0a0a; }
-        .icon-btn { width:28px; height:28px; border-radius:8px; border: 1px solid var(--t-border); background: var(--t-s2); display:grid; place-items:center; color:rgba(255,255,255,0.4); cursor:pointer; transition:all 0.2s; }
+        .icon-btn { width:28px; height:28px; border-radius:8px; border: 1px solid var(--t-border); background: var(--t-s2); display:grid; place-items:center; color:rgba(255,255,255,0.55); cursor:pointer; transition:all 0.2s; }
         .icon-btn:hover { border-color: var(--t-border-hi); color:#fff; background: var(--t-s3); }
 
         .done-badge { display:flex; align-items:center; gap:6px; padding:6px 12px; border: 1px solid var(--t-border); cursor:pointer; transition:all 0.2s; border-radius:6px; background: var(--t-s3); }
-        .done-badge span { font-size:0.54rem; letter-spacing:0.2em; color:rgba(255,255,255,0.45); font-family:var(--fm); font-weight:800; }
+        .done-badge span { font-size:0.54rem; letter-spacing:0.2em; color:rgba(255,255,255,0.55); font-family:var(--fm); font-weight:800; }
         .done-badge:hover { border-color: var(--t-border-hi); background: var(--t-s3); }
         .done-badge-active { border-color: rgba(34,197,94,0.45) !important; background: rgba(34,197,94,0.1) !important; }
         .done-badge-active span { color:#4ade80 !important; }
 
-        .add-btn { width:100%; padding:10px; background: var(--t-s2); border: 1px dashed var(--t-border); color:rgba(255,255,255,0.28); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; font-size:0.6rem; letter-spacing:0.22em; font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:6px; }
+        .add-btn { width:100%; padding:10px; background: var(--t-s2); border: 1px dashed var(--t-border); color:rgba(255,255,255,0.55); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; font-size:0.6rem; letter-spacing:0.22em; font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:6px; }
         .add-btn:hover { border-color: var(--t-border-hi); color:rgba(255,255,255,0.65); background: var(--t-s3); }
 
-        .add-week-btn { width:100%; padding:18px; background: var(--t-s2); border: 1px dashed var(--t-border); color:rgba(255,255,255,0.22); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-size:0.62rem; letter-spacing:0.3em; font-family:var(--fm); font-weight:800; transition:all 0.2s; border-radius:10px; margin-top:8px; }
+        .add-week-btn { width:100%; padding:18px; background: var(--t-s2); border: 1px dashed var(--t-border); color:rgba(255,255,255,0.55); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-size:0.62rem; letter-spacing:0.3em; font-family:var(--fm); font-weight:800; transition:all 0.2s; border-radius:10px; margin-top:8px; }
         .add-week-btn:hover { border-color: var(--t-border-hi); color:rgba(255,255,255,0.65); background: var(--t-s3); }
 
         .action-btn { display:flex; align-items:center; gap:7px; background: transparent; border: none; color:#555; cursor:pointer; font-size:0.58rem; letter-spacing:0.2em; font-family:var(--fm); font-weight:800; transition:all 0.15s; white-space:nowrap; padding:0 16px; }
@@ -864,7 +864,7 @@ export default function TrainingPage() {
         .hero-action:active { transform:scale(0.98); }
         .hero-action-ico { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; flex-shrink:0; background:var(--t-s3); border:1px solid var(--t-border); }
         .hero-action-title { display:block; font-size:0.66rem; letter-spacing:0.18em; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .hero-action-sub { display:block; font-size:0.58rem; color:rgba(255,255,255,0.4); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .hero-action-sub { display:block; font-size:0.58rem; color:rgba(255,255,255,0.55); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .hero-action-prev .hero-action-ico { color:#facc15; }
         .hero-action-prev:hover { border-color:rgba(250,204,21,0.45); }
         .hero-action-proj .hero-action-ico { color:#4ade80; }

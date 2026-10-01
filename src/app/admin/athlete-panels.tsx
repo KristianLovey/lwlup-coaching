@@ -266,7 +266,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
 
   const FreqGrid = () => (
     <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px 16px', marginBottom: '12px' }}>
-      <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontFamily: FM, marginBottom: '12px', fontWeight: 700 }}>FREKVENCIJA LOGIRANJA</div>
+      <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginBottom: '12px', fontWeight: 700 }}>FREKVENCIJA LOGIRANJA</div>
       <div style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', gap: '2px', marginBottom: '6px' }}>
         <div />
         {orderedLabels.map((d, i) => {
@@ -284,7 +284,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
         { label: 'WB',      check: hasWb,     color: '#8b5cf6' },
       ].map(row => (
         <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', gap: '2px', marginBottom: '4px', alignItems: 'center' }}>
-          <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM }}>{row.label}</div>
+          <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{row.label}</div>
           {weekDates.map((d: string, i: number) => {
             const ok = row.check(d)
             return (
@@ -312,7 +312,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
           <div style={{ fontSize: '1.85rem', fontWeight: 900, color: '#fff', fontFamily: FD, lineHeight: 1, letterSpacing: '-0.02em' }}>{athlete.full_name}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px', flexWrap: 'wrap' as const }}>
             <span style={{ fontSize: '0.47rem', letterSpacing: '0.3em', color: roleColor, fontFamily: FM, fontWeight: 700, background: roleColor + '15', padding: '3px 8px', borderRadius: '4px', border: `1px solid ${roleColor}40` }}>{(athlete.role ?? 'LIFTER').toUpperCase()}</span>
-            {athlete.email && <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.28)', fontFamily: FM }}>{athlete.email}</span>}
+            {athlete.email && <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{athlete.email}</span>}
           </div>
         </div>
         <div style={{ display: 'flex', background: '#060609', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', overflow: 'hidden', flexShrink: 0 }}>
@@ -324,7 +324,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
             <div key={s.label} style={{ padding: '14px 20px', textAlign: 'center', borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
               <div style={{ fontSize: '0.41rem', letterSpacing: '0.3em', color: s.color + '80', fontFamily: FM, fontWeight: 700, marginBottom: '6px' }}>{s.label}</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 900, color: s.val ? s.color : 'rgba(255,255,255,0.12)', fontFamily: FD, lineHeight: 1 }}>{s.val ?? '—'}</div>
-              {s.val && <div style={{ fontSize: '0.41rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, marginTop: '3px' }}>kg e1RM</div>}
+              {s.val && <div style={{ fontSize: '0.41rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginTop: '3px' }}>kg e1RM</div>}
             </div>
           ))}
         </div>
@@ -343,7 +343,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
       )}
 
       {loading ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '60px 0', color: 'rgba(255,255,255,0.2)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '60px 0', color: 'rgba(255,255,255,0.55)' }}>
           <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
           <span style={{ fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: FM }}>UČITAVANJE...</span>
         </div>
@@ -360,7 +360,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
               { label: 'SUPLEM.', val: todaySuppsCount > 0 ? `${todaySuppsCount}×` : '—', color: '#10b981' },
             ].map((s, i) => (
               <div key={s.label} style={{ flex: 1, padding: '18px 6px', textAlign: 'center', borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                <div style={{ fontSize: '0.41rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.22)', fontFamily: FM, fontWeight: 700, marginBottom: '8px' }}>{s.label}</div>
+                <div style={{ fontSize: '0.41rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, marginBottom: '8px' }}>{s.label}</div>
                 <div style={{ fontSize: '1.35rem', fontWeight: 900, color: s.val === '—' ? 'rgba(255,255,255,0.1)' : s.color, fontFamily: FD, lineHeight: 1 }}>{s.val}</div>
               </div>
             ))}
@@ -368,7 +368,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
 
           {/* 7-day activity grid */}
           <div style={{ background: '#09090f', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '16px 18px', marginBottom: '10px' }}>
-            <div style={{ fontSize: '0.44rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.2)', fontFamily: FM, fontWeight: 700, marginBottom: '14px' }}>AKTIVNOST OVAJ TJEDAN</div>
+            <div style={{ fontSize: '0.44rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, marginBottom: '14px' }}>AKTIVNOST OVAJ TJEDAN</div>
             <div style={{ display: 'grid', gridTemplateColumns: '52px repeat(7, 1fr)', gap: '3px', marginBottom: '6px' }}>
               <div />
               {orderedLabels.map((d, i) => (
@@ -383,7 +383,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
               { label: 'WB',      check: hasWb,    color: '#8b5cf6' },
             ].map(row => (
               <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '52px repeat(7, 1fr)', gap: '3px', marginBottom: '3px', alignItems: 'center' }}>
-                <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.28)', fontFamily: FM }}>{row.label}</div>
+                <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{row.label}</div>
                 {weekDates.map((d: string, i: number) => {
                   const ok = row.check(d)
                   const isToday = weekDates[i] === todayStr
@@ -402,7 +402,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
           {/* Recent competitions — from meet_competitors (admin-entered results) */}
           <Section title="NATJECANJA" open={compOpen} onToggle={() => setCompOpen(v => !v)} accent="#22c55e">
             {lastMeets.length === 0 ? (
-              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema unesenih natjecanja</div>
+              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema unesenih natjecanja</div>
             ) : [...lastMeets].sort((a, b) => ((b.competition as any)?.date ?? '').localeCompare((a.competition as any)?.date ?? '')).map((row: any) => {
                 const comp = row.competition as any
                 const compName = comp?.name ?? '—'
@@ -415,13 +415,13 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                   <div key={row.competition_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px', marginBottom: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '8px' }}>
                       <span style={{ fontSize: '0.78rem', color: '#f0f0f0', fontFamily: FM, fontWeight: 700 }}>{compName}</span>
-                      {compDate && <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>{compDate}</span>}
+                      {compDate && <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{compDate}</span>}
                       {row.result_place != null && <span style={{ fontSize: '0.5rem', color: '#f59e0b', fontFamily: FM, marginLeft: 'auto' }}>#{row.result_place}</span>}
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                       {([['SQ', sq, '#a78bfa'], ['BP', bp, '#f472b6'], ['DL', dl, '#fb923c'], ['TOTAL', total, '#22c55e']] as const).map(([label, val, color]) => (
                         <div key={label} style={{ background: val ? color + '10' : 'rgba(255,255,255,0.03)', border: `1px solid ${val ? color + '30' : 'rgba(255,255,255,0.05)'}`, borderRadius: '8px', padding: '8px 4px', textAlign: 'center' }}>
-                          <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', marginBottom: '4px', fontFamily: FM }}>{label}</div>
+                          <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.15em', marginBottom: '4px', fontFamily: FM }}>{label}</div>
                           <div style={{ fontSize: '0.96rem', color: val ? color : 'rgba(255,255,255,0.15)', fontFamily: FD, fontWeight: 800 }}>{val ?? '—'}</div>
                         </div>
                       ))}
@@ -478,7 +478,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '2px', marginBottom: '4px' }}>
                     {['P','U','S','Č','P','S','N'].map((d, i) => (
-                      <div key={i} style={{ textAlign: 'center', fontSize: '0.44rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, fontWeight: 700, padding: '2px 0' }}>{d}</div>
+                      <div key={i} style={{ textAlign: 'center', fontSize: '0.44rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, padding: '2px 0' }}>{d}</div>
                     ))}
                   </div>
 
@@ -534,19 +534,19 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                     ].map(l => (
                       <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: l.color }} />
-                        <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>{l.label}</span>
+                        <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{l.label}</span>
                       </div>
                     ))}
                     {phases.length > 0 && phases.map(ph => (
                       <div key={ph.id} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <div style={{ width: '12px', height: '3px', borderRadius: '2px', background: ph.color }} />
-                        <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>{ph.label}</span>
+                        <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{ph.label}</span>
                       </div>
                     ))}
                     {competitionSel && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <Trophy size={6} color="#fbbf24" />
-                        <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>Natjecanje</span>
+                        <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>Natjecanje</span>
                       </div>
                     )}
                   </div>
@@ -555,7 +555,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                 {selectedDay && (
                   <div style={{ background: 'var(--surface-1)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '14px', marginBottom: '12px', animation: 'fadeUp 0.2s ease' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.45)', fontFamily: FM, fontWeight: 700, letterSpacing: '0.2em' }}>{selectedDay}</span>
+                      <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, letterSpacing: '0.2em' }}>{selectedDay}</span>
                       <div style={{ display: 'flex', gap: '6px' }}>
                         {selBw && <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.85)', fontFamily: FM, fontWeight: 700 }}>{selBw.weight_kg}kg</span>}
                         {selCal && <span style={{ fontSize: '0.62rem', color: '#fbbf24', fontFamily: FM, fontWeight: 700 }}>{selCal.calories}kcal</span>}
@@ -582,7 +582,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                             return exercises.map((we: any) => (
                               <div key={we.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                                 <span style={{ fontSize: '0.7rem', color: '#f0f0f0', fontFamily: FM, fontWeight: 700, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{we.exercise?.name ?? '—'}</span>
-                                <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, flexShrink: 0 }}>{we.planned_sets}×{we.planned_reps}{we.planned_weight_kg ? ` · ${we.planned_weight_kg}kg` : ''}</span>
+                                <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, flexShrink: 0 }}>{we.planned_sets}×{we.planned_reps}{we.planned_weight_kg ? ` · ${we.planned_weight_kg}kg` : ''}</span>
                                 {we.actual_note && <span title={we.actual_note} style={{ fontSize: '0.8rem', cursor: 'default', flexShrink: 0 }}>💬</span>}
                               </div>
                             ))
@@ -593,9 +593,9 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                               <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' as const }}>
                                 <thead>
                                   <tr>
-                                    <th style={{ textAlign: 'left', fontSize: '0.44rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, fontWeight: 700, letterSpacing: '0.15em', padding: '0 8px 6px 0', whiteSpace: 'nowrap' as const }}>VJEŽBA</th>
+                                    <th style={{ textAlign: 'left', fontSize: '0.44rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, letterSpacing: '0.15em', padding: '0 8px 6px 0', whiteSpace: 'nowrap' as const }}>VJEŽBA</th>
                                     {Array.from({ length: maxSets }, (_, i) => (
-                                      <th key={i} style={{ textAlign: 'center', fontSize: '0.44rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, fontWeight: 700, letterSpacing: '0.1em', padding: '0 4px 6px', whiteSpace: 'nowrap' as const }}>SET {i+1}</th>
+                                      <th key={i} style={{ textAlign: 'center', fontSize: '0.44rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, letterSpacing: '0.1em', padding: '0 4px 6px', whiteSpace: 'nowrap' as const }}>SET {i+1}</th>
                                     ))}
                                     <th style={{ width: '20px' }} />
                                   </tr>
@@ -612,7 +612,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                                           <td style={{ padding: '7px 8px 7px 0', verticalAlign: 'middle' as const }}>
                                             <span style={{ fontSize: '0.7rem', color: hasLogged ? '#c7d2fe' : 'rgba(255,255,255,0.35)', fontFamily: FM, fontWeight: 700, whiteSpace: 'nowrap' as const, display: 'block', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{we.exercise?.name ?? '—'}</span>
                                             {!hasLogged && (
-                                              <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM }}>{we.planned_sets}×{we.planned_reps}{we.planned_weight_kg ? ` · ${we.planned_weight_kg}kg` : ''}</span>
+                                              <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{we.planned_sets}×{we.planned_reps}{we.planned_weight_kg ? ` · ${we.planned_weight_kg}kg` : ''}</span>
                                             )}
                                           </td>
                                           {Array.from({ length: maxSets }, (_, i) => {
@@ -624,7 +624,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                                                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px' }}>
                                                     {isTop && <span style={{ fontSize: '0.4rem', color: '#facc15', lineHeight: 1 }}>★</span>}
                                                     <span style={{ fontSize: '0.65rem', color: isTop ? '#facc15' : '#e2e8f0', fontFamily: FM, fontWeight: isTop ? 800 : 600, whiteSpace: 'nowrap' as const }}>{s.weight_kg}×{s.reps}</span>
-                                                    {s.rpe && <span style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.3)', fontFamily: FM }}>@{s.rpe}</span>}
+                                                    {s.rpe && <span style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>@{s.rpe}</span>}
                                                   </div>
                                                 ) : (
                                                   <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.1)', fontFamily: FM }}>—</span>
@@ -657,7 +657,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
 
                     {selWb && (
                       <div style={{ marginTop: selWo?.completed ? '12px' : '0', paddingTop: selWo?.completed ? '12px' : '0', borderTop: selWo?.completed ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-                        <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)', fontFamily: FM, fontWeight: 700, marginBottom: '8px' }}>WELLBEING</div>
+                        <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, marginBottom: '8px' }}>WELLBEING</div>
                         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                           {selWb.sleep_hours != null && (
                             <div style={{ background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.2)', borderRadius: '8px', padding: '6px 10px', textAlign: 'center' as const }}>
@@ -667,7 +667,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                           )}
                           {selWb.stress_level != null && (
                             <div style={{ background: `rgba(${selWb.stress_level > 7 ? '248,113,113' : selWb.stress_level > 4 ? '245,158,11' : '74,222,128'},0.08)`, border: `1px solid rgba(${selWb.stress_level > 7 ? '248,113,113' : selWb.stress_level > 4 ? '245,158,11' : '74,222,128'},0.2)`, borderRadius: '8px', padding: '6px 10px', textAlign: 'center' as const }}>
-                              <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.4)', fontFamily: FM, letterSpacing: '0.15em', marginBottom: '2px' }}>STRES</div>
+                              <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, letterSpacing: '0.15em', marginBottom: '2px' }}>STRES</div>
                               <div style={{ fontSize: '0.9rem', fontWeight: 800, color: selWb.stress_level > 7 ? '#f87171' : selWb.stress_level > 4 ? '#f59e0b' : '#4ade80', fontFamily: FD }}>{selWb.stress_level}/10</div>
                             </div>
                           )}
@@ -678,7 +678,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                             </div>
                           )}
                         </div>
-                        {selWb.notes && <div style={{ marginTop: '8px', fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontFamily: FM, fontStyle: 'italic' as const }}>"{selWb.notes}"</div>}
+                        {selWb.notes && <div style={{ marginTop: '8px', fontSize: '0.65rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontStyle: 'italic' as const }}>"{selWb.notes}"</div>}
                       </div>
                     )}
 
@@ -696,7 +696,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                     )}
 
                     {!selBw && !selCal && !(selWater && selWater > 0) && !selWo && !selWb && selSupps.length === 0 && (
-                      <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.18)', fontFamily: FM, marginTop: '4px' }}>Nema podataka za ovaj dan.</div>
+                      <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginTop: '4px' }}>Nema podataka za ovaj dan.</div>
                     )}
                   </div>
                 )}
@@ -806,7 +806,7 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '2px', marginBottom: '4px' }}>
           {['P','U','S','Č','P','S','N'].map((d, i) => (
-            <div key={i} style={{ textAlign: 'center', fontSize: '0.44rem', color: 'rgba(255,255,255,0.2)', fontFamily: FM, fontWeight: 700, padding: '2px 0' }}>{d}</div>
+            <div key={i} style={{ textAlign: 'center', fontSize: '0.44rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, padding: '2px 0' }}>{d}</div>
           ))}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '3px' }}>
@@ -840,13 +840,13 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
           {phases.map(ph => (
             <div key={ph.id} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <div style={{ width: '12px', height: '3px', borderRadius: '2px', background: ph.color }} />
-              <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM }}>{ph.label}</span>
+              <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{ph.label}</span>
             </div>
           ))}
           {competitionSel && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Trophy size={6} color="#fbbf24" />
-              <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM }}>{competitionSel.name}</span>
+              <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{competitionSel.name}</span>
             </div>
           )}
         </div>
@@ -854,9 +854,9 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
 
       {/* Phases list */}
       <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
-        <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontFamily: FM, fontWeight: 700, marginBottom: '12px' }}>FAZE TRENINGA</div>
+        <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, marginBottom: '12px' }}>FAZE TRENINGA</div>
         {phases.length === 0 ? (
-          <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema unesenih faza</div>
+          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.7rem', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema unesenih faza</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {phases.map(ph => editId === ph.id ? (
@@ -882,16 +882,16 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
               <div key={ph.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: `${ph.color}10`, border: `1px solid ${ph.color}30`, borderRadius: '8px', borderLeft: `3px solid ${ph.color}` }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f0f0f0', fontFamily: FM }}>{ph.label}</div>
-                  <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM, marginTop: '2px' }}>{formatDate(ph.start_date)} → {formatDate(ph.end_date)}</div>
+                  <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginTop: '2px' }}>{formatDate(ph.start_date)} → {formatDate(ph.end_date)}</div>
                 </div>
                 <button onClick={() => startEdit(ph)} title="Uredi fazu"
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', padding: '4px', display: 'flex', alignItems: 'center', borderRadius: '4px' }}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', padding: '4px', display: 'flex', alignItems: 'center', borderRadius: '4px' }}
                   onMouseEnter={e => { e.currentTarget.style.color = '#a5b4fc' }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.25)' }}>
                   <Pencil size={12} />
                 </button>
                 <button onClick={() => onDelete(ph.id)}
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '4px', display: 'flex', alignItems: 'center', borderRadius: '4px', transition: 'all 0.15s' }}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', padding: '4px', display: 'flex', alignItems: 'center', borderRadius: '4px', transition: 'all 0.15s' }}
                   onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)' }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent' }}>
                   <Trash2 size={13} />
@@ -904,16 +904,16 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
 
       {/* Natjecanje u planu — odabir + prikaz */}
       <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
-        <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontFamily: FM, fontWeight: 700, marginBottom: '12px' }}>NATJECANJE U PLANU</div>
+        <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, marginBottom: '12px' }}>NATJECANJE U PLANU</div>
         {competitionSel && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: '8px', borderLeft: '3px solid #fbbf24', marginBottom: '10px' }}>
             <Trophy size={14} color="#fbbf24" />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f0f0f0', fontFamily: FM }}>{competitionSel.name}</div>
-              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', fontFamily: FM, marginTop: '2px' }}>{formatDate(competitionSel.date)}{competitionSel.location ? ` · ${competitionSel.location}` : ''}</div>
+              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginTop: '2px' }}>{formatDate(competitionSel.date)}{competitionSel.location ? ` · ${competitionSel.location}` : ''}</div>
             </div>
             <button onClick={() => pickComp('')} disabled={savingComp} title="Makni natjecanje iz plana"
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', padding: '4px', display: 'flex' }}>
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', padding: '4px', display: 'flex' }}>
               <Trash2 size={13} />
             </button>
           </div>
@@ -923,12 +923,12 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
           <option value="">— odaberi natjecanje —</option>
           {comps.map(c => <option key={c.id} value={c.id}>{c.name} · {formatDate(c.date)}{c.location ? ` · ${c.location}` : ''}</option>)}
         </select>
-        <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginTop: '8px' }}>Nova natjecanja dodaju se u sekciji Natjecanja; ovdje ih pridružuješ lifteru.</div>
+        <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginTop: '8px' }}>Nova natjecanja dodaju se u sekciji Natjecanja; ovdje ih pridružuješ lifteru.</div>
       </div>
 
       {/* Add phase form */}
       <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px' }}>
-        <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontFamily: FM, fontWeight: 700, marginBottom: '14px' }}>DODAJ FAZU</div>
+        <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, marginBottom: '14px' }}>DODAJ FAZU</div>
         <div style={{ marginBottom: '10px' }}>
           <input
             value={newPhaseLabel} onChange={e => setNewPhaseLabel(e.target.value)}
@@ -938,18 +938,18 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
           <div>
-            <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginBottom: '5px' }}>OD</div>
+            <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginBottom: '5px' }}>OD</div>
             <input type="date" value={newPhaseStart} onChange={e => setNewPhaseStart(e.target.value)}
               style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', fontSize: '0.8rem', outline: 'none', fontFamily: FM, borderRadius: '8px', boxSizing: 'border-box' as const, colorScheme: 'dark' }} />
           </div>
           <div>
-            <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginBottom: '5px' }}>DO</div>
+            <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginBottom: '5px' }}>DO</div>
             <input type="date" value={newPhaseEnd} onChange={e => setNewPhaseEnd(e.target.value)}
               style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', fontSize: '0.8rem', outline: 'none', fontFamily: FM, borderRadius: '8px', boxSizing: 'border-box' as const, colorScheme: 'dark' }} />
           </div>
         </div>
         <div style={{ marginBottom: '14px' }}>
-          <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginBottom: '8px' }}>BOJA</div>
+          <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginBottom: '8px' }}>BOJA</div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {PHASE_COLORS.map(c => (
               <button key={c} onClick={() => setNewPhaseColor(c)}
@@ -1488,7 +1488,7 @@ export function AthletePanel({
         <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: '#f0f0f0', fontFamily: 'var(--fm)', flexShrink: 0 }}>{initials}</div>
         <div>
           <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#f0f0ff', fontFamily: 'var(--fd)', lineHeight: 1, letterSpacing: '-0.02em' }}>{athlete.full_name}</div>
-          <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', marginTop: '4px' }}>
+          <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.15em', marginTop: '4px' }}>
             {athlete.email} · <span style={{ color: athlete.role === 'admin' ? '#ef4444' : athlete.role === 'trener' ? '#fbbf24' : '#4ade80' }}>{(athlete.role ?? 'lifter').toUpperCase()}</span>
           </div>
         </div>
@@ -1501,7 +1501,7 @@ export function AthletePanel({
             ].map((s, i) => (
               <div key={i} style={{ padding: '10px 18px', background: '#08080e', textAlign: 'center' }}>
                 <div style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', fontWeight: 800, color: '#f0f0ff', lineHeight: 1 }}>{s.val}</div>
-                <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.2em', marginTop: '3px' }}>{s.label}</div>
+                <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.2em', marginTop: '3px' }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -1546,7 +1546,7 @@ export function AthletePanel({
 
           <div className="block-bar-actions" style={{ display: 'flex', alignItems: 'stretch' }}>
             <button onClick={createBlock} className="block-action-btn"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
               onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = '#111113' }}
               onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}
               title="Novi blok">
@@ -1556,7 +1556,7 @@ export function AthletePanel({
               {/* Kilaže glavnih liftova iz prošlog bloka — nema smisla u uređivaču predložaka */}
               {!goalFilter && (
                 <button onClick={() => setShowPrevLifts(true)} className="block-action-btn"
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
                   onMouseEnter={e => { e.currentTarget.style.color = '#facc15'; e.currentTarget.style.background = '#111113' }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}
                   title="Kilaže squata, bencha i deadlifta iz prošlog bloka">
@@ -1567,7 +1567,7 @@ export function AthletePanel({
               {/* Projekcija kilaža za kraj bloka — trener/admin upisuje, lifter vidi na svom treningu */}
               {!goalFilter && (
                 <button onClick={() => setShowProjections(true)} className="block-action-btn"
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
                   onMouseEnter={e => { e.currentTarget.style.color = '#4ade80'; e.currentTarget.style.background = '#111113' }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}
                   title="Projekcija kilaža squata, bencha i deadlifta za kraj bloka">
@@ -1576,14 +1576,14 @@ export function AthletePanel({
               )}
               {showProjections && <BlockProjectionsModal athleteId={athlete.id} blockId={block.id} blockName={block.name} canEdit onApplied={loadData} onClose={() => setShowProjections(false)} />}
               <button onClick={copyBlock} className="block-action-btn"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
                 onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = '#111113' }}
                 onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}
                 title="Kopiraj blok">
                 <Copy size={13} /><span className="block-btn-label"> KOPIRAJ</span>
               </button>
               <button onClick={() => { setDuplicateName(`${block.name} (kopija)`); setDuplicateTarget(''); setShowDupModal(true) }} className="block-action-btn"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
                 onMouseEnter={e => { e.currentTarget.style.color = '#60a5fa'; e.currentTarget.style.background = '#111113' }}
                 onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}
                 title="Dupliciraj na...">
@@ -1627,7 +1627,7 @@ export function AthletePanel({
       ) : !block ? (
         <div style={{ textAlign: 'center', padding: '60px 0' }}>
           <div style={{ fontFamily: 'var(--fd)', fontSize: '3rem', opacity: 0.1, marginBottom: '12px', color: '#fff' }}>—</div>
-          <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '24px', fontFamily: 'var(--fm)' }}>NEMA AKTIVNOG BLOKA</div>
+          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '24px', fontFamily: 'var(--fm)' }}>NEMA AKTIVNOG BLOKA</div>
           <button onClick={createBlock}
             style={{ padding: '12px 28px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.18)', color: '#f0f0f0', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '8px' }}>
             + KREIRAJ PRVI BLOK
@@ -1636,7 +1636,7 @@ export function AthletePanel({
       ) : (
         <>
           {(block.weeks?.length ?? 0) === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '16px', fontFamily: 'var(--fm)' }}>
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.55)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '16px', fontFamily: 'var(--fm)' }}>
               BLOK JE PRAZAN — DODAJ TJEDAN
             </div>
           )}
@@ -1666,7 +1666,7 @@ export function AthletePanel({
           ))}
           </BlockSuggestionsProvider>
           <button onClick={addWeek}
-            style={{ width: '100%', padding: '14px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '0.68rem', letterSpacing: '0.3em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', borderRadius: '8px' }}
+            style={{ width: '100%', padding: '14px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '0.68rem', letterSpacing: '0.3em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', borderRadius: '8px' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'; e.currentTarget.style.color = '#f0f0f0' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)' }}>
             <Plus size={13} /> DODAJ TJEDAN {(block.weeks?.length ?? 0) + 1}
@@ -1679,15 +1679,15 @@ export function AthletePanel({
           onClick={() => setShowDupModal(false)}>
           <div style={{ width: '100%', maxWidth: '460px', background: '#0d0d16', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', padding: '28px', animation: 'slideUp 0.25s ease' }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: '0.55rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.25)', marginBottom: '6px', fontFamily: 'var(--fm)' }}>DUPLICIRAJ BLOK</div>
+            <div style={{ fontSize: '0.55rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.55)', marginBottom: '6px', fontFamily: 'var(--fm)' }}>DUPLICIRAJ BLOK</div>
             <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)', marginBottom: '24px' }}>{block.name}</div>
             <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '0.58rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>NAZIV KOPIJE</div>
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>NAZIV KOPIJE</div>
               <input value={duplicateName} onChange={e => setDuplicateName(e.target.value)}
                 style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 14px', fontSize: '0.88rem', outline: 'none', fontFamily: 'var(--fm)', borderRadius: '8px', boxSizing: 'border-box' as const }} />
             </div>
             <div style={{ marginBottom: '24px' }}>
-              <div style={{ fontSize: '0.58rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>KOPIRAJ NA KORISNIKA</div>
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>KOPIRAJ NA KORISNIKA</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
                 {allAthletes.filter(a => a.id !== athlete.id).map(a => (
                   <button key={a.id} onClick={() => setDuplicateTarget(a.id)}
@@ -1697,7 +1697,7 @@ export function AthletePanel({
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '0.82rem', color: '#fff', fontWeight: 600, fontFamily: 'var(--fm)' }}>{a.full_name}</div>
-                      <div style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>{a.role}</div>
+                      <div style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em' }}>{a.role}</div>
                     </div>
                     {duplicateTarget === a.id && <Check size={12} color="#818cf8" />}
                   </button>
@@ -1706,7 +1706,7 @@ export function AthletePanel({
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={() => setShowDupModal(false)}
-                style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.68rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', borderRadius: '8px' }}>
+                style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', fontSize: '0.68rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', borderRadius: '8px' }}>
                 ODUSTANI
               </button>
               <button onClick={duplicateBlockTo} disabled={!duplicateTarget || !duplicateName || saving}
@@ -1721,11 +1721,11 @@ export function AthletePanel({
       <style>{`
         @keyframes dropDown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:none } }
         @keyframes slideUp  { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:none } }
-        .add-btn { display:flex; align-items:center; gap:6px; width:100%; padding:10px 14px; background:transparent; border:1px dashed rgba(255,255,255,0.15); color:rgba(255,255,255,0.35); cursor:pointer; font-size:0.65rem; letter-spacing:0.2em; font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:7px; justify-content:center; margin-top:6px; }
+        .add-btn { display:flex; align-items:center; gap:6px; width:100%; padding:10px 14px; background:transparent; border:1px dashed rgba(255,255,255,0.15); color:rgba(255,255,255,0.55); cursor:pointer; font-size:0.65rem; letter-spacing:0.2em; font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:7px; justify-content:center; margin-top:6px; }
         .add-btn:hover { border-color:rgba(255,255,255,0.4); color:#f0f0f0; background:rgba(255,255,255,0.04); }
-        .icon-btn-danger { background:transparent; border:none; cursor:pointer; color:rgba(255,255,255,0.2); padding:6px; display:flex; align-items:center; justify-content:center; border-radius:6px; transition:all 0.15s; }
+        .icon-btn-danger { background:transparent; border:none; cursor:pointer; color:rgba(255,255,255,0.55); padding:6px; display:flex; align-items:center; justify-content:center; border-radius:6px; transition:all 0.15s; }
         .icon-btn-danger:hover { color:#ef4444; background:rgba(239,68,68,0.08); }
-        .cat-btn { padding:4px 12px; font-size:0.62rem; letter-spacing:0.1em; font-weight:700; cursor:pointer; font-family:var(--fm); background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.4); border:1px solid var(--border); border-radius:6px; transition:all 0.15s; }
+        .cat-btn { padding:4px 12px; font-size:0.62rem; letter-spacing:0.1em; font-weight:700; cursor:pointer; font-family:var(--fm); background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.55); border:1px solid var(--border); border-radius:6px; transition:all 0.15s; }
         .cat-btn-active, .cat-btn:hover { background:rgba(255,255,255,0.08); color:#f0f0f0; border-color:rgba(255,255,255,0.2); }
         @keyframes fadeUp { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
         @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }

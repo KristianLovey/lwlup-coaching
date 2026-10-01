@@ -13,7 +13,7 @@ type PriorityConfig = Record<LiftKey, Record<string, CellConfig>>
 const PRIORITY_ORDER: Priority[] = ['none', 'primary', 'secondary', 'tertiary', 'quaternary', 'quinary']
 
 const PRIORITY_META: Record<Priority, { label: string; roman: string; color: string; bg: string; border: string }> = {
-  none:       { label: '—',           roman: '—',   color: 'rgba(255,255,255,0.3)',  bg: 'rgba(255,255,255,0.04)',    border: 'var(--t-border)' },
+  none:       { label: '—',           roman: '—',   color: 'rgba(255,255,255,0.55)',  bg: 'rgba(255,255,255,0.04)',    border: 'var(--t-border)' },
   primary:    { label: 'PRIMARNI',    roman: 'I',   color: '#ef3535',               bg: 'rgba(239,53,53,0.22)',     border: 'rgba(239,53,53,0.5)' },
   secondary:  { label: 'SEKUNDARNI', roman: 'II',  color: '#f97316',               bg: 'rgba(249,115,22,0.22)',    border: 'rgba(249,115,22,0.45)' },
   tertiary:   { label: 'TERCIJARNI', roman: 'III', color: '#f59e0b',               bg: 'rgba(245,158,11,0.22)',    border: 'rgba(245,158,11,0.45)' },
@@ -159,7 +159,7 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
   const selectedBlock = blocks.find(b => b.id === selectedBlockId)
 
   if (blocks.length === 0 && !selectedBlockId) return (
-    <div style={{ textAlign: 'center', padding: '48px', color: 'rgba(255,255,255,0.15)', fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: FM }}>
+    <div style={{ textAlign: 'center', padding: '48px', color: 'rgba(255,255,255,0.55)', fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: FM }}>
       Nema blokova za ovog atletičara.
     </div>
   )
@@ -186,7 +186,7 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: b.status === 'active' ? '#ef3535' : 'var(--t-border-hi)', flexShrink: 0 }} />
                 <div>
                   <div style={{ fontSize: '0.72rem', color: '#e0e0e0', fontFamily: FM, fontWeight: 500 }}>{b.name}</div>
-                  <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginTop: '1px' }}>{b.start_date}</div>
+                  <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginTop: '1px' }}>{b.start_date}</div>
                 </div>
               </button>
             ))}
@@ -197,8 +197,8 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
         <div>
-          <div style={{ fontSize: '0.46rem', letterSpacing: '0.28em', color: 'rgba(255,255,255,0.25)', fontFamily: FM, marginBottom: '3px' }}>PRIORITETNA TABLICA</div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', fontFamily: FM }}>
+          <div style={{ fontSize: '0.46rem', letterSpacing: '0.28em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginBottom: '3px' }}>PRIORITETNA TABLICA</div>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>
             Klikni rimski broj za promjenu · upiši naziv vježbe ispod
           </div>
         </div>
@@ -220,7 +220,7 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
 
       {/* ── Table ── */}
       {!config ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.2)' }}>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.55)' }}>
           <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }} />
         </div>
       ) : (
@@ -230,7 +230,7 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
               <tr>
                 <th style={{ width: '52px', padding: '4px 0' }} />
                 {DAYS.map(d => (
-                  <th key={d.key} className="pa-day-th" style={{ padding: '4px 4px', fontSize: '0.46rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', fontFamily: FM, fontWeight: 700, textAlign: 'center' as const }}>
+                  <th key={d.key} className="pa-day-th" style={{ padding: '4px 4px', fontSize: '0.46rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, textAlign: 'center' as const }}>
                     {d.label}
                   </th>
                 ))}
@@ -242,7 +242,7 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
                   <td style={{ padding: '3px 10px 3px 0', verticalAlign: 'top' as const, paddingTop: '8px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '2px' }}>
                       <span className="pa-lift-abbr" style={{ fontSize: '1rem', fontWeight: 900, color: lift.color, fontFamily: FM, lineHeight: 1 }}>{lift.abbr}</span>
-                      <span className="pa-lift-name" style={{ fontSize: '0.38rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.2)', fontFamily: FM }}>{lift.label}</span>
+                      <span className="pa-lift-name" style={{ fontSize: '0.38rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{lift.label}</span>
                     </div>
                   </td>
                   {DAYS.map(day => {
@@ -315,7 +315,7 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
       <style>{`
         @keyframes panelSlideIn { from { opacity:0; transform:translateY(14px) } to { opacity:1; transform:translateY(0) } }
         @keyframes dropDown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:translateY(0) } }
-        .pa-ex-input::placeholder { color: rgba(255,255,255,0.18) !important; }
+        .pa-ex-input::placeholder { color: rgba(255,255,255,0.55) !important; }
         @media (min-width: 768px) {
           .pa-table       { border-spacing: 7px !important; }
           .pa-day-th      { font-size: 0.62rem !important; padding: 6px 6px !important; }
@@ -396,12 +396,12 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '18px', gap: '12px' }}>
           <div>
-            <div style={{ fontSize: '0.44rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.22)', fontFamily: FM, marginBottom: '4px' }}>RASPORED PRIORITETA</div>
+            <div style={{ fontSize: '0.44rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginBottom: '4px' }}>RASPORED PRIORITETA</div>
             <div className="pv-title" style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e0e0e0', fontFamily: FM, letterSpacing: '-0.01em' }}>Tjedni plan liftova</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
             {DAYS.filter(d => LIFTS.some(l => config[l.key][d.key].priority !== 'none')).map(d => (
-              <div key={d.key} className="pv-day-badge" style={{ padding: '3px 7px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '5px', fontSize: '0.42rem', color: 'rgba(255,255,255,0.4)', fontFamily: FM, letterSpacing: '0.1em' }}>
+              <div key={d.key} className="pv-day-badge" style={{ padding: '3px 7px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '5px', fontSize: '0.42rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, letterSpacing: '0.1em' }}>
                 {d.label}
               </div>
             ))}
@@ -415,7 +415,7 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
               <tr>
                 <th style={{ width: '44px', padding: '4px 0' }} />
                 {DAYS.map(d => (
-                  <th key={d.key} className="pv-day-th" style={{ padding: '4px 2px', fontSize: '0.43rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.25)', fontFamily: FM, fontWeight: 700, textAlign: 'center' as const }}>
+                  <th key={d.key} className="pv-day-th" style={{ padding: '4px 2px', fontSize: '0.43rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, textAlign: 'center' as const }}>
                     {d.label}
                   </th>
                 ))}
@@ -427,7 +427,7 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
                   <td style={{ padding: '2px 8px 2px 0', verticalAlign: 'middle' as const }}>
                     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1px' }}>
                       <span className="pv-lift-abbr" style={{ fontSize: '0.95rem', fontWeight: 900, color: lift.color, fontFamily: FM, lineHeight: 1 }}>{lift.abbr}</span>
-                      <span className="pv-lift-name" style={{ fontSize: '0.36rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.18)', fontFamily: FM }}>{lift.label}</span>
+                      <span className="pv-lift-name" style={{ fontSize: '0.36rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{lift.label}</span>
                     </div>
                   </td>
                   {DAYS.map(day => {
@@ -487,7 +487,7 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
               return (
                 <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: m.bg, border: `1px solid ${m.border}`, borderRadius: '5px' }}>
                   <span style={{ fontSize: '0.52rem', fontWeight: 900, color: m.color, fontFamily: FM }}>{m.roman}</span>
-                  <span style={{ fontSize: '0.4rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', fontFamily: FM }}>{m.label}</span>
+                  <span style={{ fontSize: '0.4rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{m.label}</span>
                 </div>
               )
             })}

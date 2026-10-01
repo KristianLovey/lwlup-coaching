@@ -230,7 +230,7 @@ export default function BigThree() {
             <div>
               <div style={{ fontSize: '0.58rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.5)', marginBottom: '20px', fontFamily: 'var(--fm)' }}>{t('bt.eyebrow')}</div>
               <h3 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,3.5vw,3.2rem)', fontWeight: 800, lineHeight: 1.02, margin: '0 0 clamp(16px,3vw,28px)', letterSpacing: '-0.02em' }}>
-                {t('bt.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>{t('bt.title2')}</span>
+                {t('bt.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>{t('bt.title2')}</span>
               </h3>
               <p style={{ fontSize: 'clamp(0.88rem,2.5vw,1.1rem)', lineHeight: 1.85, color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: 300 }}>
                 {t('bt.desc')}
@@ -243,7 +243,7 @@ export default function BigThree() {
                 { num: '03', title: t('bt.item2.title'), desc: t('bt.item2.desc') },
               ].map((item, i) => (
                 <div key={i} style={{ display: 'flex', gap: 'clamp(12px,2vw,20px)', padding: 'clamp(16px,2.5vw,22px) 0', borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.1)' : 'none', alignItems: 'flex-start' }}>
-                  <div style={{ fontSize: '0.6rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--fd)', fontWeight: 800, paddingTop: '3px', flexShrink: 0 }}>{item.num}</div>
+                  <div style={{ fontSize: '0.6rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fd)', fontWeight: 800, paddingTop: '3px', flexShrink: 0 }}>{item.num}</div>
                   <div>
                     <div style={{ fontSize: 'clamp(0.62rem,1.8vw,0.7rem)', letterSpacing: '0.22em', fontWeight: 700, color: 'rgba(255,255,255,0.9)', marginBottom: '7px', fontFamily: 'var(--fm)' }}>{item.title}</div>
                     <p style={{ fontSize: 'clamp(0.78rem,2vw,0.88rem)', lineHeight: 1.75, color: 'rgba(255,255,255,0.65)', margin: 0, fontWeight: 300 }}>{item.desc}</p>
@@ -256,9 +256,9 @@ export default function BigThree() {
           {/* ── Big Three header ── */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'clamp(40px,6vw,72px)', marginTop: 'clamp(60px,8vw,100px)', flexWrap: 'wrap', gap: '20px' }}>
             <div>
-              <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.4)', marginBottom: '16px', fontFamily: 'var(--fm)' }}>{t('bt.discipline')}</div>
+              <div style={{ fontSize: '0.6rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.55)', marginBottom: '16px', fontFamily: 'var(--fm)' }}>{t('bt.discipline')}</div>
               <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,7vw,6rem)', lineHeight: 1, margin: 0 }}>
-                SBD<br /><span style={{ color: 'rgba(255,255,255,0.22)' }}>LIFTS</span>
+                SBD<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>LIFTS</span>
               </h2>
             </div>
             <p style={{ maxWidth: '320px', color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(0.78rem,2vw,0.9rem)', lineHeight: 1.8, textAlign: 'right' }}>
@@ -276,11 +276,11 @@ export default function BigThree() {
                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveLift(lift) } }}
                   style={{ display: 'grid', gridTemplateColumns: '80px 1fr 340px', alignItems: 'stretch', background: '#1a1a20', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', overflow: 'hidden', position: 'relative' }}>
                   <div className="bt-num-col" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)', padding: 'clamp(32px,4vw,48px) 0' }}>
-                    <span style={{ fontFamily: 'var(--fd)', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.2)', writingMode: 'vertical-rl', transform: 'rotate(180deg)', transition: 'color 0.3s' }}>{meta.num}</span>
+                    <span style={{ fontFamily: 'var(--fd)', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.55)', writingMode: 'vertical-rl', transform: 'rotate(180deg)', transition: 'color 0.3s' }}>{meta.num}</span>
                   </div>
                   <div style={{ padding: 'clamp(24px,4vw,48px) clamp(16px,4vw,52px)', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 'clamp(12px,2vw,20px)' }}>
                     <div>
-                      <div style={{ fontSize: 'clamp(0.5rem,1.5vw,0.58rem)', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.45)', marginBottom: '12px', fontFamily: 'var(--fm)', textTransform: 'uppercase' }}>{t(meta.sub)}</div>
+                      <div style={{ fontSize: 'clamp(0.5rem,1.5vw,0.58rem)', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.55)', marginBottom: '12px', fontFamily: 'var(--fm)', textTransform: 'uppercase' }}>{t(meta.sub)}</div>
                       <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,5vw,4.5rem)', fontWeight: 800, lineHeight: 1.02, letterSpacing: '-0.02em', color: '#fff' }}>{lift}</div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -290,7 +290,7 @@ export default function BigThree() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ width: '20px', height: '1px', background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
-                        <span style={{ fontSize: 'clamp(0.58rem,1.6vw,0.68rem)', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em', fontStyle: 'italic', fontFamily: 'var(--fm)' }}>"{meta.cue}"</span>
+                        <span style={{ fontSize: 'clamp(0.58rem,1.6vw,0.68rem)', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em', fontStyle: 'italic', fontFamily: 'var(--fm)' }}>"{meta.cue}"</span>
                       </div>
                     </div>
                     <div className="bt-explore" style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '8px' }}>
@@ -303,7 +303,7 @@ export default function BigThree() {
                     <Image src={LIFT_DETAILS[lift].img} alt={lift} fill quality={65} className="bt-img" style={{ objectFit: 'cover', objectPosition: OBJECT_POS[lift], transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 100vw, 340px" />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #1a1a20 0%, rgba(10,10,10,0.1) 40%, transparent 100%)' }} />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.35) 0%, transparent 55%)' }} />
-                    <div style={{ position: 'absolute', bottom: '24px', right: '24px', fontFamily: 'var(--fd)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.35em', color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase' }}>{lift}</div>
+                    <div style={{ position: 'absolute', bottom: '24px', right: '24px', fontFamily: 'var(--fd)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.35em', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase' }}>{lift}</div>
                   </div>
                 </div>
               )

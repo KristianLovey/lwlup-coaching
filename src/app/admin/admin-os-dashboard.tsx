@@ -7,6 +7,7 @@ import { Spark, LineChart, StackedBarChart, Donut, StrengthRadar } from './admin
 import { estimate1RM } from '../training/training-setplan'
 import { type CardId, type CardState, type DashCards } from './dashboard-settings'
 import { RangeSelect } from './dashboard-settings-drawer'
+import { clickable } from '@/lib/a11y'
 export { SettingsDrawer } from './dashboard-settings-drawer'
 export { CARD_META, defaultCards, type CardId, type CardState, type DashCards } from './dashboard-settings'
 
@@ -826,7 +827,7 @@ function RecentTraining({ athleteId, onViewAll }: { athleteId: string; onViewAll
 function KpiCard({ label, num, unit, sub, data, accent, open, onClick, detail }: { label: string; num: number | string; unit: string; sub: string; data: number[]; accent?: boolean; open?: boolean; onClick?: () => void; detail?: React.ReactNode }) {
   return (
     <div className="kpi" style={{ textAlign: 'left', borderColor: open ? 'var(--border-strong)' : undefined }}>
-      <div onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }} role="button">
+      <div {...(onClick ? clickable(onClick, { expanded: open }) : {})} style={{ cursor: onClick ? 'pointer' : 'default' }}>
         <div className="top"><span className="label">{label}</span>{onClick && <ChevronDown size={13} style={{ color: 'var(--text-muted)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />}</div>
         <div className="num">{num}<span className="unit">{unit}</span></div>
         <div className={'delta ' + (accent ? 'up' : 'flat')}>{sub}</div>

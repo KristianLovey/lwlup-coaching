@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Plus, Check, ChevronDown, Loader2, Trash2 } from 'lucide-react'
 import type { MeetAttempt, Competition } from './types'
 import { cacheGet, cacheSet, cacheInvalidate, meetKeys } from '@/lib/meetCache'
+import { clickable } from '@/lib/a11y'
 
 const supabase = createClient()
 
@@ -145,7 +146,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
     <div style={{ border: `1.5px solid ${open ? meta.color + '55' : 'var(--t-border-hi)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'border-color 0.25s', boxShadow: open ? `0 4px 24px ${meta.color}18` : '0 2px 8px rgba(0,0,0,0.35)', background: 'var(--t-s1)' }}>
 
       {/* Header */}
-      <div onClick={() => setOpen(o => !o)}
+      <div {...clickable(() => setOpen(o => !o), { expanded: open })}
         style={{ padding: '14px 20px', background: open ? `${meta.color}18` : 'var(--t-s3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px', userSelect: 'none' as const, transition: 'background 0.2s' }}>
         {/* Short badge */}
         <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${meta.color}22`, border: `1.5px solid ${meta.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -154,13 +155,13 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#f0f0f5', fontFamily: 'var(--fm)' }}>{meta.label}</div>
           {best && <div style={{ fontSize: '0.65rem', color: meta.color, fontFamily: 'var(--fm)', marginTop: '1px' }}>Best: {best}kg ✓</div>}
-          {!attempt && <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginTop: '1px' }}>{isAdmin ? 'Klikni da dodaš plan' : 'Trener još nije postavio plan'}</div>}
+          {!attempt && <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', marginTop: '1px' }}>{isAdmin ? 'Klikni da dodaš plan' : 'Trener još nije postavio plan'}</div>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {saving && <Loader2 size={13} color="#888" style={{ animation: 'spin 1s linear infinite' }} />}
           {attempt && isAdmin && (
             <button onClick={e => { e.stopPropagation(); onDelete(attempt.id) }}
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '4px', borderRadius: '5px', transition: 'color 0.15s' }}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', padding: '4px', borderRadius: '5px', transition: 'color 0.15s' }}
               onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
               onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}>
               <Trash2 size={12} />
@@ -178,7 +179,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
               <div style={{ height: '1px', width: '16px', background: 'var(--t-border)' }} />
-              <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>WARMUPS</span>
+              <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>WARMUPS</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px' }}>
@@ -187,7 +188,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
                     <MeetInput label={`Warmup ${idx + 1}`} value={w} onChange={v => setWarmups(prev => prev.map((x, i) => i === idx ? v : x))} color={meta.color} disabled={!isAdmin} placeholder="kg" />
                     {isAdmin && warmups.length > 1 && (
                       <button onClick={() => setWarmups(prev => prev.filter((_, i) => i !== idx))}
-                        style={{ position: 'absolute', top: 0, right: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem', padding: '2px 4px', lineHeight: 1, transition: 'color 0.15s' }}
+                        style={{ position: 'absolute', top: 0, right: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', fontSize: '0.7rem', padding: '2px 4px', lineHeight: 1, transition: 'color 0.15s' }}
                         onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#f87171'}
                         onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.2)'}>×</button>
                     )}
@@ -209,8 +210,8 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
               <div style={{ height: '1px', width: '16px', background: 'var(--t-border)' }} />
-              <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>RASPONI POKUŠAJA</span>
-              {!isAdmin && <span style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)' }}>od trenera</span>}
+              <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>RASPONI POKUŠAJA</span>
+              {!isAdmin && <span style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)' }}>od trenera</span>}
             </div>
             {[
               { n: 1, min: a1min, setMin: setA1min, max: a1max, setMax: setA1max, act: a1act, setAct: setA1act, good: a1good, setGood: setA1good },
@@ -228,9 +229,9 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
                       </div>
                     ) : (
                       <div>
-                        <div style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em', fontFamily: 'var(--fm)', marginBottom: '5px' }}>POKUŠAJ {row.n} — RASPON</div>
+                        <div style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.08em', fontFamily: 'var(--fm)', marginBottom: '5px' }}>POKUŠAJ {row.n} — RASPON</div>
                         <div style={{ fontSize: '1.1rem', fontWeight: 700, color: meta.color, fontFamily: 'var(--fd)' }}>
-                          {hasRange ? `${row.min || '?'} – ${row.max || '?'} kg` : <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.8rem' }}>Nije postavljeno</span>}
+                          {hasRange ? `${row.min || '?'} – ${row.max || '?'} kg` : <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.8rem' }}>Nije postavljeno</span>}
                         </div>
                       </div>
                     )}
@@ -241,7 +242,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
                   </div>
                   {/* Good/No lift toggle */}
                   <div className="meet-toggle" style={{ display: 'flex', flexDirection: 'column' as const, gap: '4px' }}>
-                    <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', marginBottom: '2px', textAlign: 'center' as const }}>Ret</div>
+                    <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', marginBottom: '2px', textAlign: 'center' as const }}>Ret</div>
                     <button onClick={() => row.setGood(row.good === true ? null : true)}
                       style={{ padding: '7px', borderRadius: '7px', border: `1px solid ${row.good === true ? 'rgba(34,197,94,0.4)' : 'var(--t-border)'}`, background: row.good === true ? 'rgba(34,197,94,0.12)' : 'transparent', cursor: 'pointer', fontSize: '0.7rem', transition: 'all 0.15s' }}>
                       <Check size={12} color={row.good === true ? '#4ade80' : 'rgba(255,255,255,0.3)'} strokeWidth={row.good === true ? 3 : 1.5} />
@@ -260,7 +261,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <div style={{ height: '1px', width: '16px', background: 'var(--t-border)' }} />
-              <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>NAPOMENE TRENERA</span>
+              <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>NAPOMENE TRENERA</span>
             </div>
             {isAdmin ? (
               <textarea value={adminNotes} onChange={e => setAdminNotes(e.target.value)}
@@ -273,7 +274,7 @@ function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBes
                 <div style={{ fontSize: '0.84rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, fontFamily: 'var(--fm)' }}>{adminNotes}</div>
               </div>
             ) : (
-              <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', fontStyle: 'italic' }}>Trener nije ostavio napomene.</div>
+              <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontStyle: 'italic' }}>Trener nije ostavio napomene.</div>
             )}
           </div>
 
@@ -540,7 +541,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
       {/* Athlete selector — only in admin/trainer panel, not on athlete's own training page */}
       {showAthleteSelector && athletes.length > 0 && (
         <div style={{ marginBottom: '20px' }}>
-          <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '8px' }}>ODABERI LIFTERA</div>
+          <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '8px' }}>ODABERI LIFTERA</div>
           <select
             value={athleteId}
             onChange={e => { setAthleteId(e.target.value); setAttempts([]); setLocalBests({ squat: null, bench: null, deadlift: null }) }}
@@ -555,7 +556,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
 
       {/* Competition selector */}
       <div style={{ marginBottom: '24px' }}>
-        <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '8px' }}>NATJECANJE</div>
+        <div style={{ fontSize: '0.52rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '8px' }}>NATJECANJE</div>
         <div ref={compPickerRef} style={{ position: 'relative' }}>
           <button
             onClick={() => setShowCompPicker(o => !o)}
@@ -567,10 +568,10 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
             {currentComp ? (
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '0.88rem', color: '#f0f0f5', fontWeight: 600 }}>{currentComp.name}</div>
-                <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.35)', marginTop: '1px' }}>{currentComp.date}{currentComp.location ? ` · ${currentComp.location}` : ''}</div>
+                <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.55)', marginTop: '1px' }}>{currentComp.date}{currentComp.location ? ` · ${currentComp.location}` : ''}</div>
               </div>
             ) : (
-              <span style={{ flex: 1, color: 'rgba(255,255,255,0.35)', fontSize: '0.82rem' }}>Odaberi natjecanje...</span>
+              <span style={{ flex: 1, color: 'rgba(255,255,255,0.55)', fontSize: '0.82rem' }}>Odaberi natjecanje...</span>
             )}
             <ChevronDown size={14} color="rgba(255,255,255,0.3)" style={{ transform: showCompPicker ? 'rotate(180deg)' : 'none', transition: 'transform 0.22s', flexShrink: 0 }} />
           </button>
@@ -578,7 +579,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
           {showCompPicker && (
             <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '11px', boxShadow: '0 16px 48px rgba(0,0,0,0.8)', zIndex: 300, overflow: 'hidden', animation: 'dropDown 0.18s ease' }}>
               {competitions.length === 0 && (
-                <div style={{ padding: '14px 16px', fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)' }}>Nema natjecanja u sustavu</div>
+                <div style={{ padding: '14px 16px', fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)' }}>Nema natjecanja u sustavu</div>
               )}
               {competitions.map(c => {
                 const hasSaved = compsWithData.has(c.id)
@@ -593,7 +594,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
                     <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: hasSaved ? '#4ade80' : 'var(--t-border)', flexShrink: 0, boxShadow: hasSaved ? '0 0 6px #4ade8066' : 'none', transition: 'all 0.2s' }} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '0.84rem', fontWeight: isActive ? 600 : 400, color: isActive ? '#f0f0f5' : 'rgba(255,255,255,0.7)', fontFamily: 'var(--fm)' }}>{c.name}</div>
-                      <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', marginTop: '1px' }}>{c.date}{c.location ? ` · ${c.location}` : ''}</div>
+                      <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', marginTop: '1px' }}>{c.date}{c.location ? ` · ${c.location}` : ''}</div>
                     </div>
                     {isActive && <Check size={12} color="#f0f0f0" />}
                   </button>
@@ -607,7 +608,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
       {/* ── RASPORED DANA ─────────────────────────────── */}
       {selectedComp && (
         <div style={{ marginBottom: '20px', padding: '14px 16px', background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '12px' }}>
-          <div style={{ fontSize: '0.52rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '12px' }}>RASPORED DANA</div>
+          <div style={{ fontSize: '0.52rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '12px' }}>RASPORED DANA</div>
           {/* auto-fit: 3 u redu na širem, prelama se na 2/1 kad nativni time-picker ne stane (mobitel) */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
             {([
@@ -616,7 +617,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
               { label: 'Natjecanje', value: timeComp, set: setTimeComp, key: 'timeComp', color: '#ef3535' },
             ] as const).map(({ label, value, set, key, color }) => (
               <div key={key}>
-                <div style={{ fontSize: '0.5rem', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '5px' }}>{label.toUpperCase()}</div>
+                <div style={{ fontSize: '0.5rem', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '5px' }}>{label.toUpperCase()}</div>
                 <input
                   type="time" value={value}
                   onChange={e => { set(e.target.value); saveSchedule(key, e.target.value) }}
@@ -653,7 +654,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
           </button>
         </div>
       ) : (
-        <div style={{ padding: '40px 20px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>
+        <div style={{ padding: '40px 20px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>
           Odaberi natjecanje za prikaz planova
         </div>
       )}
@@ -667,7 +668,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
               <div key={lift} style={{ padding: '14px 16px', background: val ? `${LIFT_META[lift].color}0a` : 'var(--t-s2)', border: `1.5px solid ${val ? LIFT_META[lift].color + '33' : 'var(--t-border)'}`, borderRadius: '12px', textAlign: 'center' as const, transition: 'all 0.3s' }}>
                 <div style={{ fontSize: '0.52rem', color: val ? LIFT_META[lift].color : 'rgba(255,255,255,0.2)', letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '4px' }}>{LIFT_META[lift].short}</div>
                 <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: val ? LIFT_META[lift].color : 'rgba(255,255,255,0.15)', lineHeight: 1 }}>{val ?? '—'}</div>
-                {val && <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginTop: '3px' }}>kg</div>}
+                {val && <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', marginTop: '3px' }}>kg</div>}
               </div>
             )
           })}
@@ -679,7 +680,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
               <div style={{ padding: '14px 16px', background: displayTotal ? 'var(--t-s3)' : 'var(--t-s2)', border: `1.5px solid ${displayTotal ? 'var(--t-border-hi)' : 'var(--t-border)'}`, borderRadius: '12px', textAlign: 'center' as const, transition: 'all 0.3s' }}>
                 <div style={{ fontSize: '0.52rem', color: displayTotal ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)', letterSpacing: '0.12em', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '4px' }}>TOTAL</div>
                 <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: displayTotal ? '#f0f0f5' : 'rgba(255,255,255,0.15)', lineHeight: 1 }}>{displayTotal ?? '—'}</div>
-                {displayTotal && <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', marginTop: '3px' }}>kg</div>}
+                {displayTotal && <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', marginTop: '3px' }}>kg</div>}
               </div>
             )
           })()}
@@ -697,7 +698,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
               <span style={{ fontSize: '0.72rem', fontWeight: 700, color: showVS ? '#f0f0f5' : 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>VS KONKURENCIJA</span>
               {competitors.length > 0 && <span style={{ fontSize: '0.52rem', background: 'var(--t-hi)', color: 'rgba(255,255,255,0.5)', padding: '2px 8px', borderRadius: '10px', fontFamily: 'var(--fm)' }}>{competitors.length}</span>}
             </div>
-            <span style={{ color: 'rgba(255,255,255,0.3)', transform: showVS ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block', fontSize: '0.8rem' }}>↓</span>
+            <span style={{ color: 'rgba(255,255,255,0.55)', transform: showVS ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block', fontSize: '0.8rem' }}>↓</span>
           </button>
 
           {showVS && (() => {
@@ -752,7 +753,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
                     {/* Header */}
                     <div style={{ display: 'grid', gridTemplateColumns: '22px 1fr 52px 52px 52px 64px 64px', gap: '4px', padding: '8px 14px', background: 'var(--t-s3)', borderBottom: '1px solid var(--t-border)', alignItems: 'center' }}>
                       {['#','IME','SQ','BP','DL','TOTAL','GLP'].map(h => (
-                        <span key={h} style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700, textAlign: h === '#' || h === 'IME' ? 'left' as const : 'center' as const }}>{h}</span>
+                        <span key={h} style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700, textAlign: h === '#' || h === 'IME' ? 'left' as const : 'center' as const }}>{h}</span>
                       ))}
                     </div>
                     {allRows.map((row, idx) => {
@@ -772,19 +773,19 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
                               <div style={{ textAlign: 'center' as const }}>
                                 {row.glp > 0 ? (
                                   <span style={{ fontSize: '0.72rem', fontWeight: 800, color: gc, fontFamily: 'var(--fd)', background: `${gc}14`, padding: '2px 5px', borderRadius: '5px', border: `1px solid ${gc}28` }}>{row.glp}</span>
-                                ) : <span style={{ color: 'rgba(255,255,255,0.18)', fontSize: '0.7rem' }}>—</span>}
+                                ) : <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.7rem' }}>—</span>}
                               </div>
                               {/* Edit / delete — admin only */}
                               {!row.isLifter && showAthleteSelector && (
                                 <div style={{ display: 'flex', gap: '3px', justifyContent: 'center' }}>
                                   <button onClick={() => { setEditingId(row.id); setEditDraft(competitors.find(c => c.id === row.id)!) }}
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: '2px', display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', padding: '2px', display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
                                     onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#facc15'}
                                     onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.3)'}>
                                     ✏️
                                   </button>
                                   <button onClick={() => dbDeleteCompetitor(row.id)}
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '2px', display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', padding: '2px', display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
                                     onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#f87171'}
                                     onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.2)'}>
                                     <Trash2 size={11} />
@@ -830,7 +831,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
                 {/* Add competitor form — admin/trainer only */}
                 {showAthleteSelector && (
                   <div style={{ padding: '14px 16px', background: 'var(--t-s2)', borderTop: '1px solid var(--t-border)' }}>
-                    <div style={{ fontSize: '0.52rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '10px' }}>DODAJ NATJECATELJA</div>
+                    <div style={{ fontSize: '0.52rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '10px' }}>DODAJ NATJECATELJA</div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: '8px', marginBottom: '8px' }}>
                       <input placeholder="Ime i prezime" value={compDraft.name} onChange={e => setCompDraft(d => ({ ...d, name: e.target.value }))}
@@ -878,7 +879,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
         <div style={{ marginTop: '20px', padding: '16px 20px', background: 'var(--t-s1)', border: '1px solid var(--t-border-hi)', borderRadius: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
             <div style={{ height: '1px', width: '16px', background: 'var(--t-border)' }} />
-            <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>MOJE BILJEŠKE S NATJECANJA</span>
+            <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>MOJE BILJEŠKE S NATJECANJA</span>
           </div>
           <textarea
             value={activeAttempts[0]?.lifter_notes ?? ''}

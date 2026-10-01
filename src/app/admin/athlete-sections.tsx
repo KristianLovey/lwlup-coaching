@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Plus, Trash2, ChevronDown, Pencil, Check } from 'lucide-react'
 import { LineChart } from './admin-os-charts'
+import { clickable } from '@/lib/a11y'
 
 const supabase = createClient()
 const fmtDate = (d: string) => { const p = d.split('-'); return p.length === 3 ? `${p[2]}.${p[1]}.${p[0].slice(2)}` : d }
@@ -88,7 +89,7 @@ export function NotesSection({ athleteId, adminId }: { athleteId: string; adminI
               return (
                 <div key={n.id} style={{ borderTop: '1px solid var(--border)' }}>
                   {/* zatvoreno: samo naslov + datum — klik otvara sadržaj */}
-                  <div onClick={() => setOpenId(open ? null : n.id)} role="button"
+                  <div {...clickable(() => setOpenId(open ? null : n.id), { expanded: open })}
                     style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 2px', cursor: 'pointer' }}>
                     <ChevronDown size={14} style={{ color: 'var(--text-muted)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
                     <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{noteTitle(n)}</span>

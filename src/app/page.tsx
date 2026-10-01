@@ -7,6 +7,7 @@ import Footer from '@/app/components/Footer'
 import BigThree from '@/app/components/big_three'
 import { RotateCw } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
+import { clickable } from '@/lib/a11y'
 
 
 const SLIDES = [
@@ -144,7 +145,7 @@ function FounderCard({ founder, index, hint, backLabel }: { founder: FounderData
           <div className="founder-face founder-back">
             <div style={{ position: 'absolute', top: '-14px', right: '14px', fontFamily: 'var(--fd)', fontSize: 'clamp(6rem,12vw,12rem)', fontWeight: 800, color: 'rgba(255,255,255,0.03)', lineHeight: 1, userSelect: 'none', pointerEvents: 'none' }}>0{index + 1}</div>
             <div style={{ position: 'relative', zIndex: 1 }}>
-              <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.48)', marginBottom: '12px', fontFamily: 'var(--fm)' }}>{founder.role}</div>
+              <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.55)', marginBottom: '12px', fontFamily: 'var(--fm)' }}>{founder.role}</div>
               <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.5rem, 3vw, 2.6rem)', lineHeight: 1.05, marginBottom: '18px', letterSpacing: '-0.01em', marginTop: 0 }}>{founder.name}</h2>
               <div style={{ width: '36px', height: '2px', background: '#fff', marginBottom: '20px', opacity: 0.7 }} />
               <p style={{ color: 'rgba(255,255,255,0.66)', lineHeight: 1.8, fontSize: '0.88rem', marginBottom: '22px' }}>{founder.bio}</p>
@@ -157,7 +158,7 @@ function FounderCard({ founder, index, hint, backLabel }: { founder: FounderData
                 ))}
               </div>
             </div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '22px', color: 'rgba(255,255,255,0.4)' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '22px', color: 'rgba(255,255,255,0.55)' }}>
               <RotateCw size={12} strokeWidth={2.4} style={{ transform: 'scaleX(-1)' }} />
               <span style={{ fontSize: '0.58rem', letterSpacing: '0.2em', fontWeight: 700, textTransform: 'uppercase' as const }}>{backLabel}</span>
             </div>
@@ -280,7 +281,7 @@ export default function Landing() {
           <p style={{ fontSize: 'clamp(0.65rem,1.3vw,0.8rem)', color: 'rgba(255,255,255,0.62)', fontStyle: 'italic', lineHeight: 1.6, margin: 0, transition: 'all 0.8s' }}>
             &ldquo;{SLIDES[slide].quote}&rdquo;
           </p>
-          <p style={{ color: 'rgba(255,255,255,0.48)', fontSize: 'clamp(0.52rem,0.9vw,0.6rem)', letterSpacing: '0.28em', textTransform: 'uppercase' as const, marginTop: '6px', marginBottom: 0 }}>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 'clamp(0.52rem,0.9vw,0.6rem)', letterSpacing: '0.28em', textTransform: 'uppercase' as const, marginTop: '6px', marginBottom: 0 }}>
             — {SLIDES[slide].sub}
           </p>
         </div>
@@ -288,7 +289,8 @@ export default function Landing() {
         {/* Slideshow dots — bottom right, above quote */}
         <div style={{ position: 'absolute', bottom: 'clamp(30px,5vh,40px)', right: 'clamp(20px,5vw,60px)', display: 'flex', gap: '8px', zIndex: 3 }}>
           {SLIDES.map((_, i) => (
-            <div key={i} onClick={() => goSlide(i)} style={{ cursor: 'pointer', width: i === slide ? 24 : 7, height: 3, background: i === slide ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'all 0.6s' }} />
+            <div key={i} {...clickable(() => goSlide(i), { label: `Slajd ${i + 1}`, pressed: i === slide })}
+              style={{ cursor: 'pointer', width: i === slide ? 24 : 7, height: 3, background: i === slide ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'all 0.6s' }} />
           ))}
         </div>
       </section>
@@ -299,7 +301,7 @@ export default function Landing() {
           {STATS.map((s, i) => (
             <div key={i} className="stat-card"
               style={{ padding: 'clamp(40px,6vw,80px) clamp(16px,3vw,40px)', textAlign: 'center', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.16)' : 'none', cursor: 'pointer', opacity: statsReveal.visible ? 1 : 0, transform: statsReveal.visible ? 'none' : 'translateY(30px)', transition: `opacity 0.7s ${i * 0.1}s, transform 0.7s ${i * 0.1}s, background 0.4s, border-color 0.4s` }}>
-              <div className="stat-icon" style={{ color: 'rgba(255,255,255,0.2)', marginBottom: '16px', display: 'flex', justifyContent: 'center', transition: 'color 0.4s' }}>{s.icon}</div>
+              <div className="stat-icon" style={{ color: 'rgba(255,255,255,0.55)', marginBottom: '16px', display: 'flex', justifyContent: 'center', transition: 'color 0.4s' }}>{s.icon}</div>
               <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,6vw,4.5rem)', lineHeight: 1, marginBottom: '10px' }}>{s.val}</div>
               <div style={{ fontSize: 'clamp(0.5rem,1.5vw,0.65rem)', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.6)', transition: 'color 0.4s' }}>{s.label}</div>
             </div>
@@ -331,7 +333,7 @@ export default function Landing() {
           {/* Dobne kategorije — horizontal cards */}
           <div style={{ marginBottom: 'clamp(48px,7vw,80px)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
-              <span style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.cats.age')}</span>
+              <span style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{t('home.cats.age')}</span>
               <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.13)' }} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }} className="age-cats-grid">
@@ -339,9 +341,9 @@ export default function Landing() {
                 <div key={i} style={{ position: 'relative', border: '1px solid rgba(255,255,255,0.16)', borderRadius: '4px', padding: '22px 20px', background: '#181818', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)', overflow: 'hidden', transition: 'border-color 0.25s, background 0.25s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.28)'; (e.currentTarget as HTMLDivElement).style.background = '#1f1f1f' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.16)'; (e.currentTarget as HTMLDivElement).style.background = '#181818' }}>
-                  <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '10px' }}>{String(i + 1).padStart(2, '0')}</div>
+                  <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '10px' }}>{String(i + 1).padStart(2, '0')}</div>
                   <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1rem,2vw,1.25rem)', letterSpacing: '0.03em', color: '#fff', marginBottom: '8px' }}>{t(cat.key)}</div>
-                  <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.08em' }}>{cat.age} {t('home.cats.years')}</div>
+                  <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 600, letterSpacing: '0.08em' }}>{cat.age} {t('home.cats.years')}</div>
                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px', background: 'rgba(255,255,255,0.09)' }} />
                 </div>
               ))}
@@ -351,7 +353,7 @@ export default function Landing() {
           {/* Težinske kategorije — two panels side by side */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
-              <span style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)', fontWeight: 700 }}>TEŽINSKE KATEGORIJE</span>
+              <span style={{ fontSize: '0.55rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700 }}>TEŽINSKE KATEGORIJE</span>
               <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.13)' }} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }} className="weight-cats-grid">
@@ -370,7 +372,7 @@ export default function Landing() {
                         onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)' }}
                         onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}>
                         <span style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(0.85rem,1.8vw,1.05rem)', color: 'rgba(255,255,255,0.9)', letterSpacing: '0.02em' }}>{kg}</span>
-                        <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--fm)', marginLeft: '3px', marginTop: '2px' }}>kg</span>
+                        <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', marginLeft: '3px', marginTop: '2px' }}>kg</span>
                       </div>
                     ))}
                   </div>
@@ -382,7 +384,7 @@ export default function Landing() {
           {/* Footer note */}
           <div style={{ marginTop: 'clamp(32px,5vw,48px)', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.13)', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: '4px', height: '4px', background: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
-            <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.14em', fontFamily: 'var(--fm)' }}>
+            <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.14em', fontFamily: 'var(--fm)' }}>
               {t('home.cats.note')}
             </span>
           </div>
@@ -397,7 +399,7 @@ export default function Landing() {
             <div style={{ position: 'relative' }}>
               <div className="section-eyebrow">{t('home.about.eyebrow')}</div>
               <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem,8vw,6rem)', lineHeight: 1.02, marginTop: 0, marginBottom: 'clamp(20px,4vw,40px)' }}>
-                {t('home.about.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.3)' }}>{t('home.about.title2')}</span>
+                {t('home.about.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>{t('home.about.title2')}</span>
               </h2>
               <p style={{ fontSize: 'clamp(0.9rem,2.5vw,1.2rem)', lineHeight: 1.8, color: 'rgba(255,255,255,0.7)', marginBottom: '24px' }}>
                 {t('home.about.desc')}
@@ -598,7 +600,7 @@ export default function Landing() {
         .club-img:hover     { transform: scale(1.05) !important; }
         .feature-card:hover { transform: translateY(-5px) !important; border-color: rgba(255,255,255,0.14) !important; box-shadow: 0 8px 32px rgba(255,255,255,0.04); }
         .feature-card:hover > div:first-child { opacity: 1 !important; }
-        .feature-card:hover > div:nth-child(2) { color: rgba(255,255,255,0.14) !important; }
+        .feature-card:hover > div:nth-child(2) { color: rgba(255,255,255,0.55) !important; }
 
         /* ══ FOUNDER FLIP CARDS ═══════════════════════════════════ */
         .founder-flip { perspective: 1800px; }

@@ -7,6 +7,7 @@ import Footer from '@/app/components/Footer'
 import Navbar from '@/app/components/Navbar'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/context/LanguageContext'
+import { useEscapeKey } from '@/lib/a11y'
 
 const supabase = createClient()
 
@@ -57,7 +58,7 @@ function glpTier(glp: number): { label: string; color: string } {
   if (glp >= 90)  return { label: 'PROFESSIONAL',  color: '#8888ff' }
   if (glp >= 80)  return { label: 'ADVANCED',      color: '#44cc88' }
   if (glp >= 70)  return { label: 'INTERMEDIATE',  color: '#aaaaaa' }
-  return                  { label: 'BEGINNER',      color: 'rgba(255,255,255,0.4)' }
+  return                  { label: 'BEGINNER',      color: 'rgba(255,255,255,0.55)' }
 }
 
 function useReveal(threshold = 0.08) {
@@ -127,6 +128,7 @@ export default function TeamPage() {
 
   // Admin modal state
   const [showModal, setShowModal] = useState(false)
+  useEscapeKey(() => setShowModal(false), showModal)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<AthleteForm>(emptyForm)
   const [modalSaving, setModalSaving] = useState(false)
@@ -280,7 +282,7 @@ export default function TeamPage() {
           <div style={{ opacity: heroReveal.visible ? 1 : 0, transform: heroReveal.visible ? 'none' : 'translateY(35px)', transition: 'all 1s cubic-bezier(0.16,1,0.3,1)' }}>
             <div className="section-eyebrow">{t('team.eyebrow')}</div>
             <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4rem, 10vw, 8rem)', lineHeight: 1.02, marginBottom: '30px', marginTop: 0 }}>
-              LWL UP<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>TEAM</span>
+              LWL UP<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>TEAM</span>
             </h1>
             <p style={{ fontSize: '1.15rem', color: 'rgba(255,255,255,0.65)', maxWidth: '700px', margin: '0 auto 60px', lineHeight: 1.85, fontWeight: 300 }}>
               {t('team.desc')}
@@ -315,7 +317,7 @@ export default function TeamPage() {
       {/* GRID */}
       <section style={{ padding: '120px 60px', maxWidth: '1600px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '80px 0', color: 'rgba(255,255,255,0.3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '80px 0', color: 'rgba(255,255,255,0.55)' }}>
             <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} />
             <span style={{ fontSize: '0.8rem', letterSpacing: '0.2em' }}>{t('team.loading')}</span>
           </div>
@@ -387,7 +389,7 @@ export default function TeamPage() {
                     <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.7rem', margin: 0, letterSpacing: '0.04em', color: '#fff', lineHeight: 1 }}>{member.name}</h3>
                     {member.instagram && (
                       <a href={member.instagram} target="_blank" rel="noopener noreferrer"
-                        style={{ color: 'rgba(255,255,255,0.3)', transition: '0.25s', flexShrink: 0, marginTop: '4px' }}
+                        style={{ color: 'rgba(255,255,255,0.55)', transition: '0.25s', flexShrink: 0, marginTop: '4px' }}
                         onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#fff'}
                         onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.3)'}>
                         <Instagram size={18} />
@@ -400,20 +402,20 @@ export default function TeamPage() {
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                         {[['SQUAT', member.squat], ['BENCH', member.bench], ['DEADLIFT', member.deadlift]].map(([label, val], li) => (
                           <div key={li} style={{ padding: '16px 0', borderRight: li < 2 ? '1px solid rgba(255,255,255,0.08)' : 'none', paddingLeft: li > 0 ? '16px' : '0', paddingRight: li < 2 ? '16px' : '0' }}>
-                            <div style={{ fontSize: '0.55rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)', marginBottom: '6px' }}>{label}</div>
+                            <div style={{ fontSize: '0.55rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', marginBottom: '6px' }}>{label}</div>
                             <div style={{ fontFamily: 'var(--fd)', fontSize: '1.7rem', color: '#fff', lineHeight: 1 }}>{val}</div>
                           </div>
                         ))}
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '16px 0', borderTop: '1px solid rgba(255,255,255,0.08)', borderBottom: (member.highlights?.filter(Boolean).length ?? 0) > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
                         <div>
-                          <div style={{ fontSize: '0.55rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)', marginBottom: '5px' }}>TOTAL</div>
+                          <div style={{ fontSize: '0.55rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', marginBottom: '5px' }}>TOTAL</div>
                           <div style={{ fontFamily: 'var(--fd)', fontSize: '2.4rem', color: '#fff', lineHeight: 1 }}>
-                            {member.total}<span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.35)', marginLeft: '6px' }}>kg</span>
+                            {member.total}<span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.55)', marginLeft: '6px' }}>kg</span>
                           </div>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                          <div style={{ fontSize: '0.55rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)', marginBottom: '5px' }}>GLP</div>
+                          <div style={{ fontSize: '0.55rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', marginBottom: '5px' }}>GLP</div>
                           <div style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1 }}>{member.glp}</div>
                           {member.glp > 0 && (() => { const tier = glpTier(member.glp); return (
                             <div style={{ fontSize: '0.5rem', letterSpacing: '0.18em', color: tier.color, fontWeight: 700, marginTop: '4px' }}>{tier.label}</div>
@@ -423,7 +425,7 @@ export default function TeamPage() {
                     </>
                   ) : (
                     <div style={{ padding: '36px 0', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                      <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.2em' }}>{t('team.noData')}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.2em' }}>{t('team.noData')}</div>
                     </div>
                   )}
 
@@ -461,7 +463,7 @@ export default function TeamPage() {
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}
               >
                 <Plus size={32} color="rgba(255,255,255,0.3)" />
-                <div style={{ fontSize: '0.65rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontWeight: 700 }}>DODAJ LIFTERA</div>
+                <div style={{ fontSize: '0.65rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontWeight: 700 }}>DODAJ LIFTERA</div>
               </div>
             )}
           </div>
@@ -472,7 +474,7 @@ export default function TeamPage() {
       <section style={{ padding: '120px 60px', background: '#131317', borderTop: '1px solid rgba(255,255,255,0.08)', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <div ref={ctaReveal.ref} style={{ opacity: ctaReveal.visible ? 1 : 0, transform: ctaReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
           <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem, 8vw, 6rem)', marginBottom: '30px', lineHeight: 1.02, marginTop: 0 }}>
-            {t('team.cta.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.25)' }}>{t('team.cta.title2')}</span>
+            {t('team.cta.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>{t('team.cta.title2')}</span>
           </h2>
           <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.6)', maxWidth: '600px', margin: '0 auto 50px', lineHeight: 1.85, fontWeight: 300 }}>
             {t('team.cta.desc')}
@@ -491,10 +493,10 @@ export default function TeamPage() {
       {showModal && (
         <div onClick={() => setShowModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div onClick={e => e.stopPropagation()} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.12)', padding: '36px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', animation: 'slideUp 0.25s ease' }}>
-            <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '4px' }}>
+            <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', padding: '4px' }}>
               <X size={18} />
             </button>
-            <div style={{ fontSize: '0.6rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.3)', marginBottom: '28px', fontFamily: 'var(--fm)', fontWeight: 700 }}>
+            <div style={{ fontSize: '0.6rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.55)', marginBottom: '28px', fontFamily: 'var(--fm)', fontWeight: 700 }}>
               {editingId ? 'UREDI LIFTERA' : 'DODAJ LIFTERA'}
             </div>
 
@@ -503,7 +505,7 @@ export default function TeamPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 {[['IME I PREZIME *', 'name', 'Ime Prezime'], ['NADIMAK', 'nickname', '"The Beast"']].map(([label, key, ph]) => (
                   <div key={key}>
-                    <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>{label}</div>
+                    <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>{label}</div>
                     <input value={form[key as keyof AthleteForm] as string} onChange={e => setF(key as keyof AthleteForm, e.target.value)} placeholder={ph}
                       style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.9rem', padding: '8px 0', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
                   </div>
@@ -512,7 +514,7 @@ export default function TeamPage() {
 
               {/* Category */}
               <div>
-                <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>KATEGORIJA</div>
+                <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>KATEGORIJA</div>
                 <input value={form.category} onChange={e => setF('category', e.target.value)} placeholder="npr. M-93, F-72"
                   style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.9rem', padding: '8px 0', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
               </div>
@@ -521,7 +523,7 @@ export default function TeamPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
                 {[['ČUČANJ kg', 'squat'], ['BENCH kg', 'bench'], ['MRTVO kg', 'deadlift'], ['TOTAL kg', 'total']].map(([label, key]) => (
                   <div key={key}>
-                    <div style={{ fontSize: '0.5rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>{label}</div>
+                    <div style={{ fontSize: '0.5rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>{label}</div>
                     <input value={form[key as keyof AthleteForm] as string} onChange={e => setF(key as keyof AthleteForm, e.target.value)} placeholder="0" type="number" min="0"
                       style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.9rem', padding: '8px 0', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
                   </div>
@@ -530,7 +532,7 @@ export default function TeamPage() {
 
               {/* GLP */}
               <div>
-                <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>GL POINTS</div>
+                <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>GL POINTS</div>
                 <input value={form.glp} onChange={e => setF('glp', e.target.value)} placeholder="0.00" type="number" min="0" step="0.01"
                   style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.9rem', padding: '8px 0', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
               </div>
@@ -539,7 +541,7 @@ export default function TeamPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 {[['INSTAGRAM URL', 'instagram', 'https://instagram.com/...'], ['SLIKA URL', 'img', 'https://...']].map(([label, key, ph]) => (
                   <div key={key}>
-                    <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>{label}</div>
+                    <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>{label}</div>
                     <input value={form[key as keyof AthleteForm] as string} onChange={e => setF(key as keyof AthleteForm, e.target.value)} placeholder={ph}
                       style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.9rem', padding: '8px 0', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box' }} />
                   </div>
@@ -548,7 +550,7 @@ export default function TeamPage() {
 
               {/* Highlights */}
               <div>
-                <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>HIGHLIGHTS <span style={{ color: 'rgba(255,255,255,0.15)' }}>(jedan po liniji)</span></div>
+                <div style={{ fontSize: '0.55rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>HIGHLIGHTS <span style={{ color: 'rgba(255,255,255,0.55)' }}>(jedan po liniji)</span></div>
                 <textarea value={form.highlights} onChange={e => setF('highlights', e.target.value)} placeholder={"3x prvak države\nIPF Junior rekord"} rows={3}
                   style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.85rem', padding: '10px 12px', outline: 'none', fontFamily: 'var(--fm)', boxSizing: 'border-box', resize: 'vertical' }} />
               </div>
@@ -561,7 +563,7 @@ export default function TeamPage() {
                     SAKRIJ
                   </button>
                 )}
-                <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700 }}>
+                <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700 }}>
                   ODUSTANI
                 </button>
                 <button onClick={saveAthlete} disabled={modalSaving} style={{ flex: 2, padding: '12px', background: modalSaving ? 'rgba(255,255,255,0.05)' : '#fff', color: modalSaving ? 'rgba(255,255,255,0.3)' : '#000', border: 'none', cursor: modalSaving ? 'not-allowed' : 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>

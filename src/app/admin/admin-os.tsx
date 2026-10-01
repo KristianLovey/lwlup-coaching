@@ -20,6 +20,7 @@ import type { AthleteProfile } from './athlete-panels'
 import type { Block, Exercise } from '../training/types'
 import { defaultCards, type DashCards, type CardId, type CardState } from './dashboard-settings'
 import { SettingsDrawer } from './dashboard-settings-drawer'
+import { clickable, useEscapeKey } from '@/lib/a11y'
 
 const supabase = createClient()
 
@@ -549,6 +550,7 @@ function LifteriSection({ athletes, search, setSearch, onPick, onAdded, onDelete
   const [showAdd, setShowAdd] = useState(false)
   const [manage, setManage] = useState(false)
   const [confirmId, setConfirmId] = useState<string | null>(null)
+  useEscapeKey(() => setConfirmId(null), !!confirmId)
   const [resetId, setResetId] = useState<string | null>(null)
   const list = athletes.filter(a => a.full_name?.toLowerCase().includes(search.toLowerCase()))
   return (
@@ -567,7 +569,9 @@ function LifteriSection({ athletes, search, setSearch, onPick, onAdded, onDelete
         {list.map(a => {
           const active = (a.blocks as Block[])?.find(b => b.status === 'active')
           return (
-            <div className="lifter-cell" key={a.id} onClick={() => !manage && onPick(a.id)} style={{ position: 'relative', cursor: manage ? 'default' : 'pointer' }}>
+            <div className="lifter-cell" key={a.id}
+              {...(manage ? {} : clickable(() => onPick(a.id), { label: `Otvori profil — ${a.full_name ?? ''}` }))}
+              style={{ position: 'relative', cursor: manage ? 'default' : 'pointer' }}>
               {/* Gumbi u vlastitom redu iznad avatara — apsolutno pozicionirani prekrivali su
                   profilnu na uskim karticama. Admin nema gumbe, ali dobije prazan red iste
                   visine da sve kartice ostanu poravnate. */}
@@ -609,6 +613,7 @@ function LifteriSection({ athletes, search, setSearch, onPick, onAdded, onDelete
 }
 
 function AddLifterModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => void; adminId: string }) {
+  useEscapeKey(onClose)
   const [email, setEmail] = useState(''), [name, setName] = useState(''), [cat, setCat] = useState('')
   const [sq, setSq] = useState(''), [bp, setBp] = useState(''), [dl, setDl] = useState('')
   const [pass, setPass] = useState('')
@@ -664,6 +669,7 @@ function AddLifterModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
 }
 
 function ResetPasswordModal({ athlete, onClose }: { athlete: AthleteProfile; onClose: () => void }) {
+  useEscapeKey(onClose)
   const [pass, setPass] = useState('')
   const [busy, setBusy] = useState(false), [err, setErr] = useState(''), [ok, setOk] = useState('')
   const submit = async () => {
@@ -849,6 +855,7 @@ function PredlosciSection({ athletes, adminId, exercises }: { athletes: AthleteP
   const [loading, setLoading] = useState(true)
   const [importOpen, setImportOpen] = useState(false)
   const [copyId, setCopyId] = useState<string | null>(null)
+  useEscapeKey(() => setCopyId(null), !!copyId)
   const [busy, setBusy] = useState(false)
   const [buildMode, setBuildMode] = useState(false)
 
@@ -940,6 +947,7 @@ function PredlosciSection({ athletes, adminId, exercises }: { athletes: AthleteP
 }
 
 function ImportTemplateModal({ athletes, adminId, onClose, onDone }: { athletes: AthleteProfile[]; adminId: string; onClose: () => void; onDone: () => void }) {
+  useEscapeKey(onClose)
   const [athleteId, setAthleteId] = useState('')
   const [blocks, setBlocks] = useState<{ id: string; name: string }[]>([])
   const [busy, setBusy] = useState(false)

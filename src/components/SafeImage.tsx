@@ -18,7 +18,7 @@ export function SafeImage({ fallbackSrc, fallbackText = '?', alt, ...props }: Sa
     return (
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.2)',
+        background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.55)',
         fontSize: '1.2rem', fontFamily: 'var(--fm)',
         width: props.width ? `${props.width}px` : '100%',
         height: props.height ? `${props.height}px` : '100%',
@@ -41,7 +41,7 @@ export function SafeImg({ src, alt = '', fallbackText = '?', style, className }:
 
   if (errored) {
     return (
-      <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.2)', fontSize: '0.8rem', borderRadius: '6px', ...style }} className={className}>
+      <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.55)', fontSize: '0.8rem', borderRadius: '6px', ...style }} className={className}>
         {fallbackText}
       </div>
     )

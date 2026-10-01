@@ -60,13 +60,13 @@ export default function NotFound() {
         <div style={{ width: '48px', height: '1px', background: 'rgba(255,255,255,0.12)', margin: '24px auto 28px' }} />
 
         {/* Message */}
-        <div style={{ fontSize: '0.55rem', letterSpacing: '0.6em', color: 'rgba(255,255,255,0.25)', marginBottom: '12px', fontFamily: 'var(--fm)' }}>
+        <div style={{ fontSize: '0.55rem', letterSpacing: '0.6em', color: 'rgba(255,255,255,0.55)', marginBottom: '12px', fontFamily: 'var(--fm)' }}>
           STRANICA NIJE PRONAĐENA
         </div>
         <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--fd)', marginBottom: '8px', letterSpacing: '-0.01em' }}>
           Ova stranica ne postoji.
         </div>
-        <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.25)', maxWidth: '320px', margin: '0 auto 40px', lineHeight: 1.6 }}>
+        <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', maxWidth: '320px', margin: '0 auto 40px', lineHeight: 1.6 }}>
           Možda je link kriv, stranica je premještena ili jednostavno ne postoji.
         </div>
 

@@ -94,7 +94,7 @@ function ParticleCanvas() {
 const STATUS_STYLE = {
   announced: { color: '#facc15', bg: 'rgba(250,204,21,0.08)',  border: 'rgba(250,204,21,0.2)',  dot: '#facc15' },
   ongoing:   { color: '#4ade80', bg: 'rgba(74,222,128,0.08)',  border: 'rgba(74,222,128,0.2)',  dot: '#4ade80' },
-  completed: { color: 'rgba(255,255,255,0.35)', bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.1)', dot: 'rgba(255,255,255,0.3)' },
+  completed: { color: 'rgba(255,255,255,0.55)', bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.1)', dot: 'rgba(255,255,255,0.3)' },
 }
 
 function CompetitionCard({ comp, index }: { comp: Competition; index: number }) {
@@ -137,23 +137,23 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
             </h2>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px', marginBottom: comp.description ? '12px' : '0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem' }}>
                 <Calendar size={13} color="rgba(255,255,255,0.3)" />{dateStr}
               </div>
               {comp.location && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem' }}>
                   <MapPin size={13} color="rgba(255,255,255,0.3)" />{comp.location}
                 </div>
               )}
               {hasAthletes && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem' }}>
                   <Users size={13} color="rgba(255,255,255,0.3)" />{comp.athletes!.length} {t('comp.liftersCount')}
                 </div>
               )}
             </div>
 
             {comp.description && (
-              <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.7, margin: 0, maxWidth: '580px' }}>{comp.description}</p>
+              <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, margin: 0, maxWidth: '580px' }}>{comp.description}</p>
             )}
           </div>
 
@@ -162,7 +162,7 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
             {isUpcoming && daysUntil > 0 && (
               <div style={{ textAlign: 'right', padding: '16px 20px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
                 <div style={{ fontFamily: 'var(--fd)', fontSize: '2.6rem', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{daysUntil}</div>
-                <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.3)', marginTop: '3px' }}>{t('comp.days')}</div>
+                <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.55)', marginTop: '3px' }}>{t('comp.days')}</div>
               </div>
             )}
             {isUpcoming && daysUntil <= 0 && comp.status === 'announced' && (
@@ -180,7 +180,7 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
             )}
             {hasAthletes && (
               <button onClick={() => setExpanded(!expanded)}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.45)', cursor: 'pointer', fontSize: '0.62rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', fontSize: '0.62rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}>
                 <Users size={12} />
@@ -194,7 +194,7 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
         {/* Athletes panel */}
         {expanded && hasAthletes && (
           <div style={{ marginTop: '24px', borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '20px' }}>
-            <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.2)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>
+            <div style={{ fontSize: '0.52rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.55)', marginBottom: '14px', fontFamily: 'var(--fm)' }}>
               {comp.status === 'completed' ? t('comp.athleteResults') : t('comp.athletesAt')}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
@@ -210,9 +210,9 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--fm)', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {athlete.name}
-                      {athlete.nickname && <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 400, marginLeft: '6px', fontSize: '0.72rem' }}>"{athlete.nickname}"</span>}
+                      {athlete.nickname && <span style={{ color: 'rgba(255,255,255,0.55)', fontWeight: 400, marginLeft: '6px', fontSize: '0.72rem' }}>"{athlete.nickname}"</span>}
                     </div>
-                    <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>{athlete.category}</div>
+                    <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em' }}>{athlete.category}</div>
                     {comp.status === 'completed' && athlete.result_total && (
                       <div style={{ display: 'flex', gap: '10px', marginTop: '6px', alignItems: 'center' }}>
                         {athlete.result_place && (
@@ -222,7 +222,7 @@ function CompetitionCard({ comp, index }: { comp: Competition; index: number }) 
                           </div>
                         )}
                         <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--fd)' }}>{athlete.result_total}kg</span>
-                        {athlete.result_squat && <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.25)' }}>{athlete.result_squat}/{athlete.result_bench}/{athlete.result_deadlift}</span>}
+                        {athlete.result_squat && <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.55)' }}>{athlete.result_squat}/{athlete.result_bench}/{athlete.result_deadlift}</span>}
                       </div>
                     )}
                   </div>
@@ -339,7 +339,7 @@ export default function CompetitionsPage() {
               <div>
                 <div className="section-eyebrow">{t('comp.eyebrow')}</div>
                 <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3rem, 8vw, 6.5rem)', lineHeight: 1, margin: 0, letterSpacing: '-0.02em' }}>
-                  {t('comp.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.18)' }}>{t('comp.title2')}</span>
+                  {t('comp.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>{t('comp.title2')}</span>
                 </h1>
               </div>
 
@@ -353,7 +353,7 @@ export default function CompetitionsPage() {
                   ].map((s, i) => (
                     <div key={i} style={{ padding: '16px 22px', background: '#131317', textAlign: 'center', minWidth: '76px' }}>
                       <div style={{ fontFamily: 'var(--fd)', fontSize: '1.9rem', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{s.val}</div>
-                      <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.22em', marginTop: '4px' }}>{s.label}</div>
+                      <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.22em', marginTop: '4px' }}>{s.label}</div>
                     </div>
                   ))}
                 </div>
@@ -423,12 +423,12 @@ export default function CompetitionsPage() {
       {/* CONTENT */}
       <section style={{ padding: '8px clamp(16px,4vw,60px) 80px', maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '80px 0', color: 'rgba(255,255,255,0.3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '80px 0', color: 'rgba(255,255,255,0.55)' }}>
             <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} />
             <span style={{ fontSize: '0.8rem', letterSpacing: '0.2em' }}>{t('comp.loading')}</span>
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.2)' }}>
+          <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.55)' }}>
             <Trophy size={36} style={{ opacity: 0.15, marginBottom: '16px', display: 'block', margin: '0 auto 16px' }} />
             <div style={{ fontSize: '0.75rem', letterSpacing: '0.3em' }}>{t('comp.noResults')}</div>
           </div>
@@ -438,9 +438,9 @@ export default function CompetitionsPage() {
             {selectedYear !== 'all' && (
               <div style={{ padding: '20px 0 16px', marginBottom: '4px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <span style={{ fontFamily: 'var(--fd)', fontSize: '0.9rem', color: 'rgba(255,255,255,0.15)', letterSpacing: '0.05em' }}>{selectedYear}</span>
+                  <span style={{ fontFamily: 'var(--fd)', fontSize: '0.9rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.05em' }}>{selectedYear}</span>
                   <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
-                  <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.3em' }}>{filtered.length} {t('comp.count')}</span>
+                  <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.3em' }}>{filtered.length} {t('comp.count')}</span>
                 </div>
               </div>
             )}
@@ -455,7 +455,7 @@ export default function CompetitionsPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 0 12px' }}>
                       <span style={{ fontFamily: 'var(--fd)', fontSize: '2rem', fontWeight: 800, color: 'rgba(255,255,255,0.08)', letterSpacing: '-0.02em', lineHeight: 1 }}>{year}</span>
                       <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
-                      <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.3em' }}>{yearComps.length} {t('comp.count')}</span>
+                      <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.3em' }}>{yearComps.length} {t('comp.count')}</span>
                     </div>
                     {yearComps.map((comp, i) => <CompetitionCard key={comp.id} comp={comp} index={i} />)}
                   </div>

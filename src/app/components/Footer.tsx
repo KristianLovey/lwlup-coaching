@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Instagram } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
+import { LEGAL, legalLines, contactLabel, contactHref } from '@/lib/legal'
 
 export default function Footer() {
   const { t } = useLanguage()
@@ -22,13 +23,13 @@ export default function Footer() {
           {/* Brand col */}
           <div>
             <Image src="/slike/logopng.png" alt="LWL UP" width="96" height="70" style={{ display: 'block', marginBottom: '24px' }} />
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.82rem', lineHeight: 1.75, margin: '0 0 28px', maxWidth: '260px' }}>
+            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.82rem', lineHeight: 1.75, margin: '0 0 28px', maxWidth: '260px' }}>
               {t('footer.desc')}
             </p>
             <div style={{ display: 'flex', gap: '12px' }}>
               <a href="https://www.instagram.com/lwlup/" target="_blank" rel="noopener noreferrer" aria-label="LWL UP na Instagramu"
                 className="footer-social-btn"
-                style={{ width: '36px', height: '36px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', transition: 'all 0.25s' }}
+                style={{ width: '36px', height: '36px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', transition: 'all 0.25s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#fff'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}>
                 <Instagram size={14} />
@@ -38,7 +39,7 @@ export default function Footer() {
 
           {/* Nav col */}
           <div>
-            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '24px', fontWeight: 700 }}>{t('footer.nav')}</div>
+            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.55)', marginBottom: '24px', fontWeight: 700 }}>{t('footer.nav')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {([
                 [t('footer.links.powerlifting'), '/#info'],
@@ -48,7 +49,7 @@ export default function Footer() {
                 [t('footer.links.training'),     '/training'],
               ] as [string, string][]).map(([label, href]) => (
                 <Link key={href} href={href} className="footer-link"
-                  style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.45)', textDecoration: 'none', transition: 'all 0.25s', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', transition: 'all 0.25s', display: 'flex', alignItems: 'center', gap: '8px' }}
                   onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.paddingLeft = '6px' }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; e.currentTarget.style.paddingLeft = '0' }}>
                   {label}
@@ -59,7 +60,7 @@ export default function Footer() {
 
           {/* Club col */}
           <div>
-            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '24px', fontWeight: 700 }}>{t('footer.club')}</div>
+            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.55)', marginBottom: '24px', fontWeight: 700 }}>{t('footer.club')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {([
                 [t('footer.links.survey'),       '/survey'],
@@ -67,7 +68,7 @@ export default function Footer() {
                 [t('footer.links.team'),         '/team'],
               ] as [string, string][]).map(([label, href]) => (
                 <Link key={href} href={href} className="footer-link"
-                  style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.45)', textDecoration: 'none', transition: 'all 0.25s' }}
+                  style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', transition: 'all 0.25s' }}
                   onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.paddingLeft = '6px' }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; e.currentTarget.style.paddingLeft = '0' }}>
                   {label}
@@ -78,7 +79,7 @@ export default function Footer() {
 
           {/* Stats col */}
           <div>
-            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.2)', marginBottom: '24px', fontWeight: 700 }}>{t('footer.stats')}</div>
+            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.55)', marginBottom: '24px', fontWeight: 700 }}>{t('footer.stats')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
               {[
                 { val: '10+',  key: 'footer.stats.competitors' as const },
@@ -88,7 +89,7 @@ export default function Footer() {
               ].map((s, i) => (
                 <div key={i} style={{ padding: '14px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1 }}>{s.val}</span>
-                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em' }}>{t(s.key)}</span>
+                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.08em' }}>{t(s.key)}</span>
                 </div>
               ))}
             </div>
@@ -97,22 +98,46 @@ export default function Footer() {
         </div>
       </div>
 
+      {/* Podaci o pruzatelju usluge — Zakon o elektronickoj trgovini cl. 6.
+          Redci dolaze iz src/lib/legal.ts; prazni se ne ispisuju. */}
+      {(legalLines().length > 0 || LEGAL.email) && (
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '20px 60px 0' }}>
+          <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '8px 18px' }}>
+            {legalLines().map((line, i) => (
+              <span key={i} style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>{line}</span>
+            ))}
+            {LEGAL.email && (
+              <a href={`mailto:${LEGAL.email}`} className="footer-link"
+                style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.22)' }}>
+                {LEGAL.email}
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Bottom bar */}
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '20px 60px' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.15)', letterSpacing: '0.1em' }}>
+            <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em' }}>
               © 2026 LWL UP POWERLIFTING. ALL RIGHTS RESERVED.
             </span>
             <Link href="/pravila"
-              style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.1em', textDecoration: 'none', transition: 'color 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}>
+              style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em', textDecoration: 'none', transition: 'color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.55)'}>
               PRAVILA I PRIVATNOST
             </Link>
+            <a href={contactHref()} target={LEGAL.email ? undefined : '_blank'} rel={LEGAL.email ? undefined : 'noopener noreferrer'}
+              style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em', textDecoration: 'none', transition: 'color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.55)'}>
+              KONTAKT · {contactLabel().toUpperCase()}
+            </a>
           </div>
-          <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.15)', letterSpacing: '0.1em' }}>
-            DESIGNED BY <span style={{ color: 'rgba(255,255,255,0.3)' }}>Kristian Lovey</span>
+          <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em' }}>
+            DESIGNED BY <span style={{ color: 'rgba(255,255,255,0.7)' }}>Kristian Lovey</span>
           </span>
         </div>
       </div>

@@ -46,6 +46,11 @@ export async function POST(req: NextRequest) {
     if (!data.full_name || !data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       return NextResponse.json({ error: 'Ime i ispravan email su obavezni' }, { status: 400 })
     }
+
+    // Privola je uvjet obrade — klijent je traži, ali odluku ne smije donositi sam.
+    if (data.consent !== 'da') {
+      return NextResponse.json({ error: 'Privola za obradu podataka je obavezna' }, { status: 400 })
+    }
     const tot = total(data.squat, data.bench, data.deadlift)
     const subject = `Nova prijava — ${val(data.full_name)}${tot ? ` · ${tot}kg total` : ''}${data.experience === 'Napredni' ? ' ★' : ''}`
 

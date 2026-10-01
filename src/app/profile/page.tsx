@@ -81,16 +81,16 @@ function ProgressChart({ data, color, label }: {
   const [hovered, setHovered] = useState<number | null>(null)
 
   if (data.length === 0) return (
-    <div style={{ height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', fontFamily: 'var(--fm)', letterSpacing: '0.15em' }}>
+    <div style={{ height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.55)', fontSize: '0.72rem', fontFamily: 'var(--fm)', letterSpacing: '0.15em' }}>
       NEMA ULOGIRANIH LIFTOVA
     </div>
   )
   if (data.length === 1) return (
     <div style={{ height: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
       <div style={{ fontFamily: 'var(--fd)', fontSize: '3.5rem', fontWeight: 800, color, lineHeight: 1 }}>
-        {data[0].value}<span style={{ fontSize: '1.4rem', color: 'rgba(255,255,255,0.2)', marginLeft: '6px' }}>kg</span>
+        {data[0].value}<span style={{ fontSize: '1.4rem', color: 'rgba(255,255,255,0.55)', marginLeft: '6px' }}>kg</span>
       </div>
-      <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em' }}>{data[0].date}</div>
+      <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.15em' }}>{data[0].date}</div>
     </div>
   )
 
@@ -179,10 +179,10 @@ function ProgressChart({ data, color, label }: {
             boxShadow: `0 8px 32px rgba(0,0,0,0.6)`, whiteSpace: 'nowrap',
           }}>
             <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 800, color, lineHeight: 1, display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-              {p.value}<span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', marginLeft: '2px' }}>kg</span>
+              {p.value}<span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.55)', marginLeft: '2px' }}>kg</span>
               {isBest && <span style={{ fontSize: '0.42rem', color, border: `1px solid ${color}44`, borderRadius: '4px', padding: '2px 5px', marginLeft: '6px', letterSpacing: '0.12em' }}>BEST</span>}
             </div>
-            <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', marginTop: '4px' }}>{p.date}</div>
+            <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.55)', marginTop: '4px' }}>{p.date}</div>
           </div>
         )
       })()}
@@ -198,8 +198,8 @@ function MuscleDonut({ data, view }: { data: MuscleEntry[]; view: 'percent' | 't
 
   if (total === 0) return (
     <div style={{ height: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', fontFamily: 'var(--fm)' }}>
-      <div style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)' }}>NEMA PODATAKA</div>
-      <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.2)' }}>Logiraj setove u treningu da se prikaže</div>
+      <div style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)' }}>NEMA PODATAKA</div>
+      <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)' }}>Logiraj setove u treningu da se prikaže</div>
     </div>
   )
 
@@ -257,7 +257,7 @@ function MuscleDonut({ data, view }: { data: MuscleEntry[]; view: 'percent' | 't
               <div style={{ fontFamily: 'var(--fd)', fontSize: '2.2rem', fontWeight: 800, color: hov.color, lineHeight: 1, textShadow: `0 0 24px ${hov.color}80` }}>
                 {(hov.pct * 100).toFixed(1)}%
               </div>
-              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.2em', marginTop: '6px', fontFamily: 'var(--fm)' }}>{hov.group}</div>
+              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.2em', marginTop: '6px', fontFamily: 'var(--fm)' }}>{hov.group}</div>
               <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', marginTop: '4px', fontFamily: 'var(--fm)' }}>
                 {view === 'percent' ? `${hov.sets} serija` : `${(hov.tonnage / 1000).toFixed(1)}t`}
               </div>
@@ -265,7 +265,7 @@ function MuscleDonut({ data, view }: { data: MuscleEntry[]; view: 'percent' | 't
           ) : (
             <>
               <div style={{ fontFamily: 'var(--fd)', fontSize: '2.4rem', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{slices.length}</div>
-              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', marginTop: '6px', fontFamily: 'var(--fm)' }}>SKUPINE</div>
+              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.2em', marginTop: '6px', fontFamily: 'var(--fm)' }}>SKUPINE</div>
               <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', marginTop: '4px', fontFamily: 'var(--fm)' }}>{totalSets} serija</div>
             </>
           )}
@@ -280,7 +280,7 @@ function MuscleDonut({ data, view }: { data: MuscleEntry[]; view: 'percent' | 't
               style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', padding: '6px 10px 6px 14px', background: isHov ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.025)', border: `1px solid ${isHov ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '9px', cursor: 'pointer', opacity: dim ? 0.3 : 1, transition: 'all 0.2s' }}>
               <span style={{ position: 'absolute', left: 0, top: '6px', bottom: '6px', width: '3px', borderRadius: '4px', background: s.color, boxShadow: isHov ? `0 0 10px ${s.color}` : 'none' }} />
               <span style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.85)', fontFamily: 'var(--fm)' }}>{s.group}</span>
-              <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.38)', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' }}>
                 {view === 'percent' ? s.sets : `${(s.tonnage/1000).toFixed(1)}t`} · {(s.pct*100).toFixed(1)}%
               </span>
             </div>
@@ -301,7 +301,7 @@ function AvatarPicker({ current, onSelect, onClose }: {
       <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', padding: '28px', maxWidth: '480px', width: '100%', boxShadow: '0 32px 80px rgba(0,0,0,0.8)', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <div style={{ fontSize: '0.6rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--fm)', fontWeight: 700 }}>ODABERI AVATAR</div>
+          <div style={{ fontSize: '0.6rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700 }}>ODABERI AVATAR</div>
           <button onClick={onClose}
             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff' }}
@@ -496,7 +496,7 @@ export default function ProfilePage() {
   , [leaderboard, completions])
 
   if (loading) return (
-    <div style={{ background: '#090909', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>
+    <div style={{ background: '#090909', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)' }}>
       <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
       <span style={{ fontSize: '0.75rem', letterSpacing: '0.25em' }}>UČITAVANJE...</span>
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
@@ -560,14 +560,14 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <div style={{ fontSize: '0.58rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.35)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ fontSize: '0.58rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.55)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>{profile.role.toUpperCase()}</span>
                   {profile.weight_class && <><span style={{ width: '3px', height: '3px', borderRadius: '50%', background: 'rgba(255,255,255,0.3)', display: 'inline-block' }} /><span>{profile.weight_class}</span></>}
                 </div>
                 <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.8rem,4vw,2.6rem)', fontWeight: 800, lineHeight: 1.0, margin: '0 0 10px', letterSpacing: '-0.02em' }}>
                   {profile.full_name}
                 </h1>
-                <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.38)', letterSpacing: '0.04em' }}>
+                <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.04em' }}>
                   {profile.sex === 'male' ? 'Muški' : 'Ženski'}
                   {profile.body_weight ? ` · ${profile.body_weight} kg` : ''}
                   {glPoints > 0 ? ` · GL ${glPoints} pts` : ''}
@@ -586,7 +586,7 @@ export default function ProfilePage() {
                     <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(1.3rem,3vw,1.9rem)', fontWeight: 800, lineHeight: 1, color: t.val ? t.color : 'rgba(255,255,255,0.15)' }}>
                       {t.val ?? '—'}
                     </div>
-                    <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.22em', marginTop: '6px' }}>{t.label}</div>
+                    <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.22em', marginTop: '6px' }}>{t.label}</div>
                   </div>
                 ))}
               </div>
@@ -618,7 +618,7 @@ export default function ProfilePage() {
                   </div>
                 ))}
                 <div>
-                  <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', marginBottom: '6px', fontFamily: 'var(--fm)', fontWeight: 700 }}>SPOL</div>
+                  <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.2em', marginBottom: '6px', fontFamily: 'var(--fm)', fontWeight: 700 }}>SPOL</div>
                   <div style={{ display: 'flex', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', padding: '3px', gap: '3px' }}>
                     {(['male', 'female'] as const).map(s => (
                       <button key={s} onClick={() => setOrmVals(o => ({ ...o, sex: s }))}
@@ -629,7 +629,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', marginBottom: '6px', fontFamily: 'var(--fm)', fontWeight: 700 }}>TJELESNA (kg)</div>
+                  <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.2em', marginBottom: '6px', fontFamily: 'var(--fm)', fontWeight: 700 }}>TJELESNA (kg)</div>
                   <input type="number" step="0.1" value={ormVals.body_weight}
                     onChange={e => setOrmVals(o => ({ ...o, body_weight: e.target.value }))}
                     style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#e0e0e0', padding: '10px 12px', borderRadius: '10px', outline: 'none', fontSize: '1rem', fontFamily: 'var(--fd)', fontWeight: 700, boxSizing: 'border-box' }}
@@ -639,7 +639,7 @@ export default function ProfilePage() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
                 <button onClick={() => setEditingORM(false)}
-                  style={{ padding: '9px 20px', borderRadius: '20px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.45)', cursor: 'pointer', fontSize: '0.72rem', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                  style={{ padding: '9px 20px', borderRadius: '20px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', fontSize: '0.72rem', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff' }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}>
                   <X size={13} /> Odustani
@@ -710,7 +710,7 @@ export default function ProfilePage() {
             <div style={{ ...glass, padding: '24px 28px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '24px' }}>
                 <div>
-                  <div style={{ fontSize: '0.58rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.3)', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '0.58rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.55)', marginBottom: '4px' }}>
                     {activeBlockName ? activeBlockName.toUpperCase() : 'AKTIVNI BLOK'}
                   </div>
                   <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>RASPODJELA MIŠIĆNIH SKUPINA</h3>
@@ -731,7 +731,7 @@ export default function ProfilePage() {
             <div style={{ ...glass, padding: '24px 28px' }}>
               <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', fontWeight: 700, margin: '0 0 20px' }}>NATJECANJA</h3>
               {adminComps.length === 0 ? (
-                <div style={{ padding: '40px', textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', letterSpacing: '0.1em' }}>
+                <div style={{ padding: '40px', textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', letterSpacing: '0.1em' }}>
                   Admin još nije ulogirao tvoje natjecateljske rezultate.
                 </div>
               ) : (
@@ -740,7 +740,7 @@ export default function ProfilePage() {
                     <thead>
                       <tr>
                         {['NATJECANJE', 'DATUM', 'SQ', 'BP', 'DL', 'TOTAL', 'MJ.', 'BILJEŠKA'].map(h => (
-                          <th key={h} className={h === 'BILJEŠKA' ? 'comp-table-hide' : ''} style={{ padding: '8px 14px', fontSize: '0.48rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.22em', textAlign: 'left', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.07)', whiteSpace: 'nowrap' }}>{h}</th>
+                          <th key={h} className={h === 'BILJEŠKA' ? 'comp-table-hide' : ''} style={{ padding: '8px 14px', fontSize: '0.48rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.22em', textAlign: 'left', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.07)', whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -750,7 +750,7 @@ export default function ProfilePage() {
                           onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(255,255,255,0.02)'}
                           onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}>
                           <td style={{ padding: '12px 14px', fontSize: '0.88rem', color: '#e0e0e0', fontWeight: 500 }}>{c.competition.name}</td>
-                          <td style={{ padding: '12px 14px', fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)' }}>{new Date(c.competition.date).toLocaleDateString('hr-HR')}</td>
+                          <td style={{ padding: '12px 14px', fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)' }}>{new Date(c.competition.date).toLocaleDateString('hr-HR')}</td>
                           {[c.result_squat, c.result_bench, c.result_deadlift].map((v, j) => (
                             <td key={j} style={{ padding: '12px 14px', fontSize: '0.88rem', color: ['#6b8cff','#f59e0b','#22c55e'][j], fontWeight: 700 }}>{v ?? '—'}</td>
                           ))}
@@ -758,7 +758,7 @@ export default function ProfilePage() {
                           <td style={{ padding: '12px 14px', fontSize: '0.88rem', color: c.result_place === 1 ? '#facc15' : 'rgba(255,255,255,0.5)', fontWeight: c.result_place ? 700 : 400 }}>
                             {c.result_place ? `${c.result_place}.` : '—'}
                           </td>
-                          <td className="comp-table-hide" style={{ padding: '12px 14px', fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', fontStyle: 'italic' }}>{c.result_notes ?? '—'}</td>
+                          <td className="comp-table-hide" style={{ padding: '12px 14px', fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', fontStyle: 'italic' }}>{c.result_notes ?? '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -807,15 +807,15 @@ export default function ProfilePage() {
                   <>
                     <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4rem,12vw,6rem)', fontWeight: 800, lineHeight: 1, color, textShadow: `0 0 60px ${color}50`, display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '8px' }}>
                       {best.weight_kg}
-                      <span style={{ fontSize: 'clamp(1.5rem,4vw,2rem)', color: 'rgba(255,255,255,0.25)', fontWeight: 600 }}>kg</span>
+                      <span style={{ fontSize: 'clamp(1.5rem,4vw,2rem)', color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>kg</span>
                     </div>
-                    <div style={{ marginTop: '12px', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.05em' }}>
+                    <div style={{ marginTop: '12px', fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.05em' }}>
                       {new Date(best.date).toLocaleDateString('hr-HR')} · {best.source}
                       {best.notes && ` · ${best.notes}`}
                     </div>
                   </>
                 ) : (
-                  <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.88rem', padding: '20px 0' }}>
+                  <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.88rem', padding: '20px 0' }}>
                     Nema ulogiranog {prReps}RM za {prLift}
                   </div>
                 )
@@ -826,21 +826,21 @@ export default function ProfilePage() {
 
             {/* PR log list */}
             <div style={{ ...glass, overflow: 'hidden' }}>
-              <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)', fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.3em', fontWeight: 700 }}>SVE ULOGIRANO</div>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)', fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.3em', fontWeight: 700 }}>SVE ULOGIRANO</div>
               {prLogs.filter(p => p.lift === prLift).length === 0 ? (
-                <div style={{ padding: '32px', textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem' }}>Nema ulogiranih liftova za {prLift}.</div>
+                <div style={{ padding: '32px', textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem' }}>Nema ulogiranih liftova za {prLift}.</div>
               ) : prLogs.filter(p => p.lift === prLift).map((p, i, arr) => (
                 <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '11px 18px', borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', transition: 'background 0.1s' }}
                   onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.02)'}
                   onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
-                  <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', width: '30px', flexShrink: 0 }}>{p.reps}RM</div>
+                  <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)', width: '30px', flexShrink: 0 }}>{p.reps}RM</div>
                   <div style={{ flex: 1 }}>
                     <span style={{ fontWeight: 700, color: '#e0e0e0', fontSize: '0.95rem' }}>{p.weight_kg} kg</span>
-                    {p.notes && <span style={{ marginLeft: '10px', fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)' }}>{p.notes}</span>}
+                    {p.notes && <span style={{ marginLeft: '10px', fontSize: '0.68rem', color: 'rgba(255,255,255,0.55)' }}>{p.notes}</span>}
                   </div>
-                  <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>{new Date(p.date).toLocaleDateString('hr-HR')}</div>
-                  <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.25)', padding: '2px 8px', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '5px' }}>{p.source}</div>
-                  <button onClick={() => deletePrLog(p.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: '2px', transition: 'color 0.15s', display: 'flex', alignItems: 'center' }}
+                  <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)' }}>{new Date(p.date).toLocaleDateString('hr-HR')}</div>
+                  <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.55)', padding: '2px 8px', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '5px' }}>{p.source}</div>
+                  <button onClick={() => deletePrLog(p.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', padding: '2px', transition: 'color 0.15s', display: 'flex', alignItems: 'center' }}
                     onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
                     onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}>
                     <Trash2 size={12} />
@@ -854,12 +854,12 @@ export default function ProfilePage() {
         {/* ══ TAB: LEADERBOARD ══════════════════════════════════════ */}
         {activeTab === 'leaderboard' && (
           <div style={{ animation: 'fadeUp 0.3s ease' }}>
-            <div style={{ fontSize: '0.52rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.25)', marginBottom: '20px', fontWeight: 700 }}>
+            <div style={{ fontSize: '0.52rem', letterSpacing: '0.35em', color: 'rgba(255,255,255,0.55)', marginBottom: '20px', fontWeight: 700 }}>
               POSTOTAK ZAVRŠENIH TRENINGA · SORTIRANO PO KONZISTENTNOSTI
             </div>
 
             {lbSorted.length === 0 ? (
-              <div style={{ ...glass, padding: '60px', textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.8rem' }}>Nema dovoljno podataka za leaderboard.</div>
+              <div style={{ ...glass, padding: '60px', textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: '0.8rem' }}>Nema dovoljno podataka za leaderboard.</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {lbSorted.map((e, i) => {
@@ -871,7 +871,7 @@ export default function ProfilePage() {
                       <div style={{ width: '32px', textAlign: 'center', flexShrink: 0 }}>
                         {medal
                           ? <div style={{ fontFamily: 'var(--fd)', fontSize: '1.2rem', fontWeight: 800, color: medal, textShadow: `0 0 12px ${medal}60` }}>{i + 1}</div>
-                          : <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fd)', fontWeight: 700 }}>{i + 1}</div>
+                          : <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fd)', fontWeight: 700 }}>{i + 1}</div>
                         }
                       </div>
                       <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -889,11 +889,11 @@ export default function ProfilePage() {
                       <div style={{ display: 'flex', gap: '20px', flexShrink: 0, alignItems: 'center' }}>
                         <div style={{ textAlign: 'center' }}>
                           <div style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', fontWeight: 800, color: medal ?? pctColor, lineHeight: 1 }}>{e.compPct}%</div>
-                          <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', marginTop: '3px' }}>ZAVRŠENO</div>
+                          <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.15em', marginTop: '3px' }}>ZAVRŠENO</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--fm)' }}>{e.compDone}/{e.compTotal}</div>
-                          <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', marginTop: '3px' }}>TRENINGA</div>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)' }}>{e.compDone}/{e.compTotal}</div>
+                          <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.15em', marginTop: '3px' }}>TRENINGA</div>
                         </div>
                       </div>
                     </div>
@@ -901,7 +901,7 @@ export default function ProfilePage() {
                 })}
               </div>
             )}
-            <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', fontSize: '0.6rem', color: 'rgba(255,255,255,0.25)', lineHeight: 1.7 }}>
+            <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.7 }}>
               Rangirano po postotku završenih treninga. U slučaju jednakog postotka, više apsolutnih treninga dolazi više.
             </div>
           </div>
@@ -963,7 +963,7 @@ function AddPrForm({ prLift, prReps, onAdd }: {
 
   return (
     <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px 24px' }}>
-      <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)', fontWeight: 700, marginBottom: '14px' }}>
+      <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontWeight: 700, marginBottom: '14px' }}>
         DODAJ PR · {liftLabel} · {prReps}RM
       </div>
       <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch', flexWrap: 'wrap' }}>

@@ -59,7 +59,7 @@ h1, h2, h3, h4, h5 { color: var(--text-primary); }
   font-weight: 700;
   letter-spacing: 0.42em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.45);
+  color: rgba(255,255,255,0.55);
   margin-bottom: 16px;
 }
 
@@ -294,4 +294,19 @@ body.nav-open .scroll-to-top-btn {
   .features-grid { grid-template-columns: 1fr !important; }
 
   .age-cats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* ══════════════════════════════════════════
+   FOKUS S TIPKOVNICE
+   Prsten se pokazuje samo kad se stvarno navigira tipkovnicom (:focus-visible),
+   pa klik mišem i dalje ne ostavlja obrub. !important jer dio polja gasi outline
+   inline stilom — bez prstena se tabom ne vidi gdje si.
+
+   Bijeli prsten + tamni oreol oko njega: vidljiv i na tamnoj pozadini stranice
+   i na bijelim gumbima, bez pogađanja koja je ploha ispod.
+══════════════════════════════════════════ */
+:focus-visible {
+  outline: 2px solid #fff !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.75) !important;
 }

@@ -8,9 +8,10 @@
 //
 // Dvije stvari koje mail HTML razlikuju od stranice:
 //  • svi stilovi moraju biti inline (Gmail baca <style> blokove),
-//  • web fontovi se u Gmailu NE učitavaju — <link> ispod radi u Apple Mailu,
-//    drugdje pada na sljedeći font iz stacka, pa je fallback biran da drži
-//    isti dojam (uski grotesk za naslove, neutralni sans za tekst).
+//  • web fontovi se ne učitavaju pouzdano, a <link> na fonts.googleapis.com
+//    u EU odaje IP primatelja Googleu prije nego išta pročita — zato ga nema.
+//    Sve stoji na fallback stacku, biranom da drži isti dojam (uski grotesk za
+//    naslove, neutralni sans za tekst).
 
 // Paleta = tokeni sa stranice, da mail i admin panel izgledaju isto.
 const C = {
@@ -99,7 +100,6 @@ function shell(eyebrow: string, titleTop: string, titleBottom: string, badge: st
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="color-scheme" content="dark" />
   <meta name="supported-color-schemes" content="dark" />
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
 </head>
 <body style="margin:0;padding:0;background:${C.bg};font-family:${FB};-webkit-font-smoothing:antialiased">
 
@@ -166,6 +166,21 @@ function identity(name: string, email: string, phone: string | undefined) {
   </tr>`
 }
 
+/**
+ * Zapis privole — dokaz da je osoba pristala i na što. Prazno ako prijava stigne
+ * bez privole, da stare prijave u redu čekanja i dalje prolaze.
+ */
+function consentSection(num: string, d: Record<string, string>): string {
+  if (!d.consent) return ''
+  const yes = (v?: string) => (v === 'da' ? 'DA' : '—')
+  return section(num, 'Privola',
+    row('Obrada podataka', yes(d.consent)) +
+    (d.consent_health ? row('Zdravstveni podaci (čl. 9.)', yes(d.consent_health)) : '') +
+    (d.consent_guardian ? row('Privola skrbnika', yes(d.consent_guardian)) : '') +
+    row('Vrijeme potvrde', val(d.consent_at)) +
+    row('Verzija teksta', val(d.consent_version)))
+}
+
 // ── UPITNIK ───────────────────────────────────────────────────────
 export function surveyEmail(data: Record<string, string>): string {
   const isAdvanced = data.experience === 'Napredni'
@@ -229,6 +244,7 @@ export function surveyEmail(data: Record<string, string>): string {
         row('Ciljevi', val(data.goals)) +
         row('Ozljede', val(data.injuries)) +
         row('Dodatno', val(data.additional)))}
+      ${consentSection(num(), data)}
     </td>
   </tr>`
 
@@ -265,6 +281,7 @@ export function clubJoinEmail(d: Record<string, string>): string {
         row('Total', d.comp_total ? `${d.comp_total} kg` : '—') +
         row('Broj natjecanja', val(d.competitions)) +
         row('Trenutni klub', club || 'Nije član kluba'))}
+      ${consentSection('03', d)}
     </td>
   </tr>`
 

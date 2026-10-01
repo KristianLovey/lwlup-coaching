@@ -19,6 +19,7 @@ import {
   scopeKey, fieldKey, markIntent, markSaved, isSuperseded, localWins,
   reconcileLogs, enqueue, parseDecimal, type FieldVal,
 } from './set-log-sync'
+import { clickable } from '@/lib/a11y'
 
 const supabase = createClient()
 
@@ -367,22 +368,22 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
                   <span style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: '#fbbf24', fontFamily: 'var(--fm)', fontWeight: 700 }}>{isAdmin ? 'OBAVIJESTI' : 'OD TRENERA'}</span>
                   {notifs.length > 0 && (
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      {notifs.some(n => !n.read) && <button onClick={markAllRead} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '0.52rem', fontFamily: 'var(--fm)', cursor: 'pointer', letterSpacing: '0.08em', padding: 0 }}>označi sve</button>}
+                      {notifs.some(n => !n.read) && <button onClick={markAllRead} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', fontSize: '0.52rem', fontFamily: 'var(--fm)', cursor: 'pointer', letterSpacing: '0.08em', padding: 0 }}>označi sve</button>}
                       <button onClick={deleteAllNotifs} style={{ background: 'none', border: 'none', color: 'rgba(239,68,68,0.5)', fontSize: '0.52rem', fontFamily: 'var(--fm)', cursor: 'pointer', letterSpacing: '0.08em', padding: 0 }}>briši sve</button>
                     </div>
                   )}
                 </div>
                 <div style={{ maxHeight: '320px', overflowY: 'auto' as const }}>
                   {notifs.length === 0 ? (
-                    <div style={{ padding: '24px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', fontFamily: 'var(--fm)' }}>Nema novih obavijesti</div>
+                    <div style={{ padding: '24px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.55)', fontSize: '0.72rem', fontFamily: 'var(--fm)' }}>Nema novih obavijesti</div>
                   ) : notifs.map(n => (
                     <div key={n.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '12px 16px', borderBottom: '1px solid var(--t-border)', background: n.read ? 'transparent' : 'rgba(251,191,36,0.04)', transition: 'background 0.2s' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: '0.78rem', color: n.read ? 'rgba(255,255,255,0.5)' : '#f0f0f5', fontFamily: 'var(--fm)', lineHeight: 1.5 }}>{n.message}</div>
-                        <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--fm)', marginTop: '4px' }}>{new Date(n.created_at).toLocaleString('hr-HR')}</div>
+                        <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', marginTop: '4px' }}>{new Date(n.created_at).toLocaleString('hr-HR')}</div>
                       </div>
                       <button onClick={() => deleteNotif(n.id)}
-                        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.18)', cursor: 'pointer', padding: '2px', flexShrink: 0, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
+                        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', padding: '2px', flexShrink: 0, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
                         onMouseEnter={e => { e.currentTarget.style.color = 'rgba(239,68,68,0.7)' }}
                         onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.18)' }}>
                         <X size={12} />
@@ -580,7 +581,7 @@ export function ExercisePicker({ exercises, onSelect, onClose }: {
           {filtered.length === 0 ? (
             <div style={{ padding: '40px', textAlign: 'center', color: '#444', fontSize: '0.82rem', fontFamily: 'var(--fm)' }}>Nema rezultata</div>
           ) : filtered.map(ex => (
-            <div key={ex.id} onClick={() => { onSelect(ex); onClose() }}
+            <div key={ex.id} {...clickable(() => { onSelect(ex); onClose() }, { label: ex.name })}
               style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--t-border)', cursor: 'pointer', transition: 'background 0.12s' }}
               onMouseEnter={e => e.currentTarget.style.background = '#111113'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
@@ -683,12 +684,12 @@ export function CompetitionBanner({ userId }: { userId: string }) {
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.name}</span>
                 <ChevronDown size={12} color="rgba(255,255,255,0.25)" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
               </div>
-              <div style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {new Date(selected.date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long', year: 'numeric' })}{selected.location ? ` · ${selected.location}` : ''}
               </div>
             </>
           ) : (
-            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               Odaberi natjecanje... <ChevronDown size={12} />
             </div>
           )}
@@ -706,7 +707,7 @@ export function CompetitionBanner({ userId }: { userId: string }) {
             ] as {val:number;label:string}[]).map(({ val, label }) => (
               <div key={label} className="comp-chip" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '8px', padding: '6px 2px', minWidth: 0 }}>
                 <div style={{ fontFamily: 'var(--fd)', fontSize: '1.05rem', fontWeight: 700, lineHeight: 1, color: '#f0f0f0', fontVariantNumeric: 'tabular-nums' }}>{String(val).padStart(2,'0')}</div>
-                <div style={{ fontSize: '0.36rem', letterSpacing: '0.16em', color: 'rgba(255,255,255,0.32)', fontFamily: 'var(--fm)', fontWeight: 700, marginTop: '4px' }}>{label}</div>
+                <div style={{ fontSize: '0.36rem', letterSpacing: '0.16em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700, marginTop: '4px' }}>{label}</div>
               </div>
             ))}
           </div>
@@ -1186,7 +1187,7 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
           </span>
         </div>
         <div style={{ ...cellStyle, padding: '6px 0', borderRight: isAdmin ? '1px solid var(--t-border)' : 'none' }}>
-          <span className="slh-lbl" style={{ color: 'rgba(255,255,255,0.35)', letterSpacing: '0.14em', fontWeight: 700, fontFamily: 'var(--fm)' }}>{isAdmin ? 'TOP' : '○'}</span>
+          <span className="slh-lbl" style={{ color: 'rgba(255,255,255,0.55)', letterSpacing: '0.14em', fontWeight: 700, fontFamily: 'var(--fm)' }}>{isAdmin ? 'TOP' : '○'}</span>
         </div>
         {isAdmin && (
           <div style={{ ...cellStyle, padding: '6px 0', borderRight: 'none' }} title="Backoff">
@@ -1337,7 +1338,7 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
                     style={{ width: '56px', background: 'transparent', border: 'none', color: BLUE, fontFamily: 'var(--fd)', fontSize: '0.95rem', fontWeight: 800, padding: 0, outline: 'none', textAlign: 'right' as const }} />
                   <span style={{ fontSize: '0.6rem', color: 'rgba(107,140,255,0.7)', fontFamily: 'var(--fm)', fontWeight: 700, paddingLeft: '3px' }}>%</span>
                 </div>
-                <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', letterSpacing: '0.12em', fontWeight: 700 }}>OD</span>
+                <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', letterSpacing: '0.12em', fontWeight: 700 }}>OD</span>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <select value={row.ref}
                     onChange={e => updatePlanRow(i, 'ref', Number(e.target.value))}
@@ -1353,7 +1354,7 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
                   <span style={{ fontSize: '0.95rem', fontWeight: 800, color: compVal != null ? '#f0f0f0' : '#555', fontFamily: 'var(--fd)' }}>
                     {compVal != null ? compVal : '—'}
                   </span>
-                  <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--fm)' }}>kg</span>
+                  <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)' }}>kg</span>
                 </div>
               </div>
             )}
@@ -1362,7 +1363,7 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
             {isLocked && (
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(9,9,9,0.55)', animation: 'fadeIn 0.2s ease', pointerEvents: 'none' }}>
                 <Lock size={12} color="rgba(255,255,255,0.3)" strokeWidth={2} />
-                <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.22em', fontFamily: 'var(--fm)', fontWeight: 700 }}>
+                <span style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.22em', fontFamily: 'var(--fm)', fontWeight: 700 }}>
                   ZAVRŠI PRETHODNI SET
                 </span>
               </div>
@@ -1378,7 +1379,7 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
               resolve wrongly, handing all free space to the first column. */
         .slg-admin  { grid-template-columns: 42px minmax(58px,4fr) minmax(50px,3fr) 80px 32px 32px; }
         .slg-lifter { grid-template-columns: 46px minmax(64px,4fr) minmax(56px,3fr) 88px 48px; }
-        .set-log-row input::placeholder { color: rgba(255,255,255,0.28); font-style: italic; letter-spacing: 0.05em; font-size: 0.7rem; }
+        .set-log-row input::placeholder { color: rgba(255,255,255,0.55); font-style: italic; letter-spacing: 0.05em; font-size: 0.7rem; }
         /* Header labels: 9px floor — Android WebViews render sub-8px text unreliably */
         .slh-lbl { font-size: 9px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .set-done-btn { -webkit-tap-highlight-color: transparent; }
@@ -1595,7 +1596,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
               { label: 'RPE',    value: we.target_rpe ?? we.planned_rpe, field: 'target_rpe'        as keyof WorkoutExercise, accent: '#facc15', isNum: true  },
             ] as Array<{ label: string; value: string | number | null; field: keyof WorkoutExercise; accent: string; isNum: boolean }>).map((f, fi) => (
               <div key={String(f.field)} style={{ padding: '10px 8px 8px', borderRight: fi < 3 ? '1px solid var(--t-border)' : 'none', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center', cursor: 'text' }}>
-                <div style={{ fontSize: '0.4rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.22)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{f.label}</div>
+                <div style={{ fontSize: '0.4rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{f.label}</div>
                 <div style={{ fontSize: '1.1rem', fontWeight: 800, color: f.accent, fontFamily: 'var(--fm)' }}>
                   <AdminPlanCell value={f.value} placeholder="—" type={f.isNum ? 'number' : 'text'} color={f.accent} onSave={(v: string) => save(f.field, v, f.isNum)} />
                 </div>
@@ -1655,7 +1656,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
                     </span>
                   )}
                   {we.planned_weight_kg && (
-                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.38)', fontFamily: 'var(--fm)' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)' }}>
                       @ {we.planned_weight_kg}kg
                     </span>
                   )}
@@ -1684,7 +1685,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
                         <div key={i} style={{ width: '7px', height: '7px', borderRadius: '50%', background: i < doneDots ? catColor : 'transparent', border: `1.5px solid ${i < doneDots ? catColor : 'var(--t-border-hi)'}`, boxShadow: i < doneDots ? `0 0 4px ${catColor}80` : 'none', transition: 'all 0.2s' }} />
                       ))}
                     </div>
-                    <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{doneDots}/{totalDots}</span>
+                    <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700 }}>{doneDots}/{totalDots}</span>
                   </>
                 )}
                 <div style={{ color: setsOpen ? catColor : 'rgba(255,255,255,0.25)', transition: 'transform 0.2s, color 0.2s', transform: setsOpen ? 'rotate(90deg)' : 'none' }}>
@@ -1699,7 +1700,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
       {/* ── History panel — isti dan bloka kroz tjedne (W1, W2, …) + % skok po seriji ── */}
       {showHistory && (
         <div style={{ background: 'var(--t-bg)', borderBottom: '1px solid var(--t-border)', borderTop: '1px solid var(--t-border)', padding: '12px 16px', animation: 'fadeUp 0.18s ease' }}>
-          <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '8px' }}>
+          <div style={{ fontSize: '0.45rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '8px' }}>
             POVIJEST — {we.exercise?.name}{dayName ? ` · ${dayName.toUpperCase()}` : ''}
           </div>
           {historyLoading ? (
@@ -1721,7 +1722,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
                         : null
                       return (
                         <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: '6px', padding: '5px 10px', borderTop: '1px solid var(--t-border)', fontFamily: 'var(--fm)' }}>
-                          <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', fontWeight: 800, flexShrink: 0 }}>S{l.set_number}</span>
+                          <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', fontWeight: 800, flexShrink: 0 }}>S{l.set_number}</span>
                           <span style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>{l.weight_kg ?? '—'}</span>
                           <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>×{l.reps ?? '—'}</span>
                           {l.rpe != null && <span style={{ fontSize: '0.58rem', color: '#fbbf24' }}>@{l.rpe}</span>}
@@ -1769,7 +1770,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
                 </div>
               )}
               <div style={{ padding: '12px 16px' }}>
-                <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.2em', marginBottom: '6px' }}>MOJA BILJEŠKA</div>
+                <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.2em', marginBottom: '6px' }}>MOJA BILJEŠKA</div>
                 <EditableField value={we.actual_note} placeholder="Upiši komentar..." onSave={v => save('actual_note', v)} />
               </div>
             </div>
@@ -1979,7 +1980,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
             <div className="workout-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
               {/* Ex count badge */}
               {exCount > 0 && (
-                <div style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.38)', background: 'var(--t-s3)', border: '1px solid var(--t-border)', padding: '3px 10px', borderRadius: '20px', letterSpacing: '0.12em', fontWeight: 700 }}>
+                <div style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.55)', background: 'var(--t-s3)', border: '1px solid var(--t-border)', padding: '3px 10px', borderRadius: '20px', letterSpacing: '0.12em', fontWeight: 700 }}>
                   {exCount} VJ
                 </div>
               )}
@@ -1991,6 +1992,12 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
                   onUpdateWorkout(workout.id, { completed: newDone })
                   workout.workout_exercises?.forEach(we => onUpdateExercise(we.id, { completed: newDone }))
                 }}
+                  role="button" tabIndex={0} aria-pressed={!!workout.completed}
+                  aria-label={workout.completed ? 'Označi trening kao neodrađen' : 'Označi trening kao odrađen'}
+                  onKeyDown={e => {
+                    // Enter i razmak samo pokrenu isti klik — logika ostaje na jednom mjestu
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() }
+                  }}
                   className={`done-badge${workout.completed ? ' done-badge-active' : ''}`}>
                   <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: workout.completed ? 'none' : '1.5px solid var(--t-border-hi)', background: workout.completed ? '#22c55e' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.25s cubic-bezier(0.16,1,0.3,1)', boxShadow: workout.completed ? '0 0 8px rgba(34,197,94,0.4)' : 'none' }}>
                     {workout.completed && <Check size={9} color="#fff" strokeWidth={3.5} />}
@@ -2002,7 +2009,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
               {isAdmin && onMoveWorkout && !isFirst && (
                 <button onClick={e => { e.stopPropagation(); onMoveWorkout('up') }}
                   title="Pomjeri gore"
-                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.55)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
                   <ArrowUp size={11} />
@@ -2011,7 +2018,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
               {isAdmin && onMoveWorkout && !isLast && (
                 <button onClick={e => { e.stopPropagation(); onMoveWorkout('down') }}
                   title="Pomjeri dolje"
-                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.55)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
                   <ArrowDown size={11} />
@@ -2020,7 +2027,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
               {isAdmin && onCopyWorkout && (
                 <button onClick={e => { e.stopPropagation(); onCopyWorkout() }}
                   title="Kopiraj dan (isti tjedan)"
-                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.55)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
                   <Copy size={11} />
@@ -2037,7 +2044,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
                   </button>
                   {showWeekPicker && (
                     <div style={{ position: 'absolute', right: 0, top: '110%', zIndex: 999, background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.7)', minWidth: '100px' }}>
-                      <div style={{ padding: '6px 10px 4px', fontSize: '0.55rem', fontFamily: 'var(--fm)', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.25)', borderBottom: '1px solid var(--t-border)' }}>KOPIRAJ U</div>
+                      <div style={{ padding: '6px 10px 4px', fontSize: '0.55rem', fontFamily: 'var(--fm)', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.55)', borderBottom: '1px solid var(--t-border)' }}>KOPIRAJ U</div>
                       {allWeeks.map(w => (
                         <button key={w.id}
                           onClick={e => { e.stopPropagation(); onCopyWorkoutToWeek(w.id); setShowWeekPicker(false) }}
@@ -2163,7 +2170,7 @@ function WeekNotesModal({ notes, isAdmin, onSave, onClose }: {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
           <MessageSquare size={16} color="#fbbf24" />
           <span style={{ fontSize: '0.7rem', letterSpacing: '0.2em', color: '#fbbf24', fontFamily: 'var(--fm)', fontWeight: 700 }}>KOMENTAR TJEDNA</span>
-          <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: '2px' }}>
+          <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', padding: '2px' }}>
             <X size={14} />
           </button>
         </div>
@@ -2180,7 +2187,7 @@ function WeekNotesModal({ notes, isAdmin, onSave, onClose }: {
           </>
         ) : (
           <div style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.8, fontFamily: 'var(--fm)', whiteSpace: 'pre-wrap' as const }}>
-            {notes || <span style={{ color: 'rgba(255,255,255,0.25)' }}>Nema komentara za ovaj tjedan.</span>}
+            {notes || <span style={{ color: 'rgba(255,255,255,0.55)' }}>Nema komentara za ovaj tjedan.</span>}
           </div>
         )}
       </div>
@@ -2300,7 +2307,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
               <>
                 <button onClick={e => { e.stopPropagation(); onCopyWeek(week.id) }}
                   title="Kopiraj tjedan"
-                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.4)', width: '28px', height: '28px', borderRadius: '7px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.55)', width: '28px', height: '28px', borderRadius: '7px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
                   <Copy size={12} />

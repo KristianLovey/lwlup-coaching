@@ -50,6 +50,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Nedostaju obavezna polja ili email nije ispravan', missing }, { status: 400 })
     }
 
+    // Privola je uvjet obrade — klijent je traži, ali odluku ne smije donositi sam.
+    if (d.consent !== 'da') {
+      return NextResponse.json({ error: 'Privola za obradu podataka je obavezna' }, { status: 400 })
+    }
+
     const to = process.env.CLUB_CONTACT_EMAIL || process.env.CONTACT_EMAIL
     // Resend klijent tek ovdje: SDK baca grešku bez ključa, pa bi na razini
     // modula srušio i validaciju (npr. lokalno, gdje ključa nema).

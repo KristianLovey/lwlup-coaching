@@ -86,14 +86,14 @@ export default function AuthPage() {
             <Image src="/slike/logopng.png" alt="LWL UP" width={71} height={52} priority style={{ height: '52px', marginBottom: '80px', display: 'block', width: 'auto' }} />
           </Link>
 
-          <div style={{ fontSize: '0.58rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.2)', marginBottom: '20px' }}>
+          <div style={{ fontSize: '0.58rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.55)', marginBottom: '20px' }}>
             DOBRODOŠAO NAZAD
           </div>
           <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,4vw,4rem)', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em', margin: '0 0 32px' }}>
-            PRIJAVA<br /><span style={{ color: 'rgba(255,255,255,0.2)' }}>U SUSTAV</span>
+            PRIJAVA<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>U SUSTAV</span>
           </h1>
 
-          <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.8, maxWidth: '320px' }}>
+          <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.8, maxWidth: '320px' }}>
             Prijavi se da pristupiš svom programu treninga, prati napredak i upravljaj treninzima.
           </p>
         </div>
@@ -103,7 +103,7 @@ export default function AuthPage() {
           {[['10+', 'ATLETA'], ['12', 'REKORDA']].map(([v, l]) => (
             <div key={l}>
               <div style={{ fontFamily: 'var(--fd)', fontSize: '2.2rem', fontWeight: 800, lineHeight: 1 }}>{v}</div>
-              <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.3em', marginTop: '4px' }}>{l}</div>
+              <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.3em', marginTop: '4px' }}>{l}</div>
             </div>
           ))}
         </div>
@@ -144,7 +144,7 @@ export default function AuthPage() {
                       placeholder="••••••••" style={{ ...inp('password'), paddingRight: '40px' }}
                       onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                     />
-                    <button onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: '4px', transition: 'color 0.2s' }}
+                    <button onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', padding: '4px', transition: 'color 0.2s' }}
                       onMouseEnter={e => e.currentTarget.style.color = '#fff'}
                       onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.3)'}
                     >
@@ -176,7 +176,7 @@ export default function AuthPage() {
               <div style={{ marginTop: '20px', textAlign: 'center' }}>
                 <button
                   onClick={() => { setMode('forgot'); setError(''); setResetSent(false) }}
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', fontSize: '0.68rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', fontSize: '0.68rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', transition: 'color 0.2s' }}
                   onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}
                   onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}
                 >
@@ -193,7 +193,7 @@ export default function AuthPage() {
                 </div>
               ) : (
                 <>
-                  <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.7, marginBottom: '32px' }}>
+                  <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, marginBottom: '32px' }}>
                     Unesi svoju email adresu i poslat ćemo ti link za postavljanje nove lozinke.
                   </p>
                   <div>
@@ -230,7 +230,7 @@ export default function AuthPage() {
               <div style={{ marginTop: '24px', textAlign: 'center' }}>
                 <button
                   onClick={() => { setMode('login'); setError(''); setResetSent(false) }}
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', fontSize: '0.68rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', transition: 'color 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', fontSize: '0.68rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', transition: 'color 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
                   onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}
                   onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}
                 >
@@ -243,7 +243,7 @@ export default function AuthPage() {
           {/* Back link (only on login mode) */}
           {mode === 'login' && (
             <div style={{ marginTop: '32px', textAlign: 'center' }}>
-              <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.25)', textDecoration: 'none', fontSize: '0.68rem', letterSpacing: '0.2em', transition: 'color 0.2s' }}
+              <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', fontSize: '0.68rem', letterSpacing: '0.2em', transition: 'color 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}
               >
