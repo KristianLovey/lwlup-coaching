@@ -8,15 +8,15 @@
  */
 export const LEGAL = {
   /** Puni registrirani naziv, npr. "Powerlifting klub LWL UP" */
-  entity: '',
+  entity: 'PLK LWL UP',
   /** OIB pravne osobe ili obrta */
-  oib: '',
+  oib: '', // TODO: upisati čim bude poznat — bez njega podnožje nije potpuno
   /** Sjedište: ulica i kućni broj, poštanski broj i grad */
-  address: '',
+  address: 'Celine',
   /** Registar u koji je subjekt upisan, npr. "Registar udruga RH" (neobvezno) */
   registry: '',
   /** E-mail za upite, pritužbe i zahtjeve za podatke */
-  email: '',
+  email: 'lwlup.coaching@gmail.com',
   instagram: 'https://www.instagram.com/lwlup/',
   instagramHandle: '@lwlup',
   /** Datum stupanja na snagu zadnje verzije pravila */
