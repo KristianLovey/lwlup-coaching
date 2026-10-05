@@ -7,9 +7,9 @@ import { LIFTS, one, type Top } from './PrevBlockLifts'
 import { RPE_ROWS, weightFromRpe } from './training-setplan'
 import { COMP_CATEGORIES, LIFT_OF_CATEGORY, pctForExercise, type LiftK } from './lift-variations'
 import {
-  MAX_TOPS, autoExtra1rm, emptyPlan, extra1rm, extrasFromJson, extrasToJson, moveTop,
-  newExtra, newTop, planReady, planWeeks, topOrder, topsFromJson, topsToJson,
-  type ExtraLift, type ExtraTop, type LiftPlan,
+  MAIN, MAX_TOPS, autoExtra1rm, backoffBaseIndex, backoffFromJson, emptyPlan, extra1rm, extrasFromJson, extrasToJson,
+  moveTop, newExtra, newTop, planReady, planWeeks, topOrder, topsFromJson, topsToJson,
+  type BackoffFrom, type ExtraLift, type ExtraTop, type LiftPlan,
 } from './block-planner-calc'
 import {
   BLOCK_SHAPE_SELECT, blockShapeFrom, planApply, targetSummary,
@@ -120,6 +120,7 @@ async function loadProjections(athleteId: string, blockId: string): Promise<Load
       primaryBackoffPct: n(p.primary_backoff_pct) ?? 92.5,
       // stupac se zove po starom "drugom top setu", a sad nosi listu dodatnih
       primaryTops: topsFromJson(p.primary_top2),
+      primaryBackoffFrom: backoffFromJson(p.primary_top2?.backoffFrom),
       extras: extrasFromJson(p.extra_lifts, id => exById.get(id)?.name ?? null),
       weekOverrides: (p.week_overrides ?? {}) as Record<string, number>,
     }
@@ -362,25 +363,54 @@ function TopSetsEditor({ main, tops, onTops }: { main: MainTop; tops: ExtraTop[]
   )
 }
 
-/** Backoff: broj serija, postotak prethodne i smjer — jedan red. */
-function BackoffRow({ sets, pct, onSets, onPct }: { sets: number; pct: number; onSets: (v: number) => void; onPct: (v: number) => void }) {
+/**
+ * Backoff: broj serija, postotak prethodne, smjer i od kojeg top seta kreće.
+ * "OD" se pokazuje tek kad ima više top setova — s jednim nema izbora.
+ */
+function BackoffRow({ sets, pct, onSets, onPct, tops, from, onFrom }: {
+  sets: number; pct: number; onSets: (v: number) => void; onPct: (v: number) => void
+  tops: ExtraTop[]; from: BackoffFrom; onFrom: (v: BackoffFrom) => void
+}) {
+  const order = topOrder(tops)
+  const active = backoffBaseIndex(tops, from)
+  const chip = (on: boolean): CSSProperties => ({
+    minWidth: '30px', height: '30px', padding: '0 6px', borderRadius: '7px', cursor: 'pointer',
+    background: on ? 'rgba(107,140,255,0.16)' : 'transparent',
+    border: `1px solid ${on ? '#6b8cff' : 'var(--t-border)'}`, color: on ? '#9db0ff' : '#888',
+    fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.72rem',
+  })
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '9px', marginTop: '10px' }}>
       <Stepper label="Backoff serija" value={sets} onChange={onSets} />
       <NumField label="% prethodne serije" value={pct} suffix="%" onCommit={v => onPct(v ?? 92.5)} />
       <DirToggle pct={pct} onChange={onPct} />
+      {order.length > 1 && sets > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+          <span style={{ ...eyebrow, fontSize: '0.45rem', letterSpacing: '0.12em', whiteSpace: 'normal', lineHeight: 1.3 }}>Backoff od</span>
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+            {order.map((idx, pos) => (
+              <button key={idx === -1 ? 'main' : tops[idx].id} type="button" aria-pressed={pos === active}
+                title={`Prvi backoff = ${fmtKg(pct)} % serije S${pos + 1}, s njenim ponavljanjima`}
+                onClick={() => onFrom(idx === -1 ? MAIN : tops[idx].id)} style={chip(pos === active)}>
+                S{pos + 1}{idx === -1 ? '★' : ''}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 /** Top setovi jednog lifta za upis, redoslijedom u bloku. */
 function entryFor(exerciseId: string, label: string, mainTop: TopSetPlan, extra: ExtraTop[], extraKgs: (number | null)[],
-  backoffSets: number, backoffPct: number, rpe: number | null): PlanEntry {
+  backoffSets: number, backoffPct: number, backoffFrom: BackoffFrom, rpe: number | null): PlanEntry {
   const order = topOrder(extra)
   return {
     exerciseId, label,
     tops: order.map(i => (i === -1 ? mainTop : { kg: extraKgs[i] ?? null, reps: extra[i].reps })),
     mainIndex: order.indexOf(-1),
+    backoffFrom: backoffBaseIndex(extra, backoffFrom),
     backoffSets, backoffPct, rpe,
   }
 }
@@ -424,7 +454,7 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
       primary_backoff_sets: plan.primaryBackoffSets,
       primary_backoff_pct: plan.primaryBackoffPct,
       // objekt, ne goli niz — stupac je nastao za jedan "drugi top set"
-      primary_top2: { tops: topsToJson(plan.primaryTops) },
+      primary_top2: { tops: topsToJson(plan.primaryTops), backoffFrom: plan.primaryBackoffFrom },
       extra_lifts: extrasToJson(plan.extras),
       week_overrides: plan.weekOverrides,
     }, { onConflict: 'block_id,lift' })
@@ -441,13 +471,13 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
     const entries: PlanEntry[] = []
     if (compEx) {
       entries.push(entryFor(compEx.id, compEx.name, { kg: r.primaryKg, reps: plan.primaryReps },
-        plan.primaryTops, r.primaryTopKgs, plan.primaryBackoffSets, plan.primaryBackoffPct, null))
+        plan.primaryTops, r.primaryTopKgs, plan.primaryBackoffSets, plan.primaryBackoffPct, plan.primaryBackoffFrom, null))
     }
     plan.extras.forEach((e, i) => {
       if (!e.exerciseId) return
       const w = r.extras[i]
       entries.push(entryFor(e.exerciseId, e.exerciseName ?? extraLabel(i), { kg: w?.kg ?? null, reps: e.reps },
-        e.tops, w?.topKgs ?? [], e.backoffSets, e.backoffPct, w?.rpe ?? null))
+        e.tops, w?.topKgs ?? [], e.backoffSets, e.backoffPct, e.backoffFrom, w?.rpe ?? null))
     })
     return { week: r.week, entries }
   }), [rows, plan, compEx])
@@ -532,7 +562,8 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
         }}
         tops={plan.primaryTops} onTops={t => set({ primaryTops: t })} />
       <BackoffRow sets={plan.primaryBackoffSets} pct={plan.primaryBackoffPct}
-        onSets={v => set({ primaryBackoffSets: v })} onPct={v => set({ primaryBackoffPct: v })} />
+        onSets={v => set({ primaryBackoffSets: v })} onPct={v => set({ primaryBackoffPct: v })}
+        tops={plan.primaryTops} from={plan.primaryBackoffFrom} onFrom={v => set({ primaryBackoffFrom: v })} />
 
       {/* DODATNI LIFTOVI — koliko god ih treba (npr. četiri bencha tjedno) */}
       {plan.extras.map((e, i) => {
@@ -578,7 +609,8 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
               }}
               tops={e.tops} onTops={t => setExtra(e.id, { tops: t })} />
             <BackoffRow sets={e.backoffSets} pct={e.backoffPct}
-              onSets={v => setExtra(e.id, { backoffSets: v })} onPct={v => setExtra(e.id, { backoffPct: v })} />
+              onSets={v => setExtra(e.id, { backoffSets: v })} onPct={v => setExtra(e.id, { backoffPct: v })}
+              tops={e.tops} from={e.backoffFrom} onFrom={v => setExtra(e.id, { backoffFrom: v })} />
           </div>
         )
       })}
@@ -735,7 +767,8 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
       )}
       <div style={{ fontSize: '0.58rem', color: '#666', marginTop: '10px', lineHeight: 1.6 }}>
         Kilaže idu linearno od početka do kraja bloka, zaokruženo na 2.5 kg. Ručni upis nadjačava glavni top set (žuto),
-        dodatni top setovi su plavi. Prva backoff serija je postotak glavnog top seta, svaka sljedeća postotak prethodne.
+        dodatni top setovi su plavi. Prva backoff serija je postotak top seta odabranog pod „Backoff od" (zadano glavni ★),
+        s njegovim ponavljanjima; svaka sljedeća je postotak prethodne.
       </div>
 
       {/* DETALJNE TABLICE ZA SEKUNDARNE LIFTOVE */}

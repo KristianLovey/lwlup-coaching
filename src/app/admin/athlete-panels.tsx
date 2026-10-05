@@ -11,7 +11,7 @@ import { WeekPanel, EditableField } from '../training/training-components'
 import { estimate1RM } from '../training/training-setplan'
 import { PrevBlockLiftsModal } from '../training/PrevBlockLifts'
 import { BlockProjectionsModal } from '../training/BlockProjections'
-import { currentBlockOf, setCurrentBlock, withCurrent } from '@/lib/current-block'
+import { currentBlockOf, prepareNewBlock, setCurrentBlock, withCurrent } from '@/lib/current-block'
 import { BlockSuggestionsProvider } from '../training/block-suggestions'
 import type { Block, Week, Workout, WorkoutExercise, Exercise, BlockSummary } from '../training/types'
 
@@ -1068,21 +1068,22 @@ export function AthletePanel({
     setSaving(true)
     const today = new Date()
     const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
+    // novi blok ne postaje trenutni sam — trener ga označi kvačicom kad želi (osim prvog bloka)
+    const prep = await prepareNewBlock(supabase, allBlocks)
+    if (prep.error) { alert(`Greška pri zaključavanju trenutnog bloka: ${prep.error}`); setSaving(false); return }
+    if (prep.pinnedId) setAllBlocks(bs => withCurrent(bs, prep.pinnedId!))
     const { data, error } = await supabase.from('blocks').insert({
       athlete_id: athlete.id, name: name.trim(),
       start_date: today.toISOString().split('T')[0],
       end_date: endDate.toISOString().split('T')[0],
-      status: 'active',
+      status: prep.status,
       ...(goalFilter ? { goal: goalFilter } : {}),
     }).select('id, name, status, start_date, end_date').single()
     if (error) alert(`Greška pri kreiranju bloka: ${error.message}`)
     if (data) {
-      // zadnji kreirani je trenutni — ostali aktivni se spuštaju (trener to može promijeniti kvačicom)
-      const err = await setCurrentBlock(supabase, data.id, allBlocks)
-      if (err) alert(`Blok je kreiran, ali prethodni trenutni nije spušten: ${err}`)
-      setAllBlocks(bs => withCurrent([data as BlockSummary, ...bs], data.id))
+      setAllBlocks(bs => [data as BlockSummary, ...bs])
       setBlock({ ...data, weeks: [] } as unknown as Block)
-      onRefresh()
+      if (prep.status === 'active') onRefresh()
     }
     setSaving(false)
   }
@@ -1094,11 +1095,15 @@ export function AthletePanel({
     setSaving(true)
     const today = new Date()
     const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
+    // kopija je novi blok → ne postaje trenutna sama
+    const prep = await prepareNewBlock(supabase, allBlocks)
+    if (prep.error) { alert(`Greška pri zaključavanju trenutnog bloka: ${prep.error}`); setSaving(false); return }
+    if (prep.pinnedId) setAllBlocks(bs => withCurrent(bs, prep.pinnedId!))
     const { data: nb } = await supabase.from('blocks').insert({
       athlete_id: athlete.id, name: name.trim(),
       start_date: today.toISOString().split('T')[0],
       end_date: endDate.toISOString().split('T')[0],
-      status: 'active',
+      status: prep.status,
       ...(goalFilter ? { goal: goalFilter } : {}),
     }).select('id, name, status, start_date, end_date').single()
     if (!nb) { setSaving(false); return }
@@ -1133,12 +1138,9 @@ export function AthletePanel({
         }
       }
     }
-    // kopija je novi blok → postaje trenutni, kao i svaki novi
-    const curErr = await setCurrentBlock(supabase, nb.id, allBlocks)
-    if (curErr) alert(`Kopija je napravljena, ali prethodni trenutni nije spušten: ${curErr}`)
-    setAllBlocks(bs => withCurrent([nb as BlockSummary, ...bs], nb.id))
+    setAllBlocks(bs => [nb as BlockSummary, ...bs])
     await switchBlock(nb.id)
-    onRefresh()
+    if (prep.status === 'active') onRefresh()
     setSaving(false)
   }
 

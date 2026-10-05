@@ -2,8 +2,8 @@
  * Trenutni blok liftera.
  *
  * Trenutni je onaj koji je trener označio kvačicom — u bazi `status = 'active'`,
- * isti status koji već čitaju dashboard, profil i prioriteti. Novi blok pri
- * kreiranju postaje trenutni sam od sebe; trener to može promijeniti kvačicom.
+ * isti status koji već čitaju dashboard, profil i prioriteti. Novi blok NE
+ * postaje trenutni sam (osim prvog bloka liftera) — trener ga označi kad želi.
  * Ako nijedan blok nije označen, trenutni je zadnji kreirani.
  *
  * Odabir bloka u dropdownu samo ga OTVARA za pregled i uređivanje — trenutni
@@ -37,3 +37,20 @@ export async function setCurrentBlock(db: Db, blockId: string, blocks: WithStatu
 /** Lokalno stanje liste nakon setCurrentBlock. */
 export const withCurrent = <T extends WithStatus>(blocks: T[], blockId: string): T[] =>
   blocks.map(b => (b.id === blockId ? { ...b, status: 'active' } : b.status === 'active' ? { ...b, status: 'planned' } : b))
+
+/**
+ * Prije kreiranja novog bloka. Novi blok ide kao 'planned' da ne preuzme
+ * trenutni — osim kad lifter još nema nijedan blok, tada je on trenutni.
+ *
+ * Ako trenutni do sad nije bio označen (vrijedio je samo kao "zadnji kreirani"),
+ * označi ga sad: inače bi ga novi blok, kao noviji, tiho preuzeo.
+ */
+export async function prepareNewBlock(db: Db, blocks: WithStatus[]): Promise<{
+  status: 'active' | 'planned'; pinnedId: string | null; error: string | null
+}> {
+  const cur = currentBlockOf(blocks)
+  if (!cur) return { status: 'active', pinnedId: null, error: null }
+  if (cur.status === 'active') return { status: 'planned', pinnedId: null, error: null }
+  const error = await setCurrentBlock(db, cur.id, blocks)
+  return { status: 'planned', pinnedId: error ? null : cur.id, error }
+}

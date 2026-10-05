@@ -32,6 +32,7 @@ function entryError(e: PlanEntry): string | null {
   if (!Array.isArray(e.tops) || e.tops.length < 1 || e.tops.length > MAX_TOPS) return `${e.label}: 1–${MAX_TOPS} top seta`
   if (e.tops.some(t => t.kg == null || !(Number(t.kg) > 0) || !(Number(t.reps) >= 1))) return `${e.label}: top set bez kilaže ili ponavljanja`
   if (!Number.isInteger(e.mainIndex) || e.mainIndex < 0 || e.mainIndex >= e.tops.length) return `${e.label}: nema glavnog top seta`
+  if (!Number.isInteger(e.backoffFrom) || e.backoffFrom < 0 || e.backoffFrom >= e.tops.length) return `${e.label}: backoff ne kreće ni od jednog top seta`
   if (!Number.isInteger(e.backoffSets) || e.backoffSets < 0 || e.backoffSets > MAX_BACKOFFS) return `${e.label}: 0–${MAX_BACKOFFS} backoff serija`
   if (e.backoffSets > 0 && !(Number(e.backoffPct) > 0)) return `${e.label}: backoff bez postotka`
   return null
@@ -59,6 +60,8 @@ export async function POST(req: NextRequest) {
     }
     for (const w of weeks) {
       for (const e of w.entries) {
+        // planer otvoren prije ove verzije ne šalje backoffFrom — tada backoff ide od glavnog
+        if (e && (e as any).backoffFrom === undefined) e.backoffFrom = e.mainIndex
         const msg = entryError(e)
         if (msg) return NextResponse.json({ error: `Plan nije potpun (${w.week}. tj.): ${msg}` }, { status: 400 })
       }

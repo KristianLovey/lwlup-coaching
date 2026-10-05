@@ -18,8 +18,9 @@ import { pctForExercise } from './lift-variations'
  * kao kilaža od početka do kraja bloka sa svojim ponavljanjima, a `before` kaže
  * ide li u bloku prije ili poslije glavnog.
  *
- * Backoff: prva backoff serija je postotak GLAVNOG top seta, svaka sljedeća
- * postotak prethodne (kaskadno). Ispod 100 % je pad, iznad 100 % skok.
+ * Backoff: prva backoff serija je postotak odabranog top seta (zadano glavnog),
+ * svaka sljedeća postotak prethodne (kaskadno). Ispod 100 % je pad, iznad 100 %
+ * skok. Backoff serije ponavljaju broj ponavljanja tog top seta.
  */
 
 /** Najviše top setova po liftu, glavni uključen. */
@@ -82,6 +83,22 @@ export const topOrder = (tops: ExtraTop[]): number[] => [
   ...tops.flatMap((t, i) => (t.before ? [] : [i])),
 ]
 
+/** Od kojeg top seta kreće backoff: 'main' ili id dodatnog top seta. */
+export type BackoffFrom = string
+export const MAIN: BackoffFrom = 'main'
+
+/**
+ * Pozicija (indeks u redoslijedu bloka) top seta od kojeg kreće backoff.
+ * Ako je taj top set obrisan, backoff se vraća na glavni.
+ */
+export function backoffBaseIndex(tops: ExtraTop[], from: BackoffFrom): number {
+  const order = topOrder(tops)
+  const i = from === MAIN ? -1 : tops.findIndex(t => t.id === from)
+  return order.indexOf(i)
+}
+
+export const backoffFromJson = (v: unknown): BackoffFrom => (typeof v === 'string' && v ? v : MAIN)
+
 /**
  * Pomakni dodatni top set za jedno mjesto u bloku. Prelazak preko glavnog samo
  * mijenja `before`; lista se uvijek vraća kao [prije…, poslije…] da redoslijed
@@ -111,6 +128,7 @@ export type ExtraLift = {
   endRpe: number | null
   backoffSets: number
   backoffPct: number
+  backoffFrom: BackoffFrom
   tops: ExtraTop[]
 }
 
@@ -122,6 +140,7 @@ export type LiftPlan = {
   primaryReps: number
   primaryBackoffSets: number
   primaryBackoffPct: number
+  primaryBackoffFrom: BackoffFrom
   primaryTops: ExtraTop[]
   extras: ExtraLift[]
   weekOverrides: Record<string, number>
@@ -142,14 +161,14 @@ export const newExtra = (): ExtraLift => ({
   id: uid(),
   exerciseId: null, exerciseName: null, oneRm: null,
   reps: 3, startRpe: null, endRpe: null,
-  backoffSets: 0, backoffPct: 92.5,
+  backoffSets: 0, backoffPct: 92.5, backoffFrom: MAIN,
   tops: [],
 })
 
 export const emptyPlan = (weeks: number): LiftPlan => ({
   weeks,
   primary1rm: null, startKg: null, endKg: null,
-  primaryReps: 3, primaryBackoffSets: 0, primaryBackoffPct: 92.5,
+  primaryReps: 3, primaryBackoffSets: 0, primaryBackoffPct: 92.5, primaryBackoffFrom: MAIN,
   primaryTops: [],
   extras: [],
   weekOverrides: {},
@@ -170,6 +189,7 @@ export function extrasFromJson(raw: unknown, nameOf: (id: string) => string | nu
       endRpe: e?.endRpe != null ? Number(e.endRpe) : null,
       backoffSets: e?.backoffSets != null ? Number(e.backoffSets) : 0,
       backoffPct: e?.backoffPct != null ? Number(e.backoffPct) : 92.5,
+      backoffFrom: backoffFromJson(e?.backoffFrom),
       // stari zapis ima jedan `top2`
       tops: topsFromJson(e?.tops ?? e?.top2),
     }
@@ -181,7 +201,7 @@ export const extrasToJson = (extras: ExtraLift[]) =>
   extras.map(e => ({
     id: e.id, exerciseId: e.exerciseId, oneRm: e.oneRm, reps: e.reps,
     startRpe: e.startRpe, endRpe: e.endRpe,
-    backoffSets: e.backoffSets, backoffPct: e.backoffPct,
+    backoffSets: e.backoffSets, backoffPct: e.backoffPct, backoffFrom: e.backoffFrom,
     tops: topsToJson(e.tops),
   }))
 

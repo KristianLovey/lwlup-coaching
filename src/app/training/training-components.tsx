@@ -1210,8 +1210,15 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
         const row = planRows[i] ?? defaultRow(i)
         const isBackoff = isAdmin && row.mode === 'backoff'
         const compVal = computed[i]
+        // Uloga serije za oznaku — vide je i lifter i trener. Top set je ★ u bazi,
+        // backoff je način serije u set_planu; oboje postavlja upis projekcije.
+        const setRole: 'top' | 'backoff' | null = log.is_top_set ? 'top' : row.mode === 'backoff' ? 'backoff' : null
+        const roleColor = setRole === 'top' ? '#facc15' : BLUE
         return (
           <div key={i} style={{ position: 'relative', overflow: 'hidden' }}>
+            {setRole && (
+              <div aria-hidden style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', background: roleColor, opacity: log.completed ? 0.45 : 0.9, zIndex: 2, pointerEvents: 'none' }} />
+            )}
             {/* Row content — blurred when locked */}
             <div className={`set-log-row ${gridClass}`} style={{ display: 'grid', alignItems: 'stretch', background: log.completed ? 'var(--t-done)' : i % 2 === 0 ? 'transparent' : 'var(--t-s2)', borderBottom: '1px solid var(--t-border)', transition: 'background 0.15s, filter 0.35s', minHeight: '52px', filter: isLocked ? 'blur(5px)' : 'none', pointerEvents: isLocked ? 'none' : 'auto', userSelect: isLocked ? 'none' : 'auto' }}>
 
@@ -1219,8 +1226,12 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
               <div style={{ ...cellStyle, justifyContent: 'center', padding: '12px 8px', gap: '6px', flexDirection: 'column' as const }}>
                 <div style={{ width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0, background: log.completed ? '#22c55e' : 'var(--t-border-hi)', boxShadow: log.completed ? '0 0 5px rgba(34,197,94,0.5)' : 'none', transition: 'all 0.2s' }} />
                 <span style={{ fontSize: '0.68rem', fontWeight: 900, color: log.completed ? '#22c55e' : 'rgba(255,255,255,0.6)', fontFamily: 'var(--fd)', letterSpacing: '0.06em' }}>S{log.set_number}</span>
-                {!isAdmin && log.is_top_set && (
-                  <span style={{ fontSize: '0.5rem', color: '#facc15', fontFamily: 'var(--fm)', lineHeight: 1 }} title="Top set">★</span>
+                {setRole && (
+                  <span className="set-role-tag"
+                    title={setRole === 'top' ? 'Top set' : `Backoff · ${row.pct}% od S${row.ref + 1}`}
+                    style={{ fontSize: '0.4rem', letterSpacing: '0.06em', fontWeight: 800, fontFamily: 'var(--fm)', lineHeight: 1, padding: '2px 3px', borderRadius: '3px', color: roleColor, background: setRole === 'top' ? 'rgba(250,204,21,0.12)' : 'rgba(107,140,255,0.14)', whiteSpace: 'nowrap' as const }}>
+                    {setRole === 'top' ? 'TOP' : 'BACK'}
+                  </span>
                 )}
               </div>
 

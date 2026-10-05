@@ -3,7 +3,8 @@
  *
  * Što planer kaže, to blok postane: za svaki tjedan i svaku vježbu red dobije
  * točno onoliko serija koliko ima top setova + backoffa, top setovi su prve
- * serije i označeni su zvjezdicom (★), a backoff kreće od glavnog top seta.
+ * serije i označeni su zvjezdicom (★), a backoff kreće od top seta koji je
+ * trener odabrao (zadano glavnog).
  * Ako vježba u tjednu fali, dodaje se u isti dan u kojem stoji u ostalim
  * tjednima (inače u prvi slobodni trening tog tjedna).
  *
@@ -109,8 +110,10 @@ export type PlanEntry = {
   label: string
   /** top setovi redoslijedom u bloku (serije 1..n) */
   tops: TopSetPlan[]
-  /** koji je od njih glavni: od njega kreće backoff i on je sažetak reda */
+  /** koji je od njih glavni: on je sažetak reda (KG / REPS u zaglavlju vježbe) */
   mainIndex: number
+  /** od kojeg top seta kreće prvi backoff (indeks u tops); backoff ponavlja i njegova ponavljanja */
+  backoffFrom: number
   backoffSets: number
   /** postotak prethodne serije; iznad 100 = skok */
   backoffPct: number
@@ -241,12 +244,14 @@ const plate = (kg: number) => Math.round(kg / 2.5) * 2.5
 
 /**
  * Točan sadržaj reda prema projekciji: top setovi su prve serije (★), a backoff
- * je kaskada — prva backoff serija je postotak glavnog top seta, svaka sljedeća
- * postotak prethodne. Isto pravilo zapisano je i u set_plan, pa trening-ekran
+ * je kaskada — prva backoff serija je postotak odabranog top seta, svaka
+ * sljedeća postotak prethodne. Isto pravilo zapisano je i u set_plan, pa trening-ekran
  * backoff računa jednako ako trener kasnije promijeni kilažu top seta.
  */
 export function rowWrite(entry: PlanEntry): RowWrite {
   const main = entry.tops[entry.mainIndex] ?? entry.tops[0]
+  const fromIdx = entry.tops[entry.backoffFrom] ? entry.backoffFrom : entry.mainIndex
+  const base = entry.tops[fromIdx] ?? main
   const backoffs = Math.max(0, Math.round(entry.backoffSets))
   const planRows: SetPlanRow[] = []
   const logs: RowWrite['logs'] = []
@@ -256,12 +261,12 @@ export function rowWrite(entry: PlanEntry): RowWrite {
     logs.push({ set_number: i + 1, weight_kg: t.kg, reps: String(t.reps), is_top_set: true })
   })
 
-  let prevKg = main?.kg ?? null
+  let prevKg = base?.kg ?? null
   for (let b = 0; b < backoffs; b++) {
     const idx = entry.tops.length + b
-    planRows.push({ mode: 'backoff', pct: entry.backoffPct, ref: b === 0 ? entry.mainIndex : idx - 1 })
+    planRows.push({ mode: 'backoff', pct: entry.backoffPct, ref: b === 0 ? fromIdx : idx - 1 })
     const kg = prevKg != null ? plate(prevKg * entry.backoffPct / 100) : null
-    logs.push({ set_number: idx + 1, weight_kg: kg, reps: String(main?.reps ?? ''), is_top_set: false })
+    logs.push({ set_number: idx + 1, weight_kg: kg, reps: String(base?.reps ?? ''), is_top_set: false })
     prevKg = kg
   }
 
