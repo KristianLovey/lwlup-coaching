@@ -59,6 +59,9 @@ const repsNum = (r: string) => parseFloat(r) || 0
 const plate = (n: number) => Math.round(n / 2.5) * 2.5
 const rng = (a: number, b: number) => (a === b ? fmtKg(a) : `${fmtKg(Math.min(a, b))}–${fmtKg(Math.max(a, b))}`)
 const numOrNull = (v: string) => { const n = Number(String(v).replace(',', '.')); return Number.isFinite(n) && n > 0 ? n : null }
+/** '2026-10-12' → '12.10.' */
+const fmtDay = (iso: string | null) => (iso && iso.length >= 10 ? `${iso.slice(8, 10)}.${iso.slice(5, 7)}.` : '')
+const weeksWord = (n: number) => (n % 10 === 1 && n % 100 !== 11 ? 'tjedan' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'tjedna' : 'tjedana')
 
 function plannedWeeks(anchorWeek: number, anchorKg: number, target: number, lastWeek: number): Map<number, number> {
   const out = new Map<number, number>()
@@ -725,7 +728,7 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
             {changes.slice(0, 10).map((t, i) => (
               <li key={i}>
                 <b style={{ color: '#f0f0f0' }}>{t.week}. tj.</b> · {t.entry.label}
-                {t.kind === 'update' && t.row.dayName ? ` · ${t.row.dayName}` : ''}:{' '}
+                {t.kind === 'update' ? ` · ${[t.row.dayName?.trim(), fmtDay(t.row.workoutDate)].filter(Boolean).join(' ')}` : ''}:{' '}
                 <span style={{ color: t.kind === 'insert' ? CYAN : GOLD }}>{targetSummary(t)}</span>
               </li>
             ))}
@@ -1019,7 +1022,7 @@ export function BlockProjectionsModal({ athleteId, blockId, blockName, canEdit, 
               {canEdit ? 'PLANER KILAŽA · TRENUTNI BLOK' : 'PROJEKCIJE · KRAJ BLOKA'}
             </div>
             <div style={{ fontFamily: 'var(--fd)', fontSize: '1.05rem', fontWeight: 700, color: '#f0f0f0', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {blockName}{data && data.totalWeeks > 0 ? ` · ${data.totalWeeks} tjedana` : ''}
+              {blockName}{data && data.totalWeeks > 0 ? ` · ${data.totalWeeks} ${weeksWord(data.totalWeeks)}` : ''}
             </div>
           </div>
           <button onClick={onClose} aria-label="Zatvori"
