@@ -7,19 +7,25 @@ import { LIFTS, one, type Top } from './PrevBlockLifts'
 import { RPE_ROWS, weightFromRpe } from './training-setplan'
 import { COMP_CATEGORIES, LIFT_OF_CATEGORY, pctForExercise, type LiftK } from './lift-variations'
 import {
-  autoExtra1rm, emptyPlan, extra1rm, extrasFromJson, extrasToJson,
-  newExtra, planReady, planWeeks, top2FromJson, top2ToJson,
-  type ExtraLift, type LiftPlan, type TopSet2,
+  MAX_TOPS, autoExtra1rm, emptyPlan, extra1rm, extrasFromJson, extrasToJson, moveTop,
+  newExtra, newTop, planReady, planWeeks, topOrder, topsFromJson, topsToJson,
+  type ExtraLift, type ExtraTop, type LiftPlan,
 } from './block-planner-calc'
-import { blockRowsFrom, matchPlan, type BlockRow, type PlanEntry, type Problem } from '@/lib/block-plan-match'
+import {
+  BLOCK_SHAPE_SELECT, blockShapeFrom, planApply, targetSummary,
+  type BlockShape, type PlanEntry, type TopSetPlan,
+} from '@/lib/block-plan-apply'
 
 /**
  * Planer bloka (trener/admin) + prikaz napretka (lifter).
  *
- * Trener upiše po liftu: 1RM, kilažu na početku i na kraju bloka, broj backoff
- * serija i postotak pada, pa sekundarnu varijaciju s RPE-om od početnog do
- * završnog. Iz toga se izračuna top set za svaki tjedan; bilo koji tjedan smije
- * pregaziti ručnim upisom. "UPIŠI U BLOK" te kilaže upiše u same vježbe.
+ * Trener upiše po liftu: 1RM, top setove (glavni + do tri dodatna, svaki od
+ * kilaže na početku do kilaže na kraju bloka), broj backoff serija i postotak,
+ * pa dodatne varijacije s RPE-om od početnog do završnog. Iz toga se izračuna
+ * svaki tjedan; glavni top set smije se pregaziti ručnim upisom.
+ *
+ * "UPIŠI U BLOK" postavlja trenutni blok prema projekciji — broj serija, ★ i
+ * backoff — a pregled iznad gumba unaprijed pokazuje što će se promijeniti.
  *
  * Lifter vidi cilj (KRAJ BLOKA) i svoj napredak po tjednima — najteži ODRAĐENI
  * set natjecateljske varijante, kao i prije.
@@ -112,7 +118,8 @@ async function loadProjections(athleteId: string, blockId: string): Promise<Load
       primaryReps: p.primary_reps ?? 3,
       primaryBackoffSets: p.primary_backoff_sets ?? 0,
       primaryBackoffPct: n(p.primary_backoff_pct) ?? 92.5,
-      primaryTop2: top2FromJson(p.primary_top2),
+      // stupac se zove po starom "drugom top setu", a sad nosi listu dodatnih
+      primaryTops: topsFromJson(p.primary_top2),
       extras: extrasFromJson(p.extra_lifts, id => exById.get(id)?.name ?? null),
       weekOverrides: (p.week_overrides ?? {}) as Record<string, number>,
     }
@@ -170,14 +177,14 @@ async function loadProjections(athleteId: string, blockId: string): Promise<Load
   }
 }
 
-/** Struktura bloka (serije, ★) za provjeru prije upisa — ista koju čita ruta. */
-async function loadBlockShape(athleteId: string, blockId: string): Promise<BlockRow[]> {
-  const { data, error } = await supabase.from('workout_exercises')
-    .select('id, exercise_id, exercise_order, planned_sets, workouts!inner(workout_date, day_name, athlete_id, weeks!inner(week_number, block_id)), set_logs(set_number, is_top_set, completed, weight_kg)')
-    .eq('workouts.athlete_id', athleteId)
-    .eq('workouts.weeks.block_id', blockId)
+/** Oblik bloka (treninzi, serije, ★) za pregled promjena — isti koji čita ruta. */
+async function loadBlockShape(athleteId: string, blockId: string): Promise<BlockShape> {
+  const { data, error } = await supabase.from('workouts')
+    .select(BLOCK_SHAPE_SELECT)
+    .eq('athlete_id', athleteId)
+    .eq('weeks.block_id', blockId)
   if (error) throw error
-  return blockRowsFrom(data ?? [])
+  return blockShapeFrom(data ?? [])
 }
 
 // ── stilovi ───────────────────────────────────────────────────────
@@ -185,7 +192,11 @@ const eyebrow: CSSProperties = { fontSize: '0.5rem', letterSpacing: '0.22em', co
 const inputBase: CSSProperties = { background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '8px', padding: '7px 9px', color: '#f0f0f0', fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.9rem', outline: 'none', minWidth: 0, width: '100%', boxSizing: 'border-box' }
 const th: CSSProperties = { fontSize: '0.5rem', letterSpacing: '0.16em', color: '#777', fontWeight: 700, padding: '6px 8px', whiteSpace: 'nowrap', textAlign: 'center' }
 const td: CSSProperties = { padding: '7px 8px', textAlign: 'center', whiteSpace: 'nowrap', fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.8rem', color: '#e8e8e8', fontVariantNumeric: 'tabular-nums' }
+const tdLabel: CSSProperties = { ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis' }
 const REPS_COLS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+const GOLD = '#facc15'
+const CYAN = '#22d3ee'
+const GREEN = '#4ade80'
 /** Walter ih zove po redu: primarni, sekundarni, tercijarni, kvartarni… */
 const ORDINAL = ['SEKUNDARNI', 'TERCIJARNI', 'KVARTARNI', 'KVINTARNI']
 const extraLabel = (i: number) => ORDINAL[i] ?? `${i + 2}. LIFT`
@@ -199,32 +210,42 @@ function RowStat({ label, value, tone }: { label: string; value: ReactNode; tone
   )
 }
 
-/** Brojčano polje koje se ugodno tipka: lokalni tekst, promjena gore ide na blur. */
-function NumField({ label, value, onCommit, placeholder, suffix, width }: {
-  label: string; value: number | null; onCommit: (v: number | null) => void
-  placeholder?: string; suffix?: string; width?: string
+/** Broj koji se ugodno tipka: lokalni tekst, promjena gore ide na blur. */
+function NumInput({ value, onCommit, placeholder, unit, ariaLabel, tone }: {
+  value: number | null; onCommit: (v: number | null) => void
+  placeholder?: string; unit?: string; ariaLabel: string; tone?: string
 }) {
   const [text, setText] = useState(value == null ? '' : fmtKg(value))
   useEffect(() => { setText(value == null ? '' : fmtKg(value)) }, [value])
   return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0, width: width ?? 'auto' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0 }}>
+      <input value={text} inputMode="decimal" placeholder={placeholder} aria-label={ariaLabel}
+        onChange={e => setText(e.target.value)}
+        onBlur={() => onCommit(numOrNull(text))}
+        onKeyDown={e => { if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur() }}
+        style={{ ...inputBase, padding: '6px 7px', fontSize: '0.84rem', color: tone ?? inputBase.color }} />
+      {unit && <span style={{ fontSize: '0.5rem', color: '#666', flexShrink: 0, letterSpacing: '0.06em' }}>{unit}</span>}
+    </div>
+  )
+}
+
+/** Polje s oznakom iznad — za 1RM, postotak i sl. */
+function NumField({ label, value, onCommit, placeholder, suffix }: {
+  label: string; value: number | null; onCommit: (v: number | null) => void
+  placeholder?: string; suffix?: string
+}) {
+  return (
+    <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
       <span style={{ ...eyebrow, fontSize: '0.45rem', letterSpacing: '0.12em', whiteSpace: 'normal', lineHeight: 1.3 }}>{label}</span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-        <input value={text} inputMode="decimal" placeholder={placeholder}
-          onChange={e => setText(e.target.value)}
-          onBlur={() => onCommit(numOrNull(text))}
-          onKeyDown={e => { if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur() }}
-          style={inputBase} />
-        {suffix && <span style={{ fontSize: '0.55rem', color: '#666', flexShrink: 0 }}>{suffix}</span>}
-      </div>
+      <NumInput value={value} onCommit={onCommit} placeholder={placeholder} unit={suffix} ariaLabel={label} />
     </label>
   )
 }
 
 /**
- * Smjer sljedecih serija: dolje (backoff, npr. 92.5 % prethodne) ili gore
- * (ascending, npr. 107.5 %). Postotak je uvijek udio PRETHODNE serije, pa
- * strelica samo zrcali vrijednost oko 100 i ostaje jedan broj u bazi.
+ * Smjer backoff serija: dolje (pad, npr. 92.5 % prethodne) ili gore (skok, npr.
+ * 107.5 %). Postotak je uvijek udio PRETHODNE serije, pa strelica samo zrcali
+ * vrijednost oko 100 i ostaje jedan broj u bazi.
  */
 function DirToggle({ pct, onChange }: { pct: number; onChange: (v: number) => void }) {
   const up = pct > 100
@@ -233,13 +254,13 @@ function DirToggle({ pct, onChange }: { pct: number; onChange: (v: number) => vo
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px',
     padding: '6px 9px', borderRadius: '7px', cursor: 'pointer', flex: 1, minWidth: 0,
     background: on ? 'var(--t-s3)' : 'transparent',
-    border: `1px solid ${on ? '#facc15' : 'var(--t-border)'}`,
-    color: on ? '#facc15' : '#888',
+    border: `1px solid ${on ? GOLD : 'var(--t-border)'}`,
+    color: on ? GOLD : '#888',
     fontFamily: 'var(--fm)', fontSize: '0.52rem', letterSpacing: '0.12em', fontWeight: 700,
   })
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
-      <span style={{ ...eyebrow, fontSize: '0.45rem', letterSpacing: '0.12em', whiteSpace: 'normal', lineHeight: 1.3 }}>Smjer serija</span>
+      <span style={{ ...eyebrow, fontSize: '0.45rem', letterSpacing: '0.12em', whiteSpace: 'normal', lineHeight: 1.3 }}>Smjer</span>
       <div style={{ display: 'flex', gap: '5px' }}>
         <button type="button" style={btn(!up)} onClick={() => onChange(100 - delta)} aria-pressed={!up}>
           <ArrowDown size={11} /> PAD
@@ -248,62 +269,6 @@ function DirToggle({ pct, onChange }: { pct: number; onChange: (v: number) => vo
           <ArrowUp size={11} /> SKOK
         </button>
       </div>
-    </div>
-  )
-}
-
-/**
- * Drugi top set iste vježbe — npr. trojke pa fatigue single. Planira se kao prvi:
- * kilaža na početku i na kraju bloka plus ponavljanja. U bloku je to druga
- * serija sa zvjezdicom (★) u istom redu; PRIJE/POSLIJE kaže koja je to ★.
- */
-function Top2Fields({ value, onChange, previewKg }: {
-  value: TopSet2; onChange: (patch: Partial<TopSet2>) => void; previewKg: number | null
-}) {
-  const on = value.enabled
-  const posBtn = (active: boolean): CSSProperties => ({
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px',
-    padding: '6px 9px', borderRadius: '7px', cursor: 'pointer', flex: 1, minWidth: 0,
-    background: active ? 'var(--t-s3)' : 'transparent',
-    border: `1px solid ${active ? '#22d3ee' : 'var(--t-border)'}`,
-    color: active ? '#22d3ee' : '#888',
-    fontFamily: 'var(--fm)', fontSize: '0.52rem', letterSpacing: '0.12em', fontWeight: 700,
-  })
-  return (
-    <div style={{ marginTop: '9px', padding: '10px', borderRadius: '9px', border: `1px solid ${on ? '#22d3ee44' : 'var(--t-border)'}`, background: on ? 'rgba(34,211,238,0.05)' : 'transparent' }}>
-      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-        <input type="checkbox" checked={on} onChange={e => onChange({ enabled: e.target.checked })}
-          style={{ width: '15px', height: '15px', accentColor: '#22d3ee', cursor: 'pointer', flexShrink: 0 }} />
-        <span style={{ ...eyebrow, fontSize: '0.5rem', color: on ? '#22d3ee' : '#777' }}>DRUGI TOP SET</span>
-        {on && previewKg != null && (
-          <span style={{ marginLeft: 'auto', fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.78rem', color: '#22d3ee', fontVariantNumeric: 'tabular-nums' }}>
-            {fmtKg(previewKg)} kg <span style={{ color: '#666', fontSize: '0.6rem' }}>· 1. tj.</span>
-          </span>
-        )}
-      </label>
-      {on && (
-        <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: '9px', marginTop: '9px' }}>
-            <NumField label="Početak bloka" value={value.startKg} suffix="kg" placeholder="npr. 155"
-              onCommit={v => onChange({ startKg: v })} />
-            <NumField label="Kraj bloka" value={value.endKg} suffix="kg" placeholder="npr. 195"
-              onCommit={v => onChange({ endKg: v })} />
-            <NumField label="Ponavljanja" value={value.reps}
-              onCommit={v => onChange({ reps: Math.max(1, Math.round(v ?? 1)) })} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '9px' }}>
-            <span style={{ ...eyebrow, fontSize: '0.45rem', letterSpacing: '0.12em', whiteSpace: 'normal', lineHeight: 1.3 }}>Koja je ★ u bloku</span>
-            <div style={{ display: 'flex', gap: '5px' }}>
-              <button type="button" style={posBtn(!value.before)} onClick={() => onChange({ before: false })} aria-pressed={!value.before}>
-                POSLIJE · 2. ★
-              </button>
-              <button type="button" style={posBtn(value.before)} onClick={() => onChange({ before: true })} aria-pressed={value.before}>
-                PRIJE · 1. ★
-              </button>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   )
 }
@@ -325,10 +290,105 @@ function Stepper({ label, value, onChange, min = 0, max = 10 }: {
   )
 }
 
+/**
+ * Top setovi jednog lifta kao kompaktna tablica, redoslijedom kojim stoje u
+ * bloku (S1, S2…). Glavni (★) nosi plan lifta — kilažu (primarni) ili RPE
+ * (varijacije) — a dodatni idu od kilaže na početku do kilaže na kraju bloka.
+ * Strelice pomiču dodatni top set kroz redoslijed, i preko glavnog.
+ */
+type MainTop = {
+  reps: number; start: number | null; end: number | null
+  unit: 'kg' | 'RPE'
+  onChange: (patch: { reps?: number; start?: number | null; end?: number | null }) => void
+}
+
+function TopSetsEditor({ main, tops, onTops }: { main: MainTop; tops: ExtraTop[]; onTops: (t: ExtraTop[]) => void }) {
+  const order = topOrder(tops)
+  const cols = '50px 54px minmax(0,1fr) minmax(0,1fr) 72px'
+  const iconBtn = (disabled = false): CSSProperties => ({
+    width: '22px', height: '26px', display: 'grid', placeItems: 'center', background: 'transparent',
+    border: '1px solid var(--t-border)', borderRadius: '6px', color: disabled ? '#3a3a3a' : '#999',
+    cursor: disabled ? 'default' : 'pointer', padding: 0, flexShrink: 0,
+  })
+  const patchTop = (i: number, patch: Partial<ExtraTop>) => onTops(tops.map((t, j) => (j === i ? { ...t, ...patch } : t)))
+  const full = tops.length + 1 >= MAX_TOPS
+
+  return (
+    <div style={{ border: '1px solid var(--t-border)', borderRadius: '10px', overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: cols, gap: '6px', padding: '7px 9px', background: 'var(--t-s2)', alignItems: 'center' }}>
+        {['SERIJA', 'PON.', 'POČETAK', 'KRAJ', ''].map((h, i) => (
+          <span key={i} style={{ ...eyebrow, fontSize: '0.44rem', letterSpacing: '0.14em' }}>{h}</span>
+        ))}
+      </div>
+
+      {order.map((idx, pos) => {
+        const isMain = idx === -1
+        const t = isMain ? null : tops[idx]
+        return (
+          <div key={isMain ? 'main' : t!.id}
+            style={{ display: 'grid', gridTemplateColumns: cols, gap: '6px', padding: '7px 9px', alignItems: 'center', borderTop: '1px solid var(--t-border)', background: isMain ? 'rgba(250,204,21,0.04)' : 'transparent' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.8rem', color: isMain ? GOLD : CYAN }}>
+              S{pos + 1}{isMain && <span title="Glavni top set — od njega kreće backoff" style={{ fontSize: '0.7rem' }}>★</span>}
+            </span>
+            {isMain ? (
+              <>
+                <NumInput ariaLabel="Ponavljanja glavnog top seta" value={main.reps} onCommit={v => main.onChange({ reps: Math.max(1, Math.round(v ?? 1)) })} />
+                <NumInput ariaLabel={`Početak bloka (${main.unit})`} value={main.start} unit={main.unit} placeholder={main.unit === 'kg' ? '160' : '7'} onCommit={v => main.onChange({ start: v })} />
+                <NumInput ariaLabel={`Kraj bloka (${main.unit})`} value={main.end} unit={main.unit} placeholder={main.unit === 'kg' ? '185' : '9'} onCommit={v => main.onChange({ end: v })} />
+                <span style={{ fontSize: '0.44rem', letterSpacing: '0.14em', color: '#777', fontWeight: 700, textAlign: 'right' }}>GLAVNI</span>
+              </>
+            ) : (
+              <>
+                <NumInput ariaLabel={`Ponavljanja, serija ${pos + 1}`} value={t!.reps} onCommit={v => patchTop(idx, { reps: Math.max(1, Math.round(v ?? 1)) })} />
+                <NumInput ariaLabel={`Početak bloka, serija ${pos + 1}`} value={t!.startKg} unit="kg" tone={CYAN} onCommit={v => patchTop(idx, { startKg: v })} />
+                <NumInput ariaLabel={`Kraj bloka, serija ${pos + 1}`} value={t!.endKg} unit="kg" tone={CYAN} onCommit={v => patchTop(idx, { endKg: v })} />
+                <div style={{ display: 'flex', gap: '3px', justifyContent: 'flex-end' }}>
+                  <button type="button" aria-label="Pomakni ranije" disabled={pos === 0} onClick={() => onTops(moveTop(tops, idx, -1))} style={iconBtn(pos === 0)}><ArrowUp size={11} /></button>
+                  <button type="button" aria-label="Pomakni kasnije" disabled={pos === order.length - 1} onClick={() => onTops(moveTop(tops, idx, 1))} style={iconBtn(pos === order.length - 1)}><ArrowDown size={11} /></button>
+                  <button type="button" aria-label="Ukloni top set" onClick={() => onTops(tops.filter((_, j) => j !== idx))} style={iconBtn()}><Trash2 size={11} /></button>
+                </div>
+              </>
+            )}
+          </div>
+        )
+      })}
+
+      <button type="button" disabled={full} onClick={() => onTops([...tops, newTop()])}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', padding: '8px', borderTop: '1px solid var(--t-border)', borderLeft: 'none', borderRight: 'none', borderBottom: 'none', background: 'transparent', color: full ? '#555' : '#aaa', cursor: full ? 'default' : 'pointer', fontFamily: 'var(--fm)', fontSize: '0.52rem', letterSpacing: '0.16em', fontWeight: 700 }}>
+        <Plus size={12} /> {full ? `NAJVIŠE ${MAX_TOPS} TOP SETA` : 'DODAJ TOP SET'}
+        <span style={{ color: '#666', marginLeft: '4px' }}>{tops.length + 1}/{MAX_TOPS}</span>
+      </button>
+    </div>
+  )
+}
+
+/** Backoff: broj serija, postotak prethodne i smjer — jedan red. */
+function BackoffRow({ sets, pct, onSets, onPct }: { sets: number; pct: number; onSets: (v: number) => void; onPct: (v: number) => void }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '9px', marginTop: '10px' }}>
+      <Stepper label="Backoff serija" value={sets} onChange={onSets} />
+      <NumField label="% prethodne serije" value={pct} suffix="%" onCommit={v => onPct(v ?? 92.5)} />
+      <DirToggle pct={pct} onChange={onPct} />
+    </div>
+  )
+}
+
+/** Top setovi jednog lifta za upis, redoslijedom u bloku. */
+function entryFor(exerciseId: string, label: string, mainTop: TopSetPlan, extra: ExtraTop[], extraKgs: (number | null)[],
+  backoffSets: number, backoffPct: number, rpe: number | null): PlanEntry {
+  const order = topOrder(extra)
+  return {
+    exerciseId, label,
+    tops: order.map(i => (i === -1 ? mainTop : { kg: extraKgs[i] ?? null, reps: extra[i].reps })),
+    mainIndex: order.indexOf(-1),
+    backoffSets, backoffPct, rpe,
+  }
+}
+
 // ── planer (trener/admin) ─────────────────────────────────────────
-function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, onProjection, onApplied, blockRows, shapeError, reloadShape }: {
+function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, onProjection, onApplied, shape, shapeError, reloadShape }: {
   lift: LiftKey; label: string; data: LiftData; compEx: ExRow | undefined; variations: ExRow[]
-  blockRows: BlockRow[] | null; shapeError: string | null; reloadShape: () => Promise<void>
+  shape: BlockShape | null; shapeError: string | null; reloadShape: () => Promise<void>
   blockId: string; onPlan: (p: LiftPlan) => void; onProjection: (p: Projection | null) => void
   onApplied?: () => void
 }) {
@@ -337,7 +397,7 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
   const [err, setErr] = useState('')
   const [apply, setApply] = useState<'idle' | 'busy' | 'done'>('idle')
   const [applyMsg, setApplyMsg] = useState('')
-  const [applyProblems, setApplyProblems] = useState<Problem[]>([])
+  const [applySkipped, setApplySkipped] = useState<string[]>([])
   const [showTable, setShowTable] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
@@ -363,7 +423,8 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
       primary_reps: plan.primaryReps,
       primary_backoff_sets: plan.primaryBackoffSets,
       primary_backoff_pct: plan.primaryBackoffPct,
-      primary_top2: top2ToJson(plan.primaryTop2),
+      // objekt, ne goli niz — stupac je nastao za jedan "drugi top set"
+      primary_top2: { tops: topsToJson(plan.primaryTops) },
       extra_lifts: extrasToJson(plan.extras),
       week_overrides: plan.weekOverrides,
     }, { onConflict: 'block_id,lift' })
@@ -375,39 +436,52 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
     return true
   }
 
-  // Što projekcija traži od bloka, tjedan po tjedan. Top setovi idu redoslijedom
-  // zvjezdica: drugi top set "PRIJE" je prva ★, "POSLIJE" druga.
+  // Što projekcija traži od bloka, tjedan po tjedan
   const weekEntries = useMemo(() => rows.map(r => {
     const entries: PlanEntry[] = []
-    const push = (exerciseId: string, name: string, kg: number | null, reps: number,
-      backoffSets: number, rpe: number | null, t2: TopSet2, t2Kg: number | null) => {
-      const main = { kg, reps }
-      const tops = !t2.enabled ? [main] : t2.before ? [{ kg: t2Kg, reps: t2.reps }, main] : [main, { kg: t2Kg, reps: t2.reps }]
-      entries.push({ exerciseId, label: name, sets: tops.length + backoffSets, tops, rowKg: kg, rowReps: reps, rpe })
-    }
     if (compEx) {
-      push(compEx.id, compEx.name, r.primaryKg, plan.primaryReps, plan.primaryBackoffSets, null, plan.primaryTop2, r.primaryTop2Kg)
+      entries.push(entryFor(compEx.id, compEx.name, { kg: r.primaryKg, reps: plan.primaryReps },
+        plan.primaryTops, r.primaryTopKgs, plan.primaryBackoffSets, plan.primaryBackoffPct, null))
     }
     plan.extras.forEach((e, i) => {
       if (!e.exerciseId) return
       const w = r.extras[i]
-      push(e.exerciseId, e.exerciseName ?? extraLabel(i), w ? w.kg : null, e.reps, e.backoffSets, w ? w.rpe : null, e.top2, w ? w.top2Kg : null)
+      entries.push(entryFor(e.exerciseId, e.exerciseName ?? extraLabel(i), { kg: w?.kg ?? null, reps: e.reps },
+        e.tops, w?.topKgs ?? [], e.backoffSets, e.backoffPct, w?.rpe ?? null))
     })
     return { week: r.week, entries }
   }), [rows, plan, compEx])
 
-  const match = useMemo(() => (blockRows ? matchPlan(weekEntries, blockRows) : null), [weekEntries, blockRows])
+  const preview = useMemo(() => (shape ? planApply(weekEntries, shape) : null), [weekEntries, shape])
   const ready = planReady(plan)
-  const canApply = !!match && match.problems.length === 0 && ready.ok && !!compEx
-  const badWeeks = new Set((match?.problems ?? []).map(p => p.week))
+  const canApply = !!preview && preview.targets.length > 0 && ready.ok && !!compEx
+  const changes = (preview?.targets ?? []).filter(t => targetSummary(t) != null)
+
+  // stanje po tjednu za red PROMJENA: + dodaje, Δ preslaguje, – preskače, ✓ samo kilaže
+  const weekMark = (week: number): { sym: string; color: string; title: string } => {
+    const ts = (preview?.targets ?? []).filter(t => t.week === week)
+    const sk = (preview?.skips ?? []).filter(s => s.week === week)
+    const notes = [
+      ...ts.map(t => { const s = targetSummary(t); return s ? `${t.entry.label}: ${s}` : null }).filter(Boolean),
+      ...sk.map(s => `${s.label}: ${s.reason}`),
+    ].join('\n')
+    if (ts.some(t => t.kind === 'insert')) return { sym: '+', color: CYAN, title: notes }
+    if (ts.some(t => t.kind === 'update' && t.change)) return { sym: 'Δ', color: GOLD, title: notes }
+    if (sk.length > 0) return { sym: '–', color: '#777', title: notes }
+    return { sym: '✓', color: GREEN, title: 'Struktura odgovara — upis mijenja samo kilaže' }
+  }
+
   // što je trenutno u bloku na top setovima primarnog lifta — za usporedbu u tablici
-  const inBlock = new Map((match?.assignments ?? [])
-    .filter(a => a.entry.exerciseId === compEx?.id)
-    .map((a): [number, (number | null)[]] => [a.week, a.row.topSets.map(n => a.row.weights[n] ?? null)]))
+  const inBlock = new Map<number, (number | null)[]>((preview?.targets ?? [])
+    .filter(t => t.kind === 'update' && t.entry.exerciseId === compEx?.id)
+    .map((t): [number, (number | null)[]] => {
+      const r = (t as Extract<typeof t, { kind: 'update' }>).row
+      return [t.week, r.topSets.map(n => r.weights[n] ?? null)]
+    }))
 
   const applyToBlock = async () => {
     if (!canApply) return
-    setApply('busy'); setApplyMsg(''); setApplyProblems([])
+    setApply('busy'); setApplyMsg(''); setApplySkipped([])
     if (!(await save())) { setApply('idle'); return }
 
     const { data: { session } } = await supabase.auth.getSession()
@@ -417,39 +491,48 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
       body: JSON.stringify({ blockId, weeks: weekEntries }),
     }).then(r => r.json()).catch(() => ({ error: 'Mreža nije dostupna' }))
 
+    const d = res?.data ?? {}
+    if (Array.isArray(d.skipped)) setApplySkipped(d.skipped)
     if (res?.error) {
       setApply('idle')
       setApplyMsg('Greška: ' + res.error)
-      // blok se promijenio između provjere i upisa — pokaži što server vidi
-      if (Array.isArray(res.problems)) { setApplyProblems(res.problems as Problem[]); reloadShape() }
+      reloadShape()
+      if (d.updated || d.created) onApplied?.() // dio je upisan — blok u panelu je zastario
       return
     }
-    const d = res.data ?? {}
     setApply('done')
-    setApplyMsg(`Upisano: ${d.sets ?? 0} top setova u ${d.exercises ?? 0} vježbi${d.skipped?.length ? ` · preskočeno (već odrađeno): ${d.skipped.join(', ')}` : ''}`)
+    const parts = [`${(d.updated ?? 0) + (d.created ?? 0)} vježbi`]
+    if (d.restructured) parts.push(`${d.restructured} preslagano`)
+    if (d.created) parts.push(`${d.created} dodano`)
+    setApplyMsg('Upisano: ' + parts.join(' · '))
     reloadShape()
     onApplied?.() // blok u panelu je sad zastario — bez ovoga ostaju stare kilaže na ekranu
   }
 
   const done = new Map(data.weeks.map(w => [w.week, w.top]))
+  const primaryOrder = topOrder(plan.primaryTops)
 
   return (
     <div style={{ padding: '14px 16px 18px' }}>
       {/* PRIMARNI */}
-      <div style={{ ...eyebrow, color: '#f0f0f0', fontSize: '0.56rem', marginBottom: '9px' }}>PRIMARNI · {label}</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: '9px' }}>
-        <NumField label="1RM" value={plan.primary1rm} suffix="kg" placeholder="npr. 200" onCommit={v => set({ primary1rm: v })} />
-        <NumField label="Početak bloka" value={plan.startKg} suffix="kg" placeholder="npr. 160" onCommit={v => set({ startKg: v })} />
-        <NumField label="Kraj bloka" value={plan.endKg} suffix="kg" placeholder="npr. 185" onCommit={v => set({ endKg: v })} />
-        <NumField label="Ponavljanja" value={plan.primaryReps} onCommit={v => set({ primaryReps: Math.max(1, Math.round(v ?? 1)) })} />
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '12px', marginBottom: '10px', flexWrap: 'wrap' }}>
+        <div style={{ ...eyebrow, color: '#f0f0f0', fontSize: '0.56rem', paddingBottom: '8px' }}>PRIMARNI · {compEx?.name ?? label}</div>
+        <div style={{ width: '130px' }}>
+          <NumField label="1RM" value={plan.primary1rm} suffix="kg" placeholder="200" onCommit={v => set({ primary1rm: v })} />
+        </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '9px', marginTop: '9px' }}>
-        <Stepper label="Broj backoff serija" value={plan.primaryBackoffSets} onChange={v => set({ primaryBackoffSets: v })} />
-        <NumField label="% prethodne serije" value={plan.primaryBackoffPct} suffix="%" onCommit={v => set({ primaryBackoffPct: v ?? 92.5 })} />
-        <DirToggle pct={plan.primaryBackoffPct} onChange={v => set({ primaryBackoffPct: v })} />
-      </div>
-      <Top2Fields value={plan.primaryTop2} previewKg={rows[0]?.primaryTop2Kg ?? null}
-        onChange={patch => set({ primaryTop2: { ...plan.primaryTop2, ...patch } })} />
+      <TopSetsEditor
+        main={{
+          reps: plan.primaryReps, start: plan.startKg, end: plan.endKg, unit: 'kg',
+          onChange: p => set({
+            ...(p.reps !== undefined ? { primaryReps: p.reps } : {}),
+            ...(p.start !== undefined ? { startKg: p.start } : {}),
+            ...(p.end !== undefined ? { endKg: p.end } : {}),
+          }),
+        }}
+        tops={plan.primaryTops} onTops={t => set({ primaryTops: t })} />
+      <BackoffRow sets={plan.primaryBackoffSets} pct={plan.primaryBackoffPct}
+        onSets={v => set({ primaryBackoffSets: v })} onPct={v => set({ primaryBackoffPct: v })} />
 
       {/* DODATNI LIFTOVI — koliko god ih treba (npr. četiri bencha tjedno) */}
       {plan.extras.map((e, i) => {
@@ -457,53 +540,55 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
         const oneRm = e.oneRm ?? auto
         const varPct = pctForExercise(e.exerciseName)
         return (
-          <div key={e.id} style={{ border: '1px solid var(--t-border)', borderRadius: '10px', padding: '12px', marginTop: '14px', background: 'rgba(0,0,0,0.18)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '9px' }}>
+          <div key={e.id} style={{ border: '1px solid var(--t-border)', borderRadius: '12px', padding: '12px', marginTop: '16px', background: 'rgba(0,0,0,0.18)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '10px' }}>
               <span style={{ ...eyebrow, color: '#f0f0f0', fontSize: '0.56rem' }}>{extraLabel(i)} · {label}</span>
               <button type="button" onClick={() => removeExtra(e.id)} aria-label="Ukloni lift"
                 style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 9px', borderRadius: '7px', background: 'transparent', border: '1px solid var(--t-border)', color: '#888', cursor: 'pointer', fontFamily: 'var(--fm)', fontSize: '0.5rem', letterSpacing: '0.14em', fontWeight: 700 }}>
                 <Trash2 size={11} /> UKLONI
               </button>
             </div>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span style={{ ...eyebrow, fontSize: '0.45rem', letterSpacing: '0.12em' }}>Varijacija</span>
-              <select value={e.exerciseId ?? ''}
-                onChange={ev => {
-                  const id = ev.target.value || null
-                  const ex = varOptions.find(v => v.id === id) ?? null
-                  setExtra(e.id, { exerciseId: id, exerciseName: ex?.name ?? null, oneRm: null })
-                }}
-                style={{ ...inputBase, fontFamily: 'var(--fm)', fontSize: '0.78rem', fontWeight: 500, cursor: 'pointer' }}>
-                <option value="">— odaberi vježbu —</option>
-                {varOptions.map(v => (
-                  <option key={v.id} value={v.id}>{v.name}{pctForExercise(v.name) ? ' · ' + pctForExercise(v.name) + '%' : ''}</option>
-                ))}
-              </select>
-            </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: '9px', marginTop: '9px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(110px, 1fr)', gap: '9px', marginBottom: '10px' }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+                <span style={{ ...eyebrow, fontSize: '0.45rem', letterSpacing: '0.12em' }}>Varijacija</span>
+                <select value={e.exerciseId ?? ''}
+                  onChange={ev => {
+                    const id = ev.target.value || null
+                    const ex = varOptions.find(v => v.id === id) ?? null
+                    setExtra(e.id, { exerciseId: id, exerciseName: ex?.name ?? null, oneRm: null })
+                  }}
+                  style={{ ...inputBase, fontFamily: 'var(--fm)', fontSize: '0.78rem', fontWeight: 500, cursor: 'pointer' }}>
+                  <option value="">— odaberi vježbu —</option>
+                  {varOptions.map(v => (
+                    <option key={v.id} value={v.id}>{v.name}{pctForExercise(v.name) ? ' · ' + pctForExercise(v.name) + '%' : ''}</option>
+                  ))}
+                </select>
+              </label>
               <NumField label={auto != null && e.oneRm == null ? '1RM (auto ' + (varPct ?? '—') + '%)' : '1RM varijacije'}
                 value={oneRm} suffix="kg" onCommit={v => setExtra(e.id, { oneRm: v })} />
-              <NumField label="Početni RPE" value={e.startRpe} onCommit={v => setExtra(e.id, { startRpe: v })} placeholder="7" />
-              <NumField label="Završni RPE" value={e.endRpe} onCommit={v => setExtra(e.id, { endRpe: v })} placeholder="9" />
-              <NumField label="Ponavljanja" value={e.reps} onCommit={v => setExtra(e.id, { reps: Math.max(1, Math.round(v ?? 1)) })} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '9px', marginTop: '9px' }}>
-              <Stepper label="Broj backoff serija" value={e.backoffSets} onChange={v => setExtra(e.id, { backoffSets: v })} />
-              <NumField label="% prethodne serije" value={e.backoffPct} suffix="%" onCommit={v => setExtra(e.id, { backoffPct: v ?? 92.5 })} />
-              <DirToggle pct={e.backoffPct} onChange={v => setExtra(e.id, { backoffPct: v })} />
-            </div>
-            <Top2Fields value={e.top2} previewKg={rows[0]?.extras[i]?.top2Kg ?? null}
-              onChange={patch => setExtra(e.id, { top2: { ...e.top2, ...patch } })} />
+            <TopSetsEditor
+              main={{
+                reps: e.reps, start: e.startRpe, end: e.endRpe, unit: 'RPE',
+                onChange: p => setExtra(e.id, {
+                  ...(p.reps !== undefined ? { reps: p.reps } : {}),
+                  ...(p.start !== undefined ? { startRpe: p.start } : {}),
+                  ...(p.end !== undefined ? { endRpe: p.end } : {}),
+                }),
+              }}
+              tops={e.tops} onTops={t => setExtra(e.id, { tops: t })} />
+            <BackoffRow sets={e.backoffSets} pct={e.backoffPct}
+              onSets={v => setExtra(e.id, { backoffSets: v })} onPct={v => setExtra(e.id, { backoffPct: v })} />
           </div>
         )
       })}
       <button type="button" onClick={addExtra}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', width: '100%', marginTop: '12px', padding: '11px', borderRadius: '10px', background: 'transparent', border: '1px dashed var(--t-border-hi)', color: '#aaa', cursor: 'pointer', fontFamily: 'var(--fm)', fontSize: '0.58rem', letterSpacing: '0.18em', fontWeight: 700 }}>
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', width: '100%', marginTop: '14px', padding: '11px', borderRadius: '10px', background: 'transparent', border: '1px dashed var(--t-border-hi)', color: '#aaa', cursor: 'pointer', fontFamily: 'var(--fm)', fontSize: '0.58rem', letterSpacing: '0.18em', fontWeight: 700 }}>
         <Plus size={13} /> DODAJ {extraLabel(plan.extras.length)} LIFT
       </button>
 
       {/* RASPORED PO TJEDNIMA */}
-      <div style={{ ...eyebrow, color: '#f0f0f0', fontSize: '0.56rem', margin: '18px 0 9px' }}>RASPORED PO TJEDNIMA</div>
+      <div style={{ ...eyebrow, color: '#f0f0f0', fontSize: '0.56rem', margin: '20px 0 9px' }}>RASPORED PO TJEDNIMA</div>
       {plan.weeks === 0 ? (
         <div style={{ fontSize: '0.66rem', color: '#666' }}>Blok još nema tjedana.</div>
       ) : (
@@ -516,31 +601,26 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
               </tr>
             </thead>
             <tbody>
+              <GroupRow label={compEx?.name ?? label} span={rows.length} />
+              {primaryOrder.map((idx, pos) => {
+                const isMain = idx === -1
+                const reps = isMain ? plan.primaryReps : plan.primaryTops[idx].reps
+                return (
+                  <tr key={isMain ? 'p-main' : plan.primaryTops[idx].id} style={{ borderTop: '1px solid var(--t-border)' }}>
+                    <td style={{ ...tdLabel, color: isMain ? GOLD : CYAN }}>S{pos + 1}{isMain ? ' ★' : ''} · {reps}×</td>
+                    {rows.map(r => {
+                      const kg = isMain ? r.primaryKg : r.primaryTopKgs[idx]
+                      const color = kg == null ? '#555' : isMain ? (r.primaryManual ? GOLD : '#e8e8e8') : CYAN
+                      return <td key={r.week} style={{ ...td, color }}>{kg != null ? fmtKg(kg) : '—'}</td>
+                    })}
+                  </tr>
+                )
+              })}
               <tr style={{ borderTop: '1px solid var(--t-border)' }}>
-                <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.56rem', letterSpacing: '0.14em', color: '#888' }}>TOP SET</td>
-                {rows.map(r => (
-                  <td key={r.week} style={{ ...td, color: r.primaryManual ? '#facc15' : '#e8e8e8' }}>
-                    {r.primaryKg != null ? fmtKg(r.primaryKg) : '—'}
-                  </td>
-                ))}
-              </tr>
-              {plan.primaryTop2.enabled && (
-                <tr style={{ borderTop: '1px solid var(--t-border)' }}>
-                  <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#22d3ee' }}>
-                    2. TOP SET · {plan.primaryTop2.reps}×
-                  </td>
-                  {rows.map(r => (
-                    <td key={r.week} style={{ ...td, color: r.primaryTop2Kg != null ? '#22d3ee' : '#555' }}>
-                      {r.primaryTop2Kg != null ? fmtKg(r.primaryTop2Kg) : '—'}
-                    </td>
-                  ))}
-                </tr>
-              )}
-              <tr style={{ borderTop: '1px solid var(--t-border)' }}>
-                <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#666' }}>RUČNO</td>
+                <td style={{ ...tdLabel, color: '#666' }}>RUČNO ★</td>
                 {rows.map(r => (
                   <td key={r.week} style={{ padding: '4px 5px' }}>
-                    <input value={plan.weekOverrides[String(r.week)] ?? ''} inputMode="decimal" placeholder="—"
+                    <input value={plan.weekOverrides[String(r.week)] ?? ''} inputMode="decimal" placeholder="—" aria-label={`Ručna kilaža glavnog top seta, ${r.week}. tjedan`}
                       onChange={e => {
                         const next = { ...plan.weekOverrides }
                         const v = numOrNull(e.target.value)
@@ -551,67 +631,37 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
                   </td>
                 ))}
               </tr>
+
               {plan.extras.map((e, i) => (
-                <tr key={e.id} style={{ borderTop: '1px solid var(--t-border)' }}>
-                  <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#888', maxWidth: '130px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {e.exerciseName ?? extraLabel(i)}
-                  </td>
-                  {rows.map(r => {
-                    const w = r.extras[i]
-                    return (
-                      <td key={r.week} style={{ ...td, color: w?.kg != null ? '#4ade80' : '#555' }}>
-                        {w?.kg != null ? fmtKg(w.kg) : '—'}
-                        {w?.rpe != null && w?.kg != null && (
-                          <div style={{ fontSize: '0.48rem', color: '#facc15', fontWeight: 600, marginTop: '2px' }}>@{w.rpe}</div>
-                        )}
-                      </td>
-                    )
-                  })}
-                </tr>
+                <ExtraRows key={e.id} name={e.exerciseName ?? extraLabel(i)} extra={e} weeks={rows.map(r => ({ week: r.week, ...r.extras[i] }))} span={rows.length} />
               ))}
-              {plan.extras.map((e, i) => e.top2.enabled ? (
-                <tr key={e.id + ':top2'} style={{ borderTop: '1px solid var(--t-border)' }}>
-                  <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#22d3ee', maxWidth: '130px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {e.exerciseName ?? extraLabel(i)} · 2. top · {e.top2.reps}×
-                  </td>
-                  {rows.map(r => (
-                    <td key={r.week} style={{ ...td, color: r.extras[i]?.top2Kg != null ? '#22d3ee' : '#555' }}>
-                      {r.extras[i]?.top2Kg != null ? fmtKg(r.extras[i].top2Kg!) : '—'}
-                    </td>
-                  ))}
-                </tr>
-              ) : null)}
-              <tr style={{ borderTop: '1px solid var(--t-border)' }}>
-                <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#666' }}>ODRAĐENO</td>
+
+              <tr style={{ borderTop: '1px solid var(--t-border-hi)' }}>
+                <td style={{ ...tdLabel, color: '#666' }}>ODRAĐENO</td>
                 {rows.map(r => {
                   const d = done.get(r.week)
                   return <td key={r.week} style={{ ...td, fontSize: '0.7rem', color: d ? '#f0f0f0' : '#444' }}>{d ? fmtKg(d.kg) : '—'}</td>
                 })}
               </tr>
-              {match && (
+              {preview && (
                 <tr style={{ borderTop: '1px solid var(--t-border)' }}>
-                  <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#666' }}>U BLOKU ★</td>
+                  <td style={{ ...tdLabel, color: '#666' }}>SAD U BLOKU ★</td>
                   {rows.map(r => {
                     const kgs = inBlock.get(r.week)
                     return (
-                      <td key={r.week} style={{ ...td, fontSize: '0.7rem', color: kgs ? '#d4d4d4' : '#444' }}>
-                        {kgs ? kgs.map(k => (k != null ? fmtKg(k) : '—')).join(' · ') : '—'}
+                      <td key={r.week} style={{ ...td, fontSize: '0.7rem', color: kgs?.length ? '#d4d4d4' : '#444' }}>
+                        {kgs?.length ? kgs.map(k => (k != null ? fmtKg(k) : '—')).join(' · ') : '—'}
                       </td>
                     )
                   })}
                 </tr>
               )}
-              {match && (
+              {preview && (
                 <tr style={{ borderTop: '1px solid var(--t-border)' }}>
-                  <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#666' }}>STRUKTURA</td>
+                  <td style={{ ...tdLabel, color: '#666' }}>UPIS</td>
                   {rows.map(r => {
-                    const bad = badWeeks.has(r.week)
-                    return (
-                      <td key={r.week} title={bad ? 'Blok ne odgovara projekciji u ovom tjednu' : 'Odgovara'}
-                        style={{ ...td, fontSize: '0.8rem', color: bad ? '#f87171' : '#4ade80' }}>
-                        {bad ? '✕' : '✓'}
-                      </td>
-                    )
+                    const m = weekMark(r.week)
+                    return <td key={r.week} title={m.title} style={{ ...td, fontSize: '0.82rem', color: m.color }}>{m.sym}</td>
                   })}
                 </tr>
               )}
@@ -620,45 +670,46 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
         </div>
       )}
 
-      {/* PROVJERA BLOKA — uživo; upis je moguć tek kad sve odgovara */}
-      <div style={{ marginTop: '14px', padding: '11px 12px', borderRadius: '10px', border: `1px solid ${canApply ? '#4ade8055' : match && match.problems.length > 0 ? '#f8717155' : 'var(--t-border)'}`, background: canApply ? 'rgba(74,222,128,0.05)' : match && match.problems.length > 0 ? 'rgba(248,113,113,0.05)' : 'transparent' }}>
+      {/* PREGLED UPISA — uživo; projekcija ima prednost pred onim što je u bloku */}
+      <div style={{ marginTop: '14px', padding: '11px 12px', borderRadius: '10px', border: `1px solid ${canApply ? '#4ade8044' : 'var(--t-border)'}`, background: canApply ? 'rgba(74,222,128,0.04)' : 'transparent' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}>
-          <span style={{ ...eyebrow, fontSize: '0.5rem', color: canApply ? '#4ade80' : match && match.problems.length > 0 ? '#f87171' : '#888', whiteSpace: 'normal' }}>
-            {shapeError ? 'STRUKTURA BLOKA SE NE MOŽE UČITATI'
-              : !match ? 'PROVJERAVAM BLOK…'
-              : match.problems.length > 0 ? 'BLOK NE ODGOVARA PROJEKCIJI'
-              : !ready.ok ? 'BLOK ODGOVARA · PLAN NIJE POTPUN'
-              : 'BLOK ODGOVARA PROJEKCIJI'}
+          <span style={{ ...eyebrow, fontSize: '0.5rem', color: shapeError ? '#f87171' : !ready.ok ? GOLD : canApply ? GREEN : '#888', whiteSpace: 'normal' }}>
+            {shapeError ? 'BLOK SE NE MOŽE UČITATI'
+              : !preview ? 'UČITAVAM BLOK…'
+              : !ready.ok ? 'PLAN NIJE POTPUN'
+              : changes.length > 0 ? `UPIS ĆE PRESLOŽITI ${changes.length} ${changes.length === 1 ? 'VJEŽBU' : changes.length < 5 ? 'VJEŽBE' : 'VJEŽBI'}`
+              : preview.targets.length > 0 ? 'STRUKTURA ODGOVARA · UPIS MIJENJA SAMO KILAŽE'
+              : 'NEMA ŠTO UPISATI'}
           </span>
           <button type="button" onClick={() => reloadShape()}
             style={{ background: 'transparent', border: '1px solid var(--t-border)', borderRadius: '7px', color: '#aaa', cursor: 'pointer', padding: '4px 9px', fontFamily: 'var(--fm)', fontSize: '0.48rem', letterSpacing: '0.14em', fontWeight: 700, flexShrink: 0 }}>
-            PROVJERI PONOVNO
+            OSVJEŽI
           </button>
         </div>
         {shapeError && <div style={{ fontSize: '0.62rem', color: '#f87171', marginTop: '6px' }}>{shapeError}</div>}
-        {match && match.problems.length > 0 && (
-          <>
-            <div style={{ fontSize: '0.62rem', color: '#bbb', marginTop: '7px', lineHeight: 1.6 }}>
-              Projekcija mora odgovarati strukturi bloka prije upisa: u svakom tjednu isti broj serija i isti broj
-              top setova označenih zvjezdicom (★). Složi blok pa se vrati — provjera se osvježi sama. Plan možeš spremiti i prije toga.
-            </div>
-            <ul style={{ margin: '7px 0 0', paddingLeft: '16px', fontSize: '0.62rem', color: '#f8a5a5', lineHeight: 1.7 }}>
-              {match.problems.slice(0, 12).map((p, i) => (
-                <li key={i}><b style={{ color: '#f0f0f0' }}>{p.week}. tj.</b> · {p.label}: {p.message}</li>
-              ))}
-              {match.problems.length > 12 && <li>… i još {match.problems.length - 12}</li>}
-            </ul>
-          </>
+        {preview && !ready.ok && <div style={{ fontSize: '0.62rem', color: GOLD, marginTop: '6px' }}>{ready.reason}</div>}
+        {preview && changes.length > 0 && (
+          <ul style={{ margin: '8px 0 0', paddingLeft: '16px', fontSize: '0.62rem', color: '#d4d4d4', lineHeight: 1.7 }}>
+            {changes.slice(0, 10).map((t, i) => (
+              <li key={i}>
+                <b style={{ color: '#f0f0f0' }}>{t.week}. tj.</b> · {t.entry.label}
+                {t.kind === 'update' && t.row.dayName ? ` · ${t.row.dayName}` : ''}:{' '}
+                <span style={{ color: t.kind === 'insert' ? CYAN : GOLD }}>{targetSummary(t)}</span>
+              </li>
+            ))}
+            {changes.length > 10 && <li>… i još {changes.length - 10}</li>}
+          </ul>
         )}
-        {match && match.problems.length === 0 && !ready.ok && (
-          <div style={{ fontSize: '0.62rem', color: '#facc15', marginTop: '6px' }}>{ready.reason}</div>
+        {preview && preview.skips.length > 0 && (
+          <ul style={{ margin: '6px 0 0', paddingLeft: '16px', fontSize: '0.6rem', color: '#888', lineHeight: 1.7 }}>
+            {preview.skips.slice(0, 6).map((s, i) => <li key={i}>{s.week}. tj. · {s.label}: {s.reason} — ne dira se</li>)}
+            {preview.skips.length > 6 && <li>… i još {preview.skips.length - 6}</li>}
+          </ul>
         )}
-        {match && match.problems.length === 0 && ready.ok && (
-          <div style={{ fontSize: '0.62rem', color: '#9ca3af', marginTop: '6px', lineHeight: 1.6 }}>
-            Upis popunjava samo kilažu i ponavljanja serija označenih ★ (i sažetak vježbe). Broj serija, backoff i redoslijed
-            ostaju kakve si složio; već odrađene serije se ne diraju.
-          </div>
-        )}
+        <div style={{ fontSize: '0.6rem', color: '#8a8a8a', marginTop: '8px', lineHeight: 1.6 }}>
+          Projekcija ima prednost: upis postavlja broj serija, ★ top setove, ponavljanja, kilaže i backoff točno prema planu,
+          a vježbu koja u tjednu fali dodaje u isti dan kao u ostalim tjednima. Započeti treninzi se ne diraju.
+        </div>
       </div>
 
       {/* akcije */}
@@ -667,27 +718,24 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
           style={{ padding: '10px 16px', borderRadius: '9px', background: 'var(--t-s3)', border: '1px solid var(--t-border-hi)', color: '#e8e8e8', fontFamily: 'var(--fm)', fontSize: '0.62rem', letterSpacing: '0.16em', fontWeight: 700, cursor: 'pointer' }}>
           {status === 'saving' ? 'SPREMAM…' : 'SPREMI PLAN'}
         </button>
-        {canApply && (
-          <button type="button" onClick={applyToBlock} disabled={apply === 'busy'}
-            style={{ padding: '10px 16px', borderRadius: '9px', background: '#1a3a26', border: '1px solid #4ade80', color: '#4ade80', fontFamily: 'var(--fm)', fontSize: '0.62rem', letterSpacing: '0.16em', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px' }}>
-            {apply === 'busy' && <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />}
-            UPIŠI U BLOK
-          </button>
-        )}
-        {status === 'saved' && <span style={{ fontSize: '0.62rem', color: '#4ade80', display: 'flex', alignItems: 'center', gap: '4px' }}><Check size={13} /> spremljeno</span>}
+        <button type="button" onClick={applyToBlock} disabled={!canApply || apply === 'busy'}
+          title={!canApply ? (ready.reason ?? 'Pričekaj da se blok učita') : undefined}
+          style={{ padding: '10px 16px', borderRadius: '9px', background: canApply ? '#1a3a26' : 'transparent', border: `1px solid ${canApply ? GREEN : 'var(--t-border)'}`, color: canApply ? GREEN : '#555', fontFamily: 'var(--fm)', fontSize: '0.62rem', letterSpacing: '0.16em', fontWeight: 700, cursor: canApply ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '7px' }}>
+          {apply === 'busy' && <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />}
+          UPIŠI U BLOK
+        </button>
+        {status === 'saved' && <span style={{ fontSize: '0.62rem', color: GREEN, display: 'flex', alignItems: 'center', gap: '4px' }}><Check size={13} /> spremljeno</span>}
       </div>
       {status === 'error' && <div style={{ fontSize: '0.64rem', color: '#f87171', marginTop: '8px' }}>{err}</div>}
-      {applyMsg && <div style={{ fontSize: '0.64rem', color: apply === 'done' ? '#4ade80' : '#f87171', marginTop: '8px', lineHeight: 1.6 }}>{applyMsg}</div>}
-      {applyProblems.length > 0 && (
-        <ul style={{ margin: '6px 0 0', paddingLeft: '16px', fontSize: '0.62rem', color: '#f8a5a5', lineHeight: 1.7 }}>
-          {applyProblems.map((p, i) => <li key={i}>{p.week}. tj. · {p.label}: {p.message}</li>)}
+      {applyMsg && <div style={{ fontSize: '0.64rem', color: apply === 'done' ? GREEN : '#f87171', marginTop: '8px', lineHeight: 1.6 }}>{applyMsg}</div>}
+      {applySkipped.length > 0 && (
+        <ul style={{ margin: '6px 0 0', paddingLeft: '16px', fontSize: '0.6rem', color: '#888', lineHeight: 1.7 }}>
+          {applySkipped.map((s, i) => <li key={i}>preskočeno · {s}</li>)}
         </ul>
       )}
       <div style={{ fontSize: '0.58rem', color: '#666', marginTop: '10px', lineHeight: 1.6 }}>
-        Top setovi idu linearno od početka do kraja bloka, zaokruženo na 2.5 kg; ručni upis nadjačava izračun prvog top seta (žuto).
-        Drugi top set (plavo) planira se isto — svoj početak, kraj i ponavljanja. Aplikacija ništa ne upisuje sama: tek kad blok
-        odgovara projekciji, „Upiši u blok" popuni označene top setove u {compEx?.name ?? 'natjecateljskoj vježbi'}
-        {plan.extras.length > 0 ? ' i ' + plan.extras.length + ' dodatnih liftova' : ''}.
+        Kilaže idu linearno od početka do kraja bloka, zaokruženo na 2.5 kg. Ručni upis nadjačava glavni top set (žuto),
+        dodatni top setovi su plavi. Prva backoff serija je postotak glavnog top seta, svaka sljedeća postotak prethodne.
       </div>
 
       {/* DETALJNE TABLICE ZA SEKUNDARNE LIFTOVE */}
@@ -707,27 +755,27 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
                   <div style={{ ...eyebrow, margin: '10px 0 7px' }}>
                     {e.exerciseName ?? 'varijacija'} · 1RM {fmtKg(oneRm)} kg
                   </div>
-            <div style={{ overflowX: 'auto', border: '1px solid var(--t-border)', borderRadius: '10px' }}>
-              <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-                <thead>
-                  <tr style={{ background: 'var(--t-s2)' }}>
-                    <th style={{ ...th, position: 'sticky', left: 0, background: 'var(--t-s2)', zIndex: 1 }}>@</th>
-                    {REPS_COLS.map(r => <th key={r} style={th}>x{r}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {RPE_ROWS.map(rpe => (
-                    <tr key={rpe} style={{ borderTop: '1px solid var(--t-border)' }}>
-                      <td style={{ ...td, position: 'sticky', left: 0, background: 'var(--t-s1)', color: '#facc15', fontSize: '0.7rem', zIndex: 1 }}>{rpe}</td>
-                      {REPS_COLS.map(r => {
-                        const kg = weightFromRpe(oneRm, r, rpe)
-                        return <td key={r} style={td}>{kg != null ? fmtKg(kg) : '—'}</td>
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  <div style={{ overflowX: 'auto', border: '1px solid var(--t-border)', borderRadius: '10px' }}>
+                    <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                      <thead>
+                        <tr style={{ background: 'var(--t-s2)' }}>
+                          <th style={{ ...th, position: 'sticky', left: 0, background: 'var(--t-s2)', zIndex: 1 }}>@</th>
+                          {REPS_COLS.map(r => <th key={r} style={th}>x{r}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {RPE_ROWS.map(rpe => (
+                          <tr key={rpe} style={{ borderTop: '1px solid var(--t-border)' }}>
+                            <td style={{ ...td, position: 'sticky', left: 0, background: 'var(--t-s1)', color: GOLD, fontSize: '0.7rem', zIndex: 1 }}>{rpe}</td>
+                            {REPS_COLS.map(r => {
+                              const kg = weightFromRpe(oneRm, r, rpe)
+                              return <td key={r} style={td}>{kg != null ? fmtKg(kg) : '—'}</td>
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )
             })}
@@ -741,6 +789,49 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
         )
       )}
     </div>
+  )
+}
+
+/** Naslov skupine u tablici rasporeda (jedan lift). */
+function GroupRow({ label, span }: { label: string; span: number }) {
+  return (
+    <tr style={{ borderTop: '1px solid var(--t-border-hi)', background: 'rgba(255,255,255,0.02)' }}>
+      <td style={{ ...tdLabel, background: 'var(--t-s2)', color: '#bbb', fontSize: '0.48rem', letterSpacing: '0.16em', padding: '5px 8px' }}>{label}</td>
+      <td colSpan={span} style={{ background: 'var(--t-s2)' }} />
+    </tr>
+  )
+}
+
+/** Retci jednog dodatnog lifta: top setovi redoslijedom u bloku, glavni s RPE-om. */
+function ExtraRows({ name, extra, weeks, span }: {
+  name: string; extra: ExtraLift; span: number
+  weeks: { week: number; kg: number | null; rpe: number | null; topKgs: (number | null)[] }[]
+}) {
+  const order = topOrder(extra.tops)
+  return (
+    <>
+      <GroupRow label={name} span={span} />
+      {order.map((idx, pos) => {
+        const isMain = idx === -1
+        const reps = isMain ? extra.reps : extra.tops[idx].reps
+        return (
+          <tr key={isMain ? 'main' : extra.tops[idx].id} style={{ borderTop: '1px solid var(--t-border)' }}>
+            <td style={{ ...tdLabel, color: isMain ? GREEN : CYAN }}>S{pos + 1}{isMain ? ' ★' : ''} · {reps}×</td>
+            {weeks.map(w => {
+              const kg = isMain ? w.kg : w.topKgs?.[idx] ?? null
+              return (
+                <td key={w.week} style={{ ...td, color: kg == null ? '#555' : isMain ? GREEN : CYAN }}>
+                  {kg != null ? fmtKg(kg) : '—'}
+                  {isMain && kg != null && w.rpe != null && (
+                    <div style={{ fontSize: '0.48rem', color: GOLD, fontWeight: 600, marginTop: '2px' }}>@{w.rpe}</div>
+                  )}
+                </td>
+              )
+            })}
+          </tr>
+        )
+      })}
+    </>
   )
 }
 
@@ -840,7 +931,7 @@ export function BlockProjectionsModal({ athleteId, blockId, blockName, canEdit, 
 }) {
   const [state, setState] = useState<State>({ status: 'loading' })
   const [tab, setTab] = useState<LiftKey>('squat')
-  const [shape, setShape] = useState<BlockRow[] | null>(null)
+  const [shape, setShape] = useState<BlockShape | null>(null)
   const [shapeErr, setShapeErr] = useState<string | null>(null)
 
   // Struktura bloka se čita uživo: pri otvaranju, kad se trener vrati u prozor
@@ -892,7 +983,7 @@ export function BlockProjectionsModal({ athleteId, blockId, blockName, canEdit, 
         <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--t-border)', background: 'var(--t-s2)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexShrink: 0 }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: '0.58rem', letterSpacing: '0.3em', color: '#888' }}>
-              {canEdit ? 'PLANER KILAŽA · BLOK' : 'PROJEKCIJE · KRAJ BLOKA'}
+              {canEdit ? 'PLANER KILAŽA · TRENUTNI BLOK' : 'PROJEKCIJE · KRAJ BLOKA'}
             </div>
             <div style={{ fontFamily: 'var(--fd)', fontSize: '1.05rem', fontWeight: 700, color: '#f0f0f0', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {blockName}{data && data.totalWeeks > 0 ? ` · ${data.totalWeeks} tjedana` : ''}
@@ -944,7 +1035,7 @@ export function BlockProjectionsModal({ athleteId, blockId, blockName, canEdit, 
               onPlan={p => patchLift(tab, { plan: p })}
               onProjection={p => patchLift(tab, { projection: p })}
               onApplied={onApplied}
-              blockRows={shape}
+              shape={shape}
               shapeError={shapeErr}
               reloadShape={reloadShape}
             />

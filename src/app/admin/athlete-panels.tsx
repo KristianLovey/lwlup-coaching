@@ -11,6 +11,7 @@ import { WeekPanel, EditableField } from '../training/training-components'
 import { estimate1RM } from '../training/training-setplan'
 import { PrevBlockLiftsModal } from '../training/PrevBlockLifts'
 import { BlockProjectionsModal } from '../training/BlockProjections'
+import { currentBlockOf, setCurrentBlock, withCurrent } from '@/lib/current-block'
 import { BlockSuggestionsProvider } from '../training/block-suggestions'
 import type { Block, Week, Workout, WorkoutExercise, Exercise, BlockSummary } from '../training/types'
 
@@ -993,6 +994,9 @@ export function AthletePanel({
   useEffect(() => { blockRef.current = block }, [block])
 
   const initials = athlete.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??'
+  // Trenutni = označen kvačicom (inače zadnji kreirani); otvoreni blok može biti i neki drugi
+  const currentBlock = currentBlockOf(allBlocks)
+  const viewingCurrent = !!block && currentBlock?.id === block.id
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -1016,56 +1020,46 @@ export function AthletePanel({
     const summaries = (blocksData ?? []) as BlockSummary[]
     setAllBlocks(summaries)
 
-    let activeQ = supabase
-      .from('blocks')
-      .select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))')
-      .eq('athlete_id', athlete.id)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1)
-    if (goalFilter) activeQ = activeQ.eq('goal', goalFilter)
-    const { data: activeBlock } = await activeQ.single()
-
-    if (activeBlock) {
-      activeBlock.weeks?.sort((a: Week, b: Week) => a.week_number - b.week_number)
-      activeBlock.weeks?.forEach((w: Week) => {
-        w.workouts?.sort((a: Workout, b: Workout) => a.workout_date.localeCompare(b.workout_date))
-        w.workouts?.forEach((wo: Workout) => wo.workout_exercises?.sort((a: WorkoutExercise, b: WorkoutExercise) => a.exercise_order - b.exercise_order))
-      })
-      setBlock(activeBlock as Block)
-    } else {
-      setBlock(null)
-    }
+    // otvori trenutni blok (označen kvačicom, inače zadnji kreirani)
+    const cur = currentBlockOf(summaries)
+    if (cur) await viewBlock(cur.id)
+    else setBlock(null)
     setLoadingBlock(false)
   }
 
-  const switchBlock = async (blockId: string) => {
-    setLoadingBlock(true)
-    setShowBlockSelector(false)
-    // Odabir bloka u editoru = taj blok postaje AKTIVNI (kao na lifterovoj strani).
-    // Bez ovoga lifter i dalje vidi stari aktivni blok, a zelena točka ne prati odabir.
-    const prevActive = allBlocks.filter(b => b.status === 'active' && b.id !== blockId)
-    const { error: actErr } = await supabase.from('blocks').update({ status: 'active' }).eq('id', blockId)
-    if (actErr) { alert(`Greška pri postavljanju aktivnog bloka: ${actErr.message}`) }
-    await Promise.all(prevActive.map(b => supabase.from('blocks').update({ status: 'planned' }).eq('id', b.id)))
-    setAllBlocks(bs => bs.map(b =>
-      b.id === blockId ? { ...b, status: 'active' } : (b.status === 'active' ? { ...b, status: 'planned' } : b)
-    ))
-
-    const { data } = await supabase
+  /** Učita blok za pregled i uređivanje — NE mijenja koji je trenutni. */
+  const viewBlock = async (blockId: string) => {
+    const { data, error } = await supabase
       .from('blocks')
       .select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))')
-      .eq('id', blockId).single()
+      .eq('id', blockId).maybeSingle()
+    if (error) { alert(`Greška pri učitavanju bloka: ${error.message}`); return }
     if (data) {
       data.weeks?.sort((a: Week, b: Week) => a.week_number - b.week_number)
       data.weeks?.forEach((w: Week) => {
         w.workouts?.sort((a: Workout, b: Workout) => a.workout_date.localeCompare(b.workout_date))
         w.workouts?.forEach((wo: Workout) => wo.workout_exercises?.sort((a: WorkoutExercise, b: WorkoutExercise) => a.exercise_order - b.exercise_order))
       })
-      setBlock({ ...data, status: 'active' } as Block)
+      setBlock(data as Block)
     }
+  }
+
+  // Odabir u dropdownu samo otvara blok. Trenutni se mijenja isključivo kvačicom,
+  // pa trener može slagati idući blok dok lifter i dalje trenira po trenutnom.
+  const switchBlock = async (blockId: string) => {
+    setLoadingBlock(true)
+    setShowBlockSelector(false)
+    await viewBlock(blockId)
     setLoadingBlock(false)
-    onRefresh() // osvježi listu liftera → sidebar/dashboard odmah prate novi aktivni blok
+  }
+
+  /** Kvačica: blok postaje trenutni — lifter trenira po njemu, projekcije se odnose na njega. */
+  const makeCurrent = async (blockId: string) => {
+    const err = await setCurrentBlock(supabase, blockId, allBlocks)
+    if (err) { alert(`Greška pri postavljanju trenutnog bloka: ${err}`); return }
+    setAllBlocks(bs => withCurrent(bs, blockId))
+    setBlock(b => b ? { ...b, status: b.id === blockId ? 'active' : (b.status === 'active' ? 'planned' : b.status) } : b)
+    onRefresh() // sidebar/dashboard odmah prate novi trenutni blok
   }
 
   const createBlock = async () => {
@@ -1074,10 +1068,6 @@ export function AthletePanel({
     setSaving(true)
     const today = new Date()
     const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
-    if (block) {
-      await supabase.from('blocks').update({ status: 'planned' }).eq('id', block.id)
-      setAllBlocks(bs => bs.map(b => b.id === block.id ? { ...b, status: 'planned' } : b))
-    }
     const { data, error } = await supabase.from('blocks').insert({
       athlete_id: athlete.id, name: name.trim(),
       start_date: today.toISOString().split('T')[0],
@@ -1087,8 +1077,12 @@ export function AthletePanel({
     }).select('id, name, status, start_date, end_date').single()
     if (error) alert(`Greška pri kreiranju bloka: ${error.message}`)
     if (data) {
-      setAllBlocks(bs => [data as BlockSummary, ...bs])
+      // zadnji kreirani je trenutni — ostali aktivni se spuštaju (trener to može promijeniti kvačicom)
+      const err = await setCurrentBlock(supabase, data.id, allBlocks)
+      if (err) alert(`Blok je kreiran, ali prethodni trenutni nije spušten: ${err}`)
+      setAllBlocks(bs => withCurrent([data as BlockSummary, ...bs], data.id))
       setBlock({ ...data, weeks: [] } as unknown as Block)
+      onRefresh()
     }
     setSaving(false)
   }
@@ -1139,8 +1133,12 @@ export function AthletePanel({
         }
       }
     }
-    setAllBlocks(bs => [nb as BlockSummary, ...bs])
+    // kopija je novi blok → postaje trenutni, kao i svaki novi
+    const curErr = await setCurrentBlock(supabase, nb.id, allBlocks)
+    if (curErr) alert(`Kopija je napravljena, ali prethodni trenutni nije spušten: ${curErr}`)
+    setAllBlocks(bs => withCurrent([nb as BlockSummary, ...bs], nb.id))
     await switchBlock(nb.id)
+    onRefresh()
     setSaving(false)
   }
 
@@ -1154,13 +1152,20 @@ export function AthletePanel({
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
       body: JSON.stringify({ blockId: block.id }),
     })
+    const wasCurrent = currentBlockOf(allBlocks)?.id === block.id
     const remaining = allBlocks.filter(b => b.id !== block.id)
-    setAllBlocks(remaining)
-    if (remaining.length > 0) {
-      await switchBlock(remaining[0].id)
+    const next = currentBlockOf(remaining)
+    if (next && wasCurrent) {
+      // obrisan je trenutni → trenutni postaje zadnji kreirani
+      const err = await setCurrentBlock(supabase, next.id, remaining)
+      if (err) alert(`Greška pri postavljanju trenutnog bloka: ${err}`)
+      setAllBlocks(withCurrent(remaining, next.id))
     } else {
-      setBlock(null)
+      setAllBlocks(remaining)
     }
+    if (next) await switchBlock(next.id)
+    else setBlock(null)
+    if (wasCurrent) onRefresh()
     setSaving(false)
   }
 
@@ -1519,7 +1524,9 @@ export function AthletePanel({
               onMouseLeave={e => { if (!showBlockSelector) e.currentTarget.style.background = 'transparent' }}>
               <FolderOpen size={14} color="#555" />
               <div>
-                <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: '#888', marginBottom: '2px', fontFamily: 'var(--fm)' }}>AKTIVNI BLOK</div>
+                <div style={{ fontSize: '0.5rem', letterSpacing: '0.35em', color: viewingCurrent ? '#4ade80' : '#888', marginBottom: '2px', fontFamily: 'var(--fm)' }}>
+                  {!block ? 'BLOK' : viewingCurrent ? '● TRENUTNI BLOK' : 'OTVOREN · NIJE TRENUTNI'}
+                </div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e0e0e0', fontFamily: 'var(--fm)' }}>{block?.name ?? 'Nema bloka'}</div>
               </div>
               <ChevronDown size={12} color="#444" style={{ marginLeft: 'auto', transform: showBlockSelector ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
@@ -1574,7 +1581,12 @@ export function AthletePanel({
                   <TrendingUp size={13} /><span className="block-btn-label"> PROJEKCIJE</span>
                 </button>
               )}
-              {showProjections && <BlockProjectionsModal athleteId={athlete.id} blockId={block.id} blockName={block.name} canEdit onApplied={loadData} onClose={() => setShowProjections(false)} />}
+              {/* projekcije se uvijek odnose na TRENUTNI blok, ne na onaj koji je otvoren */}
+              {showProjections && currentBlock && (
+                <BlockProjectionsModal athleteId={athlete.id} blockId={currentBlock.id} blockName={currentBlock.name} canEdit
+                  onApplied={() => { if (block?.id === currentBlock.id) viewBlock(currentBlock.id) }}
+                  onClose={() => setShowProjections(false)} />
+              )}
               <button onClick={copyBlock} className="block-action-btn"
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', fontSize: '0.6rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
                 onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = '#111113' }}
@@ -1602,19 +1614,40 @@ export function AthletePanel({
 
         {showBlockSelector && allBlocks.length > 0 && (
           <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, background: '#09090e', border: '1px solid var(--border)', borderRadius: '10px', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', maxHeight: '280px', overflowY: 'auto', animation: 'dropDown 0.18s ease' }}>
-            {allBlocks.map(b => (
-              <button key={b.id} onClick={() => switchBlock(b.id)}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: b.id === block?.id ? '#111113' : 'transparent', border: 'none', cursor: 'pointer', borderBottom: '1px solid var(--border)', textAlign: 'left', transition: 'background 0.12s' }}
-                onMouseEnter={e => e.currentTarget.style.background = '#111113'}
-                onMouseLeave={e => e.currentTarget.style.background = b.id === block?.id ? '#111113' : 'transparent'}>
-                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.status === 'active' ? '#22c55e' : b.status === 'completed' ? '#60a5fa' : '#333', flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.84rem', fontWeight: 500, color: '#e0e0e0', fontFamily: 'var(--fm)' }}>{b.name}</div>
-                  <div style={{ fontSize: '0.56rem', color: '#444', marginTop: '1px', fontFamily: 'var(--fm)' }}>{b.start_date} — {b.end_date}</div>
+            {allBlocks.map(b => {
+              const isCurrent = currentBlock?.id === b.id
+              const isOpen = b.id === block?.id
+              return (
+                <div key={b.id} style={{ display: 'flex', alignItems: 'stretch', borderBottom: '1px solid var(--border)', background: isOpen ? '#111113' : 'transparent' }}>
+                  {/* klik na blok ga samo otvara */}
+                  <button onClick={() => switchBlock(b.id)}
+                    style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.12s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#111113'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: isCurrent ? '#22c55e' : b.status === 'completed' ? '#60a5fa' : '#333', flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 500, color: '#e0e0e0', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</div>
+                      <div style={{ fontSize: '0.56rem', color: '#666', marginTop: '1px', fontFamily: 'var(--fm)' }}>
+                        {isOpen && <span style={{ color: '#aaa', letterSpacing: '0.12em' }}>OTVOREN · </span>}{b.start_date} — {b.end_date}
+                      </div>
+                    </div>
+                  </button>
+                  {/* kvačica: trenutni blok — lifter trenira po njemu, projekcije se odnose na njega */}
+                  <button onClick={() => { if (!isCurrent) makeCurrent(b.id) }}
+                    aria-pressed={isCurrent}
+                    aria-label={isCurrent ? `${b.name} je trenutni blok` : `Označi ${b.name} kao trenutni blok`}
+                    title={isCurrent ? 'Trenutni blok — lifter trenira po njemu, projekcije se odnose na njega' : 'Označi kao trenutni blok'}
+                    style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid var(--border)', cursor: isCurrent ? 'default' : 'pointer', color: isCurrent ? '#22c55e' : '#555', fontFamily: 'var(--fm)', fontSize: '0.5rem', letterSpacing: '0.16em', fontWeight: 700, flexShrink: 0, transition: 'color 0.12s' }}
+                    onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.color = '#22c55e' }}
+                    onMouseLeave={e => { if (!isCurrent) e.currentTarget.style.color = '#555' }}>
+                    <span style={{ width: '20px', height: '20px', borderRadius: '50%', display: 'grid', placeItems: 'center', border: '1.5px solid currentColor', background: isCurrent ? 'rgba(34,197,94,0.15)' : 'transparent' }}>
+                      <Check size={11} strokeWidth={3} />
+                    </span>
+                    {isCurrent && <span className="block-btn-label">TRENUTNI</span>}
+                  </button>
                 </div>
-                {b.id === block?.id && <Check size={12} color="#22c55e" />}
-              </button>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
@@ -1627,7 +1660,7 @@ export function AthletePanel({
       ) : !block ? (
         <div style={{ textAlign: 'center', padding: '60px 0' }}>
           <div style={{ fontFamily: 'var(--fd)', fontSize: '3rem', opacity: 0.1, marginBottom: '12px', color: '#fff' }}>—</div>
-          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '24px', fontFamily: 'var(--fm)' }}>NEMA AKTIVNOG BLOKA</div>
+          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '24px', fontFamily: 'var(--fm)' }}>NEMA BLOKA</div>
           <button onClick={createBlock}
             style={{ padding: '12px 28px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.18)', color: '#f0f0f0', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '8px' }}>
             + KREIRAJ PRVI BLOK

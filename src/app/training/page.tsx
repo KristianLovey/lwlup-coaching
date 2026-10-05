@@ -8,6 +8,7 @@ import type { Block, BlockSummary, Week, Exercise, WorkoutExercise, Workout } fr
 import { AppNav, EditableField, CompetitionBanner, WeekPanel } from './training-components'
 import { PrevBlockLiftsModal } from './PrevBlockLifts'
 import { BlockProjectionsModal } from './BlockProjections'
+import { currentBlockOf, setCurrentBlock, withCurrent } from '@/lib/current-block'
 import { BlockSuggestionsProvider } from './block-suggestions'
 import { totalTonnage } from './training-setplan'
 import { LiftPriorityView } from './training-priority'
@@ -284,24 +285,24 @@ export default function TrainingPage() {
 
   const addBlock = async (name: string) => {
     if (!userId) return; setSaving(true)
-    if (block) {
-      await supabase.from('blocks').update({ status: 'planned' }).eq('id', block.id)
-      setAllBlocks(bs => bs.map(b => b.id === block.id ? { ...b, status: 'planned' } : b))
-    }
     const today = new Date(); const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
     const { data } = await supabase.from('blocks').insert({ athlete_id: effectiveAthleteId, name, start_date: today.toISOString().split('T')[0], end_date: endDate.toISOString().split('T')[0], status: 'active' }).select('id, name, status, start_date, end_date').single()
-    if (data) { setAllBlocks(b => [data as BlockSummary, ...b]); await switchBlock(data.id) }
+    if (data) {
+      // zadnji kreirani je trenutni — ostali aktivni se spuštaju
+      const err = await setCurrentBlock(supabase, data.id, allBlocks)
+      if (err) alert(`Blok je kreiran, ali prethodni trenutni nije spušten: ${err}`)
+      setAllBlocks(b => withCurrent([data as BlockSummary, ...b], data.id))
+      await switchBlock(data.id)
+    }
     setSaving(false)
   }
 
+  // Trenutni = označen kvačicom (inače zadnji kreirani). Otvoreni blok može biti i stariji.
+  const currentBlock = currentBlockOf(allBlocks)
+
+  // Odabir bloka samo ga otvara — pregled starog bloka ne mijenja trenutni.
   const switchBlock = async (blockId: string) => {
     setLoading(true)
-    if (block && block.id !== blockId) {
-      await supabase.from('blocks').update({ status: 'planned' }).eq('id', block.id)
-      setAllBlocks(bs => bs.map(b => b.id === block.id ? { ...b, status: 'planned' } : b))
-    }
-    await supabase.from('blocks').update({ status: 'active' }).eq('id', blockId)
-    setAllBlocks(bs => bs.map(b => b.id === blockId ? { ...b, status: 'active' } : b))
 
     const { data: raw } = await supabase.from('blocks').select(BLOCK_SELECT).eq('id', blockId).single()
     const data: any = raw
@@ -311,10 +312,18 @@ export default function TrainingPage() {
         w.workouts?.sort((a: Workout, b: Workout) => a.workout_date.localeCompare(b.workout_date))
         w.workouts?.forEach((wo: Workout) => wo.workout_exercises?.sort((a: WorkoutExercise, b: WorkoutExercise) => a.exercise_order - b.exercise_order))
       })
-      const injected = userId ? await injectSetProgress({ ...data, status: 'active' }, userId) : { ...data, status: 'active' }
+      const injected = userId ? await injectSetProgress(data, userId) : data
       setBlock(injected)
     }
     setShowBlockSelector(false); setLoading(false)
+  }
+
+  /** Kvačica (trener/admin): blok postaje trenutni. Otvoreni blok ostaje isti. */
+  const makeCurrent = async (blockId: string) => {
+    const err = await setCurrentBlock(supabase, blockId, allBlocks)
+    if (err) { alert(`Greška pri postavljanju trenutnog bloka: ${err}`); return }
+    setAllBlocks(bs => withCurrent(bs, blockId) as BlockSummary[])
+    setBlock(b => b ? { ...b, status: b.id === blockId ? 'active' : (b.status === 'active' ? 'planned' : b.status) } : b)
   }
 
   const deleteWeek = async (weekId: string) => {
@@ -411,7 +420,10 @@ export default function TrainingPage() {
         }
       }
     }
-    setAllBlocks(bs => [nb as BlockSummary, ...bs])
+    // kopija je novi blok → postaje trenutni, kao i svaki novi
+    const curErr = await setCurrentBlock(supabase, nb.id, allBlocks)
+    if (curErr) alert(`Kopija je napravljena, ali prethodni trenutni nije spušten: ${curErr}`)
+    setAllBlocks(bs => withCurrent([nb as BlockSummary, ...bs], nb.id))
     await switchBlock(nb.id)
     setSaving(false)
   }
@@ -420,14 +432,21 @@ export default function TrainingPage() {
     if (!block) return
     if (!confirm(`Briši blok "${block.name}"? Ova radnja je nepovratna i briše sve tjedne i treninge.`)) return
     setSaving(true)
-    await supabase.from('blocks').delete().eq('id', block.id)
+    const { error: delErr } = await supabase.from('blocks').delete().eq('id', block.id)
+    if (delErr) { alert(`Greška pri brisanju bloka: ${delErr.message}`); setSaving(false); return }
+    const wasCurrent = currentBlock?.id === block.id
     const remaining = allBlocks.filter(b => b.id !== block.id)
-    setAllBlocks(remaining)
-    if (remaining.length > 0) {
-      await switchBlock(remaining[0].id)
+    const next = currentBlockOf(remaining)
+    if (next && wasCurrent) {
+      // obrisan je trenutni → trenutni postaje zadnji kreirani
+      const err = await setCurrentBlock(supabase, next.id, remaining)
+      if (err) alert(`Greška pri postavljanju trenutnog bloka: ${err}`)
+      setAllBlocks(withCurrent(remaining, next.id) as BlockSummary[])
     } else {
-      setBlock(null)
+      setAllBlocks(remaining)
     }
+    if (next) await switchBlock(next.id)
+    else setBlock(null)
     setSaving(false)
   }
 
@@ -566,7 +585,7 @@ export default function TrainingPage() {
                           <FolderOpen size={16} color="rgba(255,255,255,0.35)" style={{ flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e8e8e8', fontFamily: 'var(--fd)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{b.name}</div>
-                            <div style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', letterSpacing: '0.08em', marginTop: '2px' }}>{b.status === 'active' ? 'AKTIVAN' : b.status === 'completed' ? 'ZAVRŠEN' : 'PLANIRAN'}</div>
+                            <div style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', letterSpacing: '0.08em', marginTop: '2px' }}>{b.id === currentBlock?.id ? 'TRENUTNI' : b.status === 'completed' ? 'ZAVRŠEN' : 'PLANIRAN'}</div>
                           </div>
                           <ChevronRight size={15} color="rgba(255,255,255,0.25)" style={{ flexShrink: 0 }} />
                         </button>
@@ -664,19 +683,38 @@ export default function TrainingPage() {
                       {showBlockSelector && (
                         <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 100, background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '12px', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', overflow: 'hidden', animation: 'dropDown 0.18s ease' }}>
                           <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
-                            {allBlocks.map((b: BlockSummary, i: number) => (
-                              <button key={b.id} onClick={() => switchBlock(b.id)}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: b.id === block.id ? 'var(--t-s3)' : 'transparent', border: 'none', borderBottom: i < allBlocks.length - 1 ? '1px solid var(--t-border)' : 'none', cursor: 'pointer', textAlign: 'left' as const, transition: 'background 0.12s' }}
-                                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--t-s3)'}
-                                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = b.id === block.id ? 'var(--t-s3)' : 'transparent'}>
-                                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.status === 'active' ? '#ef3535' : 'var(--t-border-hi)', flexShrink: 0 }} />
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: '0.82rem', fontWeight: 500, color: '#e0e0e0', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{b.name}</div>
-                                  <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.55)', marginTop: '1px' }}>{b.start_date} — {b.end_date}</div>
+                            {allBlocks.map((b: BlockSummary, i: number) => {
+                              const isCurrent = b.id === currentBlock?.id
+                              const isOpen = b.id === block.id
+                              return (
+                                <div key={b.id} style={{ display: 'flex', alignItems: 'stretch', background: isOpen ? 'var(--t-s3)' : 'transparent', borderBottom: i < allBlocks.length - 1 ? '1px solid var(--t-border)' : 'none' }}>
+                                  <button onClick={() => switchBlock(b.id)}
+                                    style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' as const, transition: 'background 0.12s' }}
+                                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--t-s3)'}
+                                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}>
+                                    <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: isCurrent ? '#ef3535' : 'var(--t-border-hi)', flexShrink: 0 }} />
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{ fontSize: '0.82rem', fontWeight: 500, color: '#e0e0e0', fontFamily: 'var(--fm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{b.name}</div>
+                                      <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.55)', marginTop: '1px' }}>
+                                        {isCurrent && <span style={{ color: '#ef3535', letterSpacing: '0.12em', fontWeight: 700 }}>TRENUTNI · </span>}{b.start_date} — {b.end_date}
+                                      </div>
+                                    </div>
+                                  </button>
+                                  {/* kvačica mijenja trenutni blok — samo trener i admin */}
+                                  {isAdmin && (
+                                    <button onClick={() => { if (!isCurrent) makeCurrent(b.id) }}
+                                      aria-pressed={isCurrent}
+                                      aria-label={isCurrent ? `${b.name} je trenutni blok` : `Označi ${b.name} kao trenutni blok`}
+                                      title={isCurrent ? 'Trenutni blok' : 'Označi kao trenutni blok'}
+                                      style={{ display: 'grid', placeItems: 'center', padding: '0 14px', background: 'transparent', border: 'none', borderLeft: '1px solid var(--t-border)', cursor: isCurrent ? 'default' : 'pointer', color: isCurrent ? '#ef3535' : 'rgba(255,255,255,0.35)', flexShrink: 0 }}>
+                                      <span style={{ width: '20px', height: '20px', borderRadius: '50%', display: 'grid', placeItems: 'center', border: '1.5px solid currentColor', background: isCurrent ? 'rgba(239,53,53,0.14)' : 'transparent' }}>
+                                        <Check size={11} strokeWidth={3} />
+                                      </span>
+                                    </button>
+                                  )}
                                 </div>
-                                {b.id === block.id && <Check size={12} color="#ef3535" />}
-                              </button>
-                            ))}
+                              )
+                            })}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderTop: '1px solid var(--t-border)', background: 'var(--t-s2)' }}>
                             <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', letterSpacing: '0.2em', flexShrink: 0 }}>NAZIV:</span>
@@ -716,7 +754,7 @@ export default function TrainingPage() {
                     <PrevBlockLiftsModal athleteId={effectiveAthleteId} currentBlockId={block.id} onClose={() => setShowPrevLifts(false)} />
                   )}
                   {showProjections && effectiveAthleteId && (
-                    <BlockProjectionsModal athleteId={effectiveAthleteId} blockId={block.id} blockName={block.name} canEdit={false} onClose={() => setShowProjections(false)} />
+                    <BlockProjectionsModal athleteId={effectiveAthleteId} blockId={currentBlock?.id ?? block.id} blockName={currentBlock?.name ?? block.name} canEdit={false} onClose={() => setShowProjections(false)} />
                   )}
 
                   {/* ── PRIORITY TABLE ── */}
