@@ -1,22 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { buildWrites, type WeekPlan, type WoRow } from './plan-layout'
+import { blockRowsFrom, matchPlan, type WeekEntries } from '@/lib/block-plan-match'
 
 /**
  * Upisuje izračunati plan bloka (planer kilaža) u same vježbe.
  *
- * Klijent šalje gotove kilaže po tjednima — one iste koje trener vidi u tablici —
- * pa je upisano točno ono što je na ekranu. Ruta samo pronalazi vježbu u svakom
- * tjednu i postavlja kilažu, ponavljanja, broj serija i backoff (set_plan).
+ * Aplikacija ne slaže strukturu bloka: ne dodaje vježbe, ne mijenja broj serija
+ * ni backoff. Upis smije krenuti tek kad blok odgovara projekciji (isti broj
+ * serija i isti broj ★ top setova u svakom tjednu — provjera u block-plan-match,
+ * ista koju planer vrti uživo). Ako ne odgovara, ne piše se NIŠTA i vraća se
+ * popis razlika.
  *
- * Ista vježba smije doći dvaput u istom tjednu (top set ponavljanja + fatigue
- * single). Unosi stižu u željenom redoslijedu, svaki dobiva svoj red u bloku, a
- * exercise_order se dodjeljuje tek kad su svi unosi tog dana složeni.
- *
- * Ako vježba u nekom tjednu fali, dodaje se u dan istog naziva kao u tjednu gdje
- * lift postoji (dani se zovu neujednačeno — "heavy", "Heavy", "vol+tech" — pa se
- * uspoređuje bez razlike u velikim slovima i razmacima), inače u prvi trening tog
- * tjedna. Ništa se ne briše.
+ * Piše se samo: kilaža i ponavljanja označenih top setova (set_logs) te sažetak
+ * reda (planned_weight_kg / planned_reps / target_rpe). Već odrađene serije se
+ * ne diraju — set_logs.weight_kg je ujedno i ono što je lifter stvarno digao.
  *
  * Service role jer piše po cijelom bloku liftera — zato je provjera role ovdje
  * jedina zaštita.
@@ -40,9 +37,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const { blockId, weeks } = (await req.json()) as { blockId?: string; weeks?: WeekPlan[] }
+    const { blockId, weeks } = (await req.json()) as { blockId?: string; weeks?: WeekEntries[] }
     if (!blockId || !Array.isArray(weeks) || weeks.length === 0) {
       return NextResponse.json({ error: 'Nedostaje blok ili plan po tjednima' }, { status: 400 })
+    }
+    // stari oblik (setPlan po vježbi) šalje samo neosvježena stranica
+    if (weeks.some(w => !Array.isArray(w?.entries) || w.entries.some(e => !Array.isArray((e as any)?.tops)))) {
+      return NextResponse.json({ error: 'Stara verzija planera — osvježi stranicu pa pokušaj ponovno.' }, { status: 400 })
+    }
+    if (weeks.some(w => w.entries.some(e => e.rowKg == null || e.tops.some(t => t.kg == null)))) {
+      return NextResponse.json({ error: 'Plan nije potpun — neki tjedan nema kilažu top seta.' }, { status: 400 })
     }
 
     // Trener smije samo svoje liftere; admin sve
@@ -54,37 +58,58 @@ export async function POST(req: NextRequest) {
       if (!assigned) return NextResponse.json({ error: 'Taj lifter nije tvoj' }, { status: 403 })
     }
 
-    // Cijeli blok odjednom: tjedni → treninzi → vježbe
-    const { data: weekRows, error: wErr } = await adminClient
-      .from('weeks')
-      .select('id, week_number, workouts(id, day_name, workout_exercises(id, exercise_id, exercise_order, planned_reps))')
-      .eq('block_id', blockId)
-    if (wErr) return NextResponse.json({ error: wErr.message }, { status: 500 })
+    // Struktura bloka: vježbe po tjednima sa serijama i zvjezdicama
+    const { data: raw, error: rErr } = await adminClient
+      .from('workout_exercises')
+      .select('id, exercise_id, exercise_order, planned_sets, workouts!inner(workout_date, day_name, weeks!inner(week_number, block_id)), set_logs(set_number, is_top_set, completed, weight_kg)')
+      .eq('workouts.weeks.block_id', blockId)
+    if (rErr) return NextResponse.json({ error: rErr.message }, { status: 500 })
 
-    const byWeek = new Map<number, WoRow[]>()
-    for (const w of (weekRows ?? []) as any[]) {
-      byWeek.set(Number(w.week_number), (w.workouts ?? []) as WoRow[])
+    const { problems, assignments } = matchPlan(weeks, blockRowsFrom(raw ?? []))
+    if (problems.length > 0) {
+      return NextResponse.json({ error: 'Blok ne odgovara projekciji', problems }, { status: 409 })
     }
 
-    const { updates, inserts, skipped } = buildWrites(weeks, byWeek)
-    let updated = 0, created = 0
+    const skipped: string[] = []
+    // svaki upis vraća poruku greške ili null — tip se izvodi sam, bez Supabase generika
+    const writes: Promise<string | null>[] = []
+    let sets = 0
 
-    const results = await Promise.all(
-      updates.map(u => adminClient.from('workout_exercises').update(u.fields).eq('id', u.id)),
-    )
-    results.forEach((r, i) => {
-      if (r.error) skipped.push(`izmjena ${i + 1}: ${r.error.message}`)
-      else updated++
-    })
+    for (const { week, entry, row } of assignments) {
+      writes.push((async () => {
+        const { error } = await adminClient.from('workout_exercises').update({
+          planned_weight_kg: entry.rowKg,
+          planned_reps: String(entry.rowReps),
+          ...(entry.rpe != null ? { target_rpe: entry.rpe } : {}),
+        }).eq('id', row.id)
+        return error?.message ?? null
+      })())
 
-    if (inserts.length > 0) {
-      // broj redova je poznat unaprijed, pa ne ovisimo o count opciji klijenta
-      const { error } = await adminClient.from('workout_exercises').insert(inserts)
-      if (error) skipped.push(`dodavanje vjezbi: ${error.message}`)
-      else created += inserts.length
+      entry.tops.forEach((t, i) => {
+        const setNumber = row.topSets[i]
+        if (row.doneTopSets.includes(setNumber)) {
+          skipped.push(`tj. ${week} · ${entry.label} S${setNumber} već odrađen`)
+          return
+        }
+        sets++
+        writes.push((async () => {
+          const { error } = await adminClient.from('set_logs')
+            .update({ weight_kg: t.kg, reps: String(t.reps) })
+            .eq('workout_exercise_id', row.id)
+            .eq('athlete_id', block.athlete_id)
+            .eq('set_number', setNumber)
+            .or('completed.is.null,completed.eq.false')
+          return error?.message ?? null
+        })())
+      })
     }
 
-    return NextResponse.json({ data: { updated, created, skipped } })
+    const failed = (await Promise.all(writes)).filter((m): m is string => m != null)
+    if (failed.length > 0) {
+      return NextResponse.json({ error: `Dio upisa nije prošao: ${failed[0]}`, data: { skipped } }, { status: 500 })
+    }
+
+    return NextResponse.json({ data: { exercises: assignments.length, sets, skipped } })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }

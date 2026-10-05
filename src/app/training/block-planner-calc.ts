@@ -19,41 +19,43 @@ import type { SetPlanRow } from './types'
  */
 
 /**
- * Drugi top set iste vježbe u istom danu — npr. serija ponavljanja pa fatigue
- * single. Kilaža je postotak PRVOG top seta tog tjedna (iznad 100 % za single,
- * ispod za lakši drugi ulazak). Ponavljanja su svoja, zato ovo u bloku završi
- * kao zaseban red vježbe, a ne kao dodatna serija — planned_reps je jedna
- * vrijednost po redu, pa bi se single inače prikazao kao 3 ponavljanja.
+ * Drugi top set iste vježbe u istom danu — npr. serija trojki pa fatigue single.
+ * Planira se kao i prvi: kilaža na početku i na kraju bloka, linearno po tjednima,
+ * sa svojim brojem ponavljanja. U bloku je to druga serija označena zvjezdicom
+ * (★) u ISTOM redu vježbe; `before` kaže je li to prva ili druga zvjezdica.
  */
 export type TopSet2 = {
   enabled: boolean
   /** ponavljanja drugog top seta; 1 = single */
   reps: number
-  /** postotak kilaže prvog top seta */
-  pct: number
-  /** true = ide PRIJE prvog top seta u danu (potenciranje), false = poslije (fatigue) */
+  startKg: number | null
+  endKg: number | null
+  /** true = ide PRIJE prvog top seta (prva ★), false = poslije (druga ★) */
   before: boolean
 }
 
-export const newTop2 = (): TopSet2 => ({ enabled: false, reps: 1, pct: 105, before: false })
+export const newTop2 = (): TopSet2 => ({ enabled: false, reps: 1, startKg: null, endKg: null, before: false })
 
 export function top2FromJson(raw: unknown): TopSet2 {
   const d = newTop2()
   const t = raw as any
   if (!t || typeof t !== 'object') return d
+  const num = (v: unknown) => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null)
   return {
     enabled: !!t.enabled,
     reps: t.reps != null ? Math.max(1, Math.round(Number(t.reps))) : d.reps,
-    pct: t.pct != null ? Number(t.pct) : d.pct,
+    startKg: num(t.startKg),
+    endKg: num(t.endKg),
     before: !!t.before,
   }
 }
 
-export const top2ToJson = (t: TopSet2) => ({ enabled: t.enabled, reps: t.reps, pct: t.pct, before: t.before })
+export const top2ToJson = (t: TopSet2) =>
+  ({ enabled: t.enabled, reps: t.reps, startKg: t.startKg, endKg: t.endKg, before: t.before })
 
-/** Kilaža drugog top seta: postotak prvog, zaokružen na ploču. Null ako je isključen. */
-export const top2Kg = (t: TopSet2, topKg: number | null): number | null =>
-  t.enabled && topKg != null && t.pct > 0 ? roundToPlate(topKg * t.pct / 100) : null
+/** Kilaža drugog top seta u tjednu `week`; null ako je isključen ili nepotpun. */
+export const top2Kg = (t: TopSet2, week: number, weeks: number): number | null =>
+  t.enabled && t.startKg != null && t.endKg != null ? rampKg(t.startKg, t.endKg, week, weeks) : null
 
 export type ExtraLift = {
   /** stabilan ključ liste (React) — ne dolazi iz baze */
@@ -195,12 +197,12 @@ export function planWeeks(plan: LiftPlan): WeekRow[] {
       const rpe = e.startRpe != null && e.endRpe != null ? rampRpe(e.startRpe, e.endRpe, w, plan.weeks) : null
       const oneRm = oneRms[i]
       const kg = oneRm != null && rpe != null ? weightFromRpe(oneRm, e.reps, rpe) : null
-      return { kg, rpe, top2Kg: top2Kg(e.top2, kg) }
+      return { kg, rpe, top2Kg: top2Kg(e.top2, w, plan.weeks) }
     })
 
     out.push({
       week: w, primaryKg, primaryManual: hasOverride,
-      primaryTop2Kg: top2Kg(plan.primaryTop2, primaryKg),
+      primaryTop2Kg: top2Kg(plan.primaryTop2, w, plan.weeks),
       extras,
     })
   }
@@ -220,12 +222,12 @@ export function planReady(plan: LiftPlan): { ok: boolean; reason?: string } {
     if (e.startRpe == null || e.endRpe == null) {
       return { ok: false, reason: `${e.exerciseName ?? `${i + 1}. dodatni lift`}: upiši početni i završni RPE.` }
     }
-    if (e.top2.enabled && !(e.top2.pct > 0)) {
-      return { ok: false, reason: `${e.exerciseName ?? `${i + 1}. dodatni lift`}: drugi top set nema postotak.` }
+    if (e.top2.enabled && (e.top2.startKg == null || e.top2.endKg == null)) {
+      return { ok: false, reason: `${e.exerciseName ?? `${i + 1}. dodatni lift`}: upiši početak i kraj drugog top seta.` }
     }
   }
-  if (plan.primaryTop2.enabled && !(plan.primaryTop2.pct > 0)) {
-    return { ok: false, reason: 'Drugi top set primarnog lifta nema postotak.' }
+  if (plan.primaryTop2.enabled && (plan.primaryTop2.startKg == null || plan.primaryTop2.endKg == null)) {
+    return { ok: false, reason: 'Upiši početak i kraj drugog top seta.' }
   }
   return { ok: true }
 }

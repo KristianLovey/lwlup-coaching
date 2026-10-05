@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { ArrowDown, ArrowUp, Check, ChevronDown, Loader2, Minus, Plus, Trash2, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -7,10 +7,11 @@ import { LIFTS, one, type Top } from './PrevBlockLifts'
 import { RPE_ROWS, weightFromRpe } from './training-setplan'
 import { COMP_CATEGORIES, LIFT_OF_CATEGORY, pctForExercise, type LiftK } from './lift-variations'
 import {
-  autoExtra1rm, backoffRows, emptyPlan, extra1rm, extrasFromJson, extrasToJson,
+  autoExtra1rm, emptyPlan, extra1rm, extrasFromJson, extrasToJson,
   newExtra, planReady, planWeeks, top2FromJson, top2ToJson,
   type ExtraLift, type LiftPlan, type TopSet2,
 } from './block-planner-calc'
+import { blockRowsFrom, matchPlan, type BlockRow, type PlanEntry, type Problem } from '@/lib/block-plan-match'
 
 /**
  * Planer bloka (trener/admin) + prikaz napretka (lifter).
@@ -169,6 +170,16 @@ async function loadProjections(athleteId: string, blockId: string): Promise<Load
   }
 }
 
+/** Struktura bloka (serije, ★) za provjeru prije upisa — ista koju čita ruta. */
+async function loadBlockShape(athleteId: string, blockId: string): Promise<BlockRow[]> {
+  const { data, error } = await supabase.from('workout_exercises')
+    .select('id, exercise_id, exercise_order, planned_sets, workouts!inner(workout_date, day_name, athlete_id, weeks!inner(week_number, block_id)), set_logs(set_number, is_top_set, completed, weight_kg)')
+    .eq('workouts.athlete_id', athleteId)
+    .eq('workouts.weeks.block_id', blockId)
+  if (error) throw error
+  return blockRowsFrom(data ?? [])
+}
+
 // ── stilovi ───────────────────────────────────────────────────────
 const eyebrow: CSSProperties = { fontSize: '0.5rem', letterSpacing: '0.22em', color: '#777', fontWeight: 700, textTransform: 'uppercase', whiteSpace: 'nowrap' }
 const inputBase: CSSProperties = { background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '8px', padding: '7px 9px', color: '#f0f0f0', fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.9rem', outline: 'none', minWidth: 0, width: '100%', boxSizing: 'border-box' }
@@ -242,9 +253,9 @@ function DirToggle({ pct, onChange }: { pct: number; onChange: (v: number) => vo
 }
 
 /**
- * Drugi top set iste vjezbe u istom danu — npr. serija ponavljanja pa fatigue
- * single. Kilaza je postotak prvog top seta, pa se racuna i kad top set dolazi
- * iz rucnog upisa. Prekidac po liftu bira ide li prije ili poslije top seta.
+ * Drugi top set iste vježbe — npr. trojke pa fatigue single. Planira se kao prvi:
+ * kilaža na početku i na kraju bloka plus ponavljanja. U bloku je to druga
+ * serija sa zvjezdicom (★) u istom redu; PRIJE/POSLIJE kaže koja je to ★.
  */
 function Top2Fields({ value, onChange, previewKg }: {
   value: TopSet2; onChange: (patch: Partial<TopSet2>) => void; previewKg: number | null
@@ -273,19 +284,21 @@ function Top2Fields({ value, onChange, previewKg }: {
       {on && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: '9px', marginTop: '9px' }}>
+            <NumField label="Početak bloka" value={value.startKg} suffix="kg" placeholder="npr. 155"
+              onCommit={v => onChange({ startKg: v })} />
+            <NumField label="Kraj bloka" value={value.endKg} suffix="kg" placeholder="npr. 195"
+              onCommit={v => onChange({ endKg: v })} />
             <NumField label="Ponavljanja" value={value.reps}
               onCommit={v => onChange({ reps: Math.max(1, Math.round(v ?? 1)) })} />
-            <NumField label="% top seta" value={value.pct} suffix="%"
-              onCommit={v => onChange({ pct: v ?? 105 })} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '9px' }}>
-            <span style={{ ...eyebrow, fontSize: '0.45rem', letterSpacing: '0.12em' }}>Mjesto u danu</span>
+            <span style={{ ...eyebrow, fontSize: '0.45rem', letterSpacing: '0.12em', whiteSpace: 'normal', lineHeight: 1.3 }}>Koja je ★ u bloku</span>
             <div style={{ display: 'flex', gap: '5px' }}>
               <button type="button" style={posBtn(!value.before)} onClick={() => onChange({ before: false })} aria-pressed={!value.before}>
-                POSLIJE
+                POSLIJE · 2. ★
               </button>
               <button type="button" style={posBtn(value.before)} onClick={() => onChange({ before: true })} aria-pressed={value.before}>
-                PRIJE
+                PRIJE · 1. ★
               </button>
             </div>
           </div>
@@ -313,8 +326,9 @@ function Stepper({ label, value, onChange, min = 0, max = 10 }: {
 }
 
 // ── planer (trener/admin) ─────────────────────────────────────────
-function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, onProjection, onApplied }: {
+function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, onProjection, onApplied, blockRows, shapeError, reloadShape }: {
   lift: LiftKey; label: string; data: LiftData; compEx: ExRow | undefined; variations: ExRow[]
+  blockRows: BlockRow[] | null; shapeError: string | null; reloadShape: () => Promise<void>
   blockId: string; onPlan: (p: LiftPlan) => void; onProjection: (p: Projection | null) => void
   onApplied?: () => void
 }) {
@@ -323,6 +337,7 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
   const [err, setErr] = useState('')
   const [apply, setApply] = useState<'idle' | 'busy' | 'done'>('idle')
   const [applyMsg, setApplyMsg] = useState('')
+  const [applyProblems, setApplyProblems] = useState<Problem[]>([])
   const [showTable, setShowTable] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
@@ -336,8 +351,8 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
   const addExtra = () => set({ extras: [...plan.extras, newExtra()] })
   const removeExtra = (id: string) => set({ extras: plan.extras.filter(e => e.id !== id) })
 
-  const save = async () => {
-    if (plan.endKg == null) { setStatus('error'); setErr('Upiši kilažu na kraju bloka — bez nje se plan ne može spremiti.'); return }
+  const save = async (): Promise<boolean> => {
+    if (plan.endKg == null) { setStatus('error'); setErr('Upiši kilažu na kraju bloka — bez nje se plan ne može spremiti.'); return false }
     setStatus('saving'); setErr('')
     const { error } = await supabase.from('block_projections').upsert({
       block_id: blockId, lift,
@@ -352,65 +367,67 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
       extra_lifts: extrasToJson(plan.extras),
       week_overrides: plan.weekOverrides,
     }, { onConflict: 'block_id,lift' })
-    if (error) { setStatus('error'); setErr('Greška pri spremanju: ' + error.message); return }
+    if (error) { setStatus('error'); setErr('Greška pri spremanju: ' + error.message); return false }
     onProjection({ min: plan.endKg, max: data.projection?.max ?? null })
     setStatus('saved')
     if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(() => setStatus('idle'), 1500)
+    return true
   }
 
+  // Što projekcija traži od bloka, tjedan po tjedan. Top setovi idu redoslijedom
+  // zvjezdica: drugi top set "PRIJE" je prva ★, "POSLIJE" druga.
+  const weekEntries = useMemo(() => rows.map(r => {
+    const entries: PlanEntry[] = []
+    const push = (exerciseId: string, name: string, kg: number | null, reps: number,
+      backoffSets: number, rpe: number | null, t2: TopSet2, t2Kg: number | null) => {
+      const main = { kg, reps }
+      const tops = !t2.enabled ? [main] : t2.before ? [{ kg: t2Kg, reps: t2.reps }, main] : [main, { kg: t2Kg, reps: t2.reps }]
+      entries.push({ exerciseId, label: name, sets: tops.length + backoffSets, tops, rowKg: kg, rowReps: reps, rpe })
+    }
+    if (compEx) {
+      push(compEx.id, compEx.name, r.primaryKg, plan.primaryReps, plan.primaryBackoffSets, null, plan.primaryTop2, r.primaryTop2Kg)
+    }
+    plan.extras.forEach((e, i) => {
+      if (!e.exerciseId) return
+      const w = r.extras[i]
+      push(e.exerciseId, e.exerciseName ?? extraLabel(i), w ? w.kg : null, e.reps, e.backoffSets, w ? w.rpe : null, e.top2, w ? w.top2Kg : null)
+    })
+    return { week: r.week, entries }
+  }), [rows, plan, compEx])
+
+  const match = useMemo(() => (blockRows ? matchPlan(weekEntries, blockRows) : null), [weekEntries, blockRows])
+  const ready = planReady(plan)
+  const canApply = !!match && match.problems.length === 0 && ready.ok && !!compEx
+  const badWeeks = new Set((match?.problems ?? []).map(p => p.week))
+  // što je trenutno u bloku na top setovima primarnog lifta — za usporedbu u tablici
+  const inBlock = new Map((match?.assignments ?? [])
+    .filter(a => a.entry.exerciseId === compEx?.id)
+    .map((a): [number, (number | null)[]] => [a.week, a.row.topSets.map(n => a.row.weights[n] ?? null)]))
+
   const applyToBlock = async () => {
-    const ready = planReady(plan)
-    if (!ready.ok) { setApply('idle'); setApplyMsg(ready.reason ?? ''); return }
-    if (!compEx) { setApplyMsg('Nema natjecateljske vježbe za ovaj lift u bazi.'); return }
-    setApply('busy'); setApplyMsg('')
-    await save()
-
-    // Lift s dva top seta daje DVA reda iste vjezbe; redoslijed u nizu je
-    // redoslijed u danu, pa `before` odlucuje ide li single prije ili poslije.
-    const pairOf = (
-      exerciseId: string | null, kg: number | null, reps: number, backoffSets: number,
-      backoffPct: number, rpe: number | null, t2: TopSet2, t2Kg: number | null,
-    ) => {
-      if (exerciseId == null) return []
-      const main = kg == null ? null : {
-        exerciseId, kg, reps, sets: 1 + backoffSets, rpe,
-        setPlan: backoffRows(backoffSets, backoffPct),
-      }
-      const second = t2.enabled && t2Kg != null ? {
-        exerciseId, kg: t2Kg, reps: t2.reps, sets: 1, rpe: null,
-        setPlan: backoffRows(0, t2.pct),
-      } : null
-      return (t2.before ? [second, main] : [main, second]).filter(Boolean)
-    }
-
-    const payload = {
-      blockId,
-      weeks: rows.map(r => ({
-        week: r.week,
-        entries: [
-          ...pairOf(compEx.id, r.primaryKg, plan.primaryReps, plan.primaryBackoffSets,
-            plan.primaryBackoffPct, null, plan.primaryTop2, r.primaryTop2Kg),
-          ...plan.extras.flatMap((e, i) => {
-            const w = r.extras[i]
-            return pairOf(e.exerciseId, w?.kg ?? null, e.reps, e.backoffSets,
-              e.backoffPct, w?.rpe ?? null, e.top2, w?.top2Kg ?? null)
-          }),
-        ],
-      })),
-    }
+    if (!canApply) return
+    setApply('busy'); setApplyMsg(''); setApplyProblems([])
+    if (!(await save())) { setApply('idle'); return }
 
     const { data: { session } } = await supabase.auth.getSession()
     const res = await fetch('/api/admin/apply-block-plan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ blockId, weeks: weekEntries }),
     }).then(r => r.json()).catch(() => ({ error: 'Mreža nije dostupna' }))
 
-    if (res?.error) { setApply('idle'); setApplyMsg('Greška: ' + res.error); return }
+    if (res?.error) {
+      setApply('idle')
+      setApplyMsg('Greška: ' + res.error)
+      // blok se promijenio između provjere i upisa — pokaži što server vidi
+      if (Array.isArray(res.problems)) { setApplyProblems(res.problems as Problem[]); reloadShape() }
+      return
+    }
     const d = res.data ?? {}
     setApply('done')
-    setApplyMsg(`Upisano: ${d.updated ?? 0} vježbi osvježeno, ${d.created ?? 0} dodano${d.skipped?.length ? ` · preskočeno: ${d.skipped.join(', ')}` : ''}`)
+    setApplyMsg(`Upisano: ${d.sets ?? 0} top setova u ${d.exercises ?? 0} vježbi${d.skipped?.length ? ` · preskočeno (već odrađeno): ${d.skipped.join(', ')}` : ''}`)
+    reloadShape()
     onApplied?.() // blok u panelu je sad zastario — bez ovoga ostaju stare kilaže na ekranu
   }
 
@@ -510,7 +527,7 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
               {plan.primaryTop2.enabled && (
                 <tr style={{ borderTop: '1px solid var(--t-border)' }}>
                   <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#22d3ee' }}>
-                    {plan.primaryTop2.before ? '↑ ' : '↓ '}{plan.primaryTop2.reps}× · {plan.primaryTop2.pct}%
+                    2. TOP SET · {plan.primaryTop2.reps}×
                   </td>
                   {rows.map(r => (
                     <td key={r.week} style={{ ...td, color: r.primaryTop2Kg != null ? '#22d3ee' : '#555' }}>
@@ -555,7 +572,7 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
               {plan.extras.map((e, i) => e.top2.enabled ? (
                 <tr key={e.id + ':top2'} style={{ borderTop: '1px solid var(--t-border)' }}>
                   <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#22d3ee', maxWidth: '130px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {e.top2.before ? '↑ ' : '↓ '}{e.exerciseName ?? extraLabel(i)} {e.top2.reps}×
+                    {e.exerciseName ?? extraLabel(i)} · 2. top · {e.top2.reps}×
                   </td>
                   {rows.map(r => (
                     <td key={r.week} style={{ ...td, color: r.extras[i]?.top2Kg != null ? '#22d3ee' : '#555' }}>
@@ -571,32 +588,106 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
                   return <td key={r.week} style={{ ...td, fontSize: '0.7rem', color: d ? '#f0f0f0' : '#444' }}>{d ? fmtKg(d.kg) : '—'}</td>
                 })}
               </tr>
+              {match && (
+                <tr style={{ borderTop: '1px solid var(--t-border)' }}>
+                  <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#666' }}>U BLOKU ★</td>
+                  {rows.map(r => {
+                    const kgs = inBlock.get(r.week)
+                    return (
+                      <td key={r.week} style={{ ...td, fontSize: '0.7rem', color: kgs ? '#d4d4d4' : '#444' }}>
+                        {kgs ? kgs.map(k => (k != null ? fmtKg(k) : '—')).join(' · ') : '—'}
+                      </td>
+                    )
+                  })}
+                </tr>
+              )}
+              {match && (
+                <tr style={{ borderTop: '1px solid var(--t-border)' }}>
+                  <td style={{ ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', color: '#666' }}>STRUKTURA</td>
+                  {rows.map(r => {
+                    const bad = badWeeks.has(r.week)
+                    return (
+                      <td key={r.week} title={bad ? 'Blok ne odgovara projekciji u ovom tjednu' : 'Odgovara'}
+                        style={{ ...td, fontSize: '0.8rem', color: bad ? '#f87171' : '#4ade80' }}>
+                        {bad ? '✕' : '✓'}
+                      </td>
+                    )
+                  })}
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       )}
 
+      {/* PROVJERA BLOKA — uživo; upis je moguć tek kad sve odgovara */}
+      <div style={{ marginTop: '14px', padding: '11px 12px', borderRadius: '10px', border: `1px solid ${canApply ? '#4ade8055' : match && match.problems.length > 0 ? '#f8717155' : 'var(--t-border)'}`, background: canApply ? 'rgba(74,222,128,0.05)' : match && match.problems.length > 0 ? 'rgba(248,113,113,0.05)' : 'transparent' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}>
+          <span style={{ ...eyebrow, fontSize: '0.5rem', color: canApply ? '#4ade80' : match && match.problems.length > 0 ? '#f87171' : '#888', whiteSpace: 'normal' }}>
+            {shapeError ? 'STRUKTURA BLOKA SE NE MOŽE UČITATI'
+              : !match ? 'PROVJERAVAM BLOK…'
+              : match.problems.length > 0 ? 'BLOK NE ODGOVARA PROJEKCIJI'
+              : !ready.ok ? 'BLOK ODGOVARA · PLAN NIJE POTPUN'
+              : 'BLOK ODGOVARA PROJEKCIJI'}
+          </span>
+          <button type="button" onClick={() => reloadShape()}
+            style={{ background: 'transparent', border: '1px solid var(--t-border)', borderRadius: '7px', color: '#aaa', cursor: 'pointer', padding: '4px 9px', fontFamily: 'var(--fm)', fontSize: '0.48rem', letterSpacing: '0.14em', fontWeight: 700, flexShrink: 0 }}>
+            PROVJERI PONOVNO
+          </button>
+        </div>
+        {shapeError && <div style={{ fontSize: '0.62rem', color: '#f87171', marginTop: '6px' }}>{shapeError}</div>}
+        {match && match.problems.length > 0 && (
+          <>
+            <div style={{ fontSize: '0.62rem', color: '#bbb', marginTop: '7px', lineHeight: 1.6 }}>
+              Projekcija mora odgovarati strukturi bloka prije upisa: u svakom tjednu isti broj serija i isti broj
+              top setova označenih zvjezdicom (★). Složi blok pa se vrati — provjera se osvježi sama. Plan možeš spremiti i prije toga.
+            </div>
+            <ul style={{ margin: '7px 0 0', paddingLeft: '16px', fontSize: '0.62rem', color: '#f8a5a5', lineHeight: 1.7 }}>
+              {match.problems.slice(0, 12).map((p, i) => (
+                <li key={i}><b style={{ color: '#f0f0f0' }}>{p.week}. tj.</b> · {p.label}: {p.message}</li>
+              ))}
+              {match.problems.length > 12 && <li>… i još {match.problems.length - 12}</li>}
+            </ul>
+          </>
+        )}
+        {match && match.problems.length === 0 && !ready.ok && (
+          <div style={{ fontSize: '0.62rem', color: '#facc15', marginTop: '6px' }}>{ready.reason}</div>
+        )}
+        {match && match.problems.length === 0 && ready.ok && (
+          <div style={{ fontSize: '0.62rem', color: '#9ca3af', marginTop: '6px', lineHeight: 1.6 }}>
+            Upis popunjava samo kilažu i ponavljanja serija označenih ★ (i sažetak vježbe). Broj serija, backoff i redoslijed
+            ostaju kakve si složio; već odrađene serije se ne diraju.
+          </div>
+        )}
+      </div>
+
       {/* akcije */}
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginTop: '14px' }}>
-        <button type="button" onClick={save} disabled={status === 'saving'}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginTop: '12px' }}>
+        <button type="button" onClick={() => { save() }} disabled={status === 'saving'}
           style={{ padding: '10px 16px', borderRadius: '9px', background: 'var(--t-s3)', border: '1px solid var(--t-border-hi)', color: '#e8e8e8', fontFamily: 'var(--fm)', fontSize: '0.62rem', letterSpacing: '0.16em', fontWeight: 700, cursor: 'pointer' }}>
           {status === 'saving' ? 'SPREMAM…' : 'SPREMI PLAN'}
         </button>
-        <button type="button" onClick={applyToBlock} disabled={apply === 'busy'}
-          style={{ padding: '10px 16px', borderRadius: '9px', background: '#1a3a26', border: '1px solid #4ade80', color: '#4ade80', fontFamily: 'var(--fm)', fontSize: '0.62rem', letterSpacing: '0.16em', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px' }}>
-          {apply === 'busy' && <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />}
-          UPIŠI U BLOK
-        </button>
+        {canApply && (
+          <button type="button" onClick={applyToBlock} disabled={apply === 'busy'}
+            style={{ padding: '10px 16px', borderRadius: '9px', background: '#1a3a26', border: '1px solid #4ade80', color: '#4ade80', fontFamily: 'var(--fm)', fontSize: '0.62rem', letterSpacing: '0.16em', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px' }}>
+            {apply === 'busy' && <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />}
+            UPIŠI U BLOK
+          </button>
+        )}
         {status === 'saved' && <span style={{ fontSize: '0.62rem', color: '#4ade80', display: 'flex', alignItems: 'center', gap: '4px' }}><Check size={13} /> spremljeno</span>}
       </div>
       {status === 'error' && <div style={{ fontSize: '0.64rem', color: '#f87171', marginTop: '8px' }}>{err}</div>}
       {applyMsg && <div style={{ fontSize: '0.64rem', color: apply === 'done' ? '#4ade80' : '#f87171', marginTop: '8px', lineHeight: 1.6 }}>{applyMsg}</div>}
+      {applyProblems.length > 0 && (
+        <ul style={{ margin: '6px 0 0', paddingLeft: '16px', fontSize: '0.62rem', color: '#f8a5a5', lineHeight: 1.7 }}>
+          {applyProblems.map((p, i) => <li key={i}>{p.week}. tj. · {p.label}: {p.message}</li>)}
+        </ul>
+      )}
       <div style={{ fontSize: '0.58rem', color: '#666', marginTop: '10px', lineHeight: 1.6 }}>
-        Top set ide linearno od početka do kraja bloka, zaokruženo na 2.5 kg; ručni upis nadjačava izračun (žuto).
-        Backoff serije su postotak prethodne serije. Drugi top set (plavo) je postotak top seta tog tjedna i u blok ide
-        kao zaseban red iste vježbe — zato ima svoja ponavljanja, pa fatigue single ostaje single.
-        „Upiši u blok" postavlja kilažu, ponavljanja, broj serija i backoff
-        u {compEx?.name ?? 'natjecateljsku vježbu'}{plan.extras.length > 0 ? ' i ' + plan.extras.length + ' dodatnih liftova' : ''} — ništa se ne briše.
+        Top setovi idu linearno od početka do kraja bloka, zaokruženo na 2.5 kg; ručni upis nadjačava izračun prvog top seta (žuto).
+        Drugi top set (plavo) planira se isto — svoj početak, kraj i ponavljanja. Aplikacija ništa ne upisuje sama: tek kad blok
+        odgovara projekciji, „Upiši u blok" popuni označene top setove u {compEx?.name ?? 'natjecateljskoj vježbi'}
+        {plan.extras.length > 0 ? ' i ' + plan.extras.length + ' dodatnih liftova' : ''}.
       </div>
 
       {/* DETALJNE TABLICE ZA SEKUNDARNE LIFTOVE */}
@@ -749,6 +840,24 @@ export function BlockProjectionsModal({ athleteId, blockId, blockName, canEdit, 
 }) {
   const [state, setState] = useState<State>({ status: 'loading' })
   const [tab, setTab] = useState<LiftKey>('squat')
+  const [shape, setShape] = useState<BlockRow[] | null>(null)
+  const [shapeErr, setShapeErr] = useState<string | null>(null)
+
+  // Struktura bloka se čita uživo: pri otvaranju, kad se trener vrati u prozor
+  // (npr. iz druge kartice gdje je slagao serije) i nakon svakog upisa.
+  const reloadShape = useCallback(async () => {
+    if (!canEdit) return
+    try { setShape(await loadBlockShape(athleteId, blockId)); setShapeErr(null) }
+    catch (e: any) { setShapeErr(e?.message ?? String(e)) }
+  }, [athleteId, blockId, canEdit])
+
+  useEffect(() => {
+    reloadShape()
+    const onFocus = () => { if (document.visibilityState === 'visible') reloadShape() }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => { window.removeEventListener('focus', onFocus); document.removeEventListener('visibilitychange', onFocus) }
+  }, [reloadShape])
 
   useEffect(() => {
     let alive = true
@@ -835,6 +944,9 @@ export function BlockProjectionsModal({ athleteId, blockId, blockName, canEdit, 
               onPlan={p => patchLift(tab, { plan: p })}
               onProjection={p => patchLift(tab, { projection: p })}
               onApplied={onApplied}
+              blockRows={shape}
+              shapeError={shapeErr}
+              reloadShape={reloadShape}
             />
           )}
 
