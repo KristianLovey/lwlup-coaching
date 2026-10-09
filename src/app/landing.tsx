@@ -254,10 +254,12 @@ export default function Landing() {
         <div style={{ position: 'relative', zIndex: 2, width: '100%', padding: '0 clamp(20px,5vw,60px)', paddingTop: 'clamp(90px,16vh,160px)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }} className="hero-content">
           <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '680px' }}>
 
-            {/* Big headline */}
+            {/* Big headline: uvijek tri retka (LWL UP / YOUR / GAME) na svim širinama.
+                Razmaci između spanova su da tekst h1 za tražilice ostane "LWL UP YOUR GAME". */}
             <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4.2rem, 10vw, 9.5rem)', lineHeight: 1, marginBottom: '24px', marginTop: 0, letterSpacing: '-0.02em' }}>
-              <span className="hero-outline" style={{ display: 'block' }}>{'LWL UP '}</span>
-              <span style={{ display: 'block', color: '#fff' }}>YOUR GAME</span>
+              <span className="hero-outline" style={{ display: 'block' }}>LWL UP</span>{' '}
+              <span style={{ display: 'block', color: '#fff' }}>YOUR</span>{' '}
+              <span style={{ display: 'block', color: '#fff' }}>GAME</span>
             </h1>
 
             {/* Description */}
@@ -286,7 +288,7 @@ export default function Landing() {
         </div>
 
         {/* Quote — bottom right, absolutely positioned */}
-        <div style={{ position: 'absolute', bottom: 'clamp(52px,8vh,80px)', right: 'clamp(20px,5vw,60px)', zIndex: 3, textAlign: 'right', maxWidth: 'clamp(220px,28vw,380px)', opacity: ready ? 1 : 0, transition: 'opacity 1.8s 0.5s' }}>
+        <div className="hero-quote" style={{ position: 'absolute', bottom: 'clamp(52px,8vh,80px)', right: 'clamp(20px,5vw,60px)', zIndex: 3, textAlign: 'right', maxWidth: 'clamp(220px,28vw,380px)', opacity: ready ? 1 : 0, transition: 'opacity 1.8s 0.5s' }}>
           <p style={{ fontSize: 'clamp(0.65rem,1.3vw,0.8rem)', color: 'rgba(255,255,255,0.62)', fontStyle: 'italic', lineHeight: 1.6, margin: 0, transition: 'all 0.8s' }}>
             &ldquo;{SLIDES[slide].quote}&rdquo;
           </p>
@@ -681,6 +683,10 @@ export default function Landing() {
           .stats-grid > div:nth-child(2) { border-right: none !important; }
           .stats-grid > div:nth-child(3) { border-top: 1px solid rgba(255,255,255,0.16); }
           .stats-grid > div:nth-child(4) { border-top: 1px solid rgba(255,255,255,0.16); border-right: none !important; }
+        }
+        /* Niski mobiteli (npr. iPhone SE, 667px): naslov u tri retka gura gumbe do citata u kutu */
+        @media (max-width: 768px) and (max-height: 700px) {
+          .hero-quote { display: none; }
         }
         @media (max-width: 480px) {
           .features-grid { grid-template-columns: 1fr !important; }
