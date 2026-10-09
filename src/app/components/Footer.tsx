@@ -11,10 +11,6 @@ export default function Footer() {
   return (
     <footer style={{ background: '#131317', borderTop: '1px solid rgba(255,255,255,0.09)', fontFamily: 'var(--fm)', position: 'relative', overflow: 'hidden' }}>
 
-      {/* Big background wordmark */}
-      <div style={{ position: 'absolute', bottom: '60px', left: '50%', transform: 'translateX(-50%)', fontFamily: 'var(--fd)', fontSize: 'clamp(6rem,14vw,16rem)', fontWeight: 800, letterSpacing: '-0.02em', color: 'rgba(255,255,255,0.03)', whiteSpace: 'nowrap', pointerEvents: 'none', userSelect: 'none', lineHeight: 1 }}>
-        LWL UP
-      </div>
 
       {/* Main footer content */}
       <div style={{ padding: '64px 60px 56px', maxWidth: '1400px', margin: '0 auto' }}>
@@ -141,6 +137,14 @@ export default function Footer() {
           <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em' }}>
             DESIGNED BY <span style={{ color: 'rgba(255,255,255,0.7)' }}>Kristian Lovey</span>
           </span>
+        </div>
+      </div>
+
+      {/* Veliki wordmark kao zasebna traka na dnu. Prije je bio apsolutno pozicioniran
+          iza stupaca, pa je prelazio preko linkova i bio odrezan. */}
+      <div aria-hidden style={{ padding: '0 60px', textAlign: 'center', overflow: 'hidden', pointerEvents: 'none', userSelect: 'none' }}>
+        <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4.5rem,24vw,20rem)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1, color: 'rgba(255,255,255,0.03)', whiteSpace: 'nowrap', marginBottom: '-0.05em' }}>
+          LWL UP
         </div>
       </div>
 

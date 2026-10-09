@@ -4,7 +4,9 @@ import { LEGAL } from '@/lib/legal'
 export const SITE_URL = 'https://lwlup.com'
 export const SITE_NAME = 'LWL UP Powerlifting'
 
-export const HOME_TITLE = 'LWL UP – Powerlifting klub Zagreb | Treninzi i natjecanja'
+// Počinje imenom stranice (isto kao og:site_name i WebSite.name u JSON-LD), da Google
+// dosljedno prikazuje naziv stranice u rezultatima.
+export const HOME_TITLE = `${SITE_NAME} | Powerlifting klub Zagreb, treninzi i natjecanja`
 export const HOME_DESCRIPTION =
   'LWL UP je powerlifting klub sa zagrebačkog područja. Individualni programi, analiza tehnike i priprema za natjecanja uz trenera Waltera Smajlovića.'
 
@@ -46,9 +48,8 @@ export function privatePageMetadata(title: string): Metadata {
   return { title, robots: { index: false, follow: false } }
 }
 
-/** schema.org podaci o klubu (JSON-LD u root layoutu). Prazna polja adrese se izostavljaju. */
-export const CLUB_JSON_LD = {
-  '@context': 'https://schema.org',
+/** schema.org podaci o klubu. Prazna polja adrese se izostavljaju. */
+const CLUB = {
   '@type': 'SportsClub',
   '@id': `${SITE_URL}/#club`,
   name: SITE_NAME,
@@ -76,5 +77,22 @@ export const CLUB_JSON_LD = {
   ],
 }
 
-/** JSON za <script type="application/ld+json"> — "<" escapiran da sadržaj ne može zatvoriti script tag. */
+/** WebSite: iz njega Google uzima naziv stranice (site name) u rezultatima pretrage. */
+const WEBSITE = {
+  '@type': 'WebSite',
+  '@id': `${SITE_URL}/#website`,
+  name: SITE_NAME,
+  alternateName: ['LWL UP', 'LWLUP'],
+  url: SITE_URL,
+  inLanguage: 'hr-HR',
+  publisher: { '@id': CLUB['@id'] },
+}
+
+/** JSON-LD za root layout: WebSite + SportsClub u jednom grafu. */
+export const SITE_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@graph': [WEBSITE, CLUB],
+}
+
+/** JSON za <script type="application/ld+json">. "<" je escapiran da sadržaj ne može zatvoriti script tag. */
 export const jsonLd = (data: object): string => JSON.stringify(data).replace(/</g, '\\u003c')

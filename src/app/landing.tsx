@@ -211,11 +211,11 @@ export default function Landing() {
       achievements: [t('home.f.ach1.0'), t('home.f.ach1.1'), t('home.f.ach1.2'), t('home.f.ach1.3')] },
   ]
   const AGE_CATS = [
-    { key: 'home.cat.cadets'  as const, age: '14 – 18', color: '#60a5fa' },
-    { key: 'home.cat.juniors' as const, age: '19 – 23', color: '#a78bfa' },
-    { key: 'home.cat.open'    as const, age: '24 – 39', color: '#e2e8f0' },
-    { key: 'home.cat.m1'      as const, age: '40 – 49', color: '#facc15' },
-    { key: 'home.cat.m2'      as const, age: '50 – 59', color: '#fb923c' },
+    { key: 'home.cat.cadets'  as const, age: '14-18', color: '#60a5fa' },
+    { key: 'home.cat.juniors' as const, age: '19-23', color: '#a78bfa' },
+    { key: 'home.cat.open'    as const, age: '24-39', color: '#e2e8f0' },
+    { key: 'home.cat.m1'      as const, age: '40-49', color: '#facc15' },
+    { key: 'home.cat.m2'      as const, age: '50-59', color: '#fb923c' },
     { key: 'home.cat.m3plus'  as const, age: '60+',     color: '#f87171' },
   ]
 
@@ -291,7 +291,7 @@ export default function Landing() {
             &ldquo;{SLIDES[slide].quote}&rdquo;
           </p>
           <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 'clamp(0.52rem,0.9vw,0.6rem)', letterSpacing: '0.28em', textTransform: 'uppercase' as const, marginTop: '6px', marginBottom: 0 }}>
-            — {SLIDES[slide].sub}
+            {SLIDES[slide].sub}
           </p>
         </div>
 

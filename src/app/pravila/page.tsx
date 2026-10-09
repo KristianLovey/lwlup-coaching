@@ -11,7 +11,7 @@ const SECTIONS = [
     body: [
       'Voditelj obrade osobnih podataka prikupljenih putem platforme LWL UP (u daljnjem tekstu: "Platforma") je subjekt čiji su identifikacijski podaci navedeni u podnožju svake stranice Platforme.',
       'Za sva pitanja o obradi osobnih podataka, kao i za ostvarivanje prava opisanih u ovim Pravilima, možete nas kontaktirati putem podataka za kontakt navedenih u podnožju Platforme.',
-      'Ako smatrate da obrađujemo vaše podatke protivno propisima, imate pravo podnijeti pritužbu nadzornom tijelu — Agenciji za zaštitu osobnih podataka (AZOP), Selska cesta 136, 10000 Zagreb, azop.hr.',
+      'Ako smatrate da obrađujemo vaše podatke protivno propisima, imate pravo podnijeti pritužbu nadzornom tijelu, Agenciji za zaštitu osobnih podataka (AZOP), Selska cesta 136, 10000 Zagreb, azop.hr.',
     ],
   },
   {
@@ -26,7 +26,7 @@ const SECTIONS = [
     title: 'KOJE PODATKE PRIKUPLJAMO I PO KOJOJ OSNOVI',
     body: [
       'Prijavni obrasci (upitnik za trenerstvo i zahtjev za učlanjenje): ime i prezime, adresa e-pošte, broj telefona, dob odnosno datum rođenja, spol, državljanstvo i mjesto prebivališta, tjelesna težina, trenažno iskustvo i rezultati te podaci o ozljedama i ograničenjima koje sami upišete. Pravna osnova je vaša privola (čl. 6. st. 1. t. (a) GDPR-a), koju dajete označavanjem potvrdnog okvira prije slanja obrasca.',
-      'Sadržaj prijavnih obrazaca ne pohranjuje se u bazu podataka Platforme — prosljeđuje se isključivo e-poštom na službenu adresu kluba, gdje se čuva do obrade zahtjeva.',
+      'Sadržaj prijavnih obrazaca ne pohranjuje se u bazu podataka Platforme, nego se prosljeđuje isključivo e-poštom na službenu adresu kluba, gdje se čuva do obrade zahtjeva.',
       'Korisnički račun i trenažni podaci: adresa e-pošte, ime, uloga, trenažni blokovi, odrađene serije, kilaže, osobni rekordi i rezultati s natjecanja. Pravna osnova je izvršavanje ugovora o pružanju usluge trenerstva odnosno članstva (čl. 6. st. 1. t. (b) GDPR-a).',
       'Javno objavljeni podaci članova (ime, kategorija, natjecateljski rezultati i fotografije na stranicama Tim, Rekordi i Natjecanja) objavljuju se na temelju privole člana, koju član može povući u svakom trenutku.',
       'Ne prikupljamo podatke o lokaciji, ne provodimo profiliranje niti automatizirano donošenje odluka s pravnim učinkom.',
@@ -36,7 +36,7 @@ const SECTIONS = [
     title: 'PODACI O ZDRAVLJU',
     body: [
       'Podaci o ozljedama, ograničenjima i zdravstvenom stanju koje upišete u prijavni obrazac ili u bilješke uz trening pripadaju posebnoj kategoriji osobnih podataka iz čl. 9. GDPR-a.',
-      'Takve podatke obrađujemo isključivo na temelju vaše izričite privole i isključivo u jednu svrhu — prilagodbu trenažnog programa vašem stanju. Ne koristimo ih ni za koju drugu svrhu i ne dijelimo ih izvan trenerskog tima.',
+      'Takve podatke obrađujemo isključivo na temelju vaše izričite privole i isključivo u jednu svrhu: prilagodbu trenažnog programa vašem stanju. Ne koristimo ih ni za koju drugu svrhu i ne dijelimo ih izvan trenerskog tima.',
       'Upisivanje zdravstvenih podataka je dobrovoljno. Ako ih ne želite navesti, obrazac možete poslati i bez njih, uz napomenu da program tada neće moći uzeti u obzir vaša ograničenja.',
       'Privolu za obradu zdravstvenih podataka možete povući u svakom trenutku, bez obrazloženja i bez posljedica za ostatak usluge.',
     ],
@@ -44,7 +44,7 @@ const SECTIONS = [
   {
     title: 'KOLIKO DUGO ČUVAMO PODATKE',
     body: [
-      'Prijave putem obrazaca čuvaju se najdulje dvanaest (12) mjeseci od zaprimanja, osim ako iz prijave proizađe članstvo ili trenerski odnos — tada se podaci prenose u korisnički račun.',
+      'Prijave putem obrazaca čuvaju se najdulje dvanaest (12) mjeseci od zaprimanja, osim ako iz prijave proizađe članstvo ili trenerski odnos. U tom se slučaju podaci prenose u korisnički račun.',
       'Podaci korisničkog računa i trenažni podaci čuvaju se za vrijeme trajanja članstva odnosno trenerskog odnosa te najdulje dvanaest (12) mjeseci nakon njegova prestanka, kako bi se korisniku omogućio povratak bez gubitka povijesti treninga.',
       'Natjecateljski rezultati i rekordi ostaju trajno zabilježeni kao dio sportske evidencije kluba, s obzirom na to da su rezultati natjecanja javno objavljeni podaci.',
       'Podatke brišemo i prije navedenih rokova, bez odgode, ako to zatražite.',
@@ -54,7 +54,7 @@ const SECTIONS = [
     title: 'KOME SE PODACI POVJERAVAJU',
     body: [
       'Podaci se ne prodaju, ne iznajmljuju i ne dijele s trećim stranama u komercijalne svrhe. Povjeravaju se isključivo izvršiteljima obrade nužnima za rad Platforme, i to u opsegu nužnom za pružanje njihove usluge:',
-      'Supabase — baza podataka i prijava korisnika; Vercel — posluživanje web-aplikacije; Resend — dostava e-pošte iz prijavnih obrazaca. Svaki od njih obrađuje podatke isključivo prema našim uputama, na temelju ugovora o obradi.',
+      'Supabase (baza podataka i prijava korisnika), Vercel (posluživanje web-aplikacije) i Resend (dostava e-pošte iz prijavnih obrazaca). Svaki od njih obrađuje podatke isključivo prema našim uputama, na temelju ugovora o obradi.',
       'Kada se obrada odvija izvan Europskog gospodarskog prostora, prijenos se temelji na standardnim ugovornim klauzulama Europske komisije ili na odluci o primjerenosti.',
       'Podatke možemo otkriti nadležnim tijelima kada to nalaže propis, te sportskim savezima u opsegu nužnom za prijavu na natjecanje.',
     ],
@@ -79,10 +79,10 @@ const SECTIONS = [
   {
     title: 'UVJETI KORIŠTENJA',
     body: [
-      'Korisnik se obvezuje da će Platformu koristiti isključivo u svrhe za koje je namijenjena — praćenje i planiranje treninga powerliftinga — te da neće pokušavati neovlašteno pristupiti podacima drugih korisnika, zaobići sigurnosne mehanizme ili na bilo koji drugi način kompromitirati integritet Platforme.',
-      'Strogo je zabranjena svaka neovlaštena krađa, kopiranje, distribucija ili zlouporaba osobnih podataka korisnika. Svako takvo djelovanje predstavlja kršenje pozitivnih propisa Republike Hrvatske i Europske unije (GDPR — Uredba EU 2016/679) te može rezultirati kaznenom i građanskom odgovornošću počinitelja.',
+      'Korisnik se obvezuje da će Platformu koristiti isključivo u svrhe za koje je namijenjena (praćenje i planiranje treninga powerliftinga) te da neće pokušavati neovlašteno pristupiti podacima drugih korisnika, zaobići sigurnosne mehanizme ili na bilo koji drugi način kompromitirati integritet Platforme.',
+      'Strogo je zabranjena svaka neovlaštena krađa, kopiranje, distribucija ili zlouporaba osobnih podataka korisnika. Svako takvo djelovanje predstavlja kršenje pozitivnih propisa Republike Hrvatske i Europske unije (GDPR, Uredba EU 2016/679) te može rezultirati kaznenom i građanskom odgovornošću počinitelja.',
       'LWL UP zadržava pravo privremenog ili trajnog ukidanja pristupa korisniku koji krši ove uvjete, bez prethodne najave i bez naknade.',
-      'Sav sadržaj objavljen na Platformi — uključujući trenažne programe, tekstove, fotografije i grafičke elemente — zaštićen je autorskim pravom. Reprodukcija ili distribucija bez pisanog odobrenja LWL UP-a strogo je zabranjena.',
+      'Sav sadržaj objavljen na Platformi, uključujući trenažne programe, tekstove, fotografije i grafičke elemente, zaštićen je autorskim pravom. Reprodukcija ili distribucija bez pisanog odobrenja LWL UP-a strogo je zabranjena.',
     ],
   },
   {

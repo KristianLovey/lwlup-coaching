@@ -4,7 +4,7 @@ import './globals.css'
 import { LanguageProvider } from '@/context/LanguageContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { CapacitorDetect } from '@/app/components/CapacitorDetect'
-import { SITE_URL, HOME_TITLE, HOME_DESCRIPTION, socialMetadata, CLUB_JSON_LD, jsonLd } from '@/lib/page-metadata'
+import { SITE_URL, HOME_TITLE, HOME_DESCRIPTION, socialMetadata, SITE_JSON_LD, jsonLd } from '@/lib/page-metadata'
 
 // Naslovi — uski, visoki sportski sans (varijabilni font: cijeli raspon 200–700)
 const oswald = Oswald({
@@ -64,7 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* preconnect: uspostavi DNS+TCP+TLS prema Supabaseu prije prvog API poziva */}
         <link rel="preconnect" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(CLUB_JSON_LD) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(SITE_JSON_LD) }} />
       </head>
       <body className={inter.className}>
         <CapacitorDetect />

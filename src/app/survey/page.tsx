@@ -466,7 +466,7 @@ export default function SurveyPage() {
             <div className="survey-mode-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               {([
                 { key: 'club', title: 'UČLANJENJE U KLUB', desc: 'Postani član LWL UP-a i natječi se za klub' },
-                { key: 'coaching', title: 'TRENERSTVO', desc: 'Individualni program — trener Walter Smajlović' },
+                { key: 'coaching', title: 'TRENERSTVO', desc: 'Individualni program uz trenera Waltera Smajlovića' },
               ] as const).map(({ key, title, desc }) => (
                 <button key={key}
                   // Trenerstvo je samo kod Waltera — chosen_coach ide u postojeći upitnik kao i prije
@@ -679,7 +679,7 @@ export default function SurveyPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
                       {[
                         { val: 'Početnik', sub: 'Manje od 1 godine' },
-                        { val: 'Srednji', sub: '1–3 godine treninga' },
+                        { val: 'Srednji', sub: '1-3 godine treninga' },
                         { val: 'Napredni', sub: '3+ godine, možda i natjecanja' },
                       ].map(({ val, sub }) => (
                         <button key={val} onClick={() => set('experience', val)} style={{
@@ -743,7 +743,7 @@ export default function SurveyPage() {
                   Unesi procijenjene 1RM maksimale ili zadnji težak set.
                 </p>
                 <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', marginBottom: '36px', letterSpacing: '0.05em' }}>
-                  Decimale upiši zarezom — npr. <span style={{ color: 'rgba(255,255,255,0.55)' }}>142,5</span>
+                  Decimale upiši zarezom, npr. <span style={{ color: 'rgba(255,255,255,0.55)' }}>142,5</span>
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
                   {([
@@ -828,7 +828,7 @@ export default function SurveyPage() {
                   <div>
                     <label style={lbl('session_duration')}>Koliko traje tipična sesija?</label>
                     <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-                      {['< 60 min', '60–90 min', '90–120 min', '2h+'].map(d => (
+                      {['< 60 min', '60-90 min', '90-120 min', '2h+'].map(d => (
                         <button key={d} onClick={() => set('session_duration', d)} style={chipBtn(d, form.session_duration, true)}>{d}</button>
                       ))}
                     </div>
@@ -904,7 +904,7 @@ export default function SurveyPage() {
                   TVOJI<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>CILJEVI</span>
                 </h2>
                 <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginBottom: '40px', lineHeight: 1.7 }}>
-                  Ovo je opcionalno — ali što više znaš nam reći, bolje možemo prilagoditi program.
+                  Ovo je opcionalno, ali što više znaš nam reći, to bolje možemo prilagoditi program.
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
                   {[
@@ -1033,7 +1033,7 @@ export default function SurveyPage() {
                 </Link>
                 {hasHealthData && (
                   <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, paddingTop: '10px' }}>
-                    Polje o ozljedama možeš i isprazniti — prijava se šalje i bez njega.
+                    Polje o ozljedama možeš i isprazniti, prijava se šalje i bez njega.
                   </span>
                 )}
               </div>

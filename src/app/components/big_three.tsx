@@ -275,7 +275,7 @@ export default function BigThree() {
               const { meta } = LIFT_DETAILS[lift]
               return (
                 <div key={lift} onClick={() => setActiveLift(lift)} className="bt-card"
-                  role="button" tabIndex={0} aria-label={`${lift} — ${t('bt.explore')}`}
+                  role="button" tabIndex={0} aria-label={`${lift}: ${t('bt.explore')}`}
                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveLift(lift) } }}
                   style={{ display: 'grid', gridTemplateColumns: '80px 1fr 340px', alignItems: 'stretch', background: '#1a1a20', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', overflow: 'hidden', position: 'relative' }}>
                   <div className="bt-num-col" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)', padding: 'clamp(32px,4vw,48px) 0' }}>

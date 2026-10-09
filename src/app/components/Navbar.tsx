@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { ArrowRight, X } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
+import MeetAnnouncement from './MeetAnnouncement'
 
 // Supabase u zasebnom chunku — učitava se tek ako postoji auth cookie.
 const NavAuthProbe = dynamic(() => import('./NavAuthProbe'), { ssr: false })
@@ -172,15 +173,18 @@ export default function Navbar({ variant = 'transparent', backLink, simple }: Na
         backdropFilter: solid || menuOpen ? 'blur(20px)' : 'none',
         transition: 'all 0.4s cubic-bezier(.4,0,.2,1)',
       }}>
-        {/* Logo */}
-        <Link href="/" onClick={() => setMenuOpen(false)}
-          style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#fff', zIndex: 1 }}>
-          {/* Atributi moraju pratiti omjer datoteke (1481×1080 ≈ 1.3713): 73 px → 100.1 px,
-              pa je širina 100 i kad preglednik zaokružuje i kad odsijeca. Kod 72 px (98.7)
-              ispadne 99 ≠ 98 i Next javlja "width or height modified, but not the other". */}
-          <Image src="/slike/logopng.png" alt="LWL UP" width={100} height={73} loading="eager"
-            className="nav-logo-img" style={{ height: '73px', width: 'auto' }} />
-        </Link>
+        {/* Logo (+ najava natjecanja na naslovnici) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', zIndex: 1 }}>
+          <Link href="/" onClick={() => setMenuOpen(false)}
+            style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#fff' }}>
+            {/* Atributi moraju pratiti omjer datoteke (1481×1080 ≈ 1.3713): 73 px → 100.1 px,
+                pa je širina 100 i kad preglednik zaokružuje i kad odsijeca. Kod 72 px (98.7)
+                ispadne 99 ≠ 98 i Next javlja "width or height modified, but not the other". */}
+            <Image src="/slike/logopng.png" alt="LWL UP" width={100} height={73} loading="eager"
+              className="nav-logo-img" style={{ height: '73px', width: 'auto' }} />
+          </Link>
+          {pathname === '/' && <MeetAnnouncement />}
+        </div>
 
         {/* Desktop nav */}
         <div className="nav-desktop">
