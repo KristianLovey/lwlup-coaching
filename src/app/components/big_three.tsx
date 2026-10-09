@@ -7,6 +7,7 @@ import type { TranslationKey } from '@/lib/i18n'
 const LIFT_DETAILS = {
   SQUAT: {
     img: '/slike/squat.jpg',
+    alt: 'Natjecatelj sa šipkom na leđima izvodi čučanj na powerlifting natjecanju, uz pomoćnike sa strane',
     orientation: 'portrait' as const,
     meta: {
       num: '01',
@@ -23,6 +24,7 @@ const LIFT_DETAILS = {
   },
   'BENCH PRESS': {
     img: '/slike/bench.jpg',
+    alt: 'Natjecatelj izvodi bench press na natjecateljskoj klupi, uz pomoćnike na platformi',
     orientation: 'landscape' as const,
     meta: {
       num: '02',
@@ -40,6 +42,7 @@ const LIFT_DETAILS = {
   },
   DEADLIFT: {
     img: '/slike/deadlift.jpg',
+    alt: 'Natjecatelj u završnom, zaključanom položaju mrtvog dizanja na natjecanju',
     orientation: 'portrait' as const,
     meta: {
       num: '03',
@@ -139,7 +142,7 @@ function PortraitModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
         {/* Omotač je visok koliko i slika — bez njega bi se postoci hotspotova
             računali prema visini kontejnera koji skrola i točke bi bile pomaknute. */}
         <div style={{ position: 'relative' }}>
-          <Image src={LIFT_DETAILS[lift].img} alt={lift} width={1000} height={1500} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} sizes="(max-width: 768px) 100vw, 620px" />
+          <Image src={LIFT_DETAILS[lift].img} alt={LIFT_DETAILS[lift].alt} width={1000} height={1500} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} sizes="(max-width: 768px) 100vw, 620px" />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 55%, rgba(0,0,0,0.92) 100%)' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, transparent 65%, #1a1a20 100%)' }} />
           {LIFT_DETAILS[lift].points.map((p, i) => (
@@ -174,7 +177,7 @@ function LandscapeModal({ lift, hoveredHotspot, setHoveredHotspot, onClose }: {
     <div className="bt-modal bt-modal-landscape" style={{ width: '100%', maxWidth: '900px', background: '#1a1a20', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 60px 120px rgba(0,0,0,0.8)', animation: 'slideUp 0.45s cubic-bezier(0.16,1,0.3,1)', maxHeight: '90vh' }}
       onClick={e => e.stopPropagation()}>
       <div style={{ position: 'relative', background: '#000', flexShrink: 0 }}>
-        <Image src={LIFT_DETAILS[lift].img} alt={lift} width={1200} height={900} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} sizes="(max-width: 768px) 100vw, 900px" />
+        <Image src={LIFT_DETAILS[lift].img} alt={LIFT_DETAILS[lift].alt} width={1200} height={900} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.88 }} sizes="(max-width: 768px) 100vw, 900px" />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.88) 100%)' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.15) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.15) 100%)' }} />
         {LIFT_DETAILS[lift].points.map((p, i) => (
@@ -229,9 +232,9 @@ export default function BigThree() {
           <div className="bt-intro-grid" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 'clamp(40px,6vw,72px)' }}>
             <div>
               <div style={{ fontSize: '0.58rem', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.5)', marginBottom: '20px', fontFamily: 'var(--fm)' }}>{t('bt.eyebrow')}</div>
-              <h3 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,3.5vw,3.2rem)', fontWeight: 800, lineHeight: 1.02, margin: '0 0 clamp(16px,3vw,28px)', letterSpacing: '-0.02em' }}>
+              <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2rem,3.5vw,3.2rem)', fontWeight: 800, lineHeight: 1.02, margin: '0 0 clamp(16px,3vw,28px)', letterSpacing: '-0.02em' }}>
                 {t('bt.title1')}<br /><span style={{ color: 'rgba(255,255,255,0.55)' }}>{t('bt.title2')}</span>
-              </h3>
+              </h2>
               <p style={{ fontSize: 'clamp(0.88rem,2.5vw,1.1rem)', lineHeight: 1.85, color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: 300 }}>
                 {t('bt.desc')}
               </p>
@@ -300,7 +303,7 @@ export default function BigThree() {
                     </div>
                   </div>
                   <div className="bt-img-col" style={{ position: 'relative', overflow: 'hidden' }}>
-                    <Image src={LIFT_DETAILS[lift].img} alt={lift} fill quality={65} className="bt-img" style={{ objectFit: 'cover', objectPosition: OBJECT_POS[lift], transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 100vw, 340px" />
+                    <Image src={LIFT_DETAILS[lift].img} alt={LIFT_DETAILS[lift].alt} fill quality={65} className="bt-img" style={{ objectFit: 'cover', objectPosition: OBJECT_POS[lift], transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' }} sizes="(max-width: 768px) 100vw, 340px" />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #1a1a20 0%, rgba(10,10,10,0.1) 40%, transparent 100%)' }} />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.35) 0%, transparent 55%)' }} />
                     <div style={{ position: 'absolute', bottom: '24px', right: '24px', fontFamily: 'var(--fd)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.35em', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase' }}>{lift}</div>

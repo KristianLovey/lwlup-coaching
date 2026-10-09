@@ -3,7 +3,7 @@ import Footer from '@/app/components/Footer'
 import { publicPageMetadata } from '@/lib/page-metadata'
 import { LEGAL, contactLabel, contactHref } from '@/lib/legal'
 
-export const metadata = publicPageMetadata('Pravila privatnosti i korištenja', 'Pravila privatnosti, zaštita osobnih podataka i uvjeti korištenja platforme LWL UP.', '/pravila')
+export const metadata = publicPageMetadata('Pravila privatnosti i korištenja', 'Pravila privatnosti, zaštita osobnih podataka i uvjeti korištenja platforme LWL UP powerlifting kluba.', '/pravila')
 
 const SECTIONS = [
   {

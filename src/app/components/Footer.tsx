@@ -106,6 +106,8 @@ export default function Footer() {
             {legalLines().map((line, i) => (
               <span key={i} style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>{line}</span>
             ))}
+            {/* Adresa (sjedište) ostaje Celine; Zagreb je samo područje djelovanja */}
+            <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>{t('footer.area')}</span>
             {LEGAL.email && (
               <a href={`mailto:${LEGAL.email}`} className="footer-link"
                 style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.22)' }}>

@@ -1,6 +1,6 @@
 import { publicPageMetadata } from '@/lib/page-metadata'
 
-export const metadata = publicPageMetadata('Prijava za coaching', 'Prijavite se za individualni powerlifting coaching i trening u LWL UP klubu.', '/survey')
+export const metadata = publicPageMetadata('Prijava za trening i učlanjenje', 'Prijavi se za individualni powerlifting program ili učlanjenje u LWL UP klub. Treniramo i natječemo se u Zagrebu i okolici.', '/survey')
 
 export default function SurveyLayout({ children }: { children: React.ReactNode }) {
   return children

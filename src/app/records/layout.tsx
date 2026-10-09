@@ -1,6 +1,6 @@
 import { publicPageMetadata } from '@/lib/page-metadata'
 
-export const metadata = publicPageMetadata('Rekordi', 'Powerlifting rekordi i najbolji rezultati LWL UP sportaša.', '/records')
+export const metadata = publicPageMetadata('Državni rekordi u powerliftingu', 'Državni rekordi u powerliftingu po težinskim i dobnim kategorijama — čučanj, bench press, mrtvo dizanje i total, za muškarce i žene.', '/records')
 
 export default function RecordsLayout({ children }: { children: React.ReactNode }) {
   return children

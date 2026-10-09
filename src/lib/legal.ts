@@ -11,8 +11,13 @@ export const LEGAL = {
   entity: 'PLK LWL UP',
   /** OIB pravne osobe ili obrta */
   oib: '', // TODO: upisati čim bude poznat — bez njega podnožje nije potpuno
-  /** Sjedište: ulica i kućni broj, poštanski broj i grad */
-  address: 'Celine',
+  /** Sjedište: ulica i kućni broj */
+  street: '', // TODO: upisati ulicu i kućni broj sjedišta u Celinama (ide u podnožje i JSON-LD)
+  /** Sjedište: poštanski broj */
+  postalCode: '', // TODO: upisati poštanski broj sjedišta
+  /** Sjedište: mjesto. Službena adresa je u Celinama — Zagreb je samo područje
+   *  djelovanja i NE smije se pojaviti kao adresa. */
+  locality: 'Celine',
   /** Registar u koji je subjekt upisan, npr. "Registar udruga RH" (neobvezno) */
   registry: '',
   /** E-mail za upite, pritužbe i zahtjeve za podatke */
@@ -23,12 +28,16 @@ export const LEGAL = {
   updated: '1. listopada 2026.',
 } as const
 
+/** Adresa sjedišta u jednom retku, npr. "Ulica 1, 10000 Celine" — bez praznih dijelova. */
+export const addressLine = (): string =>
+  [LEGAL.street, [LEGAL.postalCode, LEGAL.locality].filter(Boolean).join(' ')].filter(Boolean).join(', ')
+
 /** Identifikacijski redci za ispis — bez praznih vrijednosti. */
 export const legalLines = (): string[] =>
   [
     LEGAL.entity,
     LEGAL.oib ? `OIB: ${LEGAL.oib}` : '',
-    LEGAL.address,
+    addressLine(),
     LEGAL.registry,
   ].filter(Boolean)
 

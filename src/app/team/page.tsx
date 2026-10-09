@@ -386,7 +386,7 @@ export default function TeamPage() {
                 {/* INFO */}
                 <div style={{ padding: '28px 28px 32px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                    <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.7rem', margin: 0, letterSpacing: '0.04em', color: '#fff', lineHeight: 1 }}>{member.name}</h3>
+                    <h2 style={{ fontFamily: 'var(--fd)', fontSize: '1.7rem', margin: 0, letterSpacing: '0.04em', color: '#fff', lineHeight: 1 }}>{member.name}</h2>
                     {member.instagram && (
                       <a href={member.instagram} target="_blank" rel="noopener noreferrer"
                         style={{ color: 'rgba(255,255,255,0.55)', transition: '0.25s', flexShrink: 0, marginTop: '4px' }}
