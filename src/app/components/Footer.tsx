@@ -3,7 +3,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Instagram } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
-import { LEGAL, legalLines, contactLabel, contactHref } from '@/lib/legal'
+import { LEGAL, legalLines, contactLabel, contactHref, phoneE164 } from '@/lib/legal'
+import { EmailLink } from './EmailLink'
 
 export default function Footer() {
   const { t } = useLanguage()
@@ -104,12 +105,14 @@ export default function Footer() {
             ))}
             {/* Adresa (sjedište) ostaje Celine; Zagreb je samo područje djelovanja */}
             <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>{t('footer.area')}</span>
-            {LEGAL.email && (
-              <a href={`mailto:${LEGAL.email}`} className="footer-link"
-                style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.22)' }}>
-                {LEGAL.email}
+            {LEGAL.phone && (
+              <a href={`tel:${phoneE164()}`} className="footer-link"
+                style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.22)', whiteSpace: 'nowrap' }}>
+                {LEGAL.phone}
               </a>
             )}
+            <EmailLink className="footer-link"
+              style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.22)' }} />
           </div>
         </div>
       )}
@@ -127,12 +130,19 @@ export default function Footer() {
               onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.55)'}>
               PRAVILA I PRIVATNOST
             </Link>
-            <a href={contactHref()} target={LEGAL.email ? undefined : '_blank'} rel={LEGAL.email ? undefined : 'noopener noreferrer'}
-              style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em', textDecoration: 'none', transition: 'color 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.55)'}>
-              KONTAKT · {contactLabel().toUpperCase()}
-            </a>
+            {LEGAL.email ? (
+              <EmailLink render={a => `KONTAKT · ${a.toUpperCase()}`} fallback="KONTAKT"
+                style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em', textDecoration: 'none', transition: 'color 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.55)'} />
+            ) : (
+              <a href={contactHref()} target="_blank" rel="noopener noreferrer"
+                style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em', textDecoration: 'none', transition: 'color 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.55)'}>
+                KONTAKT · {contactLabel().toUpperCase()}
+              </a>
+            )}
           </div>
           <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em' }}>
             DESIGNED BY <span style={{ color: 'rgba(255,255,255,0.7)' }}>Kristian Lovey</span>

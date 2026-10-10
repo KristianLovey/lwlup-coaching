@@ -100,6 +100,8 @@ const translations = {
     'home.cta.btn':               'PRIDRUŽI SE TIMU',
     'home.cta.eyebrow':           'TVOJ SLJEDEĆI KORAK',
     'home.cta.sub':               'Prijavi se, upoznajmo se i krenimo graditi tvoju snagu. Mjesto u ekipi te čeka.',
+    'home.faq.eyebrow':           'PITANJA',
+    'home.faq.title':             'ČESTA PITANJA',
     // Founders data
     'home.f.role0':   'GLAVNI TRENER & SUOSNIVAČ',
     'home.f.role1':   'PODPREDSJEDNIK & SUOSNIVAČ',
@@ -362,6 +364,8 @@ const translations = {
     'home.cta.btn':               'JOIN THE TEAM',
     'home.cta.eyebrow':           'YOUR NEXT STEP',
     'home.cta.sub':               'Sign up, let\'s meet, and start building your strength. A spot on the team is waiting.',
+    'home.faq.eyebrow':           'QUESTIONS',
+    'home.faq.title':             'FAQ',
     // Founders data
     'home.f.role0':   'HEAD COACH & CO-FOUNDER',
     'home.f.role1':   'VP & CO-FOUNDER',

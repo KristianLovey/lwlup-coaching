@@ -8,6 +8,7 @@ import BigThree from '@/app/components/big_three'
 import { RotateCw } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 import { clickable } from '@/lib/a11y'
+import { FAQ } from '@/lib/faq'
 
 
 const IMG_ALT = {
@@ -181,12 +182,14 @@ function FounderCard({ founder, index, hint, backLabel }: { founder: FounderData
 
 export default function Landing() {
   const [slide, setSlide] = useState(0)
-  const [ready, setReady] = useState(false)
+  // Ostale slike slideshowa tek nakon učitavanja stranice — inače se svih šest
+  // bori s prvom (LCP) za mrežu, jer su sve "u ekranu" pa lazy loading ne pomaže.
+  const [restSlides, setRestSlides] = useState(false)
   const timerRef = useRef<any>(null)
   const statsReveal  = useReveal()
   const clubReveal   = useReveal()
   const systemReveal = useReveal()
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
 
   const STATS = [
     { val: '20+',  label: t('home.stats.lifters'),  icon: StatIcons.lifters },
@@ -220,9 +223,16 @@ export default function Landing() {
   ]
 
   useEffect(() => {
-    setReady(true)
     timerRef.current = setInterval(() => setSlide(s => (s + 1) % SLIDES.length), 6000)
     return () => clearInterval(timerRef.current)
+  }, [])
+
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | undefined
+    const go = () => { t = setTimeout(() => setRestSlides(true), 800) }
+    if (document.readyState === 'complete') go()
+    else window.addEventListener('load', go, { once: true })
+    return () => { window.removeEventListener('load', go); if (t) clearTimeout(t) }
   }, [])
 
   const goSlide = (i: number) => {
@@ -242,9 +252,9 @@ export default function Landing() {
       <section style={{ position: 'relative', height: '100svh', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflow: 'hidden' }}>
         {SLIDES.map((s, i) => (
           <div key={i} style={{ position: 'absolute', inset: 0, opacity: i === slide ? 1 : 0, transition: 'opacity 1.5s ease-in-out', zIndex: 0 }}>
-            <Image src={s.src} alt={s.alt} fill priority={i === 0} quality={50}
+            {(i === 0 || restSlides || i === slide) && <Image src={s.src} alt={s.alt} fill priority={i === 0} quality={50}
               style={{ objectFit: 'cover', filter: 'brightness(0.25) saturate(0.7)', transform: i === slide ? 'scale(1.05)' : 'scale(1)', transition: 'transform 8s ease-out' }}
-              sizes="100vw" />
+              sizes="100vw" />}
           </div>
         ))}
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, transparent 0%, rgba(5,5,5,0.5) 100%)', zIndex: 1 }} />
@@ -252,7 +262,7 @@ export default function Landing() {
 
         {/* Main content — starts below navbar with breathing room */}
         <div style={{ position: 'relative', zIndex: 2, width: '100%', padding: '0 clamp(20px,5vw,60px)', paddingTop: 'clamp(90px,16vh,160px)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }} className="hero-content">
-          <div style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(40px)', transition: 'all 1.2s cubic-bezier(.16,1,.3,1)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '680px' }}>
+          <div className="hero-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '680px' }}>
 
             {/* Big headline: uvijek tri retka (LWL UP / YOUR / GAME) na svim širinama.
                 Razmaci između spanova su da tekst h1 za tražilice ostane "LWL UP YOUR GAME". */}
@@ -288,7 +298,7 @@ export default function Landing() {
         </div>
 
         {/* Quote — bottom right, absolutely positioned */}
-        <div className="hero-quote" style={{ position: 'absolute', bottom: 'clamp(52px,8vh,80px)', right: 'clamp(20px,5vw,60px)', zIndex: 3, textAlign: 'right', maxWidth: 'clamp(220px,28vw,380px)', opacity: ready ? 1 : 0, transition: 'opacity 1.8s 0.5s' }}>
+        <div className="hero-quote hero-quote-in" style={{ position: 'absolute', bottom: 'clamp(52px,8vh,80px)', right: 'clamp(20px,5vw,60px)', zIndex: 3, textAlign: 'right', maxWidth: 'clamp(220px,28vw,380px)' }}>
           <p style={{ fontSize: 'clamp(0.65rem,1.3vw,0.8rem)', color: 'rgba(255,255,255,0.62)', fontStyle: 'italic', lineHeight: 1.6, margin: 0, transition: 'all 0.8s' }}>
             &ldquo;{SLIDES[slide].quote}&rdquo;
           </p>
@@ -487,6 +497,32 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ══ ČESTA PITANJA — isti tekst ide u FAQPage JSON-LD (src/lib/faq.ts) ══
+          <details> je nativan: radi bez JS-a, tipkovnicom, a odgovori su u HTML-u
+          i kad su zatvoreni, pa ih tražilice i AI pretraživači čitaju. */}
+      <section id="faq" style={{ background: '#131317', padding: '0 clamp(20px,5vw,60px) clamp(80px,12vw,150px)', position: 'relative' }}>
+        <div className="faq-grid" style={{ maxWidth: '1200px', margin: '0 auto', borderTop: '1px solid rgba(255,255,255,0.09)', paddingTop: 'clamp(56px,8vw,96px)' }}>
+          <div>
+            <div className="section-eyebrow">
+              <span>{t('home.faq.eyebrow')}</span>
+            </div>
+            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 1.02, marginTop: 0 }}>{t('home.faq.title')}</h2>
+          </div>
+          <div>
+            {(FAQ[lang as 'hr' | 'en'] ?? FAQ.hr).map((f, i) => (
+              <details key={i} className="faq-item">
+                <summary>
+                  <span className="faq-num">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="faq-q">{f.q}</span>
+                  <span className="faq-plus" aria-hidden>+</span>
+                </summary>
+                <p className="faq-a">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ══ CTA — hero-style, bez slike (čist CSS, brzo) ═════════ */}
       <section className="cta-legacy" style={{ minHeight: 'clamp(70vh,86vh,900px)', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         {/* slojeviti sjaj + suptilna mreža (isti impactful osjećaj kao hero) */}
@@ -528,6 +564,21 @@ export default function Landing() {
       <Footer />
 
       <style>{`
+        /* ══ ČESTA PITANJA ════════════════════════════════════════ */
+        .faq-grid { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: clamp(32px, 6vw, 96px); align-items: start; }
+        @media (max-width: 860px) { .faq-grid { grid-template-columns: 1fr; } }
+        .faq-item { border-bottom: 1px solid rgba(255,255,255,0.09); }
+        .faq-item:first-child { border-top: 1px solid rgba(255,255,255,0.09); }
+        .faq-item summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 34px minmax(0, 1fr) 24px; gap: 12px; align-items: baseline; padding: 22px 0; }
+        .faq-item summary::-webkit-details-marker { display: none; }
+        .faq-num { font-family: var(--fd); font-size: 0.78rem; color: rgba(255,255,255,0.55); letter-spacing: 0.06em; }
+        .faq-q { font-size: clamp(0.92rem, 1.8vw, 1.05rem); font-weight: 600; color: #fff; line-height: 1.5; transition: color 0.2s; }
+        .faq-item summary:hover .faq-q { color: rgba(255,255,255,0.75); }
+        .faq-plus { font-family: var(--fd); font-size: 1.35rem; line-height: 1; color: rgba(255,255,255,0.55); text-align: right; transition: transform 0.35s cubic-bezier(.16,1,.3,1), color 0.2s; }
+        .faq-item[open] .faq-plus { transform: rotate(45deg); color: #fff; }
+        .faq-a { margin: 0; padding: 0 36px 24px 46px; color: rgba(255,255,255,0.6); font-size: clamp(0.84rem, 1.6vw, 0.92rem); line-height: 1.85; max-width: 68ch; }
+        @media (max-width: 520px) { .faq-a { padding: 0 0 22px 46px; } }
+
         /* ══ HERO OUTLINED TEXT ══════════════════════════════════ */
         .hero-outline {
           color: transparent;

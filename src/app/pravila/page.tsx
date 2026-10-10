@@ -2,8 +2,9 @@ import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
 import { publicPageMetadata } from '@/lib/page-metadata'
 import { LEGAL, contactLabel, contactHref } from '@/lib/legal'
+import { EmailLink } from '@/app/components/EmailLink'
 
-export const metadata = publicPageMetadata('Pravila privatnosti i korištenja', 'Pravila privatnosti, zaštita osobnih podataka i uvjeti korištenja platforme LWL UP powerlifting kluba.', '/pravila')
+export const metadata = publicPageMetadata('Pravila privatnosti i uvjeti', 'Pravila privatnosti, zaštita osobnih podataka i uvjeti korištenja platforme LWL UP powerlifting kluba.', '/pravila')
 
 const SECTIONS = [
   {
@@ -167,10 +168,15 @@ export default function PravilaPage() {
             <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '12px' }}>NAPOMENA</div>
             <p style={{ fontSize: 'clamp(0.8rem,2vw,0.86rem)', color: 'rgba(255,255,255,0.6)', lineHeight: 1.9, margin: 0 }}>
               Ova pravila sastavljena su u dobroj vjeri i u skladu s primjenjivim propisima. Korištenjem platforme LWL UP korisnik potvrđuje da je pročitao, razumio i prihvatio sve gore navedene uvjete. Za sva pitanja o privatnosti, kao i za zahtjev za uvid ili brisanje podataka, kontaktirajte nas na{' '}
-              <a href={contactHref()} target={LEGAL.email ? undefined : '_blank'} rel={LEGAL.email ? undefined : 'noopener noreferrer'}
-                style={{ color: '#fff', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.4)', paddingBottom: '1px' }}>
-                {contactLabel()}
-              </a>. Verzija na snazi od {LEGAL.updated}
+              {LEGAL.email ? (
+                <EmailLink fallback="službeni e-mail kluba"
+                  style={{ color: '#fff', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.4)', paddingBottom: '1px' }} />
+              ) : (
+                <a href={contactHref()} target="_blank" rel="noopener noreferrer"
+                  style={{ color: '#fff', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.4)', paddingBottom: '1px' }}>
+                  {contactLabel()}
+                </a>
+              )}. Verzija na snazi od {LEGAL.updated}
             </p>
           </div>
         </div>

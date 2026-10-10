@@ -11,15 +11,18 @@ export const LEGAL = {
   entity: 'PLK LWL UP',
   /** OIB pravne osobe ili obrta */
   oib: '', // TODO: upisati čim bude poznat — bez njega podnožje nije potpuno
-  /** Sjedište: ulica i kućni broj */
-  street: '', // TODO: upisati ulicu i kućni broj sjedišta u Celinama (ide u podnožje i JSON-LD)
+  /** Sjedište: ulica i kućni broj. Celine nemaju zasebnu ulicu u adresi
+   *  ("Celine, 10340 Celine"), pa ostaje prazno — upisati kućni broj ako ga ima. */
+  street: '',
   /** Sjedište: poštanski broj */
-  postalCode: '', // TODO: upisati poštanski broj sjedišta
+  postalCode: '10340',
   /** Sjedište: mjesto. Službena adresa je u Celinama — Zagreb je samo područje
    *  djelovanja i NE smije se pojaviti kao adresa. */
   locality: 'Celine',
   /** Registar u koji je subjekt upisan, npr. "Registar udruga RH" (neobvezno) */
   registry: '',
+  /** Javni kontakt telefon (podnožje + JSON-LD), u obliku za čitanje */
+  phone: '+385 95 820 4067',
   /** E-mail za upite, pritužbe i zahtjeve za podatke */
   email: 'lwlup.coaching@gmail.com',
   instagram: 'https://www.instagram.com/lwlup/',
@@ -31,6 +34,9 @@ export const LEGAL = {
 /** Adresa sjedišta u jednom retku, npr. "Ulica 1, 10000 Celine" — bez praznih dijelova. */
 export const addressLine = (): string =>
   [LEGAL.street, [LEGAL.postalCode, LEGAL.locality].filter(Boolean).join(' ')].filter(Boolean).join(', ')
+
+/** Telefon za tel: link i schemu — bez razmaka, s pozivnim brojem. */
+export const phoneE164 = (): string => LEGAL.phone.replace(/[^+\d]/g, '')
 
 /** Identifikacijski redci za ispis — bez praznih vrijednosti. */
 export const legalLines = (): string[] =>

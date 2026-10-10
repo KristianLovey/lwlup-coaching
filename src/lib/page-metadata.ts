@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
-import { LEGAL } from '@/lib/legal'
+import { LEGAL, phoneE164 } from '@/lib/legal'
 
 export const SITE_URL = 'https://lwlup.com'
 export const SITE_NAME = 'LWL UP Powerlifting'
 
-// Počinje imenom stranice (isto kao og:site_name i WebSite.name u JSON-LD), da Google
-// dosljedno prikazuje naziv stranice u rezultatima.
-export const HOME_TITLE = `${SITE_NAME} | Powerlifting klub Zagreb, treninzi i natjecanja`
+// Do 60 znakova — dulje Google reže u rezultatima. Počinje s "LWL UP" (alternateName
+// u WebSite JSON-LD), pa naziv stranice u rezultatima ostaje dosljedan.
+export const HOME_TITLE = 'LWL UP | Powerlifting klub Zagreb, treninzi i natjecanja'
 export const HOME_DESCRIPTION =
   'LWL UP je powerlifting klub sa zagrebačkog područja. Individualni programi, analiza tehnike i priprema za natjecanja uz trenera Waltera Smajlovića.'
 
@@ -56,7 +56,9 @@ const CLUB = {
   url: SITE_URL,
   logo: `${SITE_URL}/icon.png`,
   description: HOME_DESCRIPTION,
-  email: LEGAL.email,
+  // e-mail namjerno nije ovdje: JSON-LD je u HTML-u kao čisti tekst, pa bi ga botovi
+  // za spam pokupili. Na stranici ga prikazuje EmailLink, tek u pregledniku.
+  ...(LEGAL.phone ? { telephone: phoneE164() } : {}),
   sport: 'Powerlifting',
   foundingDate: '2026',
   address: {

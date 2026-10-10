@@ -310,3 +310,18 @@ body.nav-open .scroll-to-top-btn {
   outline-offset: 2px !important;
   box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.75) !important;
 }
+
+/* ══════════════════════════════════════════
+   ULAZ HERO TEKSTA NA NASLOVNICI
+   CSS animacija, ne React stanje: kreće s prvim iscrtavanjem, bez čekanja da se
+   JavaScript učita. Dok je ovisila o hidraciji, tekst je na mobitelu sekundama
+   bio nevidljiv i Largest Contentful Paint je kasnio (PageSpeed 5.5 s).
+══════════════════════════════════════════ */
+@keyframes heroIn {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: none; }
+}
+.hero-in { animation: heroIn 1.2s cubic-bezier(.16,1,.3,1) both; }
+@keyframes heroFade { from { opacity: 0; } to { opacity: 1; } }
+.hero-quote-in { animation: heroFade 1.8s 0.5s both; }
+@media (prefers-reduced-motion: reduce) { .hero-in, .hero-quote-in { animation: none; } }
