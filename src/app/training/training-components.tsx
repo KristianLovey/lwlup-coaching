@@ -747,6 +747,23 @@ export function CompetitionBanner({ userId }: { userId: string }) {
 // Polja seta koja se sinkroniziraju s bazom (i čuvaju u localStorageu do potvrde).
 const SYNC_FIELDS = ['weight_kg', 'reps', 'rpe', 'completed', 'is_top_set'] as const
 
+// ── Snimka zadnje viđenih serija ──────────────────────────────────
+// Serije se pokazuju odmah iz zadnje snimke (ili kao prazni redovi), a svježi
+// podaci iz baze se spoje kad stignu. Bez ovoga se setovi otvaraju prazni dok
+// god traje osvježavanje bloka — na sporoj mreži i po desetak sekundi.
+const SNAP_PREFIX = 'lwl:setlogs-snap:v1:'
+function readSetSnap(weId: string, userId: string): SetLog[] {
+  try { const raw = localStorage.getItem(SNAP_PREFIX + weId + ':' + userId); return raw ? (JSON.parse(raw) as SetLog[]) : [] }
+  catch { return [] }
+}
+function writeSetSnap(weId: string, userId: string, logs: SetLog[]) {
+  try { localStorage.setItem(SNAP_PREFIX + weId + ':' + userId, JSON.stringify(logs)) } catch { /* puna pohrana — snimka je samo ubrzanje */ }
+}
+/** Po jedan red za svaku planiranu seriju; ono čega nema u bazi je prazan red. */
+const setRows = (existing: SetLog[], n: number): SetLog[] =>
+  Array.from({ length: n }, (_, i) =>
+    existing.find(s => s.set_number === i + 1) ?? { set_number: i + 1, weight_kg: null, reps: null, rpe: null, completed: false, is_top_set: false })
+
 export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpdate }: {
   we: WorkoutExercise; userId: string; isAdmin: boolean; weekNumber?: number
   onAggregateUpdate: (data: Partial<WorkoutExercise>) => void
@@ -754,7 +771,9 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
   // Prijedlog kilaže (sivi tekst) za top seriju — iz projekcije bloka i 1. tjedna
   const suggestWeight = useSuggestFn()
   const plannedSets = we.planned_sets ?? 3
-  const [logs, setLogs] = useState<SetLog[]>([])
+  // Odmah iz snimke (+ neposlani upisi iz set-log-sync), ne prazno dok baza ne odgovori
+  const [logs, setLogs] = useState<SetLog[]>(() =>
+    reconcileLogs(scopeKey(we.id, userId), setRows(readSetSnap(we.id, userId), plannedSets), SYNC_FIELDS).logs)
   const [planRows, setPlanRows] = useState<SetPlanRow[]>(() =>
     Array.from({ length: plannedSets }, (_, i) => we.set_plan?.rows?.[i] ?? defaultRow(i))
   )
@@ -771,6 +790,8 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
   // freshest input without putting `logs` on the keystroke render path.
   const valsRef = useRef<Record<string, string>>({})
   useEffect(() => { logsRef.current = logs }, [logs])
+  // snimka prati ono što je na ekranu, pa sljedeće otvaranje kreće od toga
+  useEffect(() => { if (logs.length) writeSetSnap(we.id, userId, logs) }, [logs, we.id, userId])
   useEffect(() => { planRowsRef.current = planRows }, [planRows])
 
   useEffect(() => {
@@ -888,12 +909,11 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
       .eq('workout_exercise_id', we.id)
       .eq('athlete_id', userId)
       .order('set_number')
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        // Pao dohvat (nema mreže) ≠ "nema serija": ostaju redovi iz snimke, ne brišu se
+        if (error) { console.error('set_logs load failed', error); return }
         const existing = (data ?? []) as SetLog[]
-        const fromDb: SetLog[] = Array.from({ length: plannedSets }, (_, i) => {
-          const found = existing.find(s => s.set_number === i + 1)
-          return found ?? { set_number: i + 1, weight_kg: null, reps: null, rpe: null, completed: false, is_top_set: false }
-        })
+        const fromDb: SetLog[] = setRows(existing, plannedSets)
         // Usporedi bazu sa zadnjim utipkanim vrijednostima iz localStoragea: ako neki
         // upis nikad nije potvrđen, vrati ga u polje i pošalji ponovo umjesto da
         // tiho ostane stara kilaža.

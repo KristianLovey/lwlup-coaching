@@ -9,6 +9,7 @@ import { RotateCw } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 import { clickable } from '@/lib/a11y'
 import { FAQ } from '@/lib/faq'
+import { isPerfMode } from '@/lib/perf-mode'
 
 
 const IMG_ALT = {
@@ -57,6 +58,7 @@ function NetworkCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return
+    if (isPerfMode()) return // slabiji uređaj: bez animirane mreže (stalni requestAnimationFrame)
     const ctx = canvas.getContext('2d')!
     let animId: number, lastT = 0, paused = false
 

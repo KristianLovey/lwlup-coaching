@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Loader2, Pencil, Check, X } from 'lucide-react'
 import { AppNav, AVATARS, AvatarSvg } from '../training/training-components'
+import { isPerfMode, setPerfMode } from '@/lib/perf-mode'
 
 const supabase = createClient()
 
@@ -334,7 +335,11 @@ export default function ProfilePage() {
   const [completions, setCompletions] = useState<Record<string, { total: number; done: number; pct: number }>>({})
   const [loading, setLoading]         = useState(true)
   const [userId, setUserId]           = useState<string | null>(null)
-  const [activeTab, setActiveTab]     = useState<'progress' | 'prs' | 'leaderboard'>('progress')
+  const [activeTab, setActiveTab]     = useState<'progress' | 'prs' | 'leaderboard' | 'settings'>('progress')
+  // Način za slabije uređaje — postavka je po uređaju, pa se čita tek u pregledniku
+  const [perfOn, setPerfOn] = useState(false)
+  useEffect(() => { setPerfOn(isPerfMode()) }, [])
+  const togglePerf = () => { const next = !perfOn; setPerfMode(next); setPerfOn(next) }
   const [progressLift, setProgressLift] = useState<'squat'|'bench'|'deadlift'>('squat')
   const [progressReps, setProgressReps] = useState<number>(1)
   const [prLift, setPrLift]           = useState<'squat'|'bench'|'deadlift'>('squat')
@@ -657,7 +662,7 @@ export default function ProfilePage() {
 
         {/* ── PILL TABS ── */}
         <div style={{ display: 'flex', gap: '3px', marginBottom: '24px', padding: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', width: 'fit-content', maxWidth: '100%', overflowX: 'auto', animation: 'fadeUp 0.45s ease' }}>
-          {([['progress', 'NAPREDAK'], ['prs', 'OSOBNI REKORDI'], ['leaderboard', 'LEADERBOARD']] as [string, string][]).map(([tab, label]) => (
+          {([['progress', 'NAPREDAK'], ['prs', 'OSOBNI REKORDI'], ['leaderboard', 'LEADERBOARD'], ['settings', 'POSTAVKE']] as [string, string][]).map(([tab, label]) => (
             <button key={tab} onClick={() => setActiveTab(tab as any)}
               style={{ padding: '9px 22px', background: activeTab === tab ? '#fff' : 'transparent', border: 'none', borderRadius: '9px', cursor: 'pointer', fontSize: '0.65rem', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.12em', color: activeTab === tab ? '#000' : 'rgba(255,255,255,0.4)', transition: 'all 0.2s', whiteSpace: 'nowrap', boxShadow: activeTab === tab ? '0 2px 12px rgba(0,0,0,0.3)' : 'none' }}>
               {label}
@@ -847,6 +852,30 @@ export default function ProfilePage() {
                   </button>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* ══ TAB: POSTAVKE ════════════════════════════════════════ */}
+        {activeTab === 'settings' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'fadeUp 0.3s ease' }}>
+            <div style={{ ...glass, padding: '24px 28px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '20px' }}>
+                <div style={{ minWidth: 0 }}>
+                  <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', fontWeight: 700, margin: '0 0 8px' }}>NAČIN ZA SLABIJE UREĐAJE</h3>
+                  <p style={{ margin: 0, fontSize: '0.82rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.6)', maxWidth: '520px' }}>
+                    Isključuje animacije, prijelaze, zamućenja, sjene i pozadinske efekte. Stranica izgleda jednostavnije,
+                    ali na starijim i slabijim mobitelima radi znatno brže i glađe.
+                  </p>
+                  <p style={{ margin: '10px 0 0', fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)' }}>
+                    Vrijedi samo za ovaj uređaj.
+                  </p>
+                </div>
+                <button type="button" role="switch" aria-checked={perfOn} aria-label="Način za slabije uređaje" onClick={togglePerf}
+                  style={{ position: 'relative', flexShrink: 0, width: '50px', height: '28px', borderRadius: '999px', cursor: 'pointer', padding: 0, background: perfOn ? '#22c55e' : 'rgba(255,255,255,0.12)', border: `1px solid ${perfOn ? '#22c55e' : 'rgba(255,255,255,0.22)'}`, transition: 'background 0.2s' }}>
+                  <span style={{ position: 'absolute', top: '2px', left: '2px', width: '22px', height: '22px', borderRadius: '50%', background: '#fff', transform: perfOn ? 'translateX(22px)' : 'none', transition: 'transform 0.2s' }} />
+                </button>
+              </div>
             </div>
           </div>
         )}

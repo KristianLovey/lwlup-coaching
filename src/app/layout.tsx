@@ -5,6 +5,7 @@ import { LanguageProvider } from '@/context/LanguageContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { CapacitorDetect } from '@/app/components/CapacitorDetect'
 import { SITE_URL, HOME_TITLE, HOME_DESCRIPTION, socialMetadata, SITE_JSON_LD, jsonLd } from '@/lib/page-metadata'
+import { PERF_BOOT_SCRIPT } from '@/lib/perf-mode'
 
 // Naslovi — uski, visoki sportski sans (varijabilni font: cijeli raspon 200–700)
 const oswald = Oswald({
@@ -59,8 +60,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     // data-scroll-behavior: Next privremeno gasi glatko skrolanje (globals.css) dok mijenja stranicu
-    <html lang="hr" data-scroll-behavior="smooth" className={`${oswald.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
+    // suppressHydrationWarning: data-perf postavlja skripta ispod prije Reacta
+    <html lang="hr" data-scroll-behavior="smooth" suppressHydrationWarning className={`${oswald.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
       <head>
+        {/* način za slabije uređaje — mora prije prvog iscrtavanja, inače animacije bljesnu */}
+        <script dangerouslySetInnerHTML={{ __html: PERF_BOOT_SCRIPT }} />
         {/* preconnect: uspostavi DNS+TCP+TLS prema Supabaseu prije prvog API poziva */}
         <link rel="preconnect" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" />

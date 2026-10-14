@@ -325,3 +325,33 @@ body.nav-open .scroll-to-top-btn {
 @keyframes heroFade { from { opacity: 0; } to { opacity: 1; } }
 .hero-quote-in { animation: heroFade 1.8s 0.5s both; }
 @media (prefers-reduced-motion: reduce) { .hero-in, .hero-quote-in { animation: none; } }
+
+/* ══════════════════════════════════════════
+   NAČIN ZA SLABIJE UREĐAJE  (Profil → Postavke)
+   Atribut data-perf na <html> postavlja skripta u <head> prije prvog
+   iscrtavanja (src/lib/perf-mode.ts). Gasi sve što slabom mobitelu troši
+   GPU i glavnu nit: animacije, prijelaze, zamućenja, sjene i pozadinske
+   slojeve. !important jer je većina stilova inline.
+══════════════════════════════════════════ */
+html[data-perf] *,
+html[data-perf] *::before,
+html[data-perf] *::after {
+  /* animacije odmah skoče na završno stanje (i "fade in" elementi postanu vidljivi) */
+  animation-duration: 0.001s !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  scroll-behavior: auto !important;
+}
+html[data-perf] { scroll-behavior: auto !important; }
+/* zaključane serije: umjesto skupog zamućenja samo prigušene */
+html[data-perf] [style*="; filter: blur("],
+html[data-perf] [style*=";filter:blur("] { filter: none !important; opacity: 0.3 !important; }
+/* pozadinski slojevi (zrnatost, sjaj, vinjeta, zvijezde) */
+html[data-perf] .t-fx,
+html[data-perf] .star-field { display: none !important; }
