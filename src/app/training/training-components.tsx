@@ -16,7 +16,7 @@ import type { Exercise, WorkoutExercise, Workout, Week, SetLog, Competition, Set
 import { computeWeights, defaultRow, estimate1RM, totalTonnage } from './training-setplan'
 import { useSuggestFn } from './block-suggestions'
 import {
-  scopeKey, fieldKey, markIntent, markSaved, isSuperseded, localWins,
+  scopeKey, fieldKey, markIntent, markSaved, isSuperseded,
   reconcileLogs, enqueue, parseDecimal, type FieldVal,
 } from './set-log-sync'
 import { clickable } from '@/lib/a11y'
@@ -261,17 +261,22 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
   const notifRef = useRef<HTMLDivElement>(null)
   const unread = notifs.filter(n => !n.read).length
 
+  // Obavijesti: dohvat pri ulasku, svake minute dok je kartica vidljiva i čim se
+  // korisnik vrati na nju. Prije je to bio Realtime kanal — jedini u aplikaciji koji
+  // je stvarno radio, ali je budio Realtime, a on pri svakom pokretanju radi DDL
+  // koji zamrzne cijeli API na 20–30 s. Minuta kašnjenja obavijesti je jeftinija.
   useEffect(() => {
     if (!userId) return
-    // Initial load
-    supabase.from('notifications').select('*').eq('recipient_id', userId).order('created_at', { ascending: false }).limit(30)
-      .then(({ data }) => setNotifs(data ?? []))
-    // Realtime subscription
-    const channel = supabase.channel(`notifications-${userId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${userId}` },
-        payload => setNotifs(prev => [payload.new as any, ...prev]))
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    let alive = true
+    const fetchNotifs = () => {
+      if (document.visibilityState !== 'visible') return
+      supabase.from('notifications').select('*').eq('recipient_id', userId).order('created_at', { ascending: false }).limit(30)
+        .then(({ data, error }) => { if (alive && !error) setNotifs(data ?? []) })
+    }
+    fetchNotifs()
+    const timer = setInterval(fetchNotifs, 60_000)
+    document.addEventListener('visibilitychange', fetchNotifs)
+    return () => { alive = false; clearInterval(timer); document.removeEventListener('visibilitychange', fetchNotifs) }
   }, [userId])
 
   const markAllRead = async () => {
@@ -924,35 +929,10 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
       })
   }, [we.id, plannedSets, isAdmin])
 
-  // Realtime: kad trener (ili druga sesija) upiše set, uživo se osvježi ovdje.
-  // Nikad ne prepisujemo set koji korisnik trenutno tipka (fokus / pending).
-  useEffect(() => {
-    const ch = supabase.channel(`sl-rt-${we.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'set_logs', filter: `workout_exercise_id=eq.${we.id}` },
-        (payload) => {
-          const row = (payload.new ?? payload.old) as any
-          if (!row || row.athlete_id !== userId || row.set_number == null) return
-          const key = `${row.set_number}_`
-          const focusedSet = focusedKey.current ? focusedKey.current.split('_')[0] : null
-          if (String(row.set_number) === focusedSet) return // korisnik tipka baš taj set
-          if (Object.keys(debounceTimers.current).some(k => k.startsWith(key))) return // nespremljene izmjene tog seta
-          // Zakašnjeli echo ne smije vratiti staru vrijednost preko onoga što je
-          // upravo utipkano (klasično: upišeš 207.5, pa stigne echo od "20").
-          const keepLocal = (fl: string) => localWins(scope, fieldKey(row.set_number, fl), row[fl])
-          setLogs(prev => prev.map(l => l.set_number === row.set_number
-            ? {
-                ...l,
-                weight_kg:  keepLocal('weight_kg')  ? l.weight_kg  : (row.weight_kg ?? null),
-                reps:       keepLocal('reps')       ? l.reps       : (row.reps ?? null),
-                rpe:        keepLocal('rpe')        ? l.rpe        : (row.rpe ?? null),
-                completed:  keepLocal('completed')  ? l.completed  : (row.completed ?? l.completed),
-                is_top_set: keepLocal('is_top_set') ? l.is_top_set : (row.is_top_set ?? l.is_top_set),
-              }
-            : l))
-        })
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
-  }, [we.id, userId])
+  // Nema Realtime pretplate po vježbi — svako otvaranje setova otvaralo je novi
+  // kanal. Realtime namjerno nije ovdje. Tablice treninga nisu u Realtime publikaciji, pa
+  // ova pretplata nikad nije primila nijedan događaj — a samo njezino otvaranje
+  // budilo je Realtime, koji pri pokretanju radi DDL i zamrzne API na 20–30 s.
 
   // Keep localVals in sync with logs — bez prepisivanja polja koje korisnik
   // trenutno tipka. Preskačemo fokusirani set I svako polje s nespremljenim

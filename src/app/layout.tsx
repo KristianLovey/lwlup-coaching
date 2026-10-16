@@ -7,6 +7,9 @@ import { CapacitorDetect } from '@/app/components/CapacitorDetect'
 import { SITE_URL, HOME_TITLE, HOME_DESCRIPTION, socialMetadata, SITE_JSON_LD, jsonLd } from '@/lib/page-metadata'
 import { PERF_BOOT_SCRIPT } from '@/lib/perf-mode'
 
+// npr. https://xxxx.supabase.co — bez putanje, za preconnect
+const SUPABASE_ORIGIN = (() => { try { return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').origin } catch { return null } })()
+
 // Naslovi — uski, visoki sportski sans (varijabilni font: cijeli raspon 200–700)
 const oswald = Oswald({
   subsets: ['latin'],
@@ -65,9 +68,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/* način za slabije uređaje — mora prije prvog iscrtavanja, inače animacije bljesnu */}
         <script dangerouslySetInnerHTML={{ __html: PERF_BOOT_SCRIPT }} />
-        {/* preconnect: uspostavi DNS+TCP+TLS prema Supabaseu prije prvog API poziva */}
-        <link rel="preconnect" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://qrnibzwcpbpzjgnebqnv.supabase.co" />
+        {/* preconnect: uspostavi DNS+TCP+TLS prema Supabaseu prije prvog API poziva.
+            Adresa iz iste varijable koju koristi klijent — prije je bila upisana ručno
+            i pokazivala na stari projekt, pa se zagrijavala kriva veza. */}
+        {SUPABASE_ORIGIN && <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="anonymous" />}
+        {SUPABASE_ORIGIN && <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(SITE_JSON_LD) }} />
       </head>
       <body className={inter.className}>

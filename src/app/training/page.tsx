@@ -213,33 +213,9 @@ export default function TrainingPage() {
     init()
   }, [])
 
-  useEffect(() => {
-    if (!userId) return
-    const channel = supabase
-      .channel(`we-sync-${userId}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'workout_exercises' }, (payload) => {
-        const updated = payload.new as WorkoutExercise
-        setBlock(b => {
-          if (!b) return b
-          const inBlock = b.weeks?.some(w => w.workouts?.some(wo => wo.workout_exercises?.some(we => we.id === updated.id)))
-          if (!inBlock) return b
-          return {
-            ...b,
-            weeks: b.weeks?.map(w => ({
-              ...w,
-              workouts: w.workouts?.map(wo => ({
-                ...wo,
-                workout_exercises: wo.workout_exercises?.map(we =>
-                  we.id === updated.id ? { ...we, ...updated, exercise: we.exercise } : we
-                ),
-              })),
-            })),
-          }
-        })
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [userId])
+  // Nema Realtime pretplate na vježbe. Realtime namjerno nije ovdje. Tablice treninga nisu u Realtime publikaciji, pa
+  // ova pretplata nikad nije primila nijedan događaj — a samo njezino otvaranje
+  // budilo je Realtime, koji pri pokretanju radi DDL i zamrzne API na 20–30 s.
 
   const effectiveAthleteId = userId
 

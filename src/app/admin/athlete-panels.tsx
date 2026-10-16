@@ -186,16 +186,12 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
 
   useEffect(() => {
     loadAll()
-    const ch = supabase.channel(`overview-${athlete.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'workouts',       filter: `athlete_id=eq.${athlete.id}` }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'set_logs',       filter: `athlete_id=eq.${athlete.id}` }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pr_logs',        filter: `athlete_id=eq.${athlete.id}` }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'nutrition_logs',  filter: `user_id=eq.${athlete.id}` },    loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'water_logs',      filter: `user_id=eq.${athlete.id}` },    loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'wellbeing_logs',  filter: `user_id=eq.${athlete.id}` },    loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'supplement_logs', filter: `user_id=eq.${athlete.id}` },    loadAll)
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
+    // Osvježi kad se trener vrati na karticu. Realtime namjerno nije ovdje. Tablice treninga nisu u Realtime publikaciji, pa
+  // ova pretplata nikad nije primila nijedan događaj — a samo njezino otvaranje
+  // budilo je Realtime, koji pri pokretanju radi DDL i zamrzne API na 20–30 s.
+    const onVisible = () => { if (document.visibilityState === 'visible') loadAll() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
   }, [loadAll, athlete.id])
 
   const FM = 'var(--fm)', FD = 'var(--fd)'

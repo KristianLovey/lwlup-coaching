@@ -135,17 +135,15 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
 
   useEffect(() => { setLoading(true); load(false) }, [load])
 
-  // #1 realtime — admin/trener sees lifter's inputs live
+  // Osvježavanje kad se trener vrati na karticu — lifterovi upisi stignu bez ručnog
+  // reloada. Realtime namjerno nije ovdje. Tablice treninga nisu u Realtime publikaciji, pa
+  // ova pretplata nikad nije primila nijedan događaj — a samo njezino otvaranje
+  // budilo je Realtime, koji pri pokretanju radi DDL i zamrzne API na 20–30 s.
   useEffect(() => {
-    let t: ReturnType<typeof setTimeout> | null = null
-    const ping = () => { if (t) clearTimeout(t); t = setTimeout(load, 600) }
-    const ch = supabase.channel(`dash-rt-${athleteId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'set_logs', filter: `athlete_id=eq.${athleteId}` }, ping)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'workouts', filter: `athlete_id=eq.${athleteId}` }, ping)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pr_logs', filter: `athlete_id=eq.${athleteId}` }, ping)
-      .subscribe()
-    return () => { if (t) clearTimeout(t); supabase.removeChannel(ch) }
-  }, [athleteId, load])
+    const onVisible = () => { if (document.visibilityState === 'visible') load() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [load])
 
   const data = useMemo(() => {
     if (!raw) return null
