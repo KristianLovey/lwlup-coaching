@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, Instagram } from 'lucide-react'
@@ -11,32 +11,54 @@ import { COACHES, COACHES_PAGE, SCREENS, type Lang } from '@/lib/coaching'
 
 const supabase = createClient()
 
-type Member = {
-  name: string; nickname: string | null; category: string | null
-  squat: string | null; bench: string | null; deadlift: string | null
-  total: string | null; glp: string | null; instagram: string | null; highlights: string[] | null
+/**
+ * Element se "otkrije" kad prvi put uđe u ekran. Skrivanje se uključuje tek u
+ * pregledniku (armed), pa bez JavaScripta sadržaj ostaje vidljiv.
+ */
+function useReveal<T extends Element>() {
+  const ref = useRef<T>(null)
+  const [armed, setArmed] = useState(false)
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (typeof IntersectionObserver === 'undefined') { setShown(true); return }
+    setArmed(true)
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setShown(true); io.disconnect() }
+    }, { threshold: 0.18, rootMargin: '0px 0px -6% 0px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+  return { ref, cls: armed ? (shown ? ' rv rv-in' : ' rv') : '' }
 }
 
-const kg = (v: string | null) => (v != null && Number(v) > 0 ? String(Math.round(Number(v) * 10) / 10) : null)
-
-/**
- * Screenshot iz public/slike/aplikacija/. Ide kroz next/image, pa preglednik
- * dobije WebP/AVIF u veličini koja mu treba. Ako datoteke nema, uredan okvir
- * umjesto slomljene slike.
- */
-function Shot({ file, w, h, alt, soon }: { file: string; w: number; h: number; alt: string; soon: string }) {
+/** Screenshot kao prozor aplikacije u perspektivi. Bez datoteke: uredan prazan okvir. */
+function ShotRow({ file, w, h, title, desc, index, soon }: {
+  file: string; w: number; h: number; title: string; desc: string; index: number; soon: string
+}) {
+  const { ref, cls } = useReveal<HTMLDivElement>()
   const [missing, setMissing] = useState(false)
-  if (missing) {
-    return (
-      <div className="tr-shot-empty" role="img" aria-label={alt}>
-        <span>{soon}</span>
-      </div>
-    )
-  }
   return (
-    <Image src={`/slike/aplikacija/${file}`} alt={alt} width={w} height={h} quality={75}
-      sizes="(max-width: 820px) calc(100vw - 80px), 620px"
-      className="tr-shot" onError={() => setMissing(true)} />
+    <div ref={ref} className={`tr-row${index % 2 ? ' tr-row-flip' : ''}${cls}`}>
+      <div className="tr-stage">
+        <div className="tr-window">
+          <div className="tr-chrome" aria-hidden><i /><i /><i /></div>
+          {missing ? (
+            <div className="tr-shot-empty"><span>{soon}</span></div>
+          ) : (
+            <Image src={`/slike/aplikacija/${file}`} alt={title} width={w} height={h} quality={75}
+              sizes="(max-width: 860px) calc(100vw - 48px), 760px"
+              className="tr-shot" onError={() => setMissing(true)} />
+          )}
+        </div>
+      </div>
+      <div className="tr-row-text">
+        <div className="tr-num">{String(index + 1).padStart(2, '0')}</div>
+        <h3 className="tr-row-title">{title}</h3>
+        <p className="tr-row-desc">{desc}</p>
+      </div>
+    </div>
   )
 }
 
@@ -44,16 +66,16 @@ export default function TreneriPage() {
   const { lang } = useLanguage()
   const L: Lang = lang === 'en' ? 'en' : 'hr'
   const c = COACHES_PAGE[L]
+  const team = useReveal<HTMLDivElement>()
 
-  // Brojke trenera iz iste tablice koja puni stranicu Tim — ništa se ne prepisuje ručno
-  const [members, setMembers] = useState<Record<string, Member>>({})
+  // Instagram iz iste tablice koja puni stranicu Tim — kad se upiše tamo, pojavi se i ovdje
+  const [instagram, setInstagram] = useState<Record<string, string>>({})
   useEffect(() => {
-    supabase.from('lwlup_members')
-      .select('name, nickname, category, squat, bench, deadlift, total, glp, instagram, highlights')
-      .in('name', COACHES.map(x => x.name))
+    supabase.from('lwlup_members').select('name, instagram').in('name', COACHES.map(x => x.name))
       .then(({ data, error }) => {
         if (error) { console.error('treneri: lwlup_members', error); return }
-        setMembers(Object.fromEntries(((data ?? []) as Member[]).map(m => [m.name, m])))
+        setInstagram(Object.fromEntries(((data ?? []) as { name: string; instagram: string | null }[])
+          .filter(m => m.instagram).map(m => [m.name, m.instagram as string])))
       })
   }, [])
 
@@ -68,84 +90,50 @@ export default function TreneriPage() {
         <div style={{ position: 'relative', maxWidth: '760px' }}>
           <div className="section-eyebrow"><span>{c.eyebrow}</span></div>
           <h1 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(3.5rem, 11vw, 8rem)', lineHeight: 1.02, margin: '0 0 24px' }}>{c.title}</h1>
-          <p style={{ fontSize: 'clamp(0.95rem,1.8vw,1.08rem)', color: 'rgba(255,255,255,0.65)', maxWidth: '580px', margin: 0, lineHeight: 1.85 }}>{c.desc}</p>
+          <p style={{ fontSize: 'clamp(0.95rem,1.8vw,1.08rem)', color: 'rgba(255,255,255,0.65)', maxWidth: '560px', margin: 0, lineHeight: 1.85 }}>{c.desc}</p>
         </div>
       </section>
 
-      {/* ── APLIKACIJA: screenshotovi s opisima ───────────────── */}
-      <section className="tr-wrap" style={{ paddingBottom: 'clamp(72px,10vw,140px)' }}>
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.09)', paddingTop: 'clamp(56px,8vw,96px)', marginBottom: 'clamp(40px,6vw,72px)' }}>
+      {/* ── SUSTAV: screenshotovi ───────────────────────────────── */}
+      <section className="tr-wrap" style={{ paddingBottom: 'clamp(80px,11vw,150px)' }}>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.09)', paddingTop: 'clamp(56px,8vw,96px)', marginBottom: 'clamp(48px,7vw,88px)' }}>
           <div className="section-eyebrow"><span>{c.appEyebrow}</span></div>
           <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.4rem,6vw,4.6rem)', lineHeight: 1.02, margin: '0 0 16px' }}>{c.appTitle}</h2>
-          <p style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.6)', margin: 0, maxWidth: '520px', lineHeight: 1.8 }}>{c.appDesc}</p>
+          <p style={{ fontSize: '0.98rem', color: 'rgba(255,255,255,0.6)', margin: 0, maxWidth: '520px', lineHeight: 1.8 }}>{c.appDesc}</p>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(56px,9vw,120px)' }}>
-          {SCREENS.map((s, i) => {
-            const t = s.text[L]
-            return (
-              <div key={s.file} className={`tr-row${i % 2 ? ' tr-row-flip' : ''}`}>
-                <div className="tr-shot-wrap"><Shot file={s.file} w={s.w} h={s.h} alt={t.title} soon={c.shotSoon} /></div>
-                <div className="tr-row-text">
-                  <div className="tr-num">{String(i + 1).padStart(2, '0')}</div>
-                  <h3 className="tr-row-title">{t.title}</h3>
-                  <p className="tr-row-desc">{t.desc}</p>
-                </div>
-              </div>
-            )
-          })}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(72px,11vw,150px)' }}>
+          {SCREENS.map((s, i) => (
+            <ShotRow key={s.file} file={s.file} w={s.w} h={s.h} index={i}
+              title={s.text[L].title} desc={s.text[L].desc} soon={c.shotSoon} />
+          ))}
         </div>
       </section>
 
       {/* ── TRENERI ──────────────────────────────────────────── */}
       <section style={{ background: '#1a1a20', borderTop: '1px solid rgba(255,255,255,0.07)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-        <div className="tr-wrap" style={{ paddingTop: 'clamp(72px,10vw,130px)', paddingBottom: 'clamp(72px,10vw,130px)' }}>
+        <div className="tr-wrap tr-wrap-wide" style={{ paddingTop: 'clamp(72px,10vw,130px)', paddingBottom: 'clamp(72px,10vw,130px)' }}>
           <div className="section-eyebrow"><span>{c.teamEyebrow}</span></div>
           <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.4rem,6vw,4.6rem)', lineHeight: 1.02, margin: '0 0 clamp(40px,6vw,64px)' }}>{c.teamTitle}</h2>
 
-          <div className="tr-coaches">
-            {COACHES.map(coach => {
-              const m = members[coach.name]
-              const lifts = m ? [['S', kg(m.squat)], ['B', kg(m.bench)], ['D', kg(m.deadlift)]].filter(([, v]) => v) as [string, string][] : []
-              return (
-                <article key={coach.name} className="tr-coach">
-                  <div className="tr-coach-photo">
-                    <Image src={coach.photo} alt={coach.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 25vw" quality={65} style={{ objectFit: 'cover' }} />
-                  </div>
-                  <div className="tr-coach-body">
-                    <div className="tr-coach-role">{coach.role[L]}</div>
-                    <h3 className="tr-coach-name">{coach.name}</h3>
-                    {m?.nickname && <div className="tr-coach-nick">„{m.nickname}”</div>}
-
-                    {m && (kg(m.total) || m.category) && (
-                      <div className="tr-coach-stats">
-                        {kg(m.total) && <div><span className="tr-stat-val">{kg(m.total)}<small> kg</small></span><span className="tr-stat-lbl">{c.total}</span></div>}
-                        {m.glp && Number(m.glp) > 0 && <div><span className="tr-stat-val">{Number(m.glp).toFixed(1)}</span><span className="tr-stat-lbl">GLP</span></div>}
-                        {m.category && <div><span className="tr-stat-val">{m.category.replace(/kg$/i, '')}</span><span className="tr-stat-lbl">KAT.</span></div>}
-                      </div>
-                    )}
-
-                    {lifts.length > 0 && (
-                      <div className="tr-coach-lifts" aria-label={c.best}>
-                        {lifts.map(([k, v]) => <span key={k}><b>{k}</b> {v}</span>)}
-                      </div>
-                    )}
-
-                    {m?.highlights && m.highlights.length > 0 && (
-                      <ul className="tr-coach-hl">
-                        {m.highlights.map((h, i) => <li key={i}>{h}</li>)}
-                      </ul>
-                    )}
-
-                    {m?.instagram && (
-                      <a href={m.instagram} target="_blank" rel="noopener noreferrer" className="tr-coach-ig" aria-label={`${coach.name} na Instagramu`}>
-                        <Instagram size={13} /> INSTAGRAM
-                      </a>
-                    )}
-                  </div>
-                </article>
-              )
-            })}
+          <div ref={team.ref} className={`tr-coaches${team.cls}`}>
+            {COACHES.map((coach, i) => (
+              <article key={coach.name} className="tr-coach" style={{ transitionDelay: `${i * 90}ms` }}>
+                <div className="tr-coach-photo">
+                  <Image src={coach.photo} alt={coach.name} fill sizes="(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 330px" quality={65} style={{ objectFit: 'cover' }} />
+                </div>
+                <div className="tr-coach-body">
+                  <div className="tr-coach-role">{coach.role[L]}</div>
+                  <h3 className="tr-coach-name">{coach.name}</h3>
+                  <p className="tr-coach-bio">{coach.bio[L]}</p>
+                  {instagram[coach.name] && (
+                    <a href={instagram[coach.name]} target="_blank" rel="noopener noreferrer" className="tr-coach-ig" aria-label={`${coach.name} na Instagramu`}>
+                      <Instagram size={14} /> INSTAGRAM
+                    </a>
+                  )}
+                </div>
+              </article>
+            ))}
           </div>
         </div>
       </section>
@@ -160,52 +148,71 @@ export default function TreneriPage() {
       <Footer />
 
       <style>{`
-        .tr-wrap { max-width: 1200px; margin: 0 auto; padding-left: clamp(20px,5vw,60px); padding-right: clamp(20px,5vw,60px); box-sizing: border-box; position: relative; }
+        .tr-wrap { max-width: 1280px; margin: 0 auto; padding-left: clamp(20px,5vw,60px); padding-right: clamp(20px,5vw,60px); box-sizing: border-box; position: relative; }
+        .tr-wrap-wide { max-width: 1400px; }
 
-        /* screenshotovi: slika i opis u izmjeničnim redovima */
-        .tr-row { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: clamp(32px, 6vw, 96px); align-items: center; }
-        .tr-row-flip .tr-shot-wrap { order: 2; }
-        .tr-shot-wrap { display: flex; justify-content: center; padding: clamp(20px, 3vw, 36px); background: radial-gradient(ellipse at center, rgba(255,255,255,0.05) 0%, transparent 70%), #17171c; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; }
-        .tr-shot { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 24px 60px rgba(0,0,0,0.55); }
-        .tr-shot-empty { width: min(100%, 300px); aspect-ratio: 9 / 16; display: flex; align-items: center; justify-content: center; border-radius: 14px; border: 1px dashed rgba(255,255,255,0.18); background: rgba(255,255,255,0.02); }
-        .tr-shot-empty span { font-size: 0.58rem; letter-spacing: 0.3em; font-weight: 700; color: rgba(255,255,255,0.5); text-align: center; padding: 0 16px; }
+        /* ── screenshot kao prozor aplikacije u perspektivi ── */
+        .tr-row { --ry: -13deg; --rx: 5deg; display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: clamp(36px, 6vw, 96px); align-items: center; }
+        .tr-row-flip { --ry: 13deg; grid-template-columns: minmax(0, 1fr) minmax(0, 1.65fr); }
+        .tr-row-flip .tr-stage { order: 2; }
+        .tr-stage { perspective: 1700px; position: relative; }
+        .tr-stage::before { content: ''; position: absolute; inset: 8% 4%; background: radial-gradient(ellipse at center, rgba(255,255,255,0.09) 0%, transparent 70%); filter: blur(10px); pointer-events: none; }
+        .tr-window {
+          position: relative; border-radius: 12px; overflow: hidden; background: #0d0d10;
+          border: 1px solid rgba(255,255,255,0.14);
+          box-shadow: 0 50px 90px -30px rgba(0,0,0,0.85), 0 20px 40px -20px rgba(0,0,0,0.6);
+          transform: rotateY(var(--ry)) rotateX(var(--rx));
+          transition: transform 0.9s cubic-bezier(.2,.7,.2,1), opacity 0.6s ease;
+        }
+        .tr-window:hover { transform: rotateY(calc(var(--ry) * 0.25)) rotateX(1deg); }
+        .tr-chrome { display: flex; gap: 6px; padding: 10px 12px; background: #1b1b21; border-bottom: 1px solid rgba(255,255,255,0.07); }
+        .tr-chrome i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.16); }
+        .tr-shot { display: block; width: 100%; height: auto; }
+        .tr-shot-empty { aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; }
+        .tr-shot-empty span { font-size: 0.58rem; letter-spacing: 0.3em; font-weight: 700; color: rgba(255,255,255,0.5); }
+
         .tr-num { font-family: var(--fd); font-size: clamp(2.6rem, 5vw, 3.6rem); line-height: 1; color: rgba(255,255,255,0.14); margin-bottom: 18px; }
-        .tr-row-title { font-family: var(--fd); font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 700; margin: 0 0 14px; letter-spacing: 0.01em; }
-        .tr-row-desc { font-size: clamp(0.9rem, 1.6vw, 1rem); color: rgba(255,255,255,0.62); line-height: 1.85; margin: 0; max-width: 420px; }
+        .tr-row-title { font-family: var(--fd); font-size: clamp(1.7rem, 3vw, 2.3rem); font-weight: 700; margin: 0 0 14px; }
+        .tr-row-desc { font-size: clamp(0.92rem, 1.6vw, 1rem); color: rgba(255,255,255,0.65); line-height: 1.85; margin: 0; max-width: 400px; }
 
-        /* treneri */
-        .tr-coaches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(16px, 2vw, 24px); }
-        .tr-coach { background: #131317; border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; transition: border-color 0.3s, transform 0.3s; }
-        .tr-coach:hover { border-color: rgba(255,255,255,0.22); transform: translateY(-4px); }
+        /* otkrivanje: prozor se zakrene na mjesto, tekst dođe sa strane */
+        .tr-row.rv .tr-window { opacity: 0; transform: rotateY(calc(var(--ry) * 2.4)) rotateX(12deg) translateY(36px); }
+        .tr-row.rv .tr-row-text { opacity: 0; transform: translateX(18px); transition: opacity 0.6s ease 0.2s, transform 0.7s cubic-bezier(.2,.7,.2,1) 0.2s; }
+        .tr-row-flip.rv .tr-row-text { transform: translateX(-18px); }
+        .tr-row.rv-in .tr-window { opacity: 1; transform: rotateY(var(--ry)) rotateX(var(--rx)); }
+        .tr-row.rv-in .tr-window:hover { transform: rotateY(calc(var(--ry) * 0.25)) rotateX(1deg); }
+        .tr-row.rv-in .tr-row-text { opacity: 1; transform: none; }
+
+        /* ── treneri ── */
+        .tr-coaches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(16px, 2vw, 28px); }
+        .tr-coach { background: #131317; border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; transition: border-color 0.3s, transform 0.5s cubic-bezier(.2,.7,.2,1), opacity 0.5s ease; }
+        .tr-coach:hover { border-color: rgba(255,255,255,0.24); }
+        .tr-coaches.rv .tr-coach { opacity: 0; transform: translateY(28px); }
+        .tr-coaches.rv-in .tr-coach { opacity: 1; transform: none; }
         .tr-coach-photo { position: relative; aspect-ratio: 4 / 5; overflow: hidden; background: #0d0d10; }
-        .tr-coach-photo img { filter: grayscale(0.55) brightness(0.85); transition: filter 0.5s, transform 0.6s cubic-bezier(.16,1,.3,1); }
+        .tr-coach-photo img { filter: grayscale(0.5) brightness(0.88); transition: filter 0.5s, transform 0.7s cubic-bezier(.2,.7,.2,1); }
         .tr-coach:hover .tr-coach-photo img { filter: grayscale(0) brightness(1); transform: scale(1.04); }
-        .tr-coach-body { padding: 22px 20px 24px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
-        .tr-coach-role { font-size: 0.56rem; letter-spacing: 0.28em; font-weight: 700; color: rgba(255,255,255,0.55); text-transform: uppercase; }
-        .tr-coach-name { font-family: var(--fd); font-size: 1.45rem; font-weight: 700; margin: 0; line-height: 1.1; }
-        .tr-coach-nick { font-size: 0.78rem; color: rgba(255,255,255,0.55); margin-top: -4px; }
-        .tr-coach-stats { display: flex; gap: 18px; padding: 14px 0; border-top: 1px solid rgba(255,255,255,0.08); border-bottom: 1px solid rgba(255,255,255,0.08); margin-top: 6px; }
-        .tr-coach-stats > div { display: flex; flex-direction: column; gap: 4px; }
-        .tr-stat-val { font-family: var(--fd); font-size: 1.25rem; font-weight: 700; line-height: 1; }
-        .tr-stat-val small { font-size: 0.6rem; color: rgba(255,255,255,0.55); font-family: var(--fm); }
-        .tr-stat-lbl { font-size: 0.5rem; letter-spacing: 0.24em; color: rgba(255,255,255,0.5); font-weight: 700; }
-        .tr-coach-lifts { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.78rem; color: rgba(255,255,255,0.7); font-variant-numeric: tabular-nums; }
-        .tr-coach-lifts b { color: rgba(255,255,255,0.5); font-weight: 700; margin-right: 2px; }
-        .tr-coach-hl { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-        .tr-coach-hl li { font-size: 0.76rem; color: rgba(255,255,255,0.65); line-height: 1.5; padding-left: 14px; position: relative; }
-        .tr-coach-hl li::before { content: ''; position: absolute; left: 0; top: 0.6em; width: 6px; height: 1px; background: rgba(255,255,255,0.5); }
-        .tr-coach-ig { margin-top: auto; padding-top: 12px; display: inline-flex; align-items: center; gap: 7px; font-size: 0.56rem; letter-spacing: 0.22em; font-weight: 700; color: rgba(255,255,255,0.6); text-decoration: none; width: fit-content; transition: color 0.2s; }
+        .tr-coach-body { padding: 26px 24px 28px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+        .tr-coach-role { font-size: 0.58rem; letter-spacing: 0.28em; font-weight: 700; color: rgba(255,255,255,0.55); text-transform: uppercase; }
+        .tr-coach-name { font-family: var(--fd); font-size: clamp(1.6rem, 2.2vw, 1.95rem); font-weight: 700; margin: 0; line-height: 1.05; }
+        .tr-coach-bio { margin: 2px 0 0; font-size: 0.92rem; line-height: 1.75; color: rgba(255,255,255,0.65); }
+        .tr-coach-ig { margin-top: auto; padding-top: 14px; display: inline-flex; align-items: center; gap: 8px; font-size: 0.58rem; letter-spacing: 0.22em; font-weight: 700; color: rgba(255,255,255,0.6); text-decoration: none; width: fit-content; transition: color 0.2s; }
         .tr-coach-ig:hover { color: #fff; }
 
         .tr-cta { display: inline-flex; align-items: center; gap: 10px; padding: 16px 34px; background: #fff; color: #000; text-decoration: none; font-size: 0.74rem; letter-spacing: 0.2em; font-weight: 800; transition: transform 0.25s, box-shadow 0.25s; }
         .tr-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(255,255,255,0.18); }
 
         @media (max-width: 1100px) { .tr-coaches { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-        @media (max-width: 820px) {
-          .tr-row { grid-template-columns: 1fr; }
-          .tr-row-flip .tr-shot-wrap { order: 0; }
+        @media (max-width: 860px) {
+          .tr-row, .tr-row-flip { --ry: -6deg; --rx: 3deg; grid-template-columns: 1fr; gap: 28px; }
+          .tr-row-flip .tr-stage { order: 0; }
+          .tr-row.rv .tr-row-text, .tr-row-flip.rv .tr-row-text { transform: translateY(14px); }
         }
-        @media (max-width: 520px) { .tr-coaches { grid-template-columns: 1fr; } }
+        @media (max-width: 560px) { .tr-coaches { grid-template-columns: 1fr; } }
+        @media (prefers-reduced-motion: reduce) {
+          .tr-row.rv .tr-window, .tr-row.rv .tr-row-text, .tr-coaches.rv .tr-coach { opacity: 1 !important; transform: none !important; transition: none !important; }
+          .tr-window, .tr-window:hover { transform: none !important; }
+        }
       `}</style>
     </div>
   )
