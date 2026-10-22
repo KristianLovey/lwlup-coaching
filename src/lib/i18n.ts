@@ -50,6 +50,13 @@ const translations = {
     'footer.stats.european':      'Europskih nastupa',
     'footer.stats.founded':       'Godina osnivanja',
     'footer.area':                'Djelujemo u Zagrebu i okolici',
+    'footer.contact.seat':         'SJEDIŠTE',
+    'footer.contact.area':         'PODRUČJE',
+    'footer.contact.phone':        'TELEFON',
+    'footer.contact.email':        'E-MAIL',
+    'footer.rights':               'Sva prava pridržana',
+    'footer.legal':                'Pravila i privatnost',
+    'footer.designed':             'Dizajn',
 
     // ── Home ────────────────────────────────────────────────────────
     'home.hero.label':            'LWL UP YOUR GAME',
@@ -314,6 +321,13 @@ const translations = {
     'footer.stats.european':      'European appearances',
     'footer.stats.founded':       'Year founded',
     'footer.area':                'Active in Zagreb and the surrounding area',
+    'footer.contact.seat':         'REGISTERED OFFICE',
+    'footer.contact.area':         'AREA',
+    'footer.contact.phone':        'PHONE',
+    'footer.contact.email':        'EMAIL',
+    'footer.rights':               'All rights reserved',
+    'footer.legal':                'Privacy & terms',
+    'footer.designed':             'Designed by',
 
     // ── Home ────────────────────────────────────────────────────────
     'home.hero.label':            'LWL UP YOUR GAME',

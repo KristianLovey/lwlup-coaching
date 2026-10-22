@@ -1,92 +1,81 @@
 'use client'
 import Link from 'next/link'
 import Image from 'next/image'
+import type { ReactNode } from 'react'
 import { Instagram } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 import { LEGAL, legalLines, contactLabel, contactHref, phoneE164 } from '@/lib/legal'
 import { EmailLink } from './EmailLink'
 
+/**
+ * Podnožje: gore stupci (klub, navigacija, klub, brojke), u sredini pojas s
+ * podacima o pružatelju usluge (Zakon o elektroničkoj trgovini čl. 6 — naziv,
+ * sjedište, kontakt), dolje copyright i pravila. Podaci dolaze iz legal.ts.
+ */
+
+/** Oznaka iznad stupca / bloka — isti stil svugdje u podnožju. */
+function Eyebrow({ children }: { children: ReactNode }) {
+  return <div className="ft-eyebrow">{children}</div>
+}
+
 export default function Footer() {
   const { t } = useLanguage()
 
+  const NAV: [string, string][] = [
+    [t('footer.links.powerlifting'), '/#info'],
+    [t('footer.links.about'),        '/#club'],
+    [t('footer.links.coach'),        '/#coach'],
+    [t('footer.links.system'),       '/#system'],
+    [t('footer.links.training'),     '/training'],
+  ]
+  const CLUB: [string, string][] = [
+    [t('footer.links.survey'),       '/survey'],
+    [t('footer.links.competitions'), '/competitions'],
+    [t('footer.links.team'),         '/team'],
+  ]
+  const STATS = [
+    { val: '10+',  key: 'footer.stats.competitors' as const },
+    { val: '12',   key: 'footer.stats.records'     as const },
+    { val: '6',    key: 'footer.stats.european'    as const },
+    { val: '2026', key: 'footer.stats.founded'     as const },
+  ]
+
   return (
-    <footer style={{ background: '#131317', borderTop: '1px solid rgba(255,255,255,0.09)', fontFamily: 'var(--fm)', position: 'relative', overflow: 'hidden' }}>
+    <footer className="ft">
 
+      {/* ── STUPCI ─────────────────────────────────────────────── */}
+      <div className="ft-wrap ft-main">
+        <div className="ft-grid">
 
-      {/* Main footer content */}
-      <div style={{ padding: '64px 60px 56px', maxWidth: '1400px', margin: '0 auto' }}>
-        <div className="footer-inner" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr', gap: '60px', alignItems: 'start' }}>
-
-          {/* Brand col */}
           <div>
-            <Image src="/slike/logopng.png" alt="LWL UP" width="96" height="70" style={{ display: 'block', marginBottom: '24px' }} />
-            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.82rem', lineHeight: 1.75, margin: '0 0 28px', maxWidth: '260px' }}>
-              {t('footer.desc')}
-            </p>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <a href="https://www.instagram.com/lwlup/" target="_blank" rel="noopener noreferrer" aria-label="LWL UP na Instagramu"
-                className="footer-social-btn"
-                style={{ width: '36px', height: '36px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', transition: 'all 0.25s' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#fff'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}>
-                <Instagram size={14} />
-              </a>
-            </div>
+            <Image src="/slike/logopng.png" alt="LWL UP" width="96" height="70" style={{ display: 'block', marginBottom: '28px' }} />
+            <p className="ft-desc">{t('footer.desc')}</p>
+            <a href={LEGAL.instagram} target="_blank" rel="noopener noreferrer" aria-label="LWL UP na Instagramu" className="ft-social">
+              <Instagram size={15} />
+            </a>
           </div>
 
-          {/* Nav col */}
-          <div>
-            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.55)', marginBottom: '24px', fontWeight: 700 }}>{t('footer.nav')}</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {([
-                [t('footer.links.powerlifting'), '/#info'],
-                [t('footer.links.about'),        '/#club'],
-                [t('footer.links.coach'),        '/#coach'],
-                [t('footer.links.system'),       '/#system'],
-                [t('footer.links.training'),     '/training'],
-              ] as [string, string][]).map(([label, href]) => (
-                <Link key={href} href={href} className="footer-link"
-                  style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', transition: 'all 0.25s', display: 'flex', alignItems: 'center', gap: '8px' }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.paddingLeft = '6px' }}
-                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; e.currentTarget.style.paddingLeft = '0' }}>
-                  {label}
-                </Link>
-              ))}
+          <nav aria-label={t('footer.nav')}>
+            <Eyebrow>{t('footer.nav')}</Eyebrow>
+            <div className="ft-links">
+              {NAV.map(([label, href]) => <Link key={href} href={href} className="ft-link">{label}</Link>)}
             </div>
-          </div>
+          </nav>
 
-          {/* Club col */}
-          <div>
-            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.55)', marginBottom: '24px', fontWeight: 700 }}>{t('footer.club')}</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {([
-                [t('footer.links.survey'),       '/survey'],
-                [t('footer.links.competitions'), '/competitions'],
-                [t('footer.links.team'),         '/team'],
-              ] as [string, string][]).map(([label, href]) => (
-                <Link key={href} href={href} className="footer-link"
-                  style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', transition: 'all 0.25s' }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.paddingLeft = '6px' }}
-                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; e.currentTarget.style.paddingLeft = '0' }}>
-                  {label}
-                </Link>
-              ))}
+          <nav aria-label={t('footer.club')}>
+            <Eyebrow>{t('footer.club')}</Eyebrow>
+            <div className="ft-links">
+              {CLUB.map(([label, href]) => <Link key={href} href={href} className="ft-link">{label}</Link>)}
             </div>
-          </div>
+          </nav>
 
-          {/* Stats col */}
           <div>
-            <div style={{ fontSize: '0.58rem', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.55)', marginBottom: '24px', fontWeight: 700 }}>{t('footer.stats')}</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-              {[
-                { val: '10+',  key: 'footer.stats.competitors' as const },
-                { val: '12',   key: 'footer.stats.records'     as const },
-                { val: '6',    key: 'footer.stats.european'    as const },
-                { val: '2026', key: 'footer.stats.founded'     as const },
-              ].map((s, i) => (
-                <div key={i} style={{ padding: '14px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1 }}>{s.val}</span>
-                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.08em' }}>{t(s.key)}</span>
+            <Eyebrow>{t('footer.stats')}</Eyebrow>
+            <div>
+              {STATS.map((s, i) => (
+                <div key={i} className="ft-stat">
+                  <span className="ft-stat-val">{s.val}</span>
+                  <span className="ft-stat-label">{t(s.key)}</span>
                 </div>
               ))}
             </div>
@@ -95,73 +84,88 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Podaci o pruzatelju usluge — Zakon o elektronickoj trgovini cl. 6.
-          Redci dolaze iz src/lib/legal.ts; prazni se ne ispisuju. */}
-      {(legalLines().length > 0 || LEGAL.email) && (
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '20px 60px 0' }}>
-          <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '8px 18px' }}>
-            {legalLines().map((line, i) => (
-              <span key={i} style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>{line}</span>
-            ))}
-            {/* Adresa (sjedište) ostaje Celine; Zagreb je samo područje djelovanja */}
-            <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>{t('footer.area')}</span>
-            {LEGAL.phone && (
-              <a href={`tel:${phoneE164()}`} className="footer-link"
-                style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.22)', whiteSpace: 'nowrap' }}>
-                {LEGAL.phone}
-              </a>
-            )}
-            <EmailLink className="footer-link"
-              style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.22)' }} />
+      {/* ── KONTAKT I PODACI O KLUBU (ZET čl. 6) ─────────────────── */}
+      <div className="ft-band">
+        <div className="ft-wrap ft-contact">
+          {legalLines().length > 0 && (
+            <div>
+              <Eyebrow>{t('footer.contact.seat')}</Eyebrow>
+              {legalLines().map((line, i) => <div key={i} className="ft-value">{line}</div>)}
+            </div>
+          )}
+          <div>
+            <Eyebrow>{t('footer.contact.area')}</Eyebrow>
+            <div className="ft-value">{t('footer.area')}</div>
           </div>
-        </div>
-      )}
-
-      {/* Bottom bar */}
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '20px 60px' }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em' }}>
-              © 2026 LWL UP POWERLIFTING. ALL RIGHTS RESERVED.
-            </span>
-            <Link href="/pravila"
-              style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em', textDecoration: 'none', transition: 'color 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.55)'}>
-              PRAVILA I PRIVATNOST
-            </Link>
-            {LEGAL.email ? (
-              <EmailLink render={a => `KONTAKT · ${a.toUpperCase()}`} fallback="KONTAKT"
-                style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em', textDecoration: 'none', transition: 'color 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.55)'} />
-            ) : (
-              <a href={contactHref()} target="_blank" rel="noopener noreferrer"
-                style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em', textDecoration: 'none', transition: 'color 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.55)'}>
-                KONTAKT · {contactLabel().toUpperCase()}
-              </a>
-            )}
+          {LEGAL.phone && (
+            <div>
+              <Eyebrow>{t('footer.contact.phone')}</Eyebrow>
+              <a href={`tel:${phoneE164()}`} className="ft-value ft-value-link">{LEGAL.phone}</a>
+            </div>
+          )}
+          <div>
+            <Eyebrow>{t('footer.contact.email')}</Eyebrow>
+            {LEGAL.email
+              ? <EmailLink className="ft-value ft-value-link" fallback="—" />
+              : <a href={contactHref()} target="_blank" rel="noopener noreferrer" className="ft-value ft-value-link">{contactLabel()}</a>}
           </div>
-          <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em' }}>
-            DESIGNED BY <span style={{ color: 'rgba(255,255,255,0.7)' }}>Kristian Lovey</span>
-          </span>
         </div>
       </div>
 
-      {/* Veliki wordmark kao zasebna traka na dnu. Prije je bio apsolutno pozicioniran
-          iza stupaca, pa je prelazio preko linkova i bio odrezan. */}
-      <div aria-hidden style={{ padding: '0 60px', textAlign: 'center', overflow: 'hidden', pointerEvents: 'none', userSelect: 'none' }}>
-        <div style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(4.5rem,24vw,20rem)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1, color: 'rgba(255,255,255,0.03)', whiteSpace: 'nowrap', marginBottom: '-0.05em' }}>
-          LWL UP
-        </div>
+      {/* ── DONJA TRAKA ───────────────────────────────────────── */}
+      <div className="ft-wrap ft-bottom">
+        <span>© 2026 LWL UP POWERLIFTING · {t('footer.rights')}</span>
+        <Link href="/pravila" className="ft-bottom-link">{t('footer.legal')}</Link>
+        <span>{t('footer.designed')} <span style={{ color: 'rgba(255,255,255,0.8)' }}>Kristian Lovey</span></span>
       </div>
 
       <style>{`
-        .footer-link { transition: color 0.25s, padding-left 0.25s !important; }
-        @media (max-width: 1024px) { .footer-inner { grid-template-columns: 1fr 1fr !important; gap: 40px !important; } }
-        @media (max-width: 768px) { .footer-inner { grid-template-columns: 1fr !important; gap: 36px !important; } footer > div { padding-left: 20px !important; padding-right: 20px !important; } }
+        .ft { background: #131317; border-top: 1px solid rgba(255,255,255,0.09); font-family: var(--fm); }
+        .ft-wrap { max-width: 1400px; margin: 0 auto; padding-left: 60px; padding-right: 60px; box-sizing: border-box; }
+
+        .ft-main { padding-top: clamp(64px, 8vw, 104px); padding-bottom: clamp(56px, 7vw, 88px); }
+        .ft-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1.2fr; gap: clamp(40px, 5vw, 80px); align-items: start; }
+
+        .ft-eyebrow { font-size: 0.58rem; letter-spacing: 0.4em; color: rgba(255,255,255,0.55); font-weight: 700; margin-bottom: 26px; text-transform: uppercase; }
+        .ft-desc { color: rgba(255,255,255,0.6); font-size: 0.86rem; line-height: 1.85; margin: 0 0 32px; max-width: 300px; }
+
+        .ft-social { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.6); text-decoration: none; transition: border-color 0.25s, color 0.25s, background 0.25s; }
+        .ft-social:hover { border-color: #fff; color: #fff; background: rgba(255,255,255,0.06); }
+
+        .ft-links { display: flex; flex-direction: column; gap: 18px; }
+        .ft-link { font-size: 0.9rem; color: rgba(255,255,255,0.6); text-decoration: none; width: fit-content; transition: color 0.25s, transform 0.25s; }
+        .ft-link:hover { color: #fff; transform: translateX(5px); }
+
+        .ft-stat { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+        .ft-stat:first-child { padding-top: 0; }
+        .ft-stat:last-child { border-bottom: none; }
+        .ft-stat-val { font-family: var(--fd); font-size: 1.7rem; font-weight: 800; line-height: 1; color: #fff; }
+        .ft-stat-label { font-size: 0.72rem; color: rgba(255,255,255,0.55); letter-spacing: 0.06em; text-align: right; }
+
+        .ft-band { border-top: 1px solid rgba(255,255,255,0.07); border-bottom: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.015); }
+        .ft-contact { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px 48px; padding-top: 40px; padding-bottom: 40px; }
+        .ft-contact .ft-eyebrow { margin-bottom: 12px; font-size: 0.54rem; letter-spacing: 0.32em; }
+        .ft-value { display: block; font-size: 0.86rem; line-height: 1.75; color: rgba(255,255,255,0.75); overflow-wrap: anywhere; }
+        .ft-value-link { text-decoration: none; width: fit-content; border-bottom: 1px solid rgba(255,255,255,0.22); transition: color 0.2s, border-color 0.2s; }
+        .ft-value-link:hover { color: #fff; border-bottom-color: #fff; }
+
+        .ft-bottom { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px 32px; padding-top: 28px; padding-bottom: 36px; font-size: 0.66rem; letter-spacing: 0.1em; color: rgba(255,255,255,0.5); text-transform: uppercase; }
+        .ft-bottom-link { color: rgba(255,255,255,0.6); text-decoration: none; transition: color 0.2s; }
+        .ft-bottom-link:hover { color: #fff; }
+
+        @media (max-width: 1024px) {
+          .ft-grid { grid-template-columns: 1fr 1fr; }
+          .ft-contact { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 768px) {
+          .ft-wrap { padding-left: 20px; padding-right: 20px; }
+          .ft-grid { grid-template-columns: 1fr; gap: 48px; }
+          .ft-contact { gap: 28px; }
+          .ft-bottom { flex-direction: column; align-items: flex-start; }
+        }
+        @media (max-width: 480px) {
+          .ft-contact { grid-template-columns: 1fr; }
+        }
       `}</style>
     </footer>
   )

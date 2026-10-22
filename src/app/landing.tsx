@@ -9,6 +9,7 @@ import { RotateCw } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 import { clickable } from '@/lib/a11y'
 import { FAQ } from '@/lib/faq'
+import { OFFER } from '@/lib/coaching'
 import { isPerfMode } from '@/lib/perf-mode'
 
 
@@ -199,14 +200,8 @@ export default function Landing() {
     { val: '6',    label: t('home.stats.european'), icon: StatIcons.europe  },
     { val: '2026', label: t('home.stats.founded'),  icon: StatIcons.year    },
   ]
-  const FEATURES = [
-    { sym: '01', title: t('home.f1.title'), desc: t('home.f1.desc') },
-    { sym: '02', title: t('home.f2.title'), desc: t('home.f2.desc') },
-    { sym: '03', title: t('home.f3.title'), desc: t('home.f3.desc') },
-    { sym: '04', title: t('home.f4.title'), desc: t('home.f4.desc') },
-    { sym: '05', title: t('home.f5.title'), desc: t('home.f5.desc') },
-    { sym: '06', title: t('home.f6.title'), desc: t('home.f6.desc') },
-  ]
+  // Što dobivaš s trenerstvom, a što s članstvom (tekst u src/lib/coaching.ts)
+  const offer = OFFER[lang === 'en' ? 'en' : 'hr']
   const FOUNDERS: FounderData[] = [
     { name: 'WALTER SMAJLOVIĆ', nickname: 'Gica', img: '/slike/walter.png',  imgLeft: true,
       role: t('home.f.role0'), bio: t('home.f.bio0'),
@@ -480,19 +475,29 @@ export default function Landing() {
         <div ref={systemReveal.ref} style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <div style={{ marginBottom: 'clamp(48px,8vw,88px)', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(30px)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>
             <div className="section-eyebrow">
-              <span>{t('home.system.eyebrow')}</span>
+              <span>{offer.eyebrow}</span>
             </div>
-            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 1.02, marginTop: 0 }}>{t('home.system.title')}</h2>
+            <h2 style={{ fontFamily: 'var(--fd)', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: 1.02, marginTop: 0 }}>{offer.title}</h2>
           </div>
-          <div className="features-grid">
-            {FEATURES.map((f, i) => (
-              <div key={i} className="feature-card" style={{ background: '#1a1a20', padding: 'clamp(28px,3.5vw,44px) clamp(20px,3vw,32px)', border: '1px solid rgba(255,255,255,0.09)', borderTop: 'none', transition: '0.4s cubic-bezier(.16,1,.3,1)', position: 'relative', overflow: 'hidden', opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(40px)', transitionDelay: `${i * 0.08}s`, transitionDuration: '0.7s' }}>
-                {/* Top border */}
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'rgba(255,255,255,0.18)' }} />
-                {/* Number */}
-                <div style={{ fontSize: 'clamp(2rem,4vw,3rem)', fontFamily: 'var(--fd)', color: 'rgba(255,255,255,0.09)', marginBottom: '16px', lineHeight: 1, transition: 'color 0.4s' }}>{f.sym}</div>
-                <h3 style={{ fontSize: 'clamp(0.82rem,1.8vw,1rem)', letterSpacing: '0.1em', marginBottom: '14px', color: '#fff', fontWeight: 700 }}>{f.title}</h3>
-                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 'clamp(0.78rem,1.6vw,0.85rem)', lineHeight: 1.85 }}>{f.desc}</p>
+          <div className="offer-grid">
+            {([['coaching', offer.coaching, '/treneri', true], ['club', offer.club, '/survey', false]] as const).map(([key, o, href, primary], ci) => (
+              <div key={key} className="offer-card" style={{ opacity: systemReveal.visible ? 1 : 0, transform: systemReveal.visible ? 'none' : 'translateY(40px)', transition: 'opacity 0.7s, transform 0.7s cubic-bezier(.16,1,.3,1)', transitionDelay: `${ci * 0.12}s` }}>
+                <div className="offer-label">{o.label}</div>
+                <h3 className="offer-title">{o.title}</h3>
+                <ol className="offer-list">
+                  {o.items.map((it, i) => (
+                    <li key={i}>
+                      <span className="offer-num">{String(i + 1).padStart(2, '0')}</span>
+                      <div>
+                        <div className="offer-item-title">{it.title}</div>
+                        <p className="offer-item-desc">{it.desc}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+                <Link href={href} className={primary ? 'offer-cta offer-cta-primary' : 'offer-cta'}>
+                  {o.cta} <span aria-hidden>→</span>
+                </Link>
               </div>
             ))}
           </div>
@@ -566,6 +571,23 @@ export default function Landing() {
       <Footer />
 
       <style>{`
+        /* ══ ŠTO DOBIVAŠ: trenerstvo i klub ═══════════════════════ */
+        .offer-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: clamp(16px, 2.5vw, 28px); align-items: stretch; }
+        @media (max-width: 900px) { .offer-grid { grid-template-columns: 1fr; } }
+        .offer-card { background: #1a1a20; border: 1px solid rgba(255,255,255,0.09); border-top: 2px solid rgba(255,255,255,0.22); padding: clamp(28px, 4vw, 48px) clamp(22px, 3.5vw, 44px); display: flex; flex-direction: column; }
+        .offer-label { font-size: 0.6rem; letter-spacing: 0.32em; font-weight: 700; color: rgba(255,255,255,0.55); margin-bottom: 14px; }
+        .offer-title { font-family: var(--fd); font-size: clamp(1.7rem, 3.2vw, 2.4rem); font-weight: 700; line-height: 1.1; margin: 0 0 clamp(24px, 3vw, 36px); }
+        .offer-list { list-style: none; margin: 0 0 clamp(28px, 3.5vw, 40px); padding: 0; display: flex; flex-direction: column; flex: 1; }
+        .offer-list li { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; padding: 18px 0; border-top: 1px solid rgba(255,255,255,0.07); }
+        .offer-list li:first-child { border-top: none; padding-top: 0; }
+        .offer-num { font-family: var(--fd); font-size: 1.05rem; color: rgba(255,255,255,0.3); line-height: 1.3; }
+        .offer-item-title { font-size: 0.86rem; letter-spacing: 0.08em; font-weight: 700; color: #fff; text-transform: uppercase; margin-bottom: 6px; }
+        .offer-item-desc { margin: 0; font-size: clamp(0.8rem, 1.5vw, 0.86rem); line-height: 1.8; color: rgba(255,255,255,0.6); }
+        .offer-cta { align-self: flex-start; display: inline-flex; align-items: center; gap: 10px; padding: 14px 26px; border: 1px solid rgba(255,255,255,0.3); color: #fff; text-decoration: none; font-size: 0.7rem; letter-spacing: 0.2em; font-weight: 800; transition: background 0.25s, color 0.25s, transform 0.25s; }
+        .offer-cta:hover { background: #fff; color: #000; transform: translateY(-2px); }
+        .offer-cta-primary { background: #fff; color: #000; border-color: #fff; }
+        .offer-cta-primary:hover { background: rgba(255,255,255,0.86); }
+
         /* ══ ČESTA PITANJA ════════════════════════════════════════ */
         .faq-grid { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: clamp(32px, 6vw, 96px); align-items: start; }
         @media (max-width: 860px) { .faq-grid { grid-template-columns: 1fr; } }
