@@ -106,13 +106,19 @@ export const COACHES: { name: string; photo: string; role: Record<Lang, string>;
     } },
   { name: 'Petar Rendulić', photo: '/slike/petar-r.jpg',
     role: { hr: 'Trener', en: 'Coach' },
-    bio: { hr: 'Trener i natjecatelj u kategoriji do 83 kg.', en: 'Coach and competitor in the 83 kg class.' } },
+    bio: { hr: 'Državni juniorski prvak u kategoriji do 83 kg i internacionalni natjecatelj.', en: 'National junior champion in the 83 kg class and an international competitor.' } },
   { name: 'Kristian Lovey', photo: '/slike/kristian-l.jpg',
     role: { hr: 'Trener', en: 'Coach' },
     bio: { hr: 'Trener i natjecatelj u kategoriji do 93 kg. Napravio je LWL UP aplikaciju u kojoj treniraš.', en: 'Coach and competitor in the 93 kg class. Built the LWL UP app you train in.' } },
   { name: 'Ivan Petriček', photo: '/slike/ivan-p.jpg',
     role: { hr: 'Trener', en: 'Coach' },
     bio: { hr: 'Trener i natjecatelj u kategoriji do 83 kg.', en: 'Coach and competitor in the 83 kg class.' } },
+  { name: 'Luka Grežina', photo: '/slike/luka-g.jpg',
+    role: { hr: 'Potpredsjednik i suosnivač', en: 'Vice-president and co-founder' },
+    bio: {
+      hr: 'Jedan od stupova LWL UP-a. Dvostruki državni prvak u kategoriji do 120 kg. Aktivni natjecatelj i trener koji svakodnevno prenosi znanje i iskustvo na mlađe generacije liftera u klubu.',
+      en: 'One of the pillars of LWL UP. Two-time national champion in the 120 kg class. An active competitor and coach who passes his knowledge and experience on to the younger lifters in the club every day.',
+    } },
 ]
 
 export const COACHES_PAGE: Record<Lang, {

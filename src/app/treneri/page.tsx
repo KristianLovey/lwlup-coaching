@@ -120,7 +120,7 @@ export default function TreneriPage() {
             {COACHES.map((coach, i) => (
               <article key={coach.name} className="tr-coach" style={{ transitionDelay: `${i * 90}ms` }}>
                 <div className="tr-coach-photo">
-                  <Image src={coach.photo} alt={coach.name} fill sizes="(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 330px" quality={65} style={{ objectFit: 'cover' }} />
+                  <Image src={coach.photo} alt={coach.name} fill sizes="(max-width: 560px) 100vw, (max-width: 1100px) 50vw, 440px" quality={65} style={{ objectFit: 'cover' }} />
                 </div>
                 <div className="tr-coach-body">
                   <div className="tr-coach-role">{coach.role[L]}</div>
@@ -184,7 +184,12 @@ export default function TreneriPage() {
         .tr-row.rv-in .tr-row-text { opacity: 1; transform: none; }
 
         /* ── treneri ── */
-        .tr-coaches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(16px, 2vw, 28px); }
+        /* 3 + 2: mreža od 6 stupaca, svaka kartica zauzima 2; drugi red centriran.
+           Pravila po broju kartica (:nth-last-child), pa raspored drži i kad se trener doda/makne. */
+        .tr-coaches { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: clamp(16px, 2vw, 28px); }
+        .tr-coach { grid-column: span 2; }
+        .tr-coach:nth-child(3n+1):nth-last-child(2) { grid-column: 2 / span 2; }
+        .tr-coach:nth-child(3n+1):last-child { grid-column: 3 / span 2; }
         .tr-coach { background: #131317; border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; transition: border-color 0.3s, transform 0.5s cubic-bezier(.2,.7,.2,1), opacity 0.5s ease; }
         .tr-coach:hover { border-color: rgba(255,255,255,0.24); }
         .tr-coaches.rv .tr-coach { opacity: 0; transform: translateY(28px); }
@@ -202,13 +207,20 @@ export default function TreneriPage() {
         .tr-cta { display: inline-flex; align-items: center; gap: 10px; padding: 16px 34px; background: #fff; color: #000; text-decoration: none; font-size: 0.74rem; letter-spacing: 0.2em; font-weight: 800; transition: transform 0.25s, box-shadow 0.25s; }
         .tr-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(255,255,255,0.18); }
 
-        @media (max-width: 1100px) { .tr-coaches { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 1100px) {
+          .tr-coaches { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+          .tr-coach, .tr-coach:nth-child(3n+1):nth-last-child(2), .tr-coach:nth-child(3n+1):last-child { grid-column: span 2; }
+          .tr-coach:nth-child(odd):last-child { grid-column: 2 / span 2; }
+        }
         @media (max-width: 860px) {
           .tr-row, .tr-row-flip { --ry: -6deg; --rx: 3deg; grid-template-columns: 1fr; gap: 28px; }
           .tr-row-flip .tr-stage { order: 0; }
           .tr-row.rv .tr-row-text, .tr-row-flip.rv .tr-row-text { transform: translateY(14px); }
         }
-        @media (max-width: 560px) { .tr-coaches { grid-template-columns: 1fr; } }
+        @media (max-width: 560px) {
+          .tr-coaches { grid-template-columns: 1fr; }
+          .tr-coach, .tr-coach:nth-child(odd):last-child { grid-column: auto; }
+        }
         @media (prefers-reduced-motion: reduce) {
           .tr-row.rv .tr-window, .tr-row.rv .tr-row-text, .tr-coaches.rv .tr-coach { opacity: 1 !important; transform: none !important; transition: none !important; }
           .tr-window, .tr-window:hover { transform: none !important; }
