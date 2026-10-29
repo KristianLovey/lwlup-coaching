@@ -769,6 +769,14 @@ const setRows = (existing: SetLog[], n: number): SetLog[] =>
   Array.from({ length: n }, (_, i) =>
     existing.find(s => s.set_number === i + 1) ?? { set_number: i + 1, weight_kg: null, reps: null, rpe: null, completed: false, is_top_set: false })
 
+// Lifteri kojima serije nisu zaključane redom ("završi prethodni set") — mogu
+// upisati bilo koju seriju. lifters.id
+const NO_SET_LOCK = new Set([
+  '2238f88e-b284-4955-b075-1226031ba951', // Lovro Travica
+  '3d5afd71-fd39-404a-bca3-59b1c195f418', // Petar Rendulić
+  '89c09ac9-8604-424a-9808-83161c88b63a', // Lara Žic
+])
+
 export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpdate }: {
   we: WorkoutExercise; userId: string; isAdmin: boolean; weekNumber?: number
   onAggregateUpdate: (data: Partial<WorkoutExercise>) => void
@@ -1200,7 +1208,7 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
       {logs.map((log, i) => {
         const prevLog = logs[i - 1]
         const prevComplete = prevLog?.completed && prevLog?.weight_kg && prevLog?.reps
-        const isLocked = !isAdmin && i > 0 && !log.is_top_set && !prevComplete
+        const isLocked = !isAdmin && !NO_SET_LOCK.has(userId) && i > 0 && !log.is_top_set && !prevComplete
         // enable ✓ from the live input values so it reacts the instant kg+reps are typed
         const lvW = localVals[`${log.set_number}_weight_kg`]
         const lvR = localVals[`${log.set_number}_reps`]
