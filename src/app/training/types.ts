@@ -48,6 +48,12 @@ export interface MeetAttempt {
   warmup2_kg?: number | null;
   warmup3_kg?: number | null;
   warmup_extra?: number[] | null;
+  /** zagrijavanje kao redovi: Bar, 1–6, Extra — KG i REPS kao tekst ("Bar", "As needed") */
+  warmups?: { bar: { kg: string; reps: string }; rows: { kg: string; reps: string }[]; extra: { kg: string; reps: string } } | null;
+  /** PLAN po pokušaju (Meet card); 1. pokušaj u tablici ima samo PLAN */
+  attempt1_plan?: number | null;
+  attempt2_plan?: number | null;
+  attempt3_plan?: number | null;
 
   attempt1_min?: number | null;
   attempt1_max?: number | null;

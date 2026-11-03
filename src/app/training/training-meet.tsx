@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Plus, Check, ChevronDown, Loader2, Trash2 } from 'lucide-react'
 import type { MeetAttempt, Competition } from './types'
 import { cacheGet, cacheSet, cacheInvalidate, meetKeys } from '@/lib/meetCache'
-import { clickable } from '@/lib/a11y'
+import { MeetCardPanel } from './meet-card'
 
 const supabase = createClient()
 
@@ -33,262 +33,8 @@ const LIFT_META: Record<Lift, { label: string; color: string; short: string }> =
   deadlift: { label: 'Mrtvo dizanje', color: '#22c55e', short: 'DL' },
 }
 
-// ─── SHARED INPUT ─────────────────────────────────────────────────
-function MeetInput({ label, value, onChange, color, disabled = false, placeholder = '—' }: {
-  label: string; value: string; onChange: (v: string) => void
-  color: string; disabled?: boolean; placeholder?: string
-}) {
-  const [focused, setFocused] = useState(false)
-  return (
-    <div>
-      <div style={{ fontSize: '0.56rem', fontWeight: 600, color: focused ? color : 'rgba(255,255,255,0.3)', letterSpacing: '0.08em', fontFamily: 'var(--fm)', marginBottom: '5px', transition: 'color 0.2s' }}>{label}</div>
-      <div style={{ position: 'relative' }}>
-        <input
-          type="number" step="0.5" value={value}
-          onChange={e => onChange(e.target.value)}
-          disabled={disabled}
-          placeholder={placeholder}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          style={{
-            width: '100%', background: disabled ? 'var(--t-s1)' : focused ? 'var(--t-s3)' : 'var(--t-s2)',
-            border: `1.5px solid ${focused ? color : disabled ? 'var(--t-border)' : 'var(--t-border-hi)'}`,
-            color: disabled ? 'rgba(255,255,255,0.35)' : '#f0f0f5', padding: '9px 12px',
-            borderRadius: '9px', outline: 'none', fontSize: '0.95rem', fontFamily: 'var(--fm)',
-            boxSizing: 'border-box' as const, transition: 'all 0.2s',
-            boxShadow: focused ? `0 0 0 3px ${color}18` : 'none',
-            cursor: disabled ? 'not-allowed' : 'text',
-          }}
-        />
-        <div style={{ position: 'absolute', bottom: 0, left: '8px', right: '8px', height: '1.5px', borderRadius: '1px', background: color, transform: focused ? 'scaleX(1)' : 'scaleX(0)', transition: 'transform 0.25s cubic-bezier(0.16,1,0.3,1)', transformOrigin: 'left' }} />
-      </div>
-    </div>
-  )
-}
-
-// ─── LIFT CARD ────────────────────────────────────────────────────
-function LiftCard({ lift, attempt, isAdmin, athleteId, onUpdate, onDelete, onBestChange, saveSignal }: {
-  lift: Lift
-  attempt: MeetAttempt | null
-  isAdmin: boolean
-  athleteId: string
-  onUpdate: (data: Partial<MeetAttempt> & { lift: Lift; athlete_id: string }) => Promise<MeetAttempt>
-  onDelete: (id: string) => void
-  onBestChange: (lift: Lift, best: number | null) => void
-  saveSignal: number
-}) {
-  const meta = LIFT_META[lift]
-  const [open, setOpen] = useState(false)
-  const [saving, setSaving] = useState(false)
-
-  // Warmups — dynamic array built from DB fields
-  const initWarmups = () => {
-    const base = [
-      attempt?.warmup1_kg?.toString() ?? '',
-      attempt?.warmup2_kg?.toString() ?? '',
-      attempt?.warmup3_kg?.toString() ?? '',
-      ...(attempt?.warmup_extra ?? []).map(v => v.toString()),
-    ]
-    // trim trailing empty slots but keep at least 1
-    let end = base.length - 1
-    while (end > 0 && base[end] === '') end--
-    return base.slice(0, end + 1)
-  }
-  const [warmups, setWarmups] = useState<string[]>(initWarmups)
-  const [a1min, setA1min] = useState(attempt?.attempt1_min?.toString() ?? '')
-  const [a1max, setA1max] = useState(attempt?.attempt1_max?.toString() ?? '')
-  const [a2min, setA2min] = useState(attempt?.attempt2_min?.toString() ?? '')
-  const [a2max, setA2max] = useState(attempt?.attempt2_max?.toString() ?? '')
-  const [a3min, setA3min] = useState(attempt?.attempt3_min?.toString() ?? '')
-  const [a3max, setA3max] = useState(attempt?.attempt3_max?.toString() ?? '')
-  const [a1act, setA1act] = useState(attempt?.attempt1_actual?.toString() ?? '')
-  const [a2act, setA2act] = useState(attempt?.attempt2_actual?.toString() ?? '')
-  const [a3act, setA3act] = useState(attempt?.attempt3_actual?.toString() ?? '')
-  const [a1good, setA1good] = useState<boolean | null>(attempt?.attempt1_good ?? null)
-  const [a2good, setA2good] = useState<boolean | null>(attempt?.attempt2_good ?? null)
-  const [a3good, setA3good] = useState<boolean | null>(attempt?.attempt3_good ?? null)
-  const [adminNotes, setAdminNotes] = useState(attempt?.admin_notes ?? '')
-  const [lifterNotes] = useState(attempt?.lifter_notes ?? '')
-
-  const num = (v: string) => v ? parseFloat(v) : null
-
-  const save = async () => {
-    setSaving(true)
-    const data = {
-      lift, athlete_id: athleteId,
-      warmup1_kg: num(warmups[0] ?? ''), warmup2_kg: num(warmups[1] ?? ''), warmup3_kg: num(warmups[2] ?? ''),
-      warmup_extra: warmups.slice(3).map(v => parseFloat(v)).filter(v => !isNaN(v) && v > 0),
-      attempt1_min: num(a1min), attempt1_max: num(a1max),
-      attempt2_min: num(a2min), attempt2_max: num(a2max),
-      attempt3_min: num(a3min), attempt3_max: num(a3max),
-      attempt1_actual: num(a1act), attempt2_actual: num(a2act), attempt3_actual: num(a3act),
-      attempt1_good: a1good, attempt2_good: a2good, attempt3_good: a3good,
-      admin_notes: adminNotes || null,
-      lifter_notes: lifterNotes || null,
-      updated_at: new Date().toISOString(),
-    }
-    await onUpdate(data)
-    setSaving(false)
-  }
-
-  // Calc best from actuals
-  const goodLifts = [
-    a1good && a1act ? parseFloat(a1act) : null,
-    a2good && a2act ? parseFloat(a2act) : null,
-    a3good && a3act ? parseFloat(a3act) : null,
-  ].filter(Boolean) as number[]
-  const best = goodLifts.length > 0 ? Math.max(...goodLifts) : null
-
-  useEffect(() => { onBestChange(lift, best) }, [best, lift, onBestChange])
-  useEffect(() => { if (saveSignal > 0) save() }, [saveSignal])
-
-  return (
-    <div style={{ border: `1.5px solid ${open ? meta.color + '55' : 'var(--t-border-hi)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'border-color 0.25s', boxShadow: open ? `0 4px 24px ${meta.color}18` : '0 2px 8px rgba(0,0,0,0.35)', background: 'var(--t-s1)' }}>
-
-      {/* Header */}
-      <div {...clickable(() => setOpen(o => !o), { expanded: open })}
-        style={{ padding: '14px 20px', background: open ? `${meta.color}18` : 'var(--t-s3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px', userSelect: 'none' as const, transition: 'background 0.2s' }}>
-        {/* Short badge */}
-        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${meta.color}22`, border: `1.5px solid ${meta.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <span style={{ fontFamily: 'var(--fd)', fontSize: '0.8rem', fontWeight: 800, color: meta.color, letterSpacing: '-0.01em' }}>{meta.short}</span>
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#f0f0f5', fontFamily: 'var(--fm)' }}>{meta.label}</div>
-          {best && <div style={{ fontSize: '0.65rem', color: meta.color, fontFamily: 'var(--fm)', marginTop: '1px' }}>Best: {best}kg ✓</div>}
-          {!attempt && <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', marginTop: '1px' }}>{isAdmin ? 'Klikni da dodaš plan' : 'Trener još nije postavio plan'}</div>}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {saving && <Loader2 size={13} color="#888" style={{ animation: 'spin 1s linear infinite' }} />}
-          {attempt && isAdmin && (
-            <button onClick={e => { e.stopPropagation(); onDelete(attempt.id) }}
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', padding: '4px', borderRadius: '5px', transition: 'color 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}>
-              <Trash2 size={12} />
-            </button>
-          )}
-          <ChevronDown size={14} color="rgba(255,255,255,0.3)" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.22s' }} />
-        </div>
-      </div>
-
-      {/* Body */}
-      {open && (
-        <div style={{ padding: '20px', background: 'var(--t-s1)', display: 'flex', flexDirection: 'column' as const, gap: '20px' }}>
-
-          {/* Warmups — admin fills, lifter reads */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-              <div style={{ height: '1px', width: '16px', background: 'var(--t-border)' }} />
-              <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>WARMUPS</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px' }}>
-                {warmups.map((w, idx) => (
-                  <div key={idx} style={{ position: 'relative' }}>
-                    <MeetInput label={`Warmup ${idx + 1}`} value={w} onChange={v => setWarmups(prev => prev.map((x, i) => i === idx ? v : x))} color={meta.color} disabled={!isAdmin} placeholder="kg" />
-                    {isAdmin && warmups.length > 1 && (
-                      <button onClick={() => setWarmups(prev => prev.filter((_, i) => i !== idx))}
-                        style={{ position: 'absolute', top: 0, right: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', fontSize: '0.7rem', padding: '2px 4px', lineHeight: 1, transition: 'color 0.15s' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#f87171'}
-                        onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.2)'}>×</button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {isAdmin && warmups.length < 8 && (
-                <button onClick={() => setWarmups(prev => [...prev, ''])}
-                  style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 12px', background: `${meta.color}10`, border: `1px dashed ${meta.color}33`, borderRadius: '7px', color: meta.color, fontSize: '0.62rem', fontFamily: 'var(--fm)', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${meta.color}1e`; (e.currentTarget as HTMLButtonElement).style.borderColor = `${meta.color}66` }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = `${meta.color}10`; (e.currentTarget as HTMLButtonElement).style.borderColor = `${meta.color}33` }}>
-                  <Plus size={11} /> DODAJ WARMUP
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Attempt ranges — admin fills min/max, lifter sees */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-              <div style={{ height: '1px', width: '16px', background: 'var(--t-border)' }} />
-              <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>RASPONI POKUŠAJA</span>
-              {!isAdmin && <span style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)' }}>od trenera</span>}
-            </div>
-            {[
-              { n: 1, min: a1min, setMin: setA1min, max: a1max, setMax: setA1max, act: a1act, setAct: setA1act, good: a1good, setGood: setA1good },
-              { n: 2, min: a2min, setMin: setA2min, max: a2max, setMax: setA2max, act: a2act, setAct: setA2act, good: a2good, setGood: setA2good },
-              { n: 3, min: a3min, setMin: setA3min, max: a3max, setMax: setA3max, act: a3act, setAct: setA3act, good: a3good, setGood: setA3good },
-            ].map(row => {
-              const hasRange = row.min || row.max
-              return (
-                <div key={row.n} className={`meet-attempt-row${isAdmin ? ' meet-attempt-admin' : ''}`} style={{ display: 'grid', gridTemplateColumns: isAdmin ? '1fr 1fr 1fr 1fr 40px' : '1fr 1fr 40px', gap: '8px', alignItems: 'end', marginBottom: '8px', padding: '12px 14px', background: row.good === true ? 'rgba(34,197,94,0.05)' : row.good === false ? 'rgba(248,113,113,0.05)' : 'var(--t-s2)', border: `1px solid ${row.good === true ? 'rgba(34,197,94,0.15)' : row.good === false ? 'rgba(248,113,113,0.12)' : 'var(--t-border)'}`, borderRadius: '10px', transition: 'all 0.2s' }}>
-                  <div className="meet-minmax" style={{ gridColumn: isAdmin ? '1 / 3' : '1 / 2' }}>
-                    {isAdmin ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                        <MeetInput label={`A${row.n} min`} value={row.min} onChange={row.setMin} color={meta.color} placeholder="kg" />
-                        <MeetInput label={`A${row.n} max`} value={row.max} onChange={row.setMax} color={meta.color} placeholder="kg" />
-                      </div>
-                    ) : (
-                      <div>
-                        <div style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.08em', fontFamily: 'var(--fm)', marginBottom: '5px' }}>POKUŠAJ {row.n} — RASPON</div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: meta.color, fontFamily: 'var(--fd)' }}>
-                          {hasRange ? `${row.min || '?'} – ${row.max || '?'} kg` : <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.8rem' }}>Nije postavljeno</span>}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  {/* Actual column — lifter fills on meet day */}
-                  <div className="meet-actual" style={{ gridColumn: isAdmin ? '3 / 4' : '2 / 3' }}>
-                    <MeetInput label="Podignuto" value={row.act} onChange={row.setAct} color={row.good === true ? '#4ade80' : row.good === false ? '#f87171' : 'rgba(255,255,255,0.5)'} placeholder="kg" />
-                  </div>
-                  {/* Good/No lift toggle */}
-                  <div className="meet-toggle" style={{ display: 'flex', flexDirection: 'column' as const, gap: '4px' }}>
-                    <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', marginBottom: '2px', textAlign: 'center' as const }}>Ret</div>
-                    <button onClick={() => row.setGood(row.good === true ? null : true)}
-                      style={{ padding: '7px', borderRadius: '7px', border: `1px solid ${row.good === true ? 'rgba(34,197,94,0.4)' : 'var(--t-border)'}`, background: row.good === true ? 'rgba(34,197,94,0.12)' : 'transparent', cursor: 'pointer', fontSize: '0.7rem', transition: 'all 0.15s' }}>
-                      <Check size={12} color={row.good === true ? '#4ade80' : 'rgba(255,255,255,0.3)'} strokeWidth={row.good === true ? 3 : 1.5} />
-                    </button>
-                    <button onClick={() => row.setGood(row.good === false ? null : false)}
-                      style={{ padding: '7px', borderRadius: '7px', border: `1px solid ${row.good === false ? 'rgba(248,113,113,0.4)' : 'var(--t-border)'}`, background: row.good === false ? 'rgba(248,113,113,0.1)' : 'transparent', cursor: 'pointer', fontSize: '0.7rem', transition: 'all 0.15s' }}>
-                      <span style={{ color: row.good === false ? '#f87171' : 'rgba(255,255,255,0.25)', fontSize: '0.65rem', lineHeight: 1 }}>✗</span>
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Admin notes — admin fills, lifter reads */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <div style={{ height: '1px', width: '16px', background: 'var(--t-border)' }} />
-              <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.12em', fontFamily: 'var(--fm)' }}>NAPOMENE TRENERA</span>
-            </div>
-            {isAdmin ? (
-              <textarea value={adminNotes} onChange={e => setAdminNotes(e.target.value)}
-                placeholder="Taktika, psihološke upute, specifičnosti nastupa..."
-                style={{ width: '100%', background: 'var(--t-s2)', border: '1.5px solid var(--t-border)', color: '#e0e0e0', padding: '10px 14px', borderRadius: '9px', outline: 'none', fontSize: '0.84rem', fontFamily: 'var(--fm)', resize: 'vertical', minHeight: '70px', boxSizing: 'border-box' as const, lineHeight: 1.6 }}
-                onFocus={e => e.target.style.borderColor = meta.color}
-                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
-            ) : adminNotes ? (
-              <div style={{ padding: '12px 16px', background: `${meta.color}08`, border: `1px solid ${meta.color}20`, borderRadius: '9px', borderLeft: `3px solid ${meta.color}` }}>
-                <div style={{ fontSize: '0.84rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, fontFamily: 'var(--fm)' }}>{adminNotes}</div>
-              </div>
-            ) : (
-              <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontStyle: 'italic' }}>Trener nije ostavio napomene.</div>
-            )}
-          </div>
-
-          {saving && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0' }}>
-              <Loader2 size={12} style={{ animation: 'spin 1s linear infinite', color: '#555' }} />
-              <span style={{ fontSize: '0.6rem', color: '#555', fontFamily: 'var(--fm)', letterSpacing: '0.12em' }}>SNIMANJE...</span>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
+// Unos plana, zagrijavanja, rasporeda i rezultata je u meet-card.tsx (MeetCardPanel),
+// prema klupskoj Excel tablici; izračuni su u src/lib/meet-card.ts.
 
 // ─── MEET DAY TAB ─────────────────────────────────────────────────
 export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { userId: string; isAdmin: boolean; showAthleteSelector?: boolean }) {
@@ -303,6 +49,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
   const [athleteId, setAthleteId]   = useState(userId)
   const [athletes, setAthletes]     = useState<AthleteOption[]>([])
   const [lifterProfile, setLifterProfile] = useState<{ bw: number | null; sex: 'male' | 'female' }>({ bw: null, sex: 'male' })
+  const [lifterFullName, setLifterFullName] = useState('')
 
   // VS Konkurencija
   const [showVS, setShowVS]         = useState(false)
@@ -313,35 +60,8 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
   const [lifterBwEdit, setLifterBwEdit] = useState('')
   const [savingBw, setSavingBw]     = useState(false)
 
-  // Competition schedule times (DB per comp+athlete)
-  const [vaganje, setVaganje]           = useState('')
-  const [timeComp, setTimeComp]         = useState('')
-  const [zagrijavanje, setZagrijavanje] = useState('')
-
-  useEffect(() => {
-    if (!selectedComp) { setVaganje(''); setTimeComp(''); setZagrijavanje(''); return }
-    supabase.from('meet_schedule')
-      .select('vaganje, time_comp, zagrijavanje')
-      .eq('athlete_id', athleteId).eq('competition_id', selectedComp).single()
-      .then(({ data }) => {
-        setVaganje(data?.vaganje ?? '')
-        setTimeComp(data?.time_comp ?? '')
-        setZagrijavanje(data?.zagrijavanje ?? '')
-      })
-  }, [selectedComp, athleteId])
-
-  const saveSchedule = async (field: string, value: string) => {
-    if (!selectedComp) return
-    const col = field === 'timeComp' ? 'time_comp' : field
-    await supabase.from('meet_schedule').upsert(
-      { athlete_id: athleteId, competition_id: selectedComp, [col]: value, updated_at: new Date().toISOString() },
-      { onConflict: 'athlete_id,competition_id' }
-    )
-  }
-
-  // Single save signal for all LiftCards
-  const [saveSignal, setSaveSignal] = useState(0)
-  const [globalSaving, setGlobalSaving] = useState(false)
+  // Raspored dana je sad dio kartice (meet_cards.card). Stara tablica meet_schedule
+  // je preseljena i ostaje netaknuta u bazi.
 
   // Real-time bests from LiftCard local state (updates as user types, before save)
   const [localBests, setLocalBests] = useState<Record<Lift, number | null>>({ squat: null, bench: null, deadlift: null })
@@ -358,9 +78,10 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
   }, [showAthleteSelector])
 
   useEffect(() => {
-    supabase.from('lifters').select('body_weight, sex').eq('id', athleteId).single()
+    supabase.from('lifters').select('body_weight, sex, full_name').eq('id', athleteId).single()
       .then(({ data }) => {
         if (data) {
+          setLifterFullName(data.full_name ?? '')
           setLifterProfile({ bw: data.body_weight ?? null, sex: (data.sex ?? 'male') as 'male' | 'female' })
           setLifterBwEdit(data.body_weight?.toString() ?? '')
         }
@@ -419,11 +140,6 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
     setSavingBw(false)
   }
 
-  const saveAll = async () => {
-    setGlobalSaving(true)
-    setSaveSignal(s => s + 1)
-    setTimeout(() => setGlobalSaving(false), 1500)
-  }
 
   useEffect(() => {
     const load = async () => {
@@ -488,29 +204,20 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
 
   const currentComp = selectedComp ? competitions.find(c => c.id === selectedComp) ?? null : null
 
-  const upsertAttempt = async (data: Partial<MeetAttempt> & { lift: Lift; athlete_id: string }): Promise<MeetAttempt> => {
-    const existing = activeAttempts.find(a => a.lift === data.lift)
-    const today = new Date().toISOString().split('T')[0]
-    const meetDate = currentComp?.date ?? today
-    let result: MeetAttempt
-    if (existing) {
-      const { data: row } = await supabase.from('meet_attempts').update({ ...data, updated_at: new Date().toISOString() }).eq('id', existing.id).select('*').single()
-      result = row as MeetAttempt
-      setAttempts(prev => prev.map(a => a.id === existing.id ? result : a))
-    } else {
-      const { data: row } = await supabase.from('meet_attempts').insert({ ...data, meet_date: meetDate, competition_id: selectedComp }).select('*').single()
-      result = row as MeetAttempt
-      setAttempts(prev => [result, ...prev])
-    }
+  // MeetCardPanel sprema sam; ovdje se spremljeni redovi spoje u popis i keš se poništi
+  const mergeSaved = useCallback((rows: MeetAttempt[]) => {
+    setAttempts(prev => {
+      const byId = new Map(prev.map(a => [a.id, a]))
+      for (const r of rows) byId.set(r.id, r)
+      return [...rows.filter(r => !prev.some(a => a.id === r.id)), ...prev.map(a => byId.get(a.id) ?? a)]
+    })
     cacheInvalidate(meetKeys.attempts(athleteId))
-    return result
-  }
+  }, [athleteId])
 
-  const deleteAttempt = async (id: string) => {
-    await supabase.from('meet_attempts').delete().eq('id', id)
+  const removeRow = useCallback((id: string) => {
     setAttempts(prev => prev.filter(a => a.id !== id))
     cacheInvalidate(meetKeys.attempts(athleteId))
-  }
+  }, [athleteId])
 
   // Total from good lifts
   const bestByLift: Record<Lift, number | null> = { squat: null, bench: null, deadlift: null }
@@ -605,54 +312,21 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
         </div>
       </div>
 
-      {/* ── RASPORED DANA ─────────────────────────────── */}
-      {selectedComp && (
-        <div style={{ marginBottom: '20px', padding: '14px 16px', background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '12px' }}>
-          <div style={{ fontSize: '0.52rem', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700, marginBottom: '12px' }}>RASPORED DANA</div>
-          {/* auto-fit: 3 u redu na širem, prelama se na 2/1 kad nativni time-picker ne stane (mobitel) */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
-            {([
-              { label: 'Vaganje', value: vaganje, set: setVaganje, key: 'vaganje', color: '#f59e0b' },
-              { label: 'Zagrijavanje', value: zagrijavanje, set: setZagrijavanje, key: 'zagrijavanje', color: '#6b8cff' },
-              { label: 'Natjecanje', value: timeComp, set: setTimeComp, key: 'timeComp', color: '#ef3535' },
-            ] as const).map(({ label, value, set, key, color }) => (
-              <div key={key}>
-                <div style={{ fontSize: '0.5rem', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 600, marginBottom: '5px' }}>{label.toUpperCase()}</div>
-                <input
-                  type="time" value={value}
-                  onChange={e => { set(e.target.value); saveSchedule(key, e.target.value) }}
-                  style={{ width: '100%', background: value ? `${color}0c` : 'var(--t-s2)', border: `1.5px solid ${value ? color + '44' : 'var(--t-border)'}`, borderRadius: '8px', color: value ? color : 'rgba(255,255,255,0.3)', padding: '8px 10px', fontFamily: 'var(--fm)', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' as const, transition: 'all 0.2s', cursor: 'pointer' }}
-                  onFocus={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.background = `${color}12` }}
-                  onBlur={e => { e.currentTarget.style.borderColor = value ? `${color}44` : 'rgba(255,255,255,0.1)'; e.currentTarget.style.background = value ? `${color}0c` : 'rgba(255,255,255,0.03)' }}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Lift cards — shown only when a competition is selected */}
-      {selectedComp ? (
-        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '12px' }}>
-          {(['squat','bench','deadlift'] as Lift[]).map(lift => (
-            <LiftCard
-              key={`${lift}-${selectedComp ?? 'none'}`}
-              lift={lift}
-              attempt={attemptByLift(lift)}
-              isAdmin={isAdmin}
-              athleteId={athleteId}
-              onUpdate={upsertAttempt}
-              onDelete={deleteAttempt}
-              onBestChange={handleBestChange}
-              saveSignal={saveSignal}
-            />
-          ))}
-          {/* Single save button for all three lifts */}
-          <button onClick={saveAll} disabled={globalSaving}
-            style={{ marginTop: '4px', padding: '13px', background: globalSaving ? 'var(--t-s3)' : '#fff', border: 'none', color: globalSaving ? '#666' : '#000', borderRadius: '11px', cursor: globalSaving ? 'not-allowed' : 'pointer', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', fontFamily: 'var(--fm)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            {globalSaving ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> SNIMANJE...</> : '💾  SPREMI SVE'}
-          </button>
-        </div>
+      {/* ── MEET CARD + NUTRITION ─────────────────────────── */}
+      {selectedComp && currentComp ? (
+        <MeetCardPanel
+          key={`${athleteId}-${selectedComp}`}
+          athleteId={athleteId}
+          athleteName={lifterFullName || athletes.find(a => a.id === athleteId)?.full_name || ''}
+          competitionId={selectedComp}
+          competitionName={currentComp.name}
+          competitionDate={currentComp.date ?? null}
+          canEdit={isAdmin}
+          attempts={activeAttempts}
+          onRowsSaved={mergeSaved}
+          onRowDeleted={removeRow}
+          onBestChange={handleBestChange}
+        />
       ) : (
         <div style={{ padding: '40px 20px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>
           Odaberi natjecanje za prikaz planova
