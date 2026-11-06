@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import {
   scheduleTimes, totals, jumps, attemptWarnings, keyNumbers, timeline, duringMeet,
   expFromWeightClass, isMorningSession, parseTime, formatTime, fmtJump, fmt1, xround,
-  liftersBefore,
+  liftersBefore, weighInFromLot,
 } from '../src/lib/meet-card.ts'
 
 const T = parseTime
@@ -197,5 +197,46 @@ test('popodnevna sesija i kofein ujutro', () => {
   const base = { cut: 'No cut', bw: 80, exp: 83, weighedInAt: T('14:00'), caffeineWaking: 0, caffeinePreSquat: 0, squatStarts: T('16:00'), warmUpFrom: T('15:20') }
   assert.equal(timeline({ ...base, morning: false })[0].text, 'Afternoon session: eat and drink normally until weigh-in.')
   assert.equal(timeline({ ...base, morning: true, caffeineWaking: 100 })[0].text, '100 mg caffeine right after waking up.')
-  assert.equal(timeline({ ...base, morning: true }).at(8).text, 'Drink 0.5 L.')
+  // +60 (15:00) i +75 (15:15) padaju u/nakon pića prije čučnja (15:00) → izbačeni
+  const rows = timeline({ ...base, morning: true })
+  assert.deepEqual(rows.slice(1).map(r => formatTime(r.time)), ['14:00', '14:05', '14:20', '14:35', '14:45', '15:00', '15:20', '16:00'])
+  assert.equal(rows[6].text, 'Drink 0.5 L.')
+})
+
+// ── vaganje po lotu ───────────────────────────────────────────────
+
+test('vaganje po lotu: početak + (lot − 1) × min po lifteru, prema dolje', () => {
+  assert.equal(formatTime(weighInFromLot(T('07:00'), 1, 1.5)), '07:00')
+  assert.equal(formatTime(weighInFromLot(T('07:00'), 12, 1.5)), '07:16') // 16,5 min → 16
+  assert.equal(formatTime(weighInFromLot(T('07:00'), 12, 2)), '07:22')
+  assert.equal(formatTime(weighInFromLot(T('07:00'), 12, null)), '07:16') // zadano 1,5
+})
+
+test('vaganje po lotu: bez lota početak vage, najkasnije zatvaranje vage', () => {
+  assert.equal(formatTime(weighInFromLot(T('07:00'), null, 2)), '07:00')
+  assert.equal(formatTime(weighInFromLot(T('07:00'), 0, 2)), '07:00')
+  assert.equal(formatTime(weighInFromLot(T('07:00'), 80, 2)), '08:30')
+  assert.equal(weighInFromLot(null, 12, 2), null)
+})
+
+test('kasni lot: koraci od vage nakon pića prije čučnja se izbacuju, obrok ostaje', () => {
+  const s = scheduleTimes(marko.schedule) // čučanj 09:30, zagrijavanje 08:50
+  const rows = timeline({
+    cut: 'No cut', bw: 101, exp: 105, weighedInAt: weighInFromLot(T('07:00'), 12, 2), morning: true,
+    caffeineWaking: 0, caffeinePreSquat: 150, squatStarts: s.squatStarts, warmUpFrom: s.warmUpFrom,
+  })
+  assert.deepEqual(rows.slice(1).map(r => formatTime(r.time)),
+    ['07:22', '07:27', '07:42', '07:57', '08:07', '08:22', '08:30', '08:50', '09:30'])
+  assert.ok(rows.some(r => r.text.startsWith('MEAL:')))
+  assert.ok(!rows.some(r => r.text === 'Rest and stay warm.'))
+})
+
+test('vrlo kasni lot: piće, šetnja i obrok ostaju i slažu se po vremenu', () => {
+  const rows = timeline({
+    cut: 'No cut', bw: 101, exp: 105, weighedInAt: T('08:20'), morning: true,
+    caffeineWaking: 0, caffeinePreSquat: 0, squatStarts: T('09:00'), warmUpFrom: T('08:20'),
+  })
+  // čučanj − 60 = 08:00: svi koraci od +35 nadalje izbačeni
+  assert.deepEqual(rows.slice(1).map(r => formatTime(r.time)), ['08:00', '08:20', '08:20', '08:25', '08:40', '09:00'])
+  assert.equal(rows[0].label, 'Wake up')
 })

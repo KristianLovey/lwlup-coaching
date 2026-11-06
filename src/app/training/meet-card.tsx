@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { MeetAttempt } from './types'
 import {
   CUT_TYPES, DEFAULTS, LIFTS, attemptWarnings, duringMeet, expFromWeightClass, fmt0, fmt1, fmtJump,
-  formatTime, isMorningSession, jumps, keyNumbers, parseNum, parseTime, scheduleTimes, timeline, totals,
+  formatTime, isMorningSession, jumps, keyNumbers, parseNum, parseTime, scheduleTimes, timeline, totals, weighInFromLot,
   type CutType, type Flight, type Lift, type LiftPlan, type Plans,
 } from '@/lib/meet-card'
 
@@ -26,7 +26,7 @@ const supabase = createClient()
 
 type Card = Partial<{
   weightClass: string; trainingBw: string; weighInBw: string; lot: string; flight: Flight | ''; goals: string
-  weighInStart: string; compStart: string; minutesPerAttempt: string; liftersA: string; liftersB: string
+  weighInStart: string; weighInPerLifter: string; compStart: string; minutesPerAttempt: string; liftersA: string; liftersB: string
   warmupLead: string; announcedSquat: string
   squatRack: string; benchRack: string; benchSafety: string; gear: string; cueGeneral: string
 }>
@@ -162,7 +162,7 @@ function Jumps({ j12, j23 }: { j12: number | null; j23: number | null }) {
 
 // ── glavna komponenta ─────────────────────────────────────────────
 
-export function MeetCardPanel({ athleteId, athleteName, competitionId, competitionName, competitionDate, canEdit, attempts, onRowsSaved, onRowDeleted, onBestChange }: {
+export function MeetCardPanel({ athleteId, athleteName, competitionId, competitionName, competitionDate, canEdit, attempts, onRowsSaved, onRowDeleted, onBestChange, onTabChange }: {
   athleteId: string
   athleteName: string
   competitionId: string
@@ -173,8 +173,10 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
   onRowsSaved: (rows: MeetAttempt[]) => void
   onRowDeleted: (id: string) => void
   onBestChange: (lift: Lift, best: number | null) => void
+  onTabChange?: (tab: 'card' | 'nutrition') => void
 }) {
   const [tab, setTab] = useState<'card' | 'nutrition'>('card')
+  useEffect(() => { onTabChange?.(tab) }, [tab, onTabChange])
   const [card, setCard] = useState<Card>({})
   const [nut, setNut] = useState<Nutrition>({})
   const [lifts, setLifts] = useState<Record<Lift, LiftState>>(() => liftsOf(attempts))
@@ -250,8 +252,12 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
   const cut: CutType = nut.cutType ?? DEFAULTS.cutType
   const bw = parseNum(nut.trainingBw) ?? parseNum(card.trainingBw)
   const exp = parseNum(nut.exp) ?? expFromWeightClass(card.weightClass)
-  const wi = parseTime(nut.weighedInAt) ?? parseTime(card.weighInStart)
-  const morning = nut.morning === 'Yes' ? true : nut.morning === 'No' ? false : isMorningSession(wi)
+  // na vagu se ide redom po lotu; ručno upisano vrijeme ima prednost
+  const lot = parseNum(card.lot)
+  const lotWeighIn = weighInFromLot(parseTime(card.weighInStart), lot, parseNum(card.weighInPerLifter))
+  const wi = parseTime(nut.weighedInAt) ?? lotWeighIn
+  // jutarnja sesija ovisi o početku vage, ne o tome kad je lot na redu
+  const morning = nut.morning === 'Yes' ? true : nut.morning === 'No' ? false : isMorningSession(parseTime(card.weighInStart) ?? wi)
   const key = keyNumbers(bw, exp, cut)
   const tl = timeline({
     cut, bw, exp, weighedInAt: wi, morning,
@@ -391,27 +397,29 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
         </Sec>
 
         <Sec n="02" title="SCHEDULE">
-          <div className="mc-grid4">
+          <div className="mc-grid3">
             <F label="WEIGH-IN STARTS"><In ro={ro} type="time" value={card.weighInStart ?? ''} onChange={v => setC({ weighInStart: v })} /></F>
+            <F label="WEIGH-IN PER LIFTER"><In ro={ro} mode="decimal" unit="min" value={card.weighInPerLifter ?? ''} onChange={v => setC({ weighInPerLifter: v })} placeholder={fmt1(DEFAULTS.weighInPerLifter)} /></F>
             <F label="COMPETITION STARTS"><In ro={ro} type="time" value={card.compStart ?? ''} onChange={v => setC({ compStart: v })} /></F>
             <F label="FLIGHT" group><Seg label="Flight" ro={ro} options={['A', 'B', 'C'] as const} value={card.flight ?? ''} onChange={v => setC({ flight: v })} /></F>
-            <F label="ANNOUNCED SQUAT START"><In ro={ro} type="time" value={card.announcedSquat ?? ''} onChange={v => setC({ announcedSquat: v })} /></F>
-            <F label="MINUTES PER ATTEMPT"><In ro={ro} mode="decimal" unit="min" value={card.minutesPerAttempt ?? ''} onChange={v => setC({ minutesPerAttempt: v })} placeholder={fmt1(DEFAULTS.minutesPerAttempt)} /></F>
             <F label="LIFTERS IN FLIGHT A"><In ro={ro} mode="numeric" value={card.liftersA ?? ''} onChange={v => setC({ liftersA: v })} /></F>
             <F label="LIFTERS IN FLIGHT B"><In ro={ro} mode="numeric" value={card.liftersB ?? ''} onChange={v => setC({ liftersB: v })} /></F>
+            <F label="MINUTES PER ATTEMPT"><In ro={ro} mode="decimal" unit="min" value={card.minutesPerAttempt ?? ''} onChange={v => setC({ minutesPerAttempt: v })} placeholder={fmt1(DEFAULTS.minutesPerAttempt)} /></F>
+            <F label="ANNOUNCED SQUAT START"><In ro={ro} type="time" value={card.announcedSquat ?? ''} onChange={v => setC({ announcedSquat: v })} /></F>
             <F label="WARM-UP LEAD"><In ro={ro} mode="numeric" unit="min" value={card.warmupLead ?? ''} onChange={v => setC({ warmupLead: v })} placeholder={String(DEFAULTS.warmupLead)} /></F>
           </div>
           <div className="mc-divider" />
           <div className="mc-stats">
-            <Stat label="WEIGH-IN CLOSES" value={formatTime(sched.weighInCloses)} sub={`${DEFAULTS.weighInDuration} min after start`} />
+            <Stat label="YOUR WEIGH-IN" value={formatTime(lotWeighIn)}
+              sub={[lot != null ? `lot ${fmt0(lot)}` : 'no lot, weigh-in start', sched.weighInCloses != null ? `closes ${formatTime(sched.weighInCloses)}` : ''].filter(Boolean).join(' · ')} />
             <Stat label="WARM UP FROM" value={formatTime(sched.warmUpFrom)} sub={`${lead} min before squat`} />
             <Stat label="LAST WARM-UP" value={formatTime(sched.lastWarmUp)} sub={`${DEFAULTS.lastWarmupBefore} min before squat`} />
             <Stat accent label="SQUAT STARTS" value={formatTime(sched.squatStarts)} sub={squatSub} />
           </div>
-          <p className="mc-hint">Flight A starts with the meet, B after all of A has squatted, C after A and B. The announced start overrides the estimate. Follow the announcer.</p>
+          <p className="mc-hint">You weigh in by lot number: weigh-in start + (lot − 1) × minutes per lifter, at the latest when the weigh-in closes. Flight A starts with the meet, B after all of A has squatted, C after A and B. The announced start overrides the estimate. Follow the announcer.</p>
         </Sec>
 
-        <Sec n="03" title="ATTEMPTS" aside="kg">
+        <Sec n="03" title="ATTEMPTS">
           <div className="mc-cols3">
             {LIFTS.map(l => {
               const P = lifts[l].plan
@@ -566,7 +574,9 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
             </F>
             <F label="TRAINING BODYWEIGHT"><In ro={ro} mode="decimal" unit="kg" value={nut.trainingBw ?? ''} onChange={v => setN({ trainingBw: v })} placeholder={card.trainingBw ?? ''} /></F>
             <F label="EXPECTED WEIGH-IN"><In ro={ro} mode="decimal" unit="kg" value={nut.exp ?? ''} onChange={v => setN({ exp: v })} placeholder={fmt1(expFromWeightClass(card.weightClass))} /></F>
-            <F label="WEIGHED IN AT"><In ro={ro} type="time" value={nut.weighedInAt ?? card.weighInStart ?? ''} onChange={v => setN({ weighedInAt: v })} /></F>
+            <F label={nut.weighedInAt ? 'WEIGHED IN AT · MANUAL' : `WEIGHED IN AT${lot != null ? ` · LOT ${fmt0(lot)}` : ''}`}>
+              <In ro={ro} type="time" value={nut.weighedInAt || formatTime(lotWeighIn)} onChange={v => setN({ weighedInAt: v })} />
+            </F>
             <F label="MORNING SESSION">
               <select className="mc-in" disabled={ro} value={nut.morning ?? ''} onChange={e => setN({ morning: e.target.value as Nutrition['morning'] })}>
                 <option value="">{morning == null ? '—' : `${morning ? 'Yes' : 'No'} (auto)`}</option>
@@ -580,7 +590,7 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
             <F label="COACH"><In ro={ro} value={nut.coach ?? ''} onChange={v => setN({ coach: v })} /></F>
             <F label="COACH NOTE" span={2}><In ro={ro} value={nut.coachNote ?? ''} onChange={v => setN({ coachNote: v })} /></F>
           </div>
-          <p className="mc-hint">Bodyweight, weight class and weigh-in time come from the Meet card. Morning session means weigh-in before 12:00. Type over any of them.</p>
+          <p className="mc-hint">Bodyweight and weight class come from the Meet card. Weighed in at is worked out from the lot number, so the timeline starts when you actually step on the scale. Type a time to set it by hand, clear it to go back to the lot. Morning session means the weigh-in starts before 12:00.</p>
         </Sec>
 
         <Sec n="02" title="KEY NUMBERS">

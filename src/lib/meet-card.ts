@@ -22,6 +22,8 @@ export const DEFAULTS = {
   minutesPerAttempt: 1,
   warmupLead: 40,
   weighInDuration: 90,
+  /** minute po lifteru na vagi; vaganje ide redom po lotu */
+  weighInPerLifter: 1.5,
   lastWarmupBefore: 10,
   gearChecklist: 'Belt · Sleeves · Wraps · Singlet · Shoes · Shirt · Deadlift Socks',
   cutType: 'No cut' as CutType,
@@ -128,6 +130,19 @@ export function scheduleTimes(s: ScheduleInput): ScheduleTimes {
     warmUpFrom: add(squatStarts, -lead),
     lastWarmUp: add(squatStarts, -DEFAULTS.lastWarmupBefore),
   }
+}
+
+/**
+ * Kad lifter stvarno stane na vagu: vaganje ide redom po lotu, pa je lot N na
+ * vagi otprilike početak vage + (N − 1) × minute po lifteru, najkasnije kad se
+ * vaga zatvara. Zaokružuje se prema dolje: ranija procjena je sigurnija.
+ * Bez lota vrijedi početak vage, kao u tablici.
+ */
+export function weighInFromLot(weighInStart: number | null, lot: number | null, perLifter: number | null): number | null {
+  if (weighInStart == null) return null
+  if (lot == null || lot < 1) return weighInStart
+  const per = perLifter ?? DEFAULTS.weighInPerLifter
+  return weighInStart + Math.min(Math.floor((Math.floor(lot) - 1) * per), DEFAULTS.weighInDuration)
 }
 
 // ── MEET CARD: pokušaji ───────────────────────────────────────────
@@ -286,8 +301,12 @@ export type TimelineInput = {
 }
 
 /**
- * Redoslijed je fiksan kao u tablici. Vremena se računaju od vaganja (WI) i od
- * početka čučnja; kad neko vrijeme nedostaje, redak ostaje s praznim vremenom.
+ * Koraci su kao u tablici. Vremena se računaju od vaganja (WI) i od početka
+ * čučnja; kad neko vrijeme nedostaje, redak ostaje s praznim vremenom.
+ *
+ * Kasni lot: koraci od vage nakon obroka (WI+35 … WI+75) koji padnu u ili nakon
+ * pića prije čučnja (čučanj − 60) se izbacuju. Prvo piće, šetnja i obrok uvijek
+ * ostaju. Kad su sva vremena poznata, koraci se slože po vremenu.
  */
 export function timeline(t: TimelineInput): TimelineRow[] {
   const k = keyNumbers(t.bw, t.exp, t.cut)
@@ -302,7 +321,7 @@ export function timeline(t: TimelineInput): TimelineRow[] {
 
   const bananaWord = k?.bananas === '1' ? 'banana' : 'bananas'
 
-  return [
+  const rows: (TimelineRow & { optional?: boolean })[] = [
     { time: null, label: 'Wake up', text: wake },
     { time: add(wi, 0), text: water
       ? `Drink ${fmt1(k?.firstDrink)} L of WATER (not the shake) within 15 min + a small snack (banana, honey).`
@@ -310,22 +329,30 @@ export function timeline(t: TimelineInput): TimelineRow[] {
     { time: add(wi, 5), text: 'Walk slowly for 5 to 10 minutes.' + (water ? ' Then start sipping the shake: small sips, no chugging.' : '') },
     { time: add(wi, 20), highlight: true,
       text: `MEAL: ${fmt0(k?.rice)} g rice or ${fmt0(k?.pasta)} g pasta (uncooked), well salted + ${k?.bananas ?? ''} ${bananaWord}. From home, low fat, no veg.` },
-    { time: add(wi, 35), text: water
+    { time: add(wi, 35), optional: true, text: water
       ? 'Walk 10 to 15 min. Keep sipping the shake. Stomach discomfort up to about 6/10 is fine, above that pause and walk.'
       : t.cut === 'Gut cut'
         ? 'Walk 10 to 15 min. Do not force fluids, drink until your belt fits normally.'
         : `Walk 10 to 15 min. Sip, about ${fmt1(k?.fluid)} L in total before your first squat.` },
-    { time: add(wi, 45), text: water
+    { time: add(wi, 45), optional: true, text: water
       ? 'PUMP 1 (10 min): squats 2x15, push ups 2x10 to 15, band pull aparts 2x20 to 30, band rows 2x12 to 15.'
       : 'Light mobility, nothing hard.' },
-    { time: add(wi, 60), text: water && t.bw != null && t.exp != null
+    { time: add(wi, 60), optional: true, text: water && t.bw != null && t.exp != null
       ? `Weigh yourself: aim for about ${fmt1(k?.targetBw)} kg by the first squat, not your full ${fmt1(t.bw)} kg. Gut and glycogen weight comes back with food during the meet.`
       : 'Keep sipping. Snack if hungry.' },
-    { time: add(wi, 75), text: water ? 'PUMP 2 (10 min). Keep sipping.' : 'Rest and stay warm.' },
+    { time: add(wi, 75), optional: true, text: water ? 'PUMP 2 (10 min). Keep sipping.' : 'Rest and stay warm.' },
     { time: add(t.squatStarts, -60), text: (water ? 'Finish the shake' : 'Drink 0.5 L') + (cps > 0 ? ` + ${fmt0(cps)} mg caffeine.` : '.') },
     { time: t.warmUpFrom, text: 'Start warming up. Sip between sets.' },
     { time: t.squatStarts, highlight: true, text: 'FIRST SQUAT. Keep drinking through the whole meet.' },
   ]
+
+  const preSquat = add(t.squatStarts, -60)
+  const kept = rows
+    .filter(r => !(r.optional && r.time != null && preSquat != null && r.time >= preSquat))
+    .map(({ optional: _o, ...r }) => r)
+  const [wake1, ...rest] = kept
+  if (rest.every(r => r.time != null)) rest.sort((a, b) => (a.time as number) - (b.time as number))
+  return [wake1, ...rest]
 }
 
 // ── NUTRITION: tijekom natjecanja ─────────────────────────────────

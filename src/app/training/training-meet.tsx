@@ -50,6 +50,8 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
   const [athletes, setAthletes]     = useState<AthleteOption[]>([])
   const [lifterProfile, setLifterProfile] = useState<{ bw: number | null; sex: 'male' | 'female' }>({ bw: null, sex: 'male' })
   const [lifterFullName, setLifterFullName] = useState('')
+  // konkurencija, sažetak i bilješke vide se samo na Meet cardu, ne na Nutritionu
+  const [meetTab, setMeetTab] = useState<'card' | 'nutrition'>('card')
 
   // VS Konkurencija
   const [showVS, setShowVS]         = useState(false)
@@ -326,6 +328,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
           onRowsSaved={mergeSaved}
           onRowDeleted={removeRow}
           onBestChange={handleBestChange}
+          onTabChange={setMeetTab}
         />
       ) : (
         <div style={{ padding: '40px 20px', textAlign: 'center' as const, color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', fontFamily: 'var(--fm)' }}>
@@ -334,7 +337,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
       )}
 
       {/* Summary grid — shown when any lift has a saved good lift (DB) or is locally typed */}
-      {selectedComp && (hasAnyLocalBest || LIFT_ORDER.some(l => bestByLift[l] !== null)) && (
+      {selectedComp && meetTab === 'card' && (hasAnyLocalBest || LIFT_ORDER.some(l => bestByLift[l] !== null)) && (
         <div className="meet-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px', marginTop: '16px', animation: 'popIn 0.35s ease' }}>
           {LIFT_ORDER.map(lift => {
             const val = localBests[lift] ?? bestByLift[lift]
@@ -362,7 +365,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
       )}
 
       {/* ── VS KONKURENCIJA ─────────────────────────────────── */}
-      {selectedComp && (
+      {selectedComp && meetTab === 'card' && (
         <div style={{ marginTop: '16px' }}>
           <button
             onClick={() => setShowVS(v => !v)}
@@ -549,7 +552,7 @@ export function MeetDayTab({ userId, isAdmin, showAthleteSelector = false }: { u
       )}
 
       {/* Lifter notes */}
-      {selectedComp && (
+      {selectedComp && meetTab === 'card' && (
         <div style={{ marginTop: '20px', padding: '16px 20px', background: 'var(--t-s1)', border: '1px solid var(--t-border-hi)', borderRadius: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
             <div style={{ height: '1px', width: '16px', background: 'var(--t-border)' }} />
