@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import {
   scheduleTimes, totals, jumps, attemptWarnings, keyNumbers, timeline, duringMeet,
   expFromWeightClass, isMorningSession, parseTime, formatTime, fmtJump, fmt1, xround,
-  liftersBefore, weighInFromLot,
+  liftersBefore, legacyLiftersAhead, weighInFromLot, lotOrder, flightNo,
 } from '../src/lib/meet-card.ts'
 
 const T = parseTime
@@ -16,7 +16,7 @@ const marko = {
   weightClass: '-105', bw: 101, cut: 'No cut',
   schedule: {
     weighInStart: T('07:00'), compStart: T('09:00'), flight: 'A',
-    minutesPerAttempt: 1, liftersA: null, liftersB: null, warmupLead: 40, announcedSquat: T('09:30'),
+    minutesPerAttempt: 1, liftersAhead: null, warmupLead: 40, announcedSquat: T('09:30'),
   },
   caffeine: { waking: 0, preSquat: 150, afterBench: 100 },
   plans: {
@@ -110,17 +110,31 @@ test('Marko: tijekom natjecanja', () => {
 
 // ── rubni slučajevi formula ───────────────────────────────────────
 
-test('procjena po grupi: B čeka cijelu A, C čeka A i B', () => {
-  const base = { weighInStart: null, compStart: T('09:00'), minutesPerAttempt: 1, liftersA: 13, liftersB: 12, warmupLead: 40, announcedSquat: null }
-  assert.equal(formatTime(scheduleTimes({ ...base, flight: 'B' }).estimate), '09:39')
-  assert.equal(formatTime(scheduleTimes({ ...base, flight: 'C' }).estimate), '10:15')
-  assert.equal(scheduleTimes({ ...base, flight: null }).estimate, null)
-  assert.equal(scheduleTimes({ ...base, compStart: null, flight: 'A' }).estimate, null)
-  assert.equal(liftersBefore('B', null, 5), 0) // prazan broj liftera = 0, kao u Excelu
+test('procjena po grupi: flight 2 čeka cijeli 1, flight 3 čeka 1 i 2', () => {
+  const base = { weighInStart: null, compStart: T('09:00'), minutesPerAttempt: 1, warmupLead: 40, announcedSquat: null }
+  assert.equal(formatTime(scheduleTimes({ ...base, flight: 'B', liftersAhead: 13 }).estimate), '09:39')
+  assert.equal(formatTime(scheduleTimes({ ...base, flight: 'C', liftersAhead: 25 }).estimate), '10:15')
+  assert.equal(formatTime(scheduleTimes({ ...base, flight: 'A', liftersAhead: 25 }).estimate), '09:00') // prvi flight ne čeka nikoga
+  assert.equal(scheduleTimes({ ...base, flight: null, liftersAhead: 13 }).estimate, null)
+  assert.equal(scheduleTimes({ ...base, compStart: null, flight: 'A', liftersAhead: null }).estimate, null)
+  assert.equal(liftersBefore('B', null), 0) // prazan broj liftera = 0, kao u Excelu
+})
+
+test('stare kartice: broj liftera po flightu A/B → lifteri ispred', () => {
+  assert.equal(legacyLiftersAhead('B', 13, 12), 13)
+  assert.equal(legacyLiftersAhead('C', 13, 12), 25)
+  assert.equal(legacyLiftersAhead('C', null, 12), 12)
+  assert.equal(legacyLiftersAhead('C', null, null), null)
+  assert.equal(legacyLiftersAhead('A', 13, 12), null)
+  assert.equal(legacyLiftersAhead(null, 13, 12), null)
+})
+
+test('flight se prikazuje kao broj', () => {
+  assert.deepEqual(['A', 'B', 'C'].map(flightNo), [1, 2, 3])
 })
 
 test('najavljeni početak ima prednost pred procjenom', () => {
-  const s = scheduleTimes({ weighInStart: null, compStart: T('09:00'), flight: 'B', minutesPerAttempt: 1, liftersA: 13, liftersB: 0, warmupLead: 30, announcedSquat: T('10:05') })
+  const s = scheduleTimes({ weighInStart: null, compStart: T('09:00'), flight: 'B', minutesPerAttempt: 1, liftersAhead: 13, warmupLead: 30, announcedSquat: T('10:05') })
   assert.equal(formatTime(s.squatStarts), '10:05')
   assert.equal(formatTime(s.warmUpFrom), '09:35')
 })
@@ -210,6 +224,21 @@ test('vaganje po lotu: početak + (lot − 1) × min po lifteru, prema dolje', (
   assert.equal(formatTime(weighInFromLot(T('07:00'), 12, 1.5)), '07:16') // 16,5 min → 16
   assert.equal(formatTime(weighInFromLot(T('07:00'), 12, 2)), '07:22')
   assert.equal(formatTime(weighInFromLot(T('07:00'), 12, null)), '07:16') // zadano 1,5
+})
+
+test('vaganje po lotu: broji se od prvog lota grupe', () => {
+  assert.equal(formatTime(weighInFromLot(T('15:00'), 120, 1.5, 120)), '15:00')
+  assert.equal(formatTime(weighInFromLot(T('15:00'), 129, 1.5, 120)), '15:13') // 13,5 min → 13
+  assert.equal(formatTime(weighInFromLot(T('15:00'), 129, 1.5, null)), '16:30') // bez raspona: od 1, vaga se zatvara
+  assert.equal(formatTime(weighInFromLot(T('15:00'), 110, 1.5, 120)), '15:00') // lot ispod raspona
+})
+
+test('redni broj na vagi unutar raspona lotova', () => {
+  assert.deepEqual(lotOrder(129, 120, 140), { position: 10, count: 21, inRange: true })
+  assert.deepEqual(lotOrder(129, null, null), { position: 129, count: null, inRange: true })
+  assert.deepEqual(lotOrder(145, 120, 140), { position: 26, count: 21, inRange: false })
+  assert.deepEqual(lotOrder(110, 120, null), { position: -9, count: null, inRange: false })
+  assert.equal(lotOrder(null, 120, 140), null)
 })
 
 test('vaganje po lotu: bez lota početak vage, najkasnije zatvaranje vage', () => {

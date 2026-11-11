@@ -4,8 +4,9 @@ import { AlertTriangle, Check, Loader2, Trash2, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { MeetAttempt } from './types'
 import {
-  CUT_TYPES, DEFAULTS, LIFTS, attemptWarnings, duringMeet, expFromWeightClass, fmt0, fmt1, fmtJump,
-  formatTime, isMorningSession, jumps, keyNumbers, parseNum, parseTime, scheduleTimes, timeline, totals, weighInFromLot,
+  CUT_TYPES, DEFAULTS, FLIGHTS, LIFTS, attemptWarnings, duringMeet, expFromWeightClass, flightNo, fmt0, fmt1, fmtJump,
+  formatTime, isMorningSession, jumps, keyNumbers, legacyLiftersAhead, lotOrder, parseNum, parseTime, scheduleTimes,
+  timeline, totals, weighInFromLot,
   type CutType, type Flight, type Lift, type LiftPlan, type Plans,
 } from '@/lib/meet-card'
 
@@ -25,10 +26,14 @@ import {
 const supabase = createClient()
 
 type Card = Partial<{
-  weightClass: string; trainingBw: string; weighInBw: string; lot: string; flight: Flight | ''; goals: string
-  weighInStart: string; weighInPerLifter: string; compStart: string; minutesPerAttempt: string; liftersA: string; liftersB: string
+  weightClass: string; trainingBw: string; weighInBw: string; goals: string
+  // vaga: lot se broji od prvog lota grupe (lotFrom); yourWeighIn je ručno vrijeme vage
+  weighInStart: string; weighInPerLifter: string; lot: string; lotFrom: string; lotTo: string; yourWeighIn: string
+  compStart: string; flight: Flight | ''; flightNames: string[]; minutesPerAttempt: string
+  // liftersAhead = svi lifteri iz flightova ispred zajedno; liftersA/liftersB su sa starijih kartica
+  liftersAhead: string; liftersA: string; liftersB: string
   warmupLead: string; announcedSquat: string
-  squatRack: string; benchRack: string; benchSafety: string; gear: string; cueGeneral: string
+  rackType: string; squatRack: string; benchRack: string; benchSafety: string; gear: string; cueGeneral: string
 }>
 type Nutrition = Partial<{
   cutType: CutType; trainingBw: string; exp: string; weighedInAt: string; morning: '' | 'Yes' | 'No'
@@ -80,11 +85,11 @@ const liftsOf = (atts: MeetAttempt[]) =>
 
 // ── gradivni elementi: svako polje iste visine i istog oblika ──────
 
-function Sec({ n, title, aside, children }: { n: string; title: string; aside?: ReactNode; children: ReactNode }) {
+function Sec({ n, title, aside, children }: { n?: string; title: string; aside?: ReactNode; children: ReactNode }) {
   return (
     <section className="mc-sec">
       <header className="mc-sec-head">
-        <span className="mc-sec-n">{n}</span>
+        {n && <span className="mc-sec-n">{n}</span>}
         <h3 className="mc-sec-t">{title}</h3>
         {aside && <div className="mc-sec-aside">{aside}</div>}
       </header>
@@ -230,12 +235,14 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
   }, [dirty])
 
   // ── izračuni (sve iz lib/meet-card) ──
+  const flight = (card.flight || null) as Flight | null
+  // starije kartice: broj liftera ispred izvodi se iz liftersA/liftersB dok se ne upiše novi
+  const liftersAheadTxt = card.liftersAhead ?? s(legacyLiftersAhead(flight, parseNum(card.liftersA), parseNum(card.liftersB)))
   const sched = useMemo(() => scheduleTimes({
-    weighInStart: parseTime(card.weighInStart), compStart: parseTime(card.compStart),
-    flight: (card.flight || null) as Flight | null,
-    minutesPerAttempt: parseNum(card.minutesPerAttempt), liftersA: parseNum(card.liftersA), liftersB: parseNum(card.liftersB),
+    weighInStart: parseTime(card.weighInStart), compStart: parseTime(card.compStart), flight,
+    minutesPerAttempt: parseNum(card.minutesPerAttempt), liftersAhead: parseNum(liftersAheadTxt),
     warmupLead: parseNum(card.warmupLead), announcedSquat: parseTime(card.announcedSquat),
-  }), [card])
+  }), [card, flight, liftersAheadTxt])
 
   const plans: Plans = useMemo(() => Object.fromEntries(LIFTS.map(l => {
     const p = lifts[l].plan
@@ -252,10 +259,12 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
   const cut: CutType = nut.cutType ?? DEFAULTS.cutType
   const bw = parseNum(nut.trainingBw) ?? parseNum(card.trainingBw)
   const exp = parseNum(nut.exp) ?? expFromWeightClass(card.weightClass)
-  // na vagu se ide redom po lotu; ručno upisano vrijeme ima prednost
+  // na vagu se ide redom po lotu unutar grupe; ručno upisano vrijeme ima prednost
   const lot = parseNum(card.lot)
-  const lotWeighIn = weighInFromLot(parseTime(card.weighInStart), lot, parseNum(card.weighInPerLifter))
-  const wi = parseTime(nut.weighedInAt) ?? lotWeighIn
+  const order = lotOrder(lot, parseNum(card.lotFrom), parseNum(card.lotTo))
+  const lotWeighIn = weighInFromLot(parseTime(card.weighInStart), lot, parseNum(card.weighInPerLifter), parseNum(card.lotFrom))
+  const cardWeighIn = parseTime(card.yourWeighIn) ?? lotWeighIn
+  const wi = parseTime(nut.weighedInAt) ?? cardWeighIn
   // jutarnja sesija ovisi o početku vage, ne o tome kad je lot na redu
   const morning = nut.morning === 'Yes' ? true : nut.morning === 'No' ? false : isMorningSession(parseTime(card.weighInStart) ?? wi)
   const key = keyNumbers(bw, exp, cut)
@@ -351,12 +360,24 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
 
   const dateTxt = competitionDate ? competitionDate.split('-').reverse().join('.') : ''
   const bwShown = card.weighInBw || card.trainingBw
+  const flightName = (f: Flight) => card.flightNames?.[flightNo(f) - 1]?.trim() ?? ''
+  const setFlightName = (i: number, v: string) =>
+    setC({ flightNames: FLIGHTS.map((_, j) => (j === i ? v : card.flightNames?.[j] ?? '')) })
+  const flightChip = flight ? [String(flightNo(flight)), flightName(flight)].filter(Boolean).join(' · ') : ''
   const chips = ([
-    ['CLASS', card.weightClass], ['FLIGHT', card.flight], ['LOT', card.lot], ['BW', bwShown ? `${bwShown} kg` : ''],
+    ['CLASS', card.weightClass], ['FLIGHT', flightChip], ['LOT', card.lot], ['BW', bwShown ? `${bwShown} kg` : ''],
   ] as const).filter(([, v]) => v)
   const lead = parseNum(card.warmupLead) ?? DEFAULTS.warmupLead
   const squatSub = parseTime(card.announcedSquat) != null ? 'announced'
-    : sched.estimate != null ? `estimate · flight ${card.flight}` : ''
+    : sched.estimate != null && flight ? `estimate · flight ${flightNo(flight)}` : ''
+  const weighInSub = [
+    parseTime(card.yourWeighIn) != null ? 'set by hand'
+      : lot == null ? 'no lot, weigh-in start'
+      : `lot ${fmt0(lot)}${order?.inRange && order.count != null ? ` · ${order.position}/${order.count}` : ''}`,
+    sched.weighInCloses != null ? `closes ${formatTime(sched.weighInCloses)}` : '',
+  ].filter(Boolean).join(' · ')
+  // koliko liftera čučne prije njegovog flighta: za 2 je to flight 1, za 3 flightovi 1 i 2 zajedno
+  const aheadLabel = flight === 'B' ? 'LIFTERS IN FLIGHT 1' : flight === 'C' ? 'LIFTERS IN FLIGHTS 1 + 2' : 'LIFTERS AHEAD'
 
   const saveState = saving ? { cls: '', text: 'Spremam…' }
     : saveMsg && !saveMsg.ok ? { cls: ' err', text: saveMsg.text }
@@ -386,40 +407,89 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
 
       {/* ════════════════ MEET CARD ════════════════ */}
       {tab === 'card' && (<>
-        <Sec n="01" title="ATHLETE">
-          <div className="mc-grid4">
-            <F label="WEIGHT CLASS"><In ro={ro} value={card.weightClass ?? ''} onChange={v => setC({ weightClass: v })} placeholder="-105" /></F>
-            <F label="LOT NUMBER"><In ro={ro} mode="numeric" value={card.lot ?? ''} onChange={v => setC({ lot: v })} /></F>
-            <F label="TRAINING BODYWEIGHT"><In ro={ro} mode="decimal" unit="kg" value={card.trainingBw ?? ''} onChange={v => setC({ trainingBw: v })} /></F>
-            <F label="WEIGH-IN BODYWEIGHT"><In ro={ro} mode="decimal" unit="kg" value={card.weighInBw ?? ''} onChange={v => setC({ weighInBw: v })} /></F>
-            <F label="COMP GOALS" span="all"><In ro={ro} value={card.goals ?? ''} onChange={v => setC({ goals: v })} placeholder="Npr. 600 total, 3/3 na benchu" /></F>
-          </div>
-        </Sec>
-
-        <Sec n="02" title="SCHEDULE">
-          <div className="mc-grid3">
-            <F label="WEIGH-IN STARTS"><In ro={ro} type="time" value={card.weighInStart ?? ''} onChange={v => setC({ weighInStart: v })} /></F>
-            <F label="WEIGH-IN PER LIFTER"><In ro={ro} mode="decimal" unit="min" value={card.weighInPerLifter ?? ''} onChange={v => setC({ weighInPerLifter: v })} placeholder={fmt1(DEFAULTS.weighInPerLifter)} /></F>
-            <F label="COMPETITION STARTS"><In ro={ro} type="time" value={card.compStart ?? ''} onChange={v => setC({ compStart: v })} /></F>
-            <F label="FLIGHT" group><Seg label="Flight" ro={ro} options={['A', 'B', 'C'] as const} value={card.flight ?? ''} onChange={v => setC({ flight: v })} /></F>
-            <F label="LIFTERS IN FLIGHT A"><In ro={ro} mode="numeric" value={card.liftersA ?? ''} onChange={v => setC({ liftersA: v })} /></F>
-            <F label="LIFTERS IN FLIGHT B"><In ro={ro} mode="numeric" value={card.liftersB ?? ''} onChange={v => setC({ liftersB: v })} /></F>
-            <F label="MINUTES PER ATTEMPT"><In ro={ro} mode="decimal" unit="min" value={card.minutesPerAttempt ?? ''} onChange={v => setC({ minutesPerAttempt: v })} placeholder={fmt1(DEFAULTS.minutesPerAttempt)} /></F>
-            <F label="ANNOUNCED SQUAT START"><In ro={ro} type="time" value={card.announcedSquat ?? ''} onChange={v => setC({ announcedSquat: v })} /></F>
-            <F label="WARM-UP LEAD"><In ro={ro} mode="numeric" unit="min" value={card.warmupLead ?? ''} onChange={v => setC({ warmupLead: v })} placeholder={String(DEFAULTS.warmupLead)} /></F>
-          </div>
-          <div className="mc-divider" />
+        {/* izračunata vremena dana natjecanja — prvo što se vidi */}
+        <Sec title="MEET DAY">
           <div className="mc-stats">
-            <Stat label="YOUR WEIGH-IN" value={formatTime(lotWeighIn)}
-              sub={[lot != null ? `lot ${fmt0(lot)}` : 'no lot, weigh-in start', sched.weighInCloses != null ? `closes ${formatTime(sched.weighInCloses)}` : ''].filter(Boolean).join(' · ')} />
+            <Stat label="YOUR WEIGH-IN" value={formatTime(cardWeighIn)} sub={weighInSub} />
             <Stat label="WARM UP FROM" value={formatTime(sched.warmUpFrom)} sub={`${lead} min before squat`} />
             <Stat label="LAST WARM-UP" value={formatTime(sched.lastWarmUp)} sub={`${DEFAULTS.lastWarmupBefore} min before squat`} />
             <Stat accent label="SQUAT STARTS" value={formatTime(sched.squatStarts)} sub={squatSub} />
           </div>
-          <p className="mc-hint">You weigh in by lot number: weigh-in start + (lot − 1) × minutes per lifter, at the latest when the weigh-in closes. Flight A starts with the meet, B after all of A has squatted, C after A and B. The announced start overrides the estimate. Follow the announcer.</p>
+          <p className="mc-hint">You weigh in by lot order within your group: weigh-in start + (lot − first lot of the range) × minutes per lifter, at the latest when the weigh-in closes. Flight 1 starts with the meet, flight 2 after all of flight 1 has squatted, flight 3 after flights 1 and 2. The announced start overrides the estimate. Follow the announcer.</p>
         </Sec>
 
-        <Sec n="03" title="ATTEMPTS">
+        <Sec n="01" title="ATHLETE & WEIGH-IN">
+          <div className="mc-grid4">
+            <F label="WEIGHT CLASS"><In ro={ro} value={card.weightClass ?? ''} onChange={v => setC({ weightClass: v })} placeholder="-105" /></F>
+            <F label="WEIGH-IN STARTS"><In ro={ro} type="time" value={card.weighInStart ?? ''} onChange={v => setC({ weighInStart: v })} /></F>
+            <F label="LOT RANGE · YOUR GROUP" group>
+              <div className="mc-range">
+                <In ro={ro} mode="numeric" value={card.lotFrom ?? ''} onChange={v => setC({ lotFrom: v })} placeholder="od" />
+                <span className="mc-range-sep" aria-hidden>–</span>
+                <In ro={ro} mode="numeric" value={card.lotTo ?? ''} onChange={v => setC({ lotTo: v })} placeholder="do" />
+              </div>
+            </F>
+            <F label="YOUR LOT NUMBER"><In ro={ro} mode="numeric" value={card.lot ?? ''} onChange={v => setC({ lot: v })} /></F>
+            <F label="WEIGH-IN PER LIFTER"><In ro={ro} mode="decimal" unit="min" value={card.weighInPerLifter ?? ''} onChange={v => setC({ weighInPerLifter: v })} placeholder={fmt1(DEFAULTS.weighInPerLifter)} /></F>
+            <F label={card.yourWeighIn ? 'YOUR WEIGH-IN · MANUAL' : 'YOUR WEIGH-IN · BY LOT'}>
+              <In ro={ro} type="time" value={card.yourWeighIn || formatTime(lotWeighIn)} onChange={v => setC({ yourWeighIn: v })} />
+            </F>
+            <F label="WEIGH-IN BODYWEIGHT"><In ro={ro} mode="decimal" unit="kg" value={card.weighInBw ?? ''} onChange={v => setC({ weighInBw: v })} /></F>
+            <F label="TRAINING BODYWEIGHT"><In ro={ro} mode="decimal" unit="kg" value={card.trainingBw ?? ''} onChange={v => setC({ trainingBw: v })} /></F>
+            <F label="COMP GOALS" span="all"><In ro={ro} value={card.goals ?? ''} onChange={v => setC({ goals: v })} placeholder="Npr. 600 total, 3/3 na benchu" /></F>
+          </div>
+          {order && !order.inRange && (
+            <div className="mc-warns">
+              <div className="mc-warn"><AlertTriangle size={13} />
+                <span>Lot {fmt0(lot)} nije u rasponu lotova grupe ({card.lotFrom || '?'}–{card.lotTo || '?'}). Provjeri lot ili raspon.</span>
+              </div>
+            </div>
+          )}
+          <p className="mc-hint">Lot numbers are drawn for the whole meet, so a group can have lots 120–140. Your weigh-in is counted from the first lot of the range. Type a time in Your weigh-in to set it by hand, clear it to go back to the lot.</p>
+        </Sec>
+
+        <Sec n="02" title="RACK & GEAR">
+          <div className="mc-grid4">
+            <F label="RACK"><In ro={ro} value={card.rackType ?? ''} onChange={v => setC({ rackType: v })} placeholder="Npr. Eleiko" /></F>
+            <F label="SQUAT RACK HEIGHT"><In ro={ro} value={card.squatRack ?? ''} onChange={v => setC({ squatRack: v })} /></F>
+            <F label="BENCH RACK HEIGHT"><In ro={ro} value={card.benchRack ?? ''} onChange={v => setC({ benchRack: v })} /></F>
+            <F label="BENCH SAFETY HEIGHT"><In ro={ro} value={card.benchSafety ?? ''} onChange={v => setC({ benchSafety: v })} /></F>
+            <F label="GEAR CHECKLIST" span="all">
+              <textarea className="mc-in mc-ta-short" rows={1} readOnly={ro} value={card.gear ?? DEFAULTS.gearChecklist} onChange={e => setC({ gear: e.target.value })} />
+            </F>
+          </div>
+        </Sec>
+
+        <Sec n="03" title="SCHEDULE">
+          <div className="mc-grid3">
+            <F label="COMPETITION STARTS"><In ro={ro} type="time" value={card.compStart ?? ''} onChange={v => setC({ compStart: v })} /></F>
+            <F label="FLIGHT · PICK YOURS, NAME THE GROUPS" span={2} group>
+              <div className="mc-flights" role="radiogroup" aria-label="Flight">
+                {FLIGHTS.map((f, i) => {
+                  const on = flight === f
+                  return (
+                    <div key={f} className={`mc-flight${on ? ' on' : ''}`}>
+                      <button type="button" role="radio" aria-checked={on} aria-label={`Flight ${i + 1}`} disabled={ro}
+                        onClick={() => setC({ flight: on ? '' : f })} className="mc-flight-no">{i + 1}</button>
+                      <input className="mc-flight-name" value={card.flightNames?.[i] ?? ''} readOnly={ro}
+                        onChange={e => setFlightName(i, e.target.value)} placeholder={ro ? '—' : 'Naziv grupe'} aria-label={`Naziv flighta ${i + 1}`} />
+                    </div>
+                  )
+                })}
+              </div>
+            </F>
+            <F label={aheadLabel}>
+              {/* prvi flight ne čeka nikoga; promjena broja briše stare brojeve po flightu */}
+              <In ro={ro || flight === 'A'} mode="numeric" value={flight === 'A' ? '0' : liftersAheadTxt}
+                onChange={v => setC({ liftersAhead: v, liftersA: undefined, liftersB: undefined })} placeholder={flight ? '' : 'Odaberi flight'} />
+            </F>
+            <F label="MINUTES PER ATTEMPT"><In ro={ro} mode="decimal" unit="min" value={card.minutesPerAttempt ?? ''} onChange={v => setC({ minutesPerAttempt: v })} placeholder={fmt1(DEFAULTS.minutesPerAttempt)} /></F>
+            <F label="WARM-UP LEAD"><In ro={ro} mode="numeric" unit="min" value={card.warmupLead ?? ''} onChange={v => setC({ warmupLead: v })} placeholder={String(DEFAULTS.warmupLead)} /></F>
+            <F label="ANNOUNCED SQUAT START"><In ro={ro} type="time" value={card.announcedSquat ?? ''} onChange={v => setC({ announcedSquat: v })} /></F>
+          </div>
+        </Sec>
+
+        <Sec n="04" title="ATTEMPTS">
           <div className="mc-cols3">
             {LIFTS.map(l => {
               const P = lifts[l].plan
@@ -482,7 +552,7 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
         </Sec>
 
         {/* rezultat na natjecanju — upisuje i lifter */}
-        <Sec n="04" title="RESULTS" aside="upisuje i lifter">
+        <Sec n="05" title="RESULTS" aside="upisuje i lifter">
           <div className="mc-cols3">
             {LIFTS.map(l => {
               const L = lifts[l]
@@ -512,7 +582,7 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
           </div>
         </Sec>
 
-        <Sec n="05" title="WARM-UPS">
+        <Sec n="06" title="WARM-UPS">
           <div className="mc-cols3">
             {LIFTS.map(l => {
               const w = lifts[l].warmups
@@ -535,17 +605,6 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
                 </div>
               )
             })}
-          </div>
-        </Sec>
-
-        <Sec n="06" title="RACK & GEAR">
-          <div className="mc-grid3">
-            <F label="SQUAT RACK HEIGHT"><In ro={ro} value={card.squatRack ?? ''} onChange={v => setC({ squatRack: v })} /></F>
-            <F label="BENCH RACK HEIGHT"><In ro={ro} value={card.benchRack ?? ''} onChange={v => setC({ benchRack: v })} /></F>
-            <F label="BENCH SAFETY HEIGHT"><In ro={ro} value={card.benchSafety ?? ''} onChange={v => setC({ benchSafety: v })} /></F>
-            <F label="GEAR CHECKLIST" span="all">
-              <textarea className="mc-in mc-ta-short" rows={1} readOnly={ro} value={card.gear ?? DEFAULTS.gearChecklist} onChange={e => setC({ gear: e.target.value })} />
-            </F>
           </div>
         </Sec>
 
@@ -574,8 +633,8 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
             </F>
             <F label="TRAINING BODYWEIGHT"><In ro={ro} mode="decimal" unit="kg" value={nut.trainingBw ?? ''} onChange={v => setN({ trainingBw: v })} placeholder={card.trainingBw ?? ''} /></F>
             <F label="EXPECTED WEIGH-IN"><In ro={ro} mode="decimal" unit="kg" value={nut.exp ?? ''} onChange={v => setN({ exp: v })} placeholder={fmt1(expFromWeightClass(card.weightClass))} /></F>
-            <F label={nut.weighedInAt ? 'WEIGHED IN AT · MANUAL' : `WEIGHED IN AT${lot != null ? ` · LOT ${fmt0(lot)}` : ''}`}>
-              <In ro={ro} type="time" value={nut.weighedInAt || formatTime(lotWeighIn)} onChange={v => setN({ weighedInAt: v })} />
+            <F label={nut.weighedInAt ? 'WEIGHED IN AT · MANUAL' : card.yourWeighIn ? 'WEIGHED IN AT · MEET CARD' : `WEIGHED IN AT${lot != null ? ` · LOT ${fmt0(lot)}` : ''}`}>
+              <In ro={ro} type="time" value={nut.weighedInAt || formatTime(cardWeighIn)} onChange={v => setN({ weighedInAt: v })} />
             </F>
             <F label="MORNING SESSION">
               <select className="mc-in" disabled={ro} value={nut.morning ?? ''} onChange={e => setN({ morning: e.target.value as Nutrition['morning'] })}>
@@ -590,7 +649,7 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
             <F label="COACH"><In ro={ro} value={nut.coach ?? ''} onChange={v => setN({ coach: v })} /></F>
             <F label="COACH NOTE" span={2}><In ro={ro} value={nut.coachNote ?? ''} onChange={v => setN({ coachNote: v })} /></F>
           </div>
-          <p className="mc-hint">Bodyweight and weight class come from the Meet card. Weighed in at is worked out from the lot number, so the timeline starts when you actually step on the scale. Type a time to set it by hand, clear it to go back to the lot. Morning session means the weigh-in starts before 12:00.</p>
+          <p className="mc-hint">Bodyweight and weight class come from the Meet card. Weighed in at comes from Your weigh-in on the Meet card (lot order within the group, or the time typed there), so the timeline starts when you actually step on the scale. Type a time to set it by hand, clear it to go back to the Meet card. Morning session means the weigh-in starts before 12:00.</p>
         </Sec>
 
         <Sec n="02" title="KEY NUMBERS">
@@ -721,6 +780,23 @@ textarea.mc-ta-short { min-height: var(--h); }
 .mc-seg-btn.on { background: #f0f0f0; color: #0a0a0a; }
 .mc-seg-btn:disabled { cursor: default; }
 
+/* raspon lotova: od – do u jednom polju */
+.mc-range { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; align-items: center; }
+.mc-range .mc-in { padding: 0 8px; text-align: center; }
+.mc-range-sep { font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.4); }
+
+/* flightovi: broj bira njegov, pored se upisuje naziv grupe */
+.mc-flights { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.mc-flight { display: flex; align-items: center; gap: 4px; min-width: 0; height: var(--h); box-sizing: border-box; padding: 3px; background: var(--t-s2); border: 1px solid var(--t-border); border-radius: var(--r); transition: border-color 0.15s, background 0.15s; }
+.mc-flight:focus-within:not(.on) { border-color: var(--t-border-hi); }
+.mc-flight.on { border-color: rgba(255,255,255,0.45); background: var(--t-s3); }
+.mc-flight-no { flex-shrink: 0; width: 36px; height: 100%; border: 0; border-radius: 7px; background: var(--t-s3); color: rgba(255,255,255,0.55); font-family: var(--fm); font-size: 0.82rem; font-weight: 800; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.mc-flight-no:not(:disabled):hover { color: #fff; }
+.mc-flight.on .mc-flight-no { background: #f0f0f0; color: #0a0a0a; }
+.mc-flight-no:disabled { cursor: default; }
+.mc-flight-name { flex: 1; min-width: 0; height: 100%; padding: 0 8px; border: 0; background: transparent; color: #f0f0f0; font-family: var(--fm); font-size: 0.8rem; font-weight: 700; outline: none; text-overflow: ellipsis; }
+.mc-flight-name::placeholder { color: rgba(255,255,255,0.28); font-weight: 500; }
+
 /* ── izračunate vrijednosti ── */
 .mc-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .mc-stat { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 14px 16px; background: var(--t-s2); border: 1px solid var(--t-border); border-radius: 12px; }
@@ -827,6 +903,7 @@ textarea.mc-ta-short { min-height: var(--h); }
 @media (max-width: 520px) {
   .mc-grid3 { grid-template-columns: minmax(0, 1fr); }
   .mc-span2 { grid-column: 1 / -1; }
+  .mc-flights { grid-template-columns: minmax(0, 1fr); }
   .mc-stat { padding: 12px 13px; }
   .mc-stat-val { font-size: 1.45rem; }
   .mc-total-grid { gap: 6px; }

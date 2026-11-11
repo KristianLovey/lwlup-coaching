@@ -14,7 +14,11 @@
 
 export type Lift = 'squat' | 'bench' | 'deadlift'
 export const LIFTS: Lift[] = ['squat', 'bench', 'deadlift']
+/** Spremljeno kao A/B/C (postojeće kartice), prikazuje se kao 1/2/3. */
 export type Flight = 'A' | 'B' | 'C'
+export const FLIGHTS: Flight[] = ['A', 'B', 'C']
+/** A → 1, B → 2, C → 3 */
+export const flightNo = (f: Flight) => FLIGHTS.indexOf(f) + 1
 export type CutType = 'No cut' | 'Gut cut' | 'Water cut' | 'Water + carb cut'
 export const CUT_TYPES: CutType[] = ['No cut', 'Gut cut', 'Water cut', 'Water + carb cut']
 
@@ -94,8 +98,8 @@ export type ScheduleInput = {
   flight: Flight | null
   /** zadano 1 */
   minutesPerAttempt: number | null
-  liftersA: number | null
-  liftersB: number | null
+  /** svi lifteri iz flightova prije njegovog, zajedno */
+  liftersAhead: number | null
   /** zadano 40 */
   warmupLead: number | null
   announcedSquat: number | null
@@ -110,17 +114,26 @@ export type ScheduleTimes = {
 }
 
 /** Koliko liftera čučne prije njegove grupe. Prazan broj liftera računa se kao 0, kao u Excelu. */
-export function liftersBefore(flight: Flight | null, a: number | null, b: number | null): number | null {
+export function liftersBefore(flight: Flight | null, ahead: number | null): number | null {
   if (!flight) return null
   if (flight === 'A') return 0
-  if (flight === 'B') return a ?? 0
-  return (a ?? 0) + (b ?? 0)
+  return ahead ?? 0
+}
+
+/**
+ * Starije kartice imaju broj liftera po flightu (A i B); nova ima jedan broj,
+ * sve ispred njegovog flighta zajedno. Bez podatka → null.
+ */
+export function legacyLiftersAhead(flight: Flight | null, a: number | null, b: number | null): number | null {
+  if (flight === 'B') return a
+  if (flight === 'C') return a == null && b == null ? null : (a ?? 0) + (b ?? 0)
+  return null
 }
 
 export function scheduleTimes(s: ScheduleInput): ScheduleTimes {
   const mpa = s.minutesPerAttempt ?? DEFAULTS.minutesPerAttempt
   const lead = s.warmupLead ?? DEFAULTS.warmupLead
-  const before = liftersBefore(s.flight, s.liftersA, s.liftersB)
+  const before = liftersBefore(s.flight, s.liftersAhead)
   const estimate = s.compStart != null && before != null ? s.compStart + before * 3 * mpa : null
   const squatStarts = s.announcedSquat ?? estimate
   return {
@@ -133,16 +146,37 @@ export function scheduleTimes(s: ScheduleInput): ScheduleTimes {
 }
 
 /**
- * Kad lifter stvarno stane na vagu: vaganje ide redom po lotu, pa je lot N na
- * vagi otprilike početak vage + (N − 1) × minute po lifteru, najkasnije kad se
- * vaga zatvara. Zaokružuje se prema dolje: ranija procjena je sigurnija.
- * Bez lota vrijedi početak vage, kao u tablici.
+ * Kad lifter stvarno stane na vagu: vaganje ide redom po lotu unutar grupe, pa
+ * je lot N na vagi otprilike početak vage + (N − prvi lot grupe) × minute po
+ * lifteru, najkasnije kad se vaga zatvara. Lotovi se izvlače za cijelo
+ * natjecanje (grupa može imati 120–140), zato se broji od prvog lota grupe;
+ * bez raspona od 1. Zaokružuje se prema dolje: ranija procjena je sigurnija.
+ * Bez lota, ili s lotom ispod raspona, vrijedi početak vage, kao u tablici.
  */
-export function weighInFromLot(weighInStart: number | null, lot: number | null, perLifter: number | null): number | null {
+export function weighInFromLot(weighInStart: number | null, lot: number | null, perLifter: number | null, firstLot: number | null = null): number | null {
   if (weighInStart == null) return null
-  if (lot == null || lot < 1) return weighInStart
+  const first = firstLot != null && firstLot >= 1 ? Math.floor(firstLot) : 1
+  if (lot == null || lot < first) return weighInStart
   const per = perLifter ?? DEFAULTS.weighInPerLifter
-  return weighInStart + Math.min(Math.floor((Math.floor(lot) - 1) * per), DEFAULTS.weighInDuration)
+  return weighInStart + Math.min(Math.floor((Math.floor(lot) - first) * per), DEFAULTS.weighInDuration)
+}
+
+export type LotOrder = { position: number; count: number | null; inRange: boolean }
+
+/**
+ * Koji je lifter po redu na vagi u svojoj grupi (1 = prvi) i koliko ih je u
+ * rasponu lotova. Bez lota → null; bez raspona broji od lota 1.
+ */
+export function lotOrder(lot: number | null, from: number | null, to: number | null): LotOrder | null {
+  if (lot == null || lot < 1) return null
+  const l = Math.floor(lot)
+  const f = from != null && from >= 1 ? Math.floor(from) : 1
+  const t = to != null && to >= f ? Math.floor(to) : null
+  return {
+    position: l - f + 1,
+    count: t != null ? t - f + 1 : null,
+    inRange: l >= f && (t == null || l <= t),
+  }
 }
 
 // ── MEET CARD: pokušaji ───────────────────────────────────────────
