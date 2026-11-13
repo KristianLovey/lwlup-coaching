@@ -1,4 +1,7 @@
 'use client'
+import * as Popover from '@radix-ui/react-popover'
+import { toast } from '@/components/ui/toast'
+import { confirmDialog } from '@/components/ui/confirm'
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/client'
@@ -40,7 +43,7 @@ function TrainingLoader() {
         <span style={{ fontSize: '0.62rem', letterSpacing: '0.22em', fontFamily: 'var(--fm)', fontWeight: 700 }}>UČITAVAMO TVOJ TRENING…</span>
       </div>
       {[0, 1, 2].map(i => (
-        <div key={i} className="t-skel" style={{ height: i === 0 ? '120px' : '74px', borderRadius: '14px', marginBottom: '10px', animationDelay: `${i * 0.15}s` }} />
+        <div key={i} className="t-skel" style={{ height: i === 0 ? '120px' : '74px', borderRadius: 'var(--t-r)', marginBottom: '10px', animationDelay: `${i * 0.15}s` }} />
       ))}
       <style>{`
         .t-skel { background: linear-gradient(90deg, var(--t-s1) 0%, var(--t-s3) 50%, var(--t-s1) 100%); background-size: 200% 100%; border: 1px solid var(--t-border); animation: tSkel 1.4s ease-in-out infinite; }
@@ -80,18 +83,9 @@ export default function TrainingPage() {
   }, [])
   useEffect(() => { localStorage.setItem('training:activeTab', activeTab) }, [activeTab])
   const router = useRouter()
-  const blockSelectorRef = useRef<HTMLDivElement>(null)
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (blockSelectorRef.current && !blockSelectorRef.current.contains(e.target as Node))
-        setShowBlockSelector(false)
-    }
-    if (showBlockSelector) document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [showBlockSelector])
 
   useEffect(() => {
     const init = async () => {
@@ -264,10 +258,10 @@ export default function TrainingPage() {
     const today = new Date(); const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
     // novi blok ne postaje trenutni sam — trener ga označi kvačicom (osim prvog bloka)
     const prep = await prepareNewBlock(supabase, allBlocks)
-    if (prep.error) { alert(`Greška pri zaključavanju trenutnog bloka: ${prep.error}`); setSaving(false); return }
+    if (prep.error) { toast.error(`Greška pri zaključavanju trenutnog bloka: ${prep.error}`); setSaving(false); return }
     if (prep.pinnedId) setAllBlocks(bs => withCurrent(bs, prep.pinnedId!) as BlockSummary[])
     const { data, error } = await supabase.from('blocks').insert({ athlete_id: effectiveAthleteId, name, start_date: today.toISOString().split('T')[0], end_date: endDate.toISOString().split('T')[0], status: prep.status }).select('id, name, status, start_date, end_date').single()
-    if (error) alert(`Greška pri kreiranju bloka: ${error.message}`)
+    if (error) toast.error(`Greška pri kreiranju bloka: ${error.message}`)
     if (data) {
       setAllBlocks(b => [data as BlockSummary, ...b])
       await switchBlock(data.id)
@@ -299,7 +293,7 @@ export default function TrainingPage() {
   /** Kvačica (trener/admin): blok postaje trenutni. Otvoreni blok ostaje isti. */
   const makeCurrent = async (blockId: string) => {
     const err = await setCurrentBlock(supabase, blockId, allBlocks)
-    if (err) { alert(`Greška pri postavljanju trenutnog bloka: ${err}`); return }
+    if (err) { toast.error(`Greška pri postavljanju trenutnog bloka: ${err}`); return }
     setAllBlocks(bs => withCurrent(bs, blockId) as BlockSummary[])
     setBlock(b => b ? { ...b, status: b.id === blockId ? 'active' : (b.status === 'active' ? 'planned' : b.status) } : b)
   }
@@ -362,7 +356,7 @@ export default function TrainingPage() {
     const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
     // kopija je novi blok → ne postaje trenutna sama
     const prep = await prepareNewBlock(supabase, allBlocks)
-    if (prep.error) { alert(`Greška pri zaključavanju trenutnog bloka: ${prep.error}`); setSaving(false); return }
+    if (prep.error) { toast.error(`Greška pri zaključavanju trenutnog bloka: ${prep.error}`); setSaving(false); return }
     if (prep.pinnedId) setAllBlocks(bs => withCurrent(bs, prep.pinnedId!) as BlockSummary[])
     const { data: nb } = await supabase.from('blocks').insert({
       athlete_id: effectiveAthleteId, name: name.trim(),
@@ -409,17 +403,17 @@ export default function TrainingPage() {
 
   const deleteBlock = async () => {
     if (!block) return
-    if (!confirm(`Briši blok "${block.name}"? Ova radnja je nepovratna i briše sve tjedne i treninge.`)) return
+    if (!(await confirmDialog({ title: `Obrisati blok "${block.name}"?`, description: 'Ova radnja je nepovratna i briše sve tjedne i treninge.', confirmLabel: 'Obriši', destructive: true }))) return
     setSaving(true)
     const { error: delErr } = await supabase.from('blocks').delete().eq('id', block.id)
-    if (delErr) { alert(`Greška pri brisanju bloka: ${delErr.message}`); setSaving(false); return }
+    if (delErr) { toast.error(`Greška pri brisanju bloka: ${delErr.message}`); setSaving(false); return }
     const wasCurrent = currentBlock?.id === block.id
     const remaining = allBlocks.filter(b => b.id !== block.id)
     const next = currentBlockOf(remaining)
     if (next && wasCurrent) {
       // obrisan je trenutni → trenutni postaje zadnji kreirani
       const err = await setCurrentBlock(supabase, next.id, remaining)
-      if (err) alert(`Greška pri postavljanju trenutnog bloka: ${err}`)
+      if (err) toast.error(`Greška pri postavljanju trenutnog bloka: ${err}`)
       setAllBlocks(withCurrent(remaining, next.id) as BlockSummary[])
     } else {
       setAllBlocks(remaining)
@@ -542,7 +536,7 @@ export default function TrainingPage() {
 
             {/* Error */}
             {error && (
-              <div style={{ padding: '14px 18px', background: 'rgba(239,53,53,0.06)', border: '1px solid rgba(239,53,53,0.18)', color: '#ff8080', fontSize: '0.84rem', borderRadius: '10px', marginBottom: '24px' }}>{error}</div>
+              <div style={{ padding: '14px 18px', background: 'rgba(239,53,53,0.06)', border: '1px solid rgba(239,53,53,0.18)', color: '#ff8080', fontSize: '0.84rem', borderRadius: 'var(--t-r)', marginBottom: '24px' }}>{error}</div>
             )}
 
             {/* No block — tek kad je baza stvarno odgovorila, ne dok se još dohvaća */}
@@ -558,7 +552,7 @@ export default function TrainingPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '340px' }}>
                       {allBlocks.map((b: BlockSummary) => (
                         <button key={b.id} onClick={() => switchBlock(b.id)}
-                          style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 18px', borderRadius: '14px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', cursor: 'pointer', textAlign: 'left' as const, transition: 'all 0.15s' }}
+                          style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 18px', borderRadius: 'var(--t-r)', background: 'var(--t-s1)', border: '1px solid var(--t-border)', cursor: 'pointer', textAlign: 'left' as const, transition: 'all 0.15s' }}
                           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.28)' }}
                           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)' }}>
                           <FolderOpen size={16} color="rgba(255,255,255,0.35)" style={{ flexShrink: 0 }} />
@@ -602,7 +596,7 @@ export default function TrainingPage() {
                 <div style={{ animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1)', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
 
                   {/* Red 1: ime + status */}
-                  <div className="hero-name" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', padding: '14px 18px', borderRadius: '14px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', position: 'relative', overflow: 'hidden' }}>
+                  <div className="hero-name" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', padding: '14px 18px', borderRadius: 'var(--t-r)', background: 'var(--t-s1)', border: '1px solid var(--t-border)', position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', right: '-30px', top: '-50px', width: '140px', height: '140px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,53,53,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
                     <h1 style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: 'clamp(26px, 3.2vw, 40px)', lineHeight: 1.05, margin: 0, color: '#f0f0f0', minWidth: 0 }}>
                       {athleteName.split(' ')[0] || athleteName}
@@ -617,7 +611,7 @@ export default function TrainingPage() {
                   </div>
 
                   {/* Red 2: 4 statistike — uvijek u jednom redu, i na mobitelu */}
-                  <div className="stats-4col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '1px', borderRadius: '14px', overflow: 'hidden', background: 'var(--t-border)', border: '1px solid var(--t-border)' }}>
+                  <div className="stats-4col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '1px', borderRadius: 'var(--t-r)', overflow: 'hidden', background: 'var(--t-border)', border: '1px solid var(--t-border)' }}>
                     {[
                       { num: block.weeks?.length ?? 0, sub: '', label: 'TJEDANA', delta: 'u bloku' },
                       { num: completedWorkouts, sub: `/${totalWorkouts}`, label: 'TRENINGA', delta: `${totalWorkouts - completedWorkouts} preostalo` },
@@ -636,14 +630,15 @@ export default function TrainingPage() {
 
                   {/* Red 3: aktivni blok (dropdown) + odbrojavanje do natjecanja */}
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'stretch' }}>
-                    <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 0 }} ref={blockSelectorRef}>
+                    <Popover.Root open={showBlockSelector} onOpenChange={setShowBlockSelector}>
+                    <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 0 }}>
+                      <Popover.Trigger asChild>
                       <button
-                        onClick={() => setShowBlockSelector(!showBlockSelector)}
-                        style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '10px 14px', borderRadius: '14px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', cursor: 'pointer', transition: 'border-color 0.2s', textAlign: 'left' as const, boxSizing: 'border-box' as const }}
+                        style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '10px 14px', borderRadius: 'var(--t-r)', background: 'var(--t-s1)', border: '1px solid var(--t-border)', cursor: 'pointer', transition: 'border-color 0.2s', textAlign: 'left' as const, boxSizing: 'border-box' as const }}
                         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--t-border-hi)' }}
                         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--t-border)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
-                          <div style={{ width: '32px', height: '32px', borderRadius: '9px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: 'var(--t-r)', background: 'var(--t-s3)', border: '1px solid var(--t-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <FolderOpen size={14} color="rgba(255,255,255,0.35)" />
                           </div>
                           <div style={{ minWidth: 0 }}>
@@ -657,10 +652,13 @@ export default function TrainingPage() {
                           <ChevronDown size={14} color="rgba(255,255,255,0.25)" style={{ transform: showBlockSelector ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                         </div>
                       </button>
+                      </Popover.Trigger>
 
                       {/* Dropdown: izbor bloka + preimenovanje (upravljanje blokom na jednom mjestu) */}
-                      {showBlockSelector && (
-                        <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 100, background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '12px', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', overflow: 'hidden', animation: 'dropDown 0.18s ease' }}>
+                        {/* Escape u polju za naziv prekida samo uređivanje, ne zatvara listu */}
+                        <Popover.Content className="ui-pop" side="bottom" align="start" sideOffset={6} collisionPadding={12}
+                          onEscapeKeyDown={e => { if ((e.target as HTMLElement | null)?.tagName === 'INPUT') e.preventDefault() }}
+                          style={{ width: 'var(--radix-popover-trigger-width)', background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', overflow: 'hidden' }}>
                           <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
                             {allBlocks.map((b: BlockSummary, i: number) => {
                               const isCurrent = b.id === currentBlock?.id
@@ -704,9 +702,9 @@ export default function TrainingPage() {
                                 setAllBlocks(bs => bs.map(b2 => b2.id === block.id ? { ...b2, name: v } : b2) as BlockSummary[])
                               }} />
                           </div>
-                        </div>
-                      )}
+                        </Popover.Content>
                     </div>
+                    </Popover.Root>
 
                     {/* Kad nema nadolazećih natjecanja banner vrati null → prazan div se skriva (:empty) i blok zauzme cijeli red */}
                     <div className="hero-comp" style={{ flex: '1.3 1 300px', minWidth: 0 }}>{userId && <CompetitionBanner userId={userId} />}</div>
@@ -746,7 +744,7 @@ export default function TrainingPage() {
 
               {/* ── ADMIN/TRENER BANNER ── */}
               {(isAdmin || isCoach) && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '11px 16px', marginBottom: '20px', background: 'var(--t-s3)', border: '1px solid var(--t-border-hi)', borderLeft: '3px solid #ef3535', borderRadius: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '11px 16px', marginBottom: '20px', background: 'var(--t-s3)', border: '1px solid var(--t-border-hi)', borderLeft: '3px solid #ef3535', borderRadius: 'var(--t-r)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef3535', flexShrink: 0, boxShadow: '0 0 6px rgba(239,53,53,0.5)' }} />
                     <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--fm)', fontWeight: 500 }}>
@@ -757,7 +755,7 @@ export default function TrainingPage() {
                   </div>
                   <a
                     href={isCoach ? '/trainer' : '/admin'}
-                    style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '6px', fontSize: '0.58rem', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.1em', color: '#f0f0f0', textDecoration: 'none', transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
+                    style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r-sm)', fontSize: '0.58rem', fontFamily: 'var(--fm)', fontWeight: 700, letterSpacing: '0.1em', color: '#f0f0f0', textDecoration: 'none', transition: 'all 0.15s', whiteSpace: 'nowrap' as const }}
                     onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.25)' }}
                     onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.12)' }}>
                     {isCoach ? 'TRENER PANEL' : 'ADMIN PANEL'} →
@@ -819,31 +817,31 @@ export default function TrainingPage() {
           70%      { box-shadow: 0 0 0 8px transparent; }
         }
 
-        .nav-menu-item { width:100%; display:flex; align-items:center; gap:10px; padding:9px 10px; background: transparent; border: none; cursor:pointer; color:#999; font-size:0.82rem; font-family:var(--fm); transition:all 0.15s; text-align:left; border-radius:6px; }
+        .nav-menu-item { width:100%; display:flex; align-items:center; gap:10px; padding:9px 10px; background: transparent; border: none; cursor:pointer; color:#999; font-size:0.82rem; font-family:var(--fm); transition:all 0.15s; text-align:left; border-radius:var(--t-r-sm); }
         .nav-menu-item:hover { background: #161618; color:#e0e0e0; }
         .nav-menu-admin:hover { color:#ef4444 !important; }
         .nav-menu-logout { color:#666; }
         .nav-menu-logout:hover { background: #1a0a0a !important; color:#ff7070 !important; }
 
-        .cat-btn { padding:4px 12px; font-size:0.62rem; letter-spacing:0.12em; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:var(--fm); background: transparent; color:#555; border: 1px solid var(--t-border); border-radius:5px; }
+        .cat-btn { padding:4px 12px; font-size:0.62rem; letter-spacing:0.12em; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:var(--fm); background: transparent; color:#555; border: 1px solid var(--t-border); border-radius:var(--t-r-sm); }
         .cat-btn:hover { border-color: var(--t-border-hi); color:#aaa; }
         .cat-btn-active { background: #e0e0e0 !important; color:#000 !important; border-color: #e0e0e0 !important; }
 
         .icon-btn-danger { background: transparent; border: none; cursor:pointer; color:#555; padding:4px; display:flex; align-items:center; justify-content:center; transition:color 0.15s; border-radius:4px; }
         .icon-btn-danger:hover { color:#ef4444; background: #1a0a0a; }
-        .icon-btn { width:28px; height:28px; border-radius:8px; border: 1px solid var(--t-border); background: var(--t-s2); display:grid; place-items:center; color:rgba(255,255,255,0.55); cursor:pointer; transition:all 0.2s; }
+        .icon-btn { width:28px; height:28px; border-radius:var(--t-r-sm); border: 1px solid var(--t-border); background: var(--t-s2); display:grid; place-items:center; color:rgba(255,255,255,0.55); cursor:pointer; transition:all 0.2s; }
         .icon-btn:hover { border-color: var(--t-border-hi); color:#fff; background: var(--t-s3); }
 
-        .done-badge { display:flex; align-items:center; gap:6px; padding:6px 12px; border: 1px solid var(--t-border); cursor:pointer; transition:all 0.2s; border-radius:6px; background: var(--t-s3); }
+        .done-badge { display:flex; align-items:center; gap:6px; padding:6px 12px; border: 1px solid var(--t-border); cursor:pointer; transition:all 0.2s; border-radius:var(--t-r-sm); background: var(--t-s3); }
         .done-badge span { font-size:0.54rem; letter-spacing:0.2em; color:rgba(255,255,255,0.55); font-family:var(--fm); font-weight:800; }
         .done-badge:hover { border-color: var(--t-border-hi); background: var(--t-s3); }
         .done-badge-active { border-color: rgba(34,197,94,0.45) !important; background: rgba(34,197,94,0.1) !important; }
         .done-badge-active span { color:#4ade80 !important; }
 
-        .add-btn { width:100%; padding:10px; background: var(--t-s2); border: 1px dashed var(--t-border); color:rgba(255,255,255,0.55); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; font-size:0.6rem; letter-spacing:0.22em; font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:6px; }
+        .add-btn { width:100%; padding:10px; background: var(--t-s2); border: 1px dashed var(--t-border); color:rgba(255,255,255,0.55); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; font-size:0.6rem; letter-spacing:0.22em; font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:var(--t-r-sm); }
         .add-btn:hover { border-color: var(--t-border-hi); color:rgba(255,255,255,0.65); background: var(--t-s3); }
 
-        .add-week-btn { width:100%; padding:18px; background: var(--t-s2); border: 1px dashed var(--t-border); color:rgba(255,255,255,0.55); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-size:0.62rem; letter-spacing:0.3em; font-family:var(--fm); font-weight:800; transition:all 0.2s; border-radius:10px; margin-top:8px; }
+        .add-week-btn { width:100%; padding:18px; background: var(--t-s2); border: 1px dashed var(--t-border); color:rgba(255,255,255,0.55); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-size:0.62rem; letter-spacing:0.3em; font-family:var(--fm); font-weight:800; transition:all 0.2s; border-radius:var(--t-r); margin-top:8px; }
         .add-week-btn:hover { border-color: var(--t-border-hi); color:rgba(255,255,255,0.65); background: var(--t-s3); }
 
         .action-btn { display:flex; align-items:center; gap:7px; background: transparent; border: none; color:#555; cursor:pointer; font-size:0.58rem; letter-spacing:0.2em; font-family:var(--fm); font-weight:800; transition:all 0.15s; white-space:nowrap; padding:0 16px; }
@@ -876,10 +874,10 @@ export default function TrainingPage() {
         /* Zaglavlje treninga: redovi ime → 4 statistike → blok + natjecanje → tipke.
            4 statistike ostaju u jednom redu i na mobitelu — samo se stisnu. */
         .hero-comp:empty { display: none; }
-        .hero-action { display:flex; align-items:center; gap:12px; width:100%; padding:14px 16px; border-radius:14px; background:var(--t-s1); border:1px solid var(--t-border); cursor:pointer; color:#e8e8e8; font-family:var(--fm); transition:border-color 0.2s, background 0.2s, transform 0.15s; box-sizing:border-box; }
+        .hero-action { display:flex; align-items:center; gap:12px; width:100%; padding:14px 16px; border-radius:var(--t-r); background:var(--t-s1); border:1px solid var(--t-border); cursor:pointer; color:#e8e8e8; font-family:var(--fm); transition:border-color 0.2s, background 0.2s, transform 0.15s; box-sizing:border-box; }
         .hero-action:hover { background:var(--t-s2); transform:translateY(-1px); }
         .hero-action:active { transform:scale(0.98); }
-        .hero-action-ico { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; flex-shrink:0; background:var(--t-s3); border:1px solid var(--t-border); }
+        .hero-action-ico { width:34px; height:34px; border-radius:var(--t-r); display:grid; place-items:center; flex-shrink:0; background:var(--t-s3); border:1px solid var(--t-border); }
         .hero-action-title { display:block; font-size:0.66rem; letter-spacing:0.18em; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .hero-action-sub { display:block; font-size:0.58rem; color:rgba(255,255,255,0.55); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .hero-action-prev .hero-action-ico { color:#facc15; }
@@ -924,7 +922,7 @@ export default function TrainingPage() {
       <div className="fab-nav" style={{ position: 'fixed', bottom: '24px', right: '20px', zIndex: 1000 }}>
         {navOpen && <div onClick={() => setNavOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: -1 }} />}
         {navOpen && (
-          <div style={{ position: 'absolute', bottom: '64px', right: 0, background: 'rgba(10,10,10,0.97)', border: '1px solid var(--t-border)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.7)', backdropFilter: 'blur(24px)', animation: 'fadeUp 0.18s cubic-bezier(0.16,1,0.3,1)', minWidth: '160px' }}>
+          <div style={{ position: 'absolute', bottom: '64px', right: 0, background: 'rgba(10,10,10,0.97)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.7)', backdropFilter: 'blur(24px)', animation: 'fadeUp 0.18s cubic-bezier(0.16,1,0.3,1)', minWidth: '160px' }}>
             {([['program','Program'],['hub','Hub i Alati'],['meet','Meet Day']] as [string,string][]).map(([tab,label]) => (
               <button key={tab} onClick={() => { setActiveTab(tab as 'program'|'hub'|'meet'); setNavOpen(false) }}
                 style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '14px 18px', background: activeTab === tab ? 'rgba(239,53,53,0.09)' : 'transparent', border: 'none', borderBottom: '1px solid var(--t-border)', color: activeTab === tab ? '#fca5a5' : 'rgba(255,255,255,0.7)', fontFamily: 'var(--fm)', fontSize: '0.78rem', fontWeight: activeTab === tab ? 700 : 400, letterSpacing: '0.06em', cursor: 'pointer', textAlign: 'left' as const, borderLeft: activeTab === tab ? '3px solid #ef3535' : '3px solid transparent' }}>

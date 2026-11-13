@@ -1,10 +1,12 @@
 'use client'
+import { Num } from '@/components/ui/num'
+import { confirmDialog } from '@/components/ui/confirm'
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { AlertTriangle, Check, Loader2, Trash2, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { MeetAttempt } from './types'
 import {
-  CUT_TYPES, DEFAULTS, FLIGHTS, LIFTS, attemptWarnings, duringMeet, expFromWeightClass, flightNo, fmt0, fmt1, fmtJump,
+  CUT_TYPES, DEFAULTS, FLIGHTS, xround, LIFTS, attemptWarnings, duringMeet, expFromWeightClass, flightNo, fmt0, fmt1, fmtJump,
   formatTime, isMorningSession, jumps, keyNumbers, legacyLiftersAhead, lotOrder, parseNum, parseTime, scheduleTimes,
   timeline, totals, weighInFromLot,
   type CutType, type Flight, type Lift, type LiftPlan, type Plans,
@@ -59,6 +61,9 @@ const ATT_ROWS: readonly (readonly [string, PlanKey, PlanKey, PlanKey])[] = [
   ['3', 'a3Min', 'a3Plan', 'a3Max'],
 ]
 const WU_ROWS = ['BAR', '1', '2', '3', '4', '5', '6', 'EXTRA'] as const
+// prikaz kao fmt1/fmtJump ("522,5", "+12,5"), ali animiran (NumberFlow); vrijednost prije toga xround
+const KG_FMT = { minimumFractionDigits: 1, maximumFractionDigits: 1 }
+const JUMP_FMT = { ...KG_FMT, signDisplay: 'always' as const }
 
 const s = (v: number | null | undefined) => (v == null ? '' : String(v))
 const emptyWarmups = (): Warmups => ({ bar: { kg: 'Bar', reps: 'As needed' }, rows: Array.from({ length: 6 }, () => ({ kg: '', reps: '' })), extra: { kg: '', reps: '' } })
@@ -159,8 +164,8 @@ function Jumps({ j12, j23 }: { j12: number | null; j23: number | null }) {
   return (
     <div className="mc-card-foot">
       <span className="mc-lbl">JUMPS</span>
-      <span>1→2<b>{fmtJump(j12) || '—'}</b></span>
-      <span>2→3<b>{fmtJump(j23) || '—'}</b></span>
+      <span>1→2<b><Num value={j12 == null ? null : xround(j12, 1)} locales="hr-HR" format={JUMP_FMT} /></b></span>
+      <span>2→3<b><Num value={j23 == null ? null : xround(j23, 1)} locales="hr-HR" format={JUMP_FMT} /></b></span>
     </div>
   )
 }
@@ -342,7 +347,7 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
   const removeLift = async (lift: Lift) => {
     const existing = attempts.find(a => a.lift === lift)
     if (!existing) { setL(lift, liftFromRow(null)); return }
-    if (!confirm(`Obriši plan, zagrijavanje i rezultate za ${LIFT_LABEL[lift].toLowerCase()}? Ovo se ne može vratiti.`)) return
+    if (!(await confirmDialog({ title: `Obrisati ${LIFT_LABEL[lift].toLowerCase()}?`, description: 'Brišu se plan, zagrijavanje i rezultati. Ovo se ne može vratiti.', confirmLabel: 'Obriši', destructive: true }))) return
     const { error } = await supabase.from('meet_attempts').delete().eq('id', existing.id)
     if (error) { setSaveMsg({ ok: false, text: 'Brisanje nije uspjelo: ' + error.message }); return }
     setL(lift, liftFromRow(null))
@@ -534,7 +539,7 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
               ] as const).map(([lbl, plan, mn, mx], i) => (
                 <div key={lbl} className={`mc-total-cell${i === 2 ? ' mc-total-target' : ''}`}>
                   <span className="mc-lbl">{lbl}</span>
-                  <span className="mc-total-val">{fmt1(plan) || '—'}</span>
+                  <span className="mc-total-val"><Num value={plan == null ? null : xround(plan, 1)} locales="hr-HR" format={KG_FMT} /></span>
                   <span className="mc-total-range">{i > 0 && (mn != null || mx != null) ? `${fmt1(mn) || '—'} – ${fmt1(mx) || '—'}` : ' '}</span>
                 </div>
               ))}
@@ -560,7 +565,7 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
               const planOf = [L.plan.a1Plan, L.plan.a2Plan, L.plan.a3Plan]
               return (
                 <div key={l} className="mc-card" style={liftVar(LIFT_COLOR[l])}>
-                  <LiftHead lift={l}>{best != null && <span className="mc-best">{fmt1(best)} kg</span>}</LiftHead>
+                  <LiftHead lift={l}>{best != null && <span className="mc-best"><Num value={xround(best, 1)} locales="hr-HR" format={KG_FMT} /> kg</span>}</LiftHead>
                   <div className="mc-res">
                     {[0, 1, 2].map(i => {
                       const g = L.good[i]
@@ -726,10 +731,10 @@ export function MeetCardPanel({ athleteId, athleteName, competitionId, competiti
 const CHEVRON = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`
 
 const CSS = `
-.mc { --h: 44px; --r: 10px; --acc: #ef3535; display: flex; flex-direction: column; gap: 14px; font-family: var(--fm); color: #f0f0f0; }
+.mc { --h: 44px; --r: var(--t-r-sm); --acc: #ef3535; display: flex; flex-direction: column; gap: 14px; font-family: var(--fm); color: #f0f0f0; }
 
 /* ── zaglavlje ── */
-.mc-hero { position: relative; overflow: hidden; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 22px 24px; border: 1px solid var(--t-border-hi); border-radius: 16px; background: radial-gradient(120% 160% at 0% 0%, rgba(239,53,53,0.12), transparent 55%), var(--t-s1); }
+.mc-hero { position: relative; overflow: hidden; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 22px 24px; border: 1px solid var(--t-border-hi); border-radius: var(--t-r); background: radial-gradient(120% 160% at 0% 0%, rgba(239,53,53,0.12), transparent 55%), var(--t-s1); }
 .mc-hero::before { content: ''; position: absolute; left: 0; top: 18px; bottom: 18px; width: 3px; border-radius: 0 3px 3px 0; background: var(--acc); }
 .mc-hero-l { min-width: 0; }
 .mc-eyebrow { display: block; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 8px; }
@@ -738,13 +743,13 @@ const CSS = `
 .mc-chip { display: inline-flex; align-items: baseline; gap: 7px; height: 32px; box-sizing: border-box; padding: 8px 12px; border-radius: 999px; background: var(--t-s3); border: 1px solid var(--t-border-hi); font-size: 0.76rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .mc-chip i { font-style: normal; font-size: 0.5rem; letter-spacing: 0.14em; color: rgba(255,255,255,0.5); }
 
-.mc-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--t-s1); border: 1px solid var(--t-border); border-radius: 12px; }
-.mc-tab { height: 40px; border: 0; border-radius: 9px; background: transparent; color: rgba(255,255,255,0.55); font-family: var(--fm); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.18em; cursor: pointer; transition: background 0.2s, color 0.2s; }
+.mc-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--t-s1); border: 1px solid var(--t-border); border-radius: var(--t-r); }
+.mc-tab { height: 40px; border: 0; border-radius: var(--t-r); background: transparent; color: rgba(255,255,255,0.55); font-family: var(--fm); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.18em; cursor: pointer; transition: background 0.2s, color 0.2s; }
 .mc-tab:hover { color: #fff; }
 .mc-tab.on { background: #f0f0f0; color: #0a0a0a; }
 
 /* ── sekcije ── */
-.mc-sec { background: var(--t-s1); border: 1px solid var(--t-border); border-radius: 16px; padding: 18px 20px 20px; }
+.mc-sec { background: var(--t-s1); border: 1px solid var(--t-border); border-radius: var(--t-r); padding: 18px 20px 20px; }
 .mc-sec-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
 .mc-sec-n { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.08em; color: var(--acc); font-variant-numeric: tabular-nums; }
 .mc-sec-t { margin: 0; font-family: var(--fm); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.2em; color: #f0f0f0; }
@@ -775,7 +780,7 @@ textarea.mc-ta-short { min-height: var(--h); }
 .mc-unit { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.6rem; font-weight: 700; color: rgba(255,255,255,0.4); pointer-events: none; }
 
 .mc-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 3px; height: var(--h); box-sizing: border-box; padding: 3px; background: var(--t-s2); border: 1px solid var(--t-border); border-radius: var(--r); }
-.mc-seg-btn { border: 0; border-radius: 7px; background: transparent; color: rgba(255,255,255,0.5); font-family: var(--fm); font-size: 0.82rem; font-weight: 800; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.mc-seg-btn { border: 0; border-radius: var(--t-r-sm); background: transparent; color: rgba(255,255,255,0.5); font-family: var(--fm); font-size: 0.82rem; font-weight: 800; cursor: pointer; transition: background 0.15s, color 0.15s; }
 .mc-seg-btn:not(.on):not(:disabled):hover { background: var(--t-s3); color: #fff; }
 .mc-seg-btn.on { background: #f0f0f0; color: #0a0a0a; }
 .mc-seg-btn:disabled { cursor: default; }
@@ -790,7 +795,7 @@ textarea.mc-ta-short { min-height: var(--h); }
 .mc-flight { display: flex; align-items: center; gap: 4px; min-width: 0; height: var(--h); box-sizing: border-box; padding: 3px; background: var(--t-s2); border: 1px solid var(--t-border); border-radius: var(--r); transition: border-color 0.15s, background 0.15s; }
 .mc-flight:focus-within:not(.on) { border-color: var(--t-border-hi); }
 .mc-flight.on { border-color: rgba(255,255,255,0.45); background: var(--t-s3); }
-.mc-flight-no { flex-shrink: 0; width: 36px; height: 100%; border: 0; border-radius: 7px; background: var(--t-s3); color: rgba(255,255,255,0.55); font-family: var(--fm); font-size: 0.82rem; font-weight: 800; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.mc-flight-no { flex-shrink: 0; width: 36px; height: 100%; border: 0; border-radius: var(--t-r-sm); background: var(--t-s3); color: rgba(255,255,255,0.55); font-family: var(--fm); font-size: 0.82rem; font-weight: 800; cursor: pointer; transition: background 0.15s, color 0.15s; }
 .mc-flight-no:not(:disabled):hover { color: #fff; }
 .mc-flight.on .mc-flight-no { background: #f0f0f0; color: #0a0a0a; }
 .mc-flight-no:disabled { cursor: default; }
@@ -799,20 +804,20 @@ textarea.mc-ta-short { min-height: var(--h); }
 
 /* ── izračunate vrijednosti ── */
 .mc-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.mc-stat { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 14px 16px; background: var(--t-s2); border: 1px solid var(--t-border); border-radius: 12px; }
+.mc-stat { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 14px 16px; background: var(--t-s2); border: 1px solid var(--t-border); border-radius: var(--t-r); }
 .mc-stat-val { font-family: var(--fd); font-size: 1.75rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .mc-stat-sub { font-size: 0.58rem; color: rgba(255,255,255,0.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mc-stat-accent { background: linear-gradient(160deg, rgba(239,53,53,0.3), rgba(239,53,53,0.08)); border-color: rgba(239,53,53,0.55); }
 .mc-stat-accent .mc-lbl, .mc-stat-accent .mc-stat-sub { color: #fca5a5; }
 .mc-hint { margin: 14px 0 0; font-size: 0.66rem; line-height: 1.6; color: rgba(255,255,255,0.5); }
-.mc-empty { padding: 26px 16px; text-align: center; font-size: 0.74rem; color: rgba(255,255,255,0.55); background: var(--t-s2); border: 1px dashed var(--t-border-hi); border-radius: 12px; }
+.mc-empty { padding: 26px 16px; text-align: center; font-size: 0.74rem; color: rgba(255,255,255,0.55); background: var(--t-s2); border: 1px dashed var(--t-border-hi); border-radius: var(--t-r); }
 
 /* ── kartice po disciplini ── */
-.mc-card { --lc: #f0f0f0; display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 14px; background: var(--t-s2); border: 1px solid var(--t-border); border-radius: 14px; }
+.mc-card { --lc: #f0f0f0; display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 14px; background: var(--t-s2); border: 1px solid var(--t-border); border-radius: var(--t-r); }
 .mc-card .mc-in { background: var(--t-s1); }
 .mc-card-head { display: flex; align-items: center; gap: 9px; min-height: 28px; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.16em; color: var(--lc); }
 .mc-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: var(--lc); box-shadow: 0 0 10px color-mix(in srgb, var(--lc) 55%, transparent); }
-.mc-icon-btn { margin-left: auto; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; border: 1px solid transparent; background: transparent; color: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.15s; }
+.mc-icon-btn { margin-left: auto; width: 28px; height: 28px; display: grid; place-items: center; border-radius: var(--t-r-sm); border: 1px solid transparent; background: transparent; color: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.15s; }
 .mc-icon-btn:hover { color: #f87171; border-color: rgba(248,113,113,0.4); background: rgba(248,113,113,0.08); }
 .mc-best { margin-left: auto; font-family: var(--fd); font-size: 0.95rem; letter-spacing: 0; color: #f0f0f0; }
 
@@ -830,7 +835,7 @@ textarea.mc-ta-short { min-height: var(--h); }
 
 .mc-total { margin-top: 12px; }
 .mc-total-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.mc-total-cell { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 13px 15px; background: var(--t-s1); border: 1px solid var(--t-border); border-radius: 12px; }
+.mc-total-cell { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 13px 15px; background: var(--t-s1); border: 1px solid var(--t-border); border-radius: var(--t-r); }
 .mc-total-val { font-family: var(--fd); font-size: 1.65rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .mc-total-range { font-size: 0.62rem; color: rgba(255,255,255,0.5); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mc-total-target { background: linear-gradient(160deg, rgba(239,53,53,0.26), rgba(239,53,53,0.06)); border-color: rgba(239,53,53,0.5); }
@@ -856,7 +861,7 @@ textarea.mc-ta-short { min-height: var(--h); }
 .mc-kv span { font-size: 0.66rem; color: rgba(255,255,255,0.6); }
 .mc-kv b { font-family: var(--fd); font-size: 1.08rem; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .mc-kv-accent span, .mc-kv-accent b { color: #fca5a5; }
-.mc-recipe { margin-top: 12px; padding: 14px 16px; border-radius: 12px; background: var(--t-s2); border: 1px solid var(--t-border); border-left: 3px solid var(--acc); font-size: 0.8rem; font-weight: 600; line-height: 1.6; }
+.mc-recipe { margin-top: 12px; padding: 14px 16px; border-radius: var(--t-r); background: var(--t-s2); border: 1px solid var(--t-border); border-left: 3px solid var(--acc); font-size: 0.8rem; font-weight: 600; line-height: 1.6; }
 .mc-recipe .mc-lbl { display: block; margin-bottom: 6px; }
 
 .mc-tl { position: relative; list-style: none; margin: 0; padding: 0; }
@@ -879,14 +884,14 @@ textarea.mc-ta-short { min-height: var(--h); }
 .mc-dl-row.hi dd { font-weight: 800; color: #fff; }
 
 /* ── spremanje: uvijek pri dnu ekrana ── */
-.mc-savebar { position: sticky; bottom: 24px; z-index: 20; display: flex; align-items: center; gap: 14px; padding: 9px 9px 9px 18px; background: rgba(18,18,18,0.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--t-border-hi); border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.55); }
+.mc-savebar { position: sticky; bottom: 24px; z-index: 20; display: flex; align-items: center; gap: 14px; padding: 9px 9px 9px 18px; background: rgba(18,18,18,0.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--t-border-hi); border-radius: var(--t-r); box-shadow: 0 12px 40px rgba(0,0,0,0.55); }
 .mc-save-state { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; font-size: 0.68rem; color: rgba(255,255,255,0.6); }
 .mc-save-state::before { content: ''; width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: #4ade80; }
 .mc-save-state.dirty { color: #fcd34d; }
 .mc-save-state.dirty::before { background: #f59e0b; box-shadow: 0 0 8px rgba(245,158,11,0.7); }
 .mc-save-state.err { color: #f87171; }
 .mc-save-state.err::before { background: #f87171; }
-.mc-save { flex-shrink: 0; height: 40px; padding: 0 22px; display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 10px; background: #fff; color: #000; font-family: var(--fm); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.14em; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.mc-save { flex-shrink: 0; height: 40px; padding: 0 22px; display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: var(--t-r); background: #fff; color: #000; font-family: var(--fm); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.14em; cursor: pointer; transition: background 0.15s, color 0.15s; }
 .mc-save:disabled { background: var(--t-s3); color: rgba(255,255,255,0.35); cursor: default; }
 .mc-spin { animation: spin 1s linear infinite; }
 .mc-alert { padding: 11px 14px; border-radius: var(--r); background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.35); color: #f87171; font-size: 0.72rem; }

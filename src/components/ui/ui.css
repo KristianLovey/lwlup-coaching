@@ -1,0 +1,63 @@
+/* ───────────────────────────────────────────────────────────
+   Zajednički UI sloj panela (Sonner, Radix, cmdk, Vaul).
+   Samo tokeni panela (--t-*, --t-r, --fb, --fd); admin ih mapira na svoje,
+   pa sve prati i svijetlu temu. Fallbackovi su za /training (samo tamna tema).
+   ─────────────────────────────────────────────────────────── */
+
+.ui-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ── gumbi u dijalozima ──
+   Pod .ui-confirm namjerno: admin resetira gumbe s `.lwl-admin-os button` (0,1,1),
+   pa bi sama klasa .ui-btn (0,1,0) izgubila pozadinu i rub. */
+.ui-confirm .ui-btn { height: 38px; padding: 0 16px; border-radius: var(--t-r-sm); border: 1px solid var(--t-border-hi); background: var(--t-s2); color: var(--text, #f5f4f1); font-family: var(--font-jb), ui-monospace, monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.ui-confirm .ui-btn:hover { background: var(--t-s3); }
+.ui-confirm .ui-btn:focus-visible { outline: 2px solid var(--text, #f5f4f1); outline-offset: 2px; }
+.ui-confirm .ui-btn-primary { background: var(--text, #f5f4f1); color: var(--t-bg, #0a0a0a); border-color: transparent; }
+.ui-confirm .ui-btn-primary:hover { background: var(--text, #f5f4f1); opacity: 0.9; }
+.ui-confirm .ui-btn-danger { background: var(--accent, #ef3535); color: #fff; border-color: transparent; }
+.ui-confirm .ui-btn-danger:hover { background: var(--accent, #ef3535); filter: brightness(1.1); }
+
+/* ── potvrda (Radix AlertDialog) ── */
+.ui-scrim { position: fixed; inset: 0; z-index: 4500; background: rgba(0, 0, 0, 0.72); animation: ui-fade 0.16s ease-out; }
+.ui-confirm { position: fixed; z-index: 4501; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100vw - 32px)); box-sizing: border-box; padding: 20px; background: var(--t-s1); border: 1px solid var(--t-border-hi); border-radius: var(--t-r); box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.9); color: var(--text, #f5f4f1); font-family: var(--fb); animation: ui-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1); }
+.ui-confirm:focus { outline: none; }
+.ui-confirm-t { margin: 0; color: inherit; font-family: var(--fd); font-size: 1.2rem; font-weight: 700; line-height: 1.25; letter-spacing: -0.01em; }
+.ui-confirm-d { margin: 8px 0 0; font-size: 0.88rem; line-height: 1.5; color: var(--text-dim, rgba(255, 255, 255, 0.65)); }
+.ui-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+
+/* ── toastovi (Sonner) — selektor jači od Sonnerovog, koji se ubacuje kasnije u <head> ── */
+[data-sonner-toaster][data-sonner-theme][data-y-position] {
+  --normal-bg: var(--t-s2);
+  --normal-border: var(--t-border-hi);
+  --normal-text: var(--text, #f5f4f1);
+  --border-radius: var(--t-r);
+  font-family: var(--fb);
+}
+[data-sonner-toaster] [data-sonner-toast].ui-toast { box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.8); font-size: 0.86rem; }
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] { border-left: 3px solid var(--accent, #ef3535); }
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] [data-icon] { color: var(--accent, #ef3535); }
+[data-sonner-toaster] [data-sonner-toast][data-type="success"] [data-icon] { color: #4ade80; }
+
+/* ── izbornici i popoveri (Radix) — bez portala, pa nasljeđuju tokene panela ── */
+.ui-menu, .ui-pop { z-index: 4000; }
+.ui-menu { box-sizing: border-box; max-height: var(--radix-dropdown-menu-content-available-height); overflow-y: auto; background: var(--t-s1); border: 1px solid var(--t-border-hi); border-radius: var(--t-r); box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7); color: var(--text, #f5f4f1); }
+.ui-pop { max-height: var(--radix-popover-content-available-height); }
+.ui-menu:focus, .ui-pop:focus { outline: none; }
+.ui-menu[data-side="bottom"], .ui-pop[data-side="bottom"] { animation: ui-drop 0.16s cubic-bezier(0.16, 1, 0.3, 1); }
+.ui-menu[data-side="top"], .ui-pop[data-side="top"] { animation: ui-rise 0.16s cubic-bezier(0.16, 1, 0.3, 1); }
+.ui-item { display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; padding: 7px 14px; border: 0; background: none; color: var(--text-dim, rgba(255, 255, 255, 0.7)); font-family: var(--fm); font-size: 0.72rem; letter-spacing: 0.1em; white-space: nowrap; text-align: left; cursor: pointer; outline: none; user-select: none; }
+.ui-item:hover, .ui-item[data-highlighted] { background: var(--t-s3); color: var(--text, #fff); }
+/* ── pretraga / combobox (cmdk) ── */
+.ui-cmd-item { display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; padding: 8px 14px; color: var(--text-dim, rgba(255, 255, 255, 0.7)); font-family: var(--fm); font-size: 0.82rem; cursor: pointer; user-select: none; outline: none; }
+.ui-cmd-item.is-current { background: var(--cur-bg, var(--t-s2)); }
+.ui-cmd-item[data-selected="true"] { background: var(--t-s3); color: var(--text, #fff); }
+.ui-cmd-empty { padding: 12px 14px; color: rgba(255, 255, 255, 0.55); font-size: 0.75rem; font-family: var(--fm); }
+@keyframes ui-drop { from { opacity: 0; transform: translateY(-6px); } }
+@keyframes ui-rise { from { opacity: 0; transform: translateY(6px); } }
+
+@keyframes ui-fade { from { opacity: 0; } }
+@keyframes ui-pop { from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-scrim, .ui-confirm, .ui-menu, .ui-pop { animation: none; }
+}

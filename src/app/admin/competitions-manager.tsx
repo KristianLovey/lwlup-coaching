@@ -3,6 +3,7 @@
 // Dodaj ovu komponentu u admin/page.tsx i renderaj je unutar dashboarda
 // kao zasebni tab ili sekcija
 
+import { confirmDialog } from '@/components/ui/confirm'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
@@ -96,7 +97,7 @@ export function CompetitionsManager() {
   }
 
   const deleteComp = async (id: string) => {
-    if (!confirm('Obriši natjecanje i sve lifere s njega?')) return
+    if (!(await confirmDialog({ title: 'Obrisati natjecanje?', description: 'Briše se zajedno sa svim lifterima prijavljenima na njega.', confirmLabel: 'Obriši', destructive: true }))) return
     await supabase.from('competitions').delete().eq('id', id)
     setCompetitions(c => c.filter(x => x.id !== id))
   }
@@ -236,7 +237,7 @@ export function CompetitionsManager() {
         const athleteIds = new Set(comp.comp_athletes?.map(ca => ca.athlete_id) ?? [])
 
         return (
-          <div key={comp.id} className="comp-card-anim" style={{ border: '1px solid var(--border, rgba(255,255,255,0.08))', borderRadius: '14px', marginBottom: '12px', background: 'var(--surface-1, rgba(255,255,255,0.02))', overflow: 'hidden', boxShadow: '0 1px 0 rgba(255,255,255,0.04) inset, 0 18px 50px -28px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.4)' }}>
+          <div key={comp.id} className="comp-card-anim" style={{ border: '1px solid var(--border, rgba(255,255,255,0.08))', borderRadius: 'var(--t-r)', marginBottom: '12px', background: 'var(--surface-1, rgba(255,255,255,0.02))', overflow: 'hidden', boxShadow: '0 1px 0 rgba(255,255,255,0.04) inset, 0 18px 50px -28px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.4)' }}>
             {/* Status stripe */}
             <div style={{ height: '2px', background: STATUS_COLORS[comp.status], opacity: comp.status === 'completed' ? 0.3 : 0.8 }} />
 
@@ -292,7 +293,7 @@ export function CompetitionsManager() {
                     const compAthlete = comp.comp_athletes?.find(ca => ca.athlete_id === athlete.id)
 
                     return (
-                      <div key={athlete.id} className="comp-athlete-anim" style={{ border: `1px solid ${isSelected ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', background: isSelected ? 'rgba(255,255,255,0.04)' : 'transparent', transition: 'all 0.2s', animationDelay: `${Math.min(ai * 0.03, 0.4)}s` }}>
+                      <div key={athlete.id} className="comp-athlete-anim" style={{ border: `1px solid ${isSelected ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 'var(--t-r)', background: isSelected ? 'rgba(255,255,255,0.04)' : 'transparent', transition: 'all 0.2s', animationDelay: `${Math.min(ai * 0.03, 0.4)}s` }}>
                         {/* Athlete row */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', cursor: 'pointer' }}
                           {...clickable(() => toggleAthlete(comp.id, athlete.id), { label: athlete.name ?? 'Sportaš', pressed: isSelected })}>
@@ -326,7 +327,7 @@ export function CompetitionsManager() {
                                     type="number"
                                     defaultValue={(compAthlete as any)?.[f.key] ?? ''}
                                     onBlur={e => updateResult(comp.id, athlete.id, f.key, e.target.value)}
-                                    style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '7px', color: '#fff', padding: '9px 8px', fontSize: '0.92rem', fontWeight: 700, outline: 'none', fontFamily: 'var(--fd)', textAlign: 'center', boxSizing: 'border-box' }}
+                                    style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 'var(--t-r-sm)', color: '#fff', padding: '9px 8px', fontSize: '0.92rem', fontWeight: 700, outline: 'none', fontFamily: 'var(--fd)', textAlign: 'center', boxSizing: 'border-box' }}
                                   />
                                 </div>
                               ))}

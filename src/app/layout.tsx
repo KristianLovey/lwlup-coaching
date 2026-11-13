@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Oswald, Inter, JetBrains_Mono } from 'next/font/google'
+import { Oswald, Inter, JetBrains_Mono, Barlow } from 'next/font/google'
 import './globals.css'
 import { LanguageProvider } from '@/context/LanguageContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -22,6 +22,16 @@ const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-in',
+})
+
+// Tekst u admin i trening panelu (globals.css: --fb, .lwl-panel; admin-os.css: --font-body).
+// Javne stranice ostaju na Interu. Bez preloada: javne stranice ga ne trebaju.
+const barlow = Barlow({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600', '700', '800'],
+  preload: false,
+  display: 'swap',
+  variable: '--font-bw',
 })
 
 // Mono — used by the admin "OS" design for labels / tabular numbers
@@ -64,7 +74,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     // data-scroll-behavior: Next privremeno gasi glatko skrolanje (globals.css) dok mijenja stranicu
     // suppressHydrationWarning: data-perf postavlja skripta ispod prije Reacta
-    <html lang="hr" data-scroll-behavior="smooth" suppressHydrationWarning className={`${oswald.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="hr" data-scroll-behavior="smooth" suppressHydrationWarning className={`${oswald.variable} ${inter.variable} ${jetbrainsMono.variable} ${barlow.variable}`}>
       <head>
         {/* način za slabije uređaje — mora prije prvog iscrtavanja, inače animacije bljesnu */}
         <script dangerouslySetInnerHTML={{ __html: PERF_BOOT_SCRIPT }} />
@@ -75,7 +85,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {SUPABASE_ORIGIN && <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(SITE_JSON_LD) }} />
       </head>
-      <body className={inter.className}>
+      {/* suppressHydrationWarning: ekstenzije preglednika (npr. Grammarly) dodaju atribute na <body>
+          prije Reacta (data-gr-ext-installed…); vrijedi samo za atribute samog bodyja, ne za djecu */}
+      <body className={inter.className} suppressHydrationWarning>
         <CapacitorDetect />
         <LanguageProvider>
           <ErrorBoundary label="App">{children}</ErrorBoundary>

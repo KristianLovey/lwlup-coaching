@@ -10,7 +10,7 @@ Projekt ima **dva vizualna svijeta**. Nikad ih ne miješaj:
 ## 1) Javne / marketinške stranice (`/`, `/team`, `/records`, `/competitions`…)
 
 - Pozadina `#0e0e0e` – `#000`, bijela tipografija s prozirnostima (`rgba(255,255,255,0.3–0.65)`), **bez zaobljenja** (oštri rubovi), tanke linije `1px solid rgba(255,255,255,0.08–0.15)`.
-- Font varijable: `var(--fd)` display (Bricolage), `var(--fm)` mono (JetBrains). Hero naslovi: `clamp(3rem, 8–10vw, 6–8rem)`, `line-height: 0.9`.
+- Font varijable: `var(--fd)` naslovi (Oswald), `var(--fm)` tekst (Inter; u panelima ga `.lwl-panel` i `.lwl-admin-os` preusmjeravaju). Hero naslovi: `clamp(3rem, 8–10vw, 6–8rem)`, `line-height: 0.9`.
 - **Eyebrow etikete**: mono, `0.55–0.75rem`, `letter-spacing: 0.2–0.45em`, uppercase, prigušena boja. To je zaštitni znak — koristi ih iznad naslova i nad poljima.
 - Efekti: reveal-on-scroll (`useReveal` + IntersectionObserver, `translateY(30px)→0`, `cubic-bezier(0.16,1,0.3,1)`, ~0.7–1s), `ParticleCanvas`/`star-field` pozadine, grayscale slike koje se otkrivaju na hover (`filter: grayscale(0.6) → 0.2`, `scale(1.08)`).
 - Gumbi: bijela pozadina + crni tekst, uppercase mono, `letter-spacing: 0.2em+`; hover invert preko `::before` scaleX animacije (vidi `.join-button`).
@@ -28,8 +28,8 @@ Sav CSS je **scopan pod `.lwl-admin-os`** u `admin-os.css` — nikad globalni se
 | `--border` / `--border-strong` | `#232323` / `#3a3a3a` | linije |
 | `--text` / `--text-dim` / `--text-muted` / `--text-faint` | `#f5f4f1/#a6a6a2/#7c7c77/#565650` | hijerarhija teksta |
 | `--accent` / `--accent-soft` / `--accent-glow` | `#ef3535` / rgba 0.12 / rgba 0.35 | signalna crvena (štedljivo!) |
-| `--radius-xs…xl` | 8/12/18/24/32px | zaobljenja |
-| `--font-display` / `--font-mono` / `--font-body` | Bricolage / JetBrains / Bricolage | tipografija |
+| `--radius-xs…xl` | 4/4/6/6/6px (preko `--t-r-sm` / `--t-r` iz globals.css) | zaobljenja: ništa veće od 6px osim krugova i pilula |
+| `--font-display` / `--font-mono` / `--font-body` | Oswald / JetBrains Mono / Barlow | tipografija (u adminu je `--fm` mono) |
 | `--shadow-card` | inset highlight + duboka sjena | kartice |
 
 ### Tipografski obrasci
@@ -41,7 +41,8 @@ Sav CSS je **scopan pod `.lwl-admin-os`** u `admin-os.css` — nikad globalni se
 ### Komponente (postojeće klase — koristi ih, ne izmišljaj nove)
 
 - **Kartica**: `.card` + `.card-head` (`<span class="t">Naslov</span>` + `.card-tools`), collapse preko `.is-collapsed`.
-- **Modal**: `position:fixed; inset:0; background:rgba(0,0,0,0.8); zIndex:4000; display:grid; placeItems:center`, unutra `.card` s `maxWidth 380–560`, `onClick={onClose}` na scrimu + `stopPropagation` unutra. Akcije desno: `btn-a` (sekundarni) + `btn-a accent` (primarni).
+- **Biblioteke**: za modale, dropdowne, drawere, toastove, pretragu i animirane brojeve vidi tablicu "Koja biblioteka za koji problem" u `CLAUDE.md`. Opisi ručnih obrazaca ispod vrijede za postojeći kod; nove ne pisati ručno.
+- **Modal** (postojeći obrazac): `position:fixed; inset:0; background:rgba(0,0,0,0.8); zIndex:4000; display:grid; placeItems:center`, unutra `.card` s `maxWidth 380–560`, `onClick={onClose}` na scrimu + `stopPropagation` unutra. Akcije desno: `btn-a` (sekundarni) + `btn-a accent` (primarni).
 - **Forme**: `.field` (label + input), `.field-row` (grid kolone), `.edit-grid`/`.edit-card` za mrežu kartica s poljima, `.saved-flash` za potvrdu spremanja.
 - **Kontrole**: `.seg` segmented control (SQUAT/BENCH/DEADLIFT), `.range-select` + `.rs-caret` (mali select), `.os-select` (veliki select s chevronom), `.icon-sm` (+ `.danger`) ikonske akcije, `.ctrl.icon` topbar gumbi.
 - **Stanja**: `.os-empty` (prazno/prigušeno, hrvatska poruka s uputom što kliknuti), `Loader2` s klasom `.os-spin` za loading.

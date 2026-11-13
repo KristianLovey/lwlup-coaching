@@ -1,4 +1,8 @@
 'use client'
+import { confirmDialog } from '@/components/ui/confirm'
+import * as Popover from '@radix-ui/react-popover'
+import { Command } from 'cmdk'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
@@ -19,34 +23,9 @@ import {
   scopeKey, fieldKey, markIntent, markSaved, isSuperseded,
   reconcileLogs, enqueue, parseDecimal, type FieldVal,
 } from './set-log-sync'
-import { clickable } from '@/lib/a11y'
+import { clickable, useEscapeKey } from '@/lib/a11y'
 
 const supabase = createClient()
-
-// ─── CONFIRM DIALOG ───────────────────────────────────────────────
-function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onConfirm: () => void; onCancel: () => void }) {
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
-      onClick={onCancel}>
-      <div style={{ background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '14px', padding: '28px 32px', maxWidth: '340px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}
-        onClick={e => e.stopPropagation()}>
-        <p style={{ margin: '0 0 24px', color: 'rgba(255,255,255,0.85)', fontSize: '0.92rem', lineHeight: 1.5, textAlign: 'center', fontFamily: 'var(--fm)' }}>{message}</p>
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-          <button onClick={onCancel} style={{ flex: 1, padding: '9px 0', borderRadius: '8px', border: '1px solid var(--t-border)', background: 'var(--t-s3)', color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'var(--fm)', transition: 'all 0.15s' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.6)' }}>
-            Odustani
-          </button>
-          <button onClick={onConfirm} style={{ flex: 1, padding: '9px 0', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.15)', color: 'rgba(239,68,68,0.9)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'var(--fm)', transition: 'all 0.15s' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.3)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.15)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(239,68,68,0.9)' }}>
-            Obriši
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // ─── AVATAR ICONS ─────────────────────────────────────────────────
 export const AVATARS: { id: string; label: string; icon: LucideIcon }[] = [
@@ -146,7 +125,7 @@ function _TrainingNavDeprecated({ athleteName, isAdmin, onLogout, avatarIcon }: 
       <div className="tnav-links" style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1 }}>
         {NAV_ITEMS.map(item => (
           <Link key={item.href} href={item.href} className="tnav-pill"
-            style={{ textDecoration: 'none', padding: '6px 14px', color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', fontWeight: 500, fontFamily: 'var(--fm)', letterSpacing: '0.01em', borderRadius: '8px', transition: 'all 0.18s', whiteSpace: 'nowrap' as const }}
+            style={{ textDecoration: 'none', padding: '6px 14px', color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', fontWeight: 500, fontFamily: 'var(--fm)', letterSpacing: '0.01em', borderRadius: 'var(--t-r-sm)', transition: 'all 0.18s', whiteSpace: 'nowrap' as const }}
             onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = '#fff'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.07)' }}
             onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.55)'; (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}>
             {item.label}
@@ -157,7 +136,7 @@ function _TrainingNavDeprecated({ athleteName, isAdmin, onLogout, avatarIcon }: 
       {/* Right — status pill + avatar */}
       <div className="tnav-right" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
         {/* Live status pill */}
-        <div className="tnav-status" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.18)', borderRadius: '20px' }}>
+        <div className="tnav-status" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.18)', borderRadius: 'var(--t-r)' }}>
           <div style={{ position: 'relative', width: '6px', height: '6px', flexShrink: 0 }}>
             <div style={{ position: 'absolute', inset: 0, background: '#22c55e', borderRadius: '50%', boxShadow: '0 0 5px #22c55e' }} />
             <div style={{ position: 'absolute', inset: '-3px', background: 'rgba(34,197,94,0.2)', borderRadius: '50%', animation: 'pingPulse 2.4s ease-in-out infinite' }} />
@@ -168,7 +147,7 @@ function _TrainingNavDeprecated({ athleteName, isAdmin, onLogout, avatarIcon }: 
         {/* Avatar / profile button */}
         <div ref={dropRef} style={{ position: 'relative' }}>
           <button onClick={() => setProfileOpen(o => !o)}
-            style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '5px 10px 5px 5px', background: profileOpen ? 'var(--t-hi)' : 'transparent', border: '1px solid var(--t-border)', borderRadius: '24px', cursor: 'pointer', transition: 'all 0.2s' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '5px 10px 5px 5px', background: profileOpen ? 'var(--t-hi)' : 'transparent', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', cursor: 'pointer', transition: 'all 0.2s' }}
             onMouseEnter={e => { if (!profileOpen) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)' } }}
             onMouseLeave={e => { if (!profileOpen) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' } }}>
             {/* Avatar */}
@@ -181,7 +160,7 @@ function _TrainingNavDeprecated({ athleteName, isAdmin, onLogout, avatarIcon }: 
 
           {/* Dropdown */}
           {profileOpen && (
-            <div className="profile-dropdown" style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '220px', background: 'rgba(10,10,16,0.98)', border: '1px solid var(--t-border)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)', zIndex: 300, animation: 'dropDown 0.2s cubic-bezier(0.16,1,0.3,1)', overflow: 'hidden', backdropFilter: 'blur(40px)' }}>
+            <div className="profile-dropdown" style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '220px', background: 'rgba(10,10,16,0.98)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', boxShadow: '0 24px 64px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)', zIndex: 300, animation: 'dropDown 0.2s cubic-bezier(0.16,1,0.3,1)', overflow: 'hidden', backdropFilter: 'blur(40px)' }}>
               {/* Header */}
               <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid var(--t-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -232,7 +211,7 @@ function _TrainingNavDeprecated({ athleteName, isAdmin, onLogout, avatarIcon }: 
           width:100%; display:flex; align-items:center; gap:10px;
           padding:8px 12px; background: transparent; border: none;
           color:rgba(255,255,255,0.7); font-size:0.82rem; font-family:var(--fm);
-          font-weight:450; cursor:pointer; border-radius:9px;
+          font-weight:450; cursor:pointer; border-radius:var(--t-r);
           transition:background 0.15s, color 0.15s; text-align:left; letter-spacing:0.01em;
         }
         .nav-menu-item:hover { background: var(--t-s3); color:#fff; }
@@ -257,8 +236,6 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
   const [scrolled, setScrolled] = useState(false)
   const [notifs, setNotifs]   = useState<{id:string;message:string;sender_id:string;read:boolean;created_at:string}[]>([])
   const [showNotifs, setShowNotifs] = useState(false)
-  const dropRef = useRef<HTMLDivElement>(null)
-  const notifRef = useRef<HTMLDivElement>(null)
   const unread = notifs.filter(n => !n.read).length
 
   // Obavijesti: dohvat pri ulasku, svake minute dok je kartica vidljiva i čim se
@@ -298,22 +275,8 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
     setNotifs([])
   }
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setShowNotifs(false)
-    }
-    if (showNotifs) document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [showNotifs])
   const initials = athleteName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (dropRef.current && !dropRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    if (open) document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open])
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 10)
@@ -349,7 +312,7 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
 
         {/* Status pill */}
-        <div className="appnav-status" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: role === 'trener' ? 'rgba(245,158,11,0.08)' : isAdmin ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', border: `1px solid ${role === 'trener' ? 'rgba(245,158,11,0.22)' : isAdmin ? 'rgba(239,68,68,0.22)' : 'rgba(34,197,94,0.18)'}`, borderRadius: '20px' }}>
+        <div className="appnav-status" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: role === 'trener' ? 'rgba(245,158,11,0.08)' : isAdmin ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', border: `1px solid ${role === 'trener' ? 'rgba(245,158,11,0.22)' : isAdmin ? 'rgba(239,68,68,0.22)' : 'rgba(34,197,94,0.18)'}`, borderRadius: 'var(--t-r)' }}>
           <div style={{ position: 'relative', width: '6px', height: '6px', flexShrink: 0 }}>
             <div style={{ position: 'absolute', inset: 0, background: role === 'trener' ? '#f59e0b' : isAdmin ? '#ef4444' : '#22c55e', borderRadius: '50%', boxShadow: `0 0 5px ${role === 'trener' ? '#f59e0b' : isAdmin ? '#ef4444' : '#22c55e'}` }} />
             <div style={{ position: 'absolute', inset: '-3px', background: role === 'trener' ? 'rgba(245,158,11,0.2)' : isAdmin ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)', borderRadius: '50%', animation: 'appnavPing 2.4s ease-in-out infinite' }} />
@@ -359,16 +322,19 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
 
         {/* Notification bell */}
         {!!userId && (
-          <div ref={notifRef} style={{ position: 'relative' }}>
-            <button onClick={() => { setShowNotifs(o => !o); if (!showNotifs) markAllRead() }}
-              style={{ position: 'relative', background: unread > 0 ? 'rgba(251,191,36,0.1)' : 'transparent', border: `1px solid ${unread > 0 ? 'rgba(251,191,36,0.3)' : 'var(--t-border)'}`, borderRadius: '10px', padding: '7px 9px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: unread > 0 ? '#fbbf24' : 'rgba(255,255,255,0.45)', transition: 'all 0.2s' }}>
+          <Popover.Root open={showNotifs} onOpenChange={o => { setShowNotifs(o); if (o) markAllRead() }}>
+          <div style={{ position: 'relative' }}>
+            <Popover.Trigger asChild>
+            <button aria-label="Obavijesti"
+              style={{ position: 'relative', background: unread > 0 ? 'rgba(251,191,36,0.1)' : 'transparent', border: `1px solid ${unread > 0 ? 'rgba(251,191,36,0.3)' : 'var(--t-border)'}`, borderRadius: 'var(--t-r)', padding: '7px 9px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: unread > 0 ? '#fbbf24' : 'rgba(255,255,255,0.45)', transition: 'all 0.2s' }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
               {unread > 0 && (
-                <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#fbbf24', color: '#000', fontSize: '0.45rem', fontWeight: 800, fontFamily: 'var(--fm)', borderRadius: '10px', padding: '1px 5px', minWidth: '16px', textAlign: 'center' }}>{unread}</span>
+                <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#fbbf24', color: '#000', fontSize: '0.45rem', fontWeight: 800, fontFamily: 'var(--fm)', borderRadius: 'var(--t-r)', padding: '1px 5px', minWidth: '16px', textAlign: 'center' }}>{unread}</span>
               )}
             </button>
-            {showNotifs && (
-              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '300px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.9)', zIndex: 300, overflow: 'hidden', animation: 'appnavDrop 0.2s cubic-bezier(0.16,1,0.3,1)' }}>
+            </Popover.Trigger>
+              <Popover.Content className="ui-pop" side="bottom" align="end" sideOffset={8} collisionPadding={12}
+                style={{ width: '300px', maxWidth: 'calc(100vw - 24px)', background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', boxShadow: '0 24px 64px rgba(0,0,0,0.9)', overflow: 'hidden' }}>
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--t-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: '#fbbf24', fontFamily: 'var(--fm)', fontWeight: 700 }}>{isAdmin ? 'OBAVIJESTI' : 'OD TRENERA'}</span>
                   {notifs.length > 0 && (
@@ -396,15 +362,17 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              </Popover.Content>
           </div>
+          </Popover.Root>
         )}
 
         {/* Avatar / dropdown */}
-        <div ref={dropRef} style={{ position: 'relative' }}>
-          <button onClick={() => setOpen(o => !o)}
-            style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '5px 10px 5px 5px', background: open ? 'var(--t-hi)' : 'transparent', border: '1px solid var(--t-border)', borderRadius: '24px', cursor: 'pointer', transition: 'all 0.2s' }}
+        <DropdownMenu.Root open={open} onOpenChange={setOpen} modal={false}>
+        <div style={{ position: 'relative' }}>
+          <DropdownMenu.Trigger asChild>
+          <button
+            style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '5px 10px 5px 5px', background: open ? 'var(--t-hi)' : 'transparent', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', cursor: 'pointer', transition: 'all 0.2s' }}
             onMouseEnter={e => { if (!open) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)' } }}
             onMouseLeave={e => { if (!open) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' } }}>
             <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--t-border)', border: '1.5px solid var(--t-border-hi)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.58rem', fontWeight: 800, color: '#f0f0f0', fontFamily: 'var(--fm)', flexShrink: 0 }}>
@@ -413,9 +381,10 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
             <span className="appnav-name" style={{ fontSize: '0.78rem', fontWeight: 500, color: '#f0f0f0', fontFamily: 'var(--fm)', whiteSpace: 'nowrap' as const }}>{athleteName?.split(' ')[0] || ''}</span>
             <ChevronDown size={11} color="rgba(255,255,255,0.4)" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.22s', flexShrink: 0 }} />
           </button>
+          </DropdownMenu.Trigger>
 
-          {open && (
-            <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '220px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05)', zIndex: 300, animation: 'appnavDrop 0.2s cubic-bezier(0.16,1,0.3,1)', overflow: 'hidden' }}>
+            <DropdownMenu.Content className="ui-pop" side="bottom" align="end" sideOffset={8} collisionPadding={12}
+              style={{ width: '220px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', boxShadow: '0 24px 64px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05)', overflow: 'hidden' }}>
               {/* Header */}
               <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid var(--t-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -438,35 +407,35 @@ export function AppNav({ athleteName, isAdmin, role, onLogout, avatarIcon, userI
                   { href: '/training',  icon: <BarChart2 size={14}/>, label: 'Trening'    },
                   { href: '/exercises', icon: <Dumbbell size={14}/>,  label: 'Baza vježbi'},
                 ].map(item => (
-                  <Link key={item.href} href={item.href} onClick={() => setOpen(false)} style={{ textDecoration: 'none' }}>
-                    <button className="appnav-item">{item.icon}<span>{item.label}</span></button>
-                  </Link>
+                  <DropdownMenu.Item key={item.href} asChild>
+                    <Link href={item.href} className="appnav-item" style={{ textDecoration: 'none' }}>{item.icon}<span>{item.label}</span></Link>
+                  </DropdownMenu.Item>
                 ))}
                 {isAdmin && (
-                  <Link href={role === 'trener' ? '/trainer' : '/admin'} onClick={() => setOpen(false)} style={{ textDecoration: 'none' }}>
-                    <button className="appnav-item appnav-admin">
+                  <DropdownMenu.Item asChild>
+                  <Link href={role === 'trener' ? '/trainer' : '/admin'} className="appnav-item appnav-admin" style={{ textDecoration: 'none' }}>
                       <Shield size={14} color={role === 'trener' ? '#f59e0b' : '#ef4444'}/>
                       <span>{role === 'trener' ? 'Trener panel' : 'Admin panel'}</span>
                       <span style={{ marginLeft: 'auto', fontSize: '0.5rem', background: role === 'trener' ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)', color: role === 'trener' ? '#f59e0b' : '#ef4444', padding: '2px 7px', letterSpacing: '0.1em', border: `1px solid ${role === 'trener' ? 'rgba(245,158,11,0.25)' : 'rgba(239,68,68,0.28)'}`, borderRadius: '4px' }}>{role === 'trener' ? 'TRENER' : 'ADMIN'}</span>
-                    </button>
                   </Link>
+                  </DropdownMenu.Item>
                 )}
               </div>
               <div style={{ padding: '6px', borderTop: '1px solid var(--t-border)' }}>
-                <button onClick={() => { setOpen(false); onLogout() }} className="appnav-item appnav-logout">
+                <DropdownMenu.Item onSelect={() => onLogout()} className="appnav-item appnav-logout">
                   <LogOut size={14}/><span>Odjava</span>
-                </button>
+                </DropdownMenu.Item>
               </div>
-            </div>
-          )}
+            </DropdownMenu.Content>
         </div>
+        </DropdownMenu.Root>
       </div>
 
       <style>{`
         @keyframes appnavDrop { from { opacity:0; transform:translateY(-6px) scale(0.98) } to { opacity:1; transform:none } }
         @keyframes appnavPing { 0%,100% { transform:scale(1); opacity:0.5 } 50% { transform:scale(2.4); opacity:0 } }
-        .appnav-item { width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background: transparent; border: none; color:rgba(255,255,255,0.7); font-size:0.82rem; font-family:var(--fm); font-weight:450; cursor:pointer; border-radius:9px; transition:background 0.15s, color 0.15s; text-align:left; letter-spacing:0.01em; }
-        .appnav-item:hover { background: var(--t-s3); color:#fff; }
+        .appnav-item { width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background: transparent; border: none; color:rgba(255,255,255,0.7); font-size:0.82rem; font-family:var(--fm); font-weight:450; cursor:pointer; border-radius:var(--t-r); transition:background 0.15s, color 0.15s; text-align:left; letter-spacing:0.01em; }
+        .appnav-item:hover, .appnav-item[data-highlighted] { background: var(--t-s3); color:#fff; outline: none; }
         .appnav-admin:hover { background: rgba(245,158,11,0.08) !important; }
         .appnav-logout { color:rgba(255,80,80,0.7) !important; }
         .appnav-logout:hover { background: rgba(255,60,60,0.08) !important; color:#ff6060 !important; }
@@ -511,7 +480,7 @@ export function EditableField({ value, placeholder, onSave, type = 'text', small
       onChange={e => setVal(e.target.value)}
       onBlur={commit}
       onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
-      style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: '#e0e0e0', padding: small ? '3px 8px' : '5px 10px', fontSize: small ? '0.72rem' : '0.85rem', outline: 'none', width: '100%', fontFamily: 'var(--fm)', borderRadius: '5px', minWidth: '60px', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}
+      style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: '#e0e0e0', padding: small ? '3px 8px' : '5px 10px', fontSize: small ? '0.72rem' : '0.85rem', outline: 'none', width: '100%', fontFamily: 'var(--fm)', borderRadius: 'var(--t-r-sm)', minWidth: '60px', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}
     />
   )
   // "" i razmaci moraju pokazati placeholder. `value ?? placeholder` hvata samo
@@ -547,25 +516,28 @@ export function ExercisePicker({ exercises, onSelect, onClose }: {
   const filtered = exercises.filter(e =>
     e.name.toLowerCase().includes(q.toLowerCase()) && (!cat || e.category === cat)
   )
+  useEscapeKey(onClose)
+  // cmdk: strelice + Enter biraju vježbu; filtriranje ostaje naše (naziv + kategorija)
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', animation: 'fadeIn 0.15s ease' }}
       onClick={onClose}>
-      <div style={{ width: '100%', maxWidth: '560px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', display: 'flex', flexDirection: 'column', maxHeight: '78vh', boxShadow: '0 32px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
+      <div style={{ width: '100%', maxWidth: '560px', background: 'var(--t-s1)', border: '1px solid var(--t-border)', display: 'flex', flexDirection: 'column', maxHeight: '78vh', boxShadow: '0 32px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.07)', borderRadius: 'var(--t-r)', overflow: 'hidden', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
         onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--t-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, background: 'var(--t-s2)' }}>
           <span style={{ fontSize: '0.65rem', letterSpacing: '0.3em', color: '#888', fontFamily: 'var(--fm)' }}>ODABERI VJEŽBU</span>
-          <button onClick={onClose} style={{ background: 'var(--t-s2)', border: '1px solid var(--t-border-hi)', color: '#888', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', borderRadius: '6px', transition: 'all 0.15s' }}
+          <button onClick={onClose} style={{ background: 'var(--t-s2)', border: '1px solid var(--t-border-hi)', color: '#888', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', borderRadius: 'var(--t-r-sm)', transition: 'all 0.15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = '#2a2a35'; e.currentTarget.style.color = '#fff' }}
             onMouseLeave={e => { e.currentTarget.style.background = '#1c1c20'; e.currentTarget.style.color = '#888' }}>
             <X size={13} />
           </button>
         </div>
+        <Command shouldFilter={false} loop label="Odaberi vježbu" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         {/* Search */}
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--t-border)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--t-s2)', border: '1px solid var(--t-border)', padding: '9px 14px', borderRadius: '8px', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.4)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--t-s2)', border: '1px solid var(--t-border)', padding: '9px 14px', borderRadius: 'var(--t-r-sm)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.4)' }}>
             <Search size={13} color="#555" />
-            <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Pretraži vježbe..."
+            <Command.Input autoFocus value={q} onValueChange={setQ} placeholder="Pretraži vježbe..."
               style={{ background: 'transparent', border: 'none', outline: 'none', color: '#e0e0e0', fontSize: '0.88rem', width: '100%', fontFamily: 'var(--fm)' }} />
           </div>
         </div>
@@ -577,27 +549,27 @@ export function ExercisePicker({ exercises, onSelect, onClose }: {
         <style>{`
           .ep-cats::-webkit-scrollbar { height: 5px; }
           .ep-cats::-webkit-scrollbar-thumb { background: var(--t-hi); border-radius: 3px; }
-          .ep-cat-btn { white-space: nowrap; flex-shrink: 0; padding: 6px 13px; font-size: 0.62rem; letter-spacing: 0.1em; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: var(--fm), ui-monospace, monospace; background: transparent; color: #888; border: 1px solid var(--t-border); border-radius: 6px; }
+          .ep-cat-btn { white-space: nowrap; flex-shrink: 0; padding: 6px 13px; font-size: 0.62rem; letter-spacing: 0.1em; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: var(--fm), ui-monospace, monospace; background: transparent; color: #888; border: 1px solid var(--t-border); border-radius: var(--t-r-sm); }
           .ep-cat-btn:hover { border-color: var(--t-border-hi); color: #ddd; }
           .ep-cat-btn-active { background: #e6e6e6; color: #000; border-color: #e6e6e6; }
+          .ep-item { padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--t-border); cursor: pointer; transition: background 0.12s; user-select: none; outline: none; }
+          .ep-item[data-selected="true"] { background: #111113; }
         `}</style>
         {/* List */}
-        <div style={{ overflowY: 'auto', flex: 1 }}>
+        <Command.List style={{ overflowY: 'auto', flex: 1 }}>
           {filtered.length === 0 ? (
             <div style={{ padding: '40px', textAlign: 'center', color: '#444', fontSize: '0.82rem', fontFamily: 'var(--fm)' }}>Nema rezultata</div>
           ) : filtered.map(ex => (
-            <div key={ex.id} {...clickable(() => { onSelect(ex); onClose() }, { label: ex.name })}
-              style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--t-border)', cursor: 'pointer', transition: 'background 0.12s' }}
-              onMouseEnter={e => e.currentTarget.style.background = '#111113'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+            <Command.Item key={ex.id} value={ex.id} onSelect={() => { onSelect(ex); onClose() }} className="ep-item">
               <div>
                 <div style={{ fontSize: '0.88rem', color: '#e0e0e0', fontWeight: 500, fontFamily: 'var(--fm)' }}>{ex.name}</div>
                 <div style={{ fontSize: '0.6rem', color: '#555', letterSpacing: '0.1em', marginTop: '2px' }}>{ex.category}</div>
               </div>
               <Plus size={13} color="#444" />
-            </div>
+            </Command.Item>
           ))}
-        </div>
+        </Command.List>
+        </Command>
       </div>
     </div>
   )
@@ -610,7 +582,6 @@ export function CompetitionBanner({ userId }: { userId: string }) {
   const [open, setOpen]                 = useState(false)
   const [, setDaysOut]                  = useState<number | null>(null)
   const [countdown, setCountdown]       = useState({ d: 0, h: 0, m: 0, s: 0 })
-  const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!selected) return
@@ -664,21 +635,18 @@ export function CompetitionBanner({ userId }: { userId: string }) {
                { onConflict: 'athlete_id' })
   }
 
-  // Close on outside click
-  useEffect(() => {
-    const fn = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
-    if (open) document.addEventListener('mousedown', fn)
-    return () => document.removeEventListener('mousedown', fn)
-  }, [open])
-
   if (competitions.length === 0) return null
 
+  // lista natjecanja se otvara ispod cijele kartice (Anchor), ne samo ispod gumba
   return (
-    <div ref={ref} style={{ position: 'relative', height: '100%', animation: 'fadeUp 0.4s ease' }}>
-      <div className="comp-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', border: '1px solid var(--t-border)', borderLeft: '3px solid #ef3535', borderRadius: '14px', overflow: 'hidden', background: 'var(--t-s1)', padding: '10px 12px 10px 14px', flexWrap: 'wrap', position: 'relative', height: '100%', boxSizing: 'border-box' }}>
+    <Popover.Root open={open} onOpenChange={setOpen}>
+    <Popover.Anchor asChild>
+    <div style={{ position: 'relative', height: '100%', animation: 'fadeUp 0.4s ease' }}>
+      <div className="comp-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', border: '1px solid var(--t-border)', borderLeft: '3px solid #ef3535', borderRadius: 'var(--t-r)', overflow: 'hidden', background: 'var(--t-s1)', padding: '10px 12px 10px 14px', flexWrap: 'wrap', position: 'relative', height: '100%', boxSizing: 'border-box' }}>
 
         {/* Lijevo: oznaka + ime + datum (otvara izbor natjecanja) */}
-        <button onClick={() => setOpen(o => !o)}
+        <Popover.Trigger asChild>
+        <button
           style={{ background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '3px', flex: '1 1 150px', minWidth: 0, padding: 0, position: 'relative' }}>
           <div style={{ fontSize: '0.44rem', letterSpacing: '0.32em', color: 'rgba(239,53,53,0.75)', fontFamily: 'var(--fm)', fontWeight: 700 }}>
             SLJEDEĆE NATJECANJE
@@ -699,6 +667,7 @@ export function CompetitionBanner({ userId }: { userId: string }) {
             </div>
           )}
         </button>
+        </Popover.Trigger>
 
         {/* Desno: odbrojavanje. Grid s minmax(0,1fr) se smije stisnuti — prije su
             čipovi imali minWidth 52px + flexShrink 0 pa su sekunde izlazile iz okvira. */}
@@ -710,7 +679,7 @@ export function CompetitionBanner({ userId }: { userId: string }) {
               { val: countdown.m, label: 'MIN'  },
               { val: countdown.s, label: 'SEK'  },
             ] as {val:number;label:string}[]).map(({ val, label }) => (
-              <div key={label} className="comp-chip" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '8px', padding: '6px 2px', minWidth: 0 }}>
+              <div key={label} className="comp-chip" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r-sm)', padding: '6px 2px', minWidth: 0 }}>
                 <div style={{ fontFamily: 'var(--fd)', fontSize: '1.05rem', fontWeight: 700, lineHeight: 1, color: '#f0f0f0', fontVariantNumeric: 'tabular-nums' }}>{String(val).padStart(2,'0')}</div>
                 <div style={{ fontSize: '0.36rem', letterSpacing: '0.16em', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--fm)', fontWeight: 700, marginTop: '4px' }}>{label}</div>
               </div>
@@ -726,8 +695,8 @@ export function CompetitionBanner({ userId }: { userId: string }) {
       `}</style>
 
       {/* Dropdown */}
-      {open && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, background: '#0c0c0e', border: '1px solid var(--t-border)', borderRadius: '10px', boxShadow: '0 16px 48px rgba(0,0,0,0.7)', overflow: 'hidden', animation: 'dropDown 0.18s ease' }}>
+        <Popover.Content className="ui-pop" side="bottom" align="start" sideOffset={4} collisionPadding={12}
+          style={{ width: 'var(--radix-popover-trigger-width)', background: '#0c0c0e', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', boxShadow: '0 16px 48px rgba(0,0,0,0.7)', overflowY: 'auto' }}>
           {competitions.map((comp, i) => (
             <button key={comp.id} onClick={() => pick(comp)}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '14px', padding: '13px 18px', background: selected?.id === comp.id ? 'var(--t-s3)' : 'transparent', border: 'none', borderBottom: i < competitions.length - 1 ? '1px solid var(--t-border)' : 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.12s' }}
@@ -740,9 +709,10 @@ export function CompetitionBanner({ userId }: { userId: string }) {
               {selected?.id === comp.id && <Check size={12} color="#22c55e" />}
             </button>
           ))}
-        </div>
-      )}
+        </Popover.Content>
     </div>
+    </Popover.Anchor>
+    </Popover.Root>
   )
 }
 
@@ -1311,7 +1281,7 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
                   <button onClick={() => toggleTopSet(log.set_number)}
                     disabled={isBackoff}
                     title={isBackoff ? 'Backoff set ne može biti top set' : (log.is_top_set ? 'Makni top set' : 'Označi kao top set')}
-                    style={{ background: log.is_top_set ? 'rgba(250,204,21,0.12)' : 'transparent', border: `1px solid ${log.is_top_set ? 'rgba(250,204,21,0.4)' : 'transparent'}`, borderRadius: '6px', cursor: isBackoff ? 'not-allowed' : 'pointer', color: log.is_top_set ? '#facc15' : '#3a3a3a', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', fontSize: '0.92rem', opacity: isBackoff ? 0.2 : 1 }}>
+                    style={{ background: log.is_top_set ? 'rgba(250,204,21,0.12)' : 'transparent', border: `1px solid ${log.is_top_set ? 'rgba(250,204,21,0.4)' : 'transparent'}`, borderRadius: 'var(--t-r-sm)', cursor: isBackoff ? 'not-allowed' : 'pointer', color: log.is_top_set ? '#facc15' : '#3a3a3a', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', fontSize: '0.92rem', opacity: isBackoff ? 0.2 : 1 }}>
                     {log.is_top_set ? '★' : '☆'}
                   </button>
                 ) : (
@@ -1337,7 +1307,7 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
                     <button onClick={() => toggleBackoff(log.set_number)}
                       disabled={!!log.is_top_set}
                       title={log.is_top_set ? 'Top set ne može biti backoff' : (isBackoff ? 'Makni backoff' : 'Backoff od ranijeg seta')}
-                      style={{ background: isBackoff ? 'rgba(107,140,255,0.18)' : 'transparent', border: `1px solid ${isBackoff ? 'rgba(107,140,255,0.5)' : 'var(--t-border)'}`, borderRadius: '6px', cursor: log.is_top_set ? 'not-allowed' : 'pointer', color: isBackoff ? BLUE : '#3a3a3a', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: log.is_top_set ? 0.2 : 1 }}>
+                      style={{ background: isBackoff ? 'rgba(107,140,255,0.18)' : 'transparent', border: `1px solid ${isBackoff ? 'rgba(107,140,255,0.5)' : 'var(--t-border)'}`, borderRadius: 'var(--t-r-sm)', cursor: log.is_top_set ? 'not-allowed' : 'pointer', color: isBackoff ? BLUE : '#3a3a3a', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: log.is_top_set ? 0.2 : 1 }}>
                       <TrendingDown size={13} strokeWidth={2.5} />
                     </button>
                   )}
@@ -1351,7 +1321,7 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.42rem', color: BLUE, letterSpacing: '0.18em', fontWeight: 800, fontFamily: 'var(--fm)', flexShrink: 0 }}>
                   <TrendingDown size={9} strokeWidth={2.5} /> BACKOFF
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--t-s3)', border: '1px solid rgba(107,140,255,0.35)', borderRadius: '6px', padding: '3px 8px 3px 10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--t-s3)', border: '1px solid rgba(107,140,255,0.35)', borderRadius: 'var(--t-r-sm)', padding: '3px 8px 3px 10px' }}>
                   <input type="number" min={1} max={300} step={0.5} value={row.pct || ''}
                     onChange={e => updatePlanRow(i, 'pct', Number(e.target.value) || 0)}
                     style={{ width: '56px', background: 'transparent', border: 'none', color: BLUE, fontFamily: 'var(--fd)', fontSize: '0.95rem', fontWeight: 800, padding: 0, outline: 'none', textAlign: 'right' as const }} />
@@ -1361,7 +1331,7 @@ export function SetLogSection({ we, userId, isAdmin, weekNumber, onAggregateUpda
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <select value={row.ref}
                     onChange={e => updatePlanRow(i, 'ref', Number(e.target.value))}
-                    style={{ appearance: 'none' as const, WebkitAppearance: 'none' as const, background: 'var(--t-s3)', border: '1px solid var(--t-border-hi)', borderRadius: '6px', color: 'rgba(255,255,255,0.8)', fontFamily: 'var(--fm)', fontSize: '0.58rem', fontWeight: 700, padding: '5px 20px 5px 9px', outline: 'none', cursor: 'pointer' }}>
+                    style={{ appearance: 'none' as const, WebkitAppearance: 'none' as const, background: 'var(--t-s3)', border: '1px solid var(--t-border-hi)', borderRadius: 'var(--t-r-sm)', color: 'rgba(255,255,255,0.8)', fontFamily: 'var(--fm)', fontSize: '0.58rem', fontWeight: 700, padding: '5px 20px 5px 9px', outline: 'none', cursor: 'pointer' }}>
                     {logs.map((_, ri) => ri).filter(ri => ri !== i).map(ri => (
                       <option key={ri} value={ri} style={{ background: 'var(--t-s1)' }}>Set {ri + 1}</option>
                     ))}
@@ -1442,7 +1412,7 @@ function AdminPlanCell({ value, placeholder, type, color, onSave }: {
       onChange={e => setVal(isNum ? e.target.value.replace(',', '.') : e.target.value)}
       onBlur={commit}
       onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
-      style={{ width: '52px', background: 'var(--t-s3)', border: `1px solid ${color}66`, borderRadius: '5px', color, padding: '3px 6px', fontSize: '1rem', fontWeight: 800, outline: 'none', fontFamily: 'var(--fm)', textAlign: 'center', boxSizing: 'border-box' }}
+      style={{ width: '52px', background: 'var(--t-s3)', border: `1px solid ${color}66`, borderRadius: 'var(--t-r-sm)', color, padding: '3px 6px', fontSize: '1rem', fontWeight: 800, outline: 'none', fontFamily: 'var(--fm)', textAlign: 'center', boxSizing: 'border-box' }}
     />
   )
   return (
@@ -1493,12 +1463,12 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
   const rmButton = (
     <div style={{ position: 'relative', flexShrink: 0 }}>
       <button onClick={toggleRm} title="Procijenjeni 1RM po top setovima"
-        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: rmOpen ? 'rgba(34,197,94,0.12)' : 'var(--t-s3)', border: `1px solid ${rmOpen ? 'rgba(34,197,94,0.4)' : 'var(--t-border)'}`, borderRadius: '5px', color: rmOpen ? '#4ade80' : '#777', cursor: 'pointer', padding: '3px 7px', fontSize: '0.5rem', letterSpacing: '0.1em', fontWeight: 800, fontFamily: 'var(--fm)', transition: 'all 0.15s' }}>
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: rmOpen ? 'rgba(34,197,94,0.12)' : 'var(--t-s3)', border: `1px solid ${rmOpen ? 'rgba(34,197,94,0.4)' : 'var(--t-border)'}`, borderRadius: 'var(--t-r-sm)', color: rmOpen ? '#4ade80' : '#777', cursor: 'pointer', padding: '3px 7px', fontSize: '0.5rem', letterSpacing: '0.1em', fontWeight: 800, fontFamily: 'var(--fm)', transition: 'all 0.15s' }}>
         1RM{rmOpen && rmBest != null && <span style={{ fontFamily: 'var(--fd)', fontSize: '0.72rem', color: '#4ade80' }}>{rmBest}</span>}
       </button>
       {rmOpen && (
         <div onClick={e => e.stopPropagation()}
-          style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 60, background: '#0c100c', border: '1px solid rgba(34,197,94,0.28)', borderRadius: '8px', padding: '7px 9px', minWidth: '170px', boxShadow: '0 14px 36px rgba(0,0,0,0.65)', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 60, background: '#0c100c', border: '1px solid rgba(34,197,94,0.28)', borderRadius: 'var(--t-r-sm)', padding: '7px 9px', minWidth: '170px', boxShadow: '0 14px 36px rgba(0,0,0,0.65)', display: 'flex', flexDirection: 'column', gap: '3px' }}>
           {rmRows === undefined ? (
             <span style={{ color: '#777', fontSize: '0.62rem', fontFamily: 'var(--fm)' }}>…</span>
           ) : rmRows.length === 0 ? (
@@ -1632,7 +1602,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
             ) : <div style={{ flex: 1 }} />}
             <button
               onClick={() => setSetsOpen(v => !v)}
-              style={{ display: 'flex', alignItems: 'center', gap: '5px', background: setsOpen ? 'var(--t-hi)' : 'var(--t-s3)', border: `1px solid ${setsOpen ? 'var(--t-border-hi)' : 'var(--t-border)'}`, borderRadius: '5px', color: setsOpen ? 'rgba(255,255,255,0.8)' : '#555', cursor: 'pointer', padding: '4px 10px', fontSize: '0.56rem', letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700, flexShrink: 0, transition: 'all 0.2s' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', background: setsOpen ? 'var(--t-hi)' : 'var(--t-s3)', border: `1px solid ${setsOpen ? 'var(--t-border-hi)' : 'var(--t-border)'}`, borderRadius: 'var(--t-r-sm)', color: setsOpen ? 'rgba(255,255,255,0.8)' : '#555', cursor: 'pointer', padding: '4px 10px', fontSize: '0.56rem', letterSpacing: '0.14em', fontFamily: 'var(--fm)', fontWeight: 700, flexShrink: 0, transition: 'all 0.2s' }}>
               SETOVI
               <ChevronRight size={10} style={{ transform: setsOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
@@ -1731,7 +1701,7 @@ export function ExerciseRow({ we, isAdmin, userId, weekNumber, dayName, blockId,
               {historyWeeks.map((group, gi) => {
                 const prev = gi > 0 ? historyWeeks[gi - 1] : null
                 return (
-                  <div key={group.week} style={{ border: '1px solid var(--t-border)', borderRadius: '8px', overflow: 'hidden', background: 'var(--t-s2)' }}>
+                  <div key={group.week} style={{ border: '1px solid var(--t-border)', borderRadius: 'var(--t-r-sm)', overflow: 'hidden', background: 'var(--t-s2)' }}>
                     <div style={{ padding: '6px 10px', background: 'var(--t-s3)', fontSize: '0.5rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.65)', fontWeight: 800, fontFamily: 'var(--fm)' }}>WEEK {group.week}</div>
                     {group.logs.map((l: any, i: number) => {
                       // % skok naspram ISTE serije prošlog tjedna
@@ -1841,17 +1811,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
   })
   const [showPicker, setShowPicker] = useState(false)
   const [showWeekPicker, setShowWeekPicker] = useState(false)
-  const [confirmDeleteWorkout, setConfirmDeleteWorkout] = useState(false)
-  const weekPickerRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (!showWeekPicker) return
-    const handler = (e: MouseEvent) => {
-      if (weekPickerRef.current && !weekPickerRef.current.contains(e.target as Node)) setShowWeekPicker(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [showWeekPicker])
   const exCount = workout.workout_exercises?.length ?? 0
 
   // ── Local exercise order (for optimistic drag-reorder) ──
@@ -1961,7 +1921,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
   return (
     <>
       {/* Outer card: sharp border */}
-      <div className="workout-card" style={{ border: '1px solid var(--t-border)', marginBottom: '10px', overflow: 'hidden', borderRadius: '8px', boxShadow: '0 4px 28px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02)' }}>
+      <div className="workout-card" style={{ border: '1px solid var(--t-border)', marginBottom: '10px', overflow: 'hidden', borderRadius: 'var(--t-r-sm)', boxShadow: '0 4px 28px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02)' }}>
 
         {/* ── Day header — sharp editorial strip ── */}
         <div
@@ -1999,7 +1959,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
             <div className="workout-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
               {/* Ex count badge */}
               {exCount > 0 && (
-                <div style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.55)', background: 'var(--t-s3)', border: '1px solid var(--t-border)', padding: '3px 10px', borderRadius: '20px', letterSpacing: '0.12em', fontWeight: 700 }}>
+                <div style={{ fontSize: '0.54rem', color: 'rgba(255,255,255,0.55)', background: 'var(--t-s3)', border: '1px solid var(--t-border)', padding: '3px 10px', borderRadius: 'var(--t-r)', letterSpacing: '0.12em', fontWeight: 700 }}>
                   {exCount} VJ
                 </div>
               )}
@@ -2028,7 +1988,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
               {isAdmin && onMoveWorkout && !isFirst && (
                 <button onClick={e => { e.stopPropagation(); onMoveWorkout('up') }}
                   title="Pomjeri gore"
-                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.55)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.55)', width: '26px', height: '26px', borderRadius: 'var(--t-r-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
                   <ArrowUp size={11} />
@@ -2037,7 +1997,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
               {isAdmin && onMoveWorkout && !isLast && (
                 <button onClick={e => { e.stopPropagation(); onMoveWorkout('down') }}
                   title="Pomjeri dolje"
-                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.55)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.55)', width: '26px', height: '26px', borderRadius: 'var(--t-r-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
                   <ArrowDown size={11} />
@@ -2046,48 +2006,44 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
               {isAdmin && onCopyWorkout && (
                 <button onClick={e => { e.stopPropagation(); onCopyWorkout() }}
                   title="Kopiraj dan (isti tjedan)"
-                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.55)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.55)', width: '26px', height: '26px', borderRadius: 'var(--t-r-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
                   <Copy size={11} />
                 </button>
               )}
               {isAdmin && onCopyWorkoutToWeek && allWeeks && allWeeks.length > 0 && (
-                <div ref={weekPickerRef} style={{ position: 'relative' }}>
-                  <button onClick={e => { e.stopPropagation(); setShowWeekPicker(v => !v) }}
+                // DropdownMenu bez portala: klikovi moraju stati ovdje, inače otvaraju/zatvaraju karticu
+                <DropdownMenu.Root open={showWeekPicker} onOpenChange={setShowWeekPicker} modal={false}>
+                <div style={{ position: 'relative' }}>
+                  <DropdownMenu.Trigger asChild>
+                  <button onClick={e => e.stopPropagation()}
                     title="Kopiraj dan u drugi tjedan"
-                    style={{ background: showWeekPicker ? 'var(--t-hi)' : 'var(--t-s3)', border: `1px solid ${showWeekPicker ? 'var(--t-border-hi)' : 'var(--t-border)'}`, color: showWeekPicker ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                    style={{ background: showWeekPicker ? 'var(--t-hi)' : 'var(--t-s3)', border: `1px solid ${showWeekPicker ? 'var(--t-border-hi)' : 'var(--t-border)'}`, color: showWeekPicker ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)', width: '26px', height: '26px', borderRadius: 'var(--t-r-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
                     onMouseEnter={e => { if (!showWeekPicker) { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' } }}
                     onMouseLeave={e => { if (!showWeekPicker) { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' } }}>
                     <CalendarDays size={11} />
                   </button>
-                  {showWeekPicker && (
-                    <div style={{ position: 'absolute', right: 0, top: '110%', zIndex: 999, background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.7)', minWidth: '100px' }}>
+                  </DropdownMenu.Trigger>
+                    <DropdownMenu.Content className="ui-pop" side="bottom" align="end" sideOffset={4} collisionPadding={12} onClick={e => e.stopPropagation()}
+                      style={{ background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.7)', minWidth: '100px' }}>
                       <div style={{ padding: '6px 10px 4px', fontSize: '0.55rem', fontFamily: 'var(--fm)', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.55)', borderBottom: '1px solid var(--t-border)' }}>KOPIRAJ U</div>
                       {allWeeks.map(w => (
-                        <button key={w.id}
-                          onClick={e => { e.stopPropagation(); onCopyWorkoutToWeek(w.id); setShowWeekPicker(false) }}
-                          style={{ display: 'block', width: '100%', padding: '7px 14px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', textAlign: 'left', fontSize: '0.72rem', fontFamily: 'var(--fm)', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff' }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)' }}>
+                        <DropdownMenu.Item key={w.id} className="ui-item" onSelect={() => onCopyWorkoutToWeek(w.id)}>
                           W{w.week_number}
-                        </button>
+                        </DropdownMenu.Item>
                       ))}
-                    </div>
-                  )}
+                    </DropdownMenu.Content>
                 </div>
+                </DropdownMenu.Root>
               )}
               {isAdmin && (
-                <button onClick={e => { e.stopPropagation(); setConfirmDeleteWorkout(true) }} className="icon-btn-danger">
+                <button className="icon-btn-danger" aria-label="Obriši dan" onClick={async e => {
+                  e.stopPropagation()
+                  if (await confirmDialog({ title: `Obrisati "${workout.day_name}"?`, description: 'Ova akcija je nepovratna.', confirmLabel: 'Obriši', destructive: true })) onDeleteWorkout(workout.id)
+                }}>
                   <Trash2 size={11} />
                 </button>
-              )}
-              {confirmDeleteWorkout && (
-                <ConfirmDialog
-                  message={`Jeste li sigurni da želite obrisati "${workout.day_name}"? Ova akcija je nepovratna.`}
-                  onConfirm={() => { setConfirmDeleteWorkout(false); onDeleteWorkout(workout.id) }}
-                  onCancel={() => setConfirmDeleteWorkout(false)}
-                />
               )}
               {/* Expand arrow */}
               <div style={{ color: open ? 'rgba(255,255,255,0.7)' : '#444', transition: 'transform 0.25s, color 0.2s', transform: open ? 'rotate(90deg)' : 'none' }}>
@@ -2157,7 +2113,7 @@ export function WorkoutCard({ workout, exercises, isAdmin, userId, weekNumber, b
                   type="date"
                   value={workout.completion_date ? String(workout.completion_date).slice(0, 10) : ''}
                   onChange={e => onUpdateWorkout(workout.id, { completion_date: e.target.value ? `${e.target.value}T12:00:00` : null })}
-                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '6px', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.72rem', padding: '5px 8px', outline: 'none', colorScheme: 'dark' as const }}
+                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r-sm)', color: '#e0e0e0', fontFamily: 'var(--fm)', fontSize: '0.72rem', padding: '5px 8px', outline: 'none', colorScheme: 'dark' as const }}
                 />
               </div>
               <div style={{ flex: 1, minWidth: 140, borderLeft: '1px solid var(--t-border)', paddingLeft: '12px' }}>
@@ -2184,7 +2140,7 @@ function WeekNotesModal({ notes, isAdmin, onSave, onClose }: {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', animation: 'fadeIn 0.15s' }}
       onClick={onClose}>
-      <div style={{ background: 'var(--t-s1)', border: '1.5px solid rgba(251,191,36,0.25)', borderRadius: '14px', padding: '28px', maxWidth: '500px', width: '100%', boxShadow: '0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(251,191,36,0.08)', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
+      <div style={{ background: 'var(--t-s1)', border: '1.5px solid rgba(251,191,36,0.25)', borderRadius: 'var(--t-r)', padding: '28px', maxWidth: '500px', width: '100%', boxShadow: '0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(251,191,36,0.08)', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
           <MessageSquare size={16} color="#fbbf24" />
@@ -2196,11 +2152,11 @@ function WeekNotesModal({ notes, isAdmin, onSave, onClose }: {
         {isAdmin ? (
           <>
             <textarea value={val} onChange={e => setVal(e.target.value)} rows={5} placeholder="Napiši komentar za ovaj tjedan..."
-              style={{ width: '100%', background: 'var(--t-s3)', border: '1.5px solid rgba(251,191,36,0.2)', borderRadius: '9px', color: '#f0f0f5', padding: '12px 14px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box' as const, lineHeight: 1.7 }}
+              style={{ width: '100%', background: 'var(--t-s3)', border: '1.5px solid rgba(251,191,36,0.2)', borderRadius: 'var(--t-r)', color: '#f0f0f5', padding: '12px 14px', fontFamily: 'var(--fm)', fontSize: '0.85rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box' as const, lineHeight: 1.7 }}
               onFocus={e => e.target.style.borderColor = 'rgba(251,191,36,0.5)'}
               onBlur={e => e.target.style.borderColor = 'rgba(251,191,36,0.2)'} />
             <button onClick={save} disabled={saving}
-              style={{ marginTop: '12px', padding: '10px 24px', background: 'rgba(251,191,36,0.12)', border: '1.5px solid rgba(251,191,36,0.35)', borderRadius: '8px', color: '#fbbf24', fontFamily: 'var(--fm)', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.08em', cursor: 'pointer' }}>
+              style={{ marginTop: '12px', padding: '10px 24px', background: 'rgba(251,191,36,0.12)', border: '1.5px solid rgba(251,191,36,0.35)', borderRadius: 'var(--t-r-sm)', color: '#fbbf24', fontFamily: 'var(--fm)', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.08em', cursor: 'pointer' }}>
               {saving ? 'SPREMA...' : 'SPREMI'}
             </button>
           </>
@@ -2231,7 +2187,6 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
     try { const v = sessionStorage.getItem(ssKey); return v === null ? false : v === 'true' } catch { return false }
   })
   const [showNotes, setShowNotes] = useState(false)
-  const [confirmDeleteWeek, setConfirmDeleteWeek] = useState(false)
   const addWorkoutLocked = useRef(false)
 
   const handleAddWorkout = () => {
@@ -2268,7 +2223,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
       background: 'var(--t-s1)',
       border: '1px solid var(--t-border)',
       borderLeft: `3px solid ${accentColor}`,
-      borderRadius: '16px',
+      borderRadius: 'var(--t-r)',
       overflow: 'hidden',
       boxShadow: `0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)${allDone ? ', 0 0 0 1px rgba(34,197,94,0.05)' : ''}`,
       transition: 'border-color 0.4s, box-shadow 0.4s',
@@ -2296,7 +2251,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
               </span>
             </div>
             {allDone && (
-              <span style={{ fontSize: '0.48rem', fontWeight: 800, fontFamily: 'var(--fm)', letterSpacing: '0.18em', color: '#4ade80', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.28)', borderRadius: '6px', padding: '3px 9px' }}>
+              <span style={{ fontSize: '0.48rem', fontWeight: 800, fontFamily: 'var(--fm)', letterSpacing: '0.18em', color: '#4ade80', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.28)', borderRadius: 'var(--t-r-sm)', padding: '3px 9px' }}>
                 ZAVRŠENO
               </span>
             )}
@@ -2304,7 +2259,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '4px' }}>
             {/* Progress pill */}
             {total > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--t-border)', padding: '6px 14px', borderRadius: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--t-border)', padding: '6px 14px', borderRadius: 'var(--t-r)' }}>
                 <div style={{ width: '52px', height: '3px', background: 'var(--t-hi)', borderRadius: '2px', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', inset: '0 auto 0 0', width: `${pct}%`, background: allDone ? '#22c55e' : '#f0f0f0', boxShadow: allDone ? '0 0 8px rgba(34,197,94,0.6)' : 'none', transition: 'width 0.5s cubic-bezier(0.16,1,0.3,1)', borderRadius: '2px' }} />
                 </div>
@@ -2316,7 +2271,7 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
             </div>
             {/* Week notes icon — always visible, yellow if has notes */}
             <button onClick={e => { e.stopPropagation(); setShowNotes(true) }}
-              style={{ background: hasNotes ? 'rgba(251,191,36,0.12)' : 'var(--t-s3)', border: `1px solid ${hasNotes ? 'rgba(251,191,36,0.35)' : 'var(--t-border)'}`, borderRadius: '7px', padding: '5px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.15s', color: hasNotes ? '#fbbf24' : 'rgba(255,255,255,0.3)' }}
+              style={{ background: hasNotes ? 'rgba(251,191,36,0.12)' : 'var(--t-s3)', border: `1px solid ${hasNotes ? 'rgba(251,191,36,0.35)' : 'var(--t-border)'}`, borderRadius: 'var(--t-r-sm)', padding: '5px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.15s', color: hasNotes ? '#fbbf24' : 'rgba(255,255,255,0.3)' }}
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(251,191,36,0.5)'; (e.currentTarget as HTMLButtonElement).style.color = '#fbbf24' }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = hasNotes ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLButtonElement).style.color = hasNotes ? '#fbbf24' : 'rgba(255,255,255,0.3)' }}>
               <MessageSquare size={12} />
@@ -2326,21 +2281,17 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
               <>
                 <button onClick={e => { e.stopPropagation(); onCopyWeek(week.id) }}
                   title="Kopiraj tjedan"
-                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.55)', width: '28px', height: '28px', borderRadius: '7px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                  style={{ background: 'var(--t-s3)', border: '1px solid var(--t-border)', color: 'rgba(255,255,255,0.55)', width: '28px', height: '28px', borderRadius: 'var(--t-r-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}>
                   <Copy size={12} />
                 </button>
-                <button onClick={e => { e.stopPropagation(); setConfirmDeleteWeek(true) }} className="icon-btn-danger">
+                <button className="icon-btn-danger" aria-label="Obriši tjedan" onClick={async e => {
+                  e.stopPropagation()
+                  if (await confirmDialog({ title: `Obrisati tjedan ${week.week_number}?`, description: 'Ova akcija je nepovratna.', confirmLabel: 'Obriši', destructive: true })) onDeleteWeek(week.id)
+                }}>
                   <Trash2 size={13} />
                 </button>
-                {confirmDeleteWeek && (
-                  <ConfirmDialog
-                    message={`Jeste li sigurni da želite obrisati Tjedan ${week.week_number}? Ova akcija je nepovratna.`}
-                    onConfirm={() => { setConfirmDeleteWeek(false); onDeleteWeek(week.id) }}
-                    onCancel={() => setConfirmDeleteWeek(false)}
-                  />
-                )}
               </>
             )}
           </div>

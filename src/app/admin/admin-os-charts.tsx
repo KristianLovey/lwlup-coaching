@@ -115,12 +115,12 @@ export function LineChart({ data, labels, dates, accent = false, height = 220, v
         const cx = (leftX + rightX) / 2
         return (
           <div key={'sl' + k} style={{ position: 'absolute', left: `${(cx / w) * 100}%`, bottom: 5, transform: 'translateX(-50%)', pointerEvents: 'none', maxWidth: `${((rightX - leftX) / w) * 100}%` }}>
-            <span style={{ display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: 8.5, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: seg.color, background: `color-mix(in srgb, ${seg.color} 16%, var(--surface-1))`, border: `1px solid color-mix(in srgb, ${seg.color} 45%, transparent)`, borderRadius: 5, padding: '2px 7px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{seg.label}</span>
+            <span style={{ display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: 8.5, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: seg.color, background: `color-mix(in srgb, ${seg.color} 16%, var(--surface-1))`, border: `1px solid color-mix(in srgb, ${seg.color} 45%, transparent)`, borderRadius: 'var(--t-r-sm)', padding: '2px 7px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{seg.label}</span>
           </div>
         )
       })}
       {hi != null && (
-        <div style={{ position: 'absolute', left: `${(X(hi) / w) * 100}%`, top: 2, transform: `translateX(${hi > data.length / 2 ? '-100%' : '0'})`, pointerEvents: 'none', background: 'var(--surface-3)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '5px 9px', whiteSpace: 'nowrap', boxShadow: '0 6px 20px rgba(0,0,0,0.5)' }}>
+        <div style={{ position: 'absolute', left: `${(X(hi) / w) * 100}%`, top: 2, transform: `translateX(${hi > data.length / 2 ? '-100%' : '0'})`, pointerEvents: 'none', background: 'var(--surface-3)', border: '1px solid var(--border-strong)', borderRadius: 'var(--t-r-sm)', padding: '5px 9px', whiteSpace: 'nowrap', boxShadow: '0 6px 20px rgba(0,0,0,0.5)' }}>
           {dates?.[hi] && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-muted)' }}>{dates[hi]}</div>}
           {meta?.[hi] && (meta[hi].week != null || meta[hi].day) && (
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: 'var(--accent)', marginTop: 1 }}>
@@ -176,7 +176,7 @@ export function MultiLineChart({ series, dates, height = 240 }: {
           {hi != null && colored.map(s => s.data[hi] > 0 ? <circle key={s.name} cx={X(hi)} cy={Y(s.data[hi])} r="3.5" fill={s.color} stroke="var(--bg)" strokeWidth="1.5" /> : null)}
         </svg>
         {hi != null && (
-          <div style={{ position: 'absolute', left: `${(X(hi) / w) * 100}%`, top: 2, transform: `translateX(${hi > n / 2 ? '-100%' : '0'})`, pointerEvents: 'none', background: 'var(--surface-3)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '6px 9px', whiteSpace: 'nowrap', boxShadow: '0 6px 20px rgba(0,0,0,0.5)' }}>
+          <div style={{ position: 'absolute', left: `${(X(hi) / w) * 100}%`, top: 2, transform: `translateX(${hi > n / 2 ? '-100%' : '0'})`, pointerEvents: 'none', background: 'var(--surface-3)', border: '1px solid var(--border-strong)', borderRadius: 'var(--t-r-sm)', padding: '6px 9px', whiteSpace: 'nowrap', boxShadow: '0 6px 20px rgba(0,0,0,0.5)' }}>
             {dates?.[hi] && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 3 }}>{dates[hi]}</div>}
             {colored.filter(s => s.data[hi] > 0).map(s => (
               <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
@@ -282,12 +282,12 @@ export function StackedBarChart({ series, dates, segments, weekNos, height = 240
           const cx = padL + ((seg.s + seg.e + 1) / 2) * bw
           return (
             <div key={'sl' + k} style={{ position: 'absolute', left: `${(cx / w) * 100}%`, bottom: 0, transform: 'translateX(-50%)', pointerEvents: 'none', maxWidth: `${(((seg.e - seg.s + 1) * bw) / w) * 100}%` }}>
-              <span style={{ display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: 8.5, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: seg.color, background: `color-mix(in srgb, ${seg.color} 16%, var(--surface-1))`, border: `1px solid color-mix(in srgb, ${seg.color} 45%, transparent)`, borderRadius: 5, padding: '1px 6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{seg.label}</span>
+              <span style={{ display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: 8.5, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: seg.color, background: `color-mix(in srgb, ${seg.color} 16%, var(--surface-1))`, border: `1px solid color-mix(in srgb, ${seg.color} 45%, transparent)`, borderRadius: 'var(--t-r-sm)', padding: '1px 6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{seg.label}</span>
             </div>
           )
         })}
         {hi != null && totals[hi] > 0 && (
-          <div style={{ position: 'absolute', left: `${(Xc(hi) / w) * 100}%`, top: 2, transform: `translateX(${hi > n / 2 ? '-100%' : '0'})`, pointerEvents: 'none', background: 'var(--surface-3)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '6px 9px', whiteSpace: 'nowrap', boxShadow: '0 6px 20px rgba(0,0,0,0.5)', zIndex: 2 }}>
+          <div style={{ position: 'absolute', left: `${(Xc(hi) / w) * 100}%`, top: 2, transform: `translateX(${hi > n / 2 ? '-100%' : '0'})`, pointerEvents: 'none', background: 'var(--surface-3)', border: '1px solid var(--border-strong)', borderRadius: 'var(--t-r-sm)', padding: '6px 9px', whiteSpace: 'nowrap', boxShadow: '0 6px 20px rgba(0,0,0,0.5)', zIndex: 2 }}>
             {dates?.[hi] && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 3 }}>tjedan {dates[hi]}{(weekNos && weekNos[hi] != null) ? <span style={{ color: 'var(--accent)' }}> · WEEK {weekNos[hi]}</span> : null}</div>}
             {colored.filter(s => (s.data[hi] ?? 0) > 0).map(s => (
               <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>

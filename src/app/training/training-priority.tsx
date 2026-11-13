@@ -1,4 +1,5 @@
 'use client'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, ChevronDown } from 'lucide-react'
@@ -101,7 +102,6 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
   const [saving, setSaving]             = useState(false)
   const [blockOpen, setBlockOpen]       = useState(false)
   const saveTimer                       = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const blockDropRef                    = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     supabase.from('blocks')
@@ -121,15 +121,6 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
     setConfig(null)
     loadConfig(athleteId, selectedBlockId).then(setConfig)
   }, [athleteId, selectedBlockId])
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (blockDropRef.current && !blockDropRef.current.contains(e.target as Node))
-        setBlockOpen(false)
-    }
-    if (blockOpen) document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [blockOpen])
 
   const scheduleSave = useCallback((next: PriorityConfig, blockId: string) => {
     if (saveTimer.current) clearTimeout(saveTimer.current)
@@ -168,18 +159,21 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
     <div style={{ animation: 'panelSlideIn 0.3s cubic-bezier(0.16,1,0.3,1)' }}>
 
       {/* ── Blok selector ── */}
-      <div ref={blockDropRef} style={{ position: 'relative', display: 'inline-block', marginBottom: '20px' }}>
+      <DropdownMenu.Root open={blockOpen} onOpenChange={setBlockOpen} modal={false}>
+      <div style={{ position: 'relative', display: 'inline-block', marginBottom: '20px' }}>
+        <DropdownMenu.Trigger asChild>
         <button
-          onClick={() => setBlockOpen(v => !v)}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: 'var(--t-s3)', border: '1px solid var(--t-border-hi)', borderRadius: '9px', cursor: 'pointer', color: '#f0f0f0', transition: 'all 0.15s' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: 'var(--t-s3)', border: '1px solid var(--t-border-hi)', borderRadius: 'var(--t-r)', cursor: 'pointer', color: '#f0f0f0', transition: 'all 0.15s' }}>
           <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: selectedBlock?.status === 'active' ? '#ef3535' : 'var(--t-border-hi)', flexShrink: 0, boxShadow: selectedBlock?.status === 'active' ? '0 0 6px rgba(239,53,53,0.5)' : 'none' }} />
           <span style={{ fontSize: '0.72rem', fontFamily: FM, fontWeight: 600, letterSpacing: '-0.01em' }}>{selectedBlock?.name ?? '—'}</span>
           <ChevronDown size={12} color="rgba(255,255,255,0.4)" style={{ transform: blockOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
         </button>
-        {blockOpen && (
-          <div style={{ position: 'absolute', top: 'calc(100% + 5px)', left: 0, zIndex: 60, background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '11px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.8)', minWidth: '220px', animation: 'dropDown 0.15s ease' }}>
+        </DropdownMenu.Trigger>
+          <DropdownMenu.Content className="ui-pop" side="bottom" align="start" sideOffset={5} collisionPadding={12}
+            style={{ background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', overflowY: 'auto', boxShadow: '0 20px 50px rgba(0,0,0,0.8)', minWidth: '220px' }}>
             {blocks.map((b, i) => (
-              <button key={b.id} onClick={() => { setSelectedBlockId(b.id); setBlockOpen(false) }}
+              <DropdownMenu.Item key={b.id} asChild onSelect={() => setSelectedBlockId(b.id)}>
+              <button
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 14px', background: b.id === selectedBlockId ? 'var(--t-s3)' : 'transparent', border: 'none', borderBottom: i < blocks.length - 1 ? '1px solid var(--t-border)' : 'none', cursor: 'pointer', textAlign: 'left' as const, transition: 'background 0.12s' }}
                 onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'}
                 onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = b.id === selectedBlockId ? 'rgba(255,255,255,0.06)' : 'transparent'}>
@@ -189,10 +183,11 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
                   <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginTop: '1px' }}>{b.start_date}</div>
                 </div>
               </button>
+              </DropdownMenu.Item>
             ))}
-          </div>
-        )}
+          </DropdownMenu.Content>
       </div>
+      </DropdownMenu.Root>
 
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
@@ -210,7 +205,7 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
         {PRIORITY_ORDER.filter(p => p !== 'none').map(p => {
           const m = PRIORITY_META[p]
           return (
-            <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 9px', background: m.bg, border: `1px solid ${m.border}`, borderRadius: '6px' }}>
+            <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 9px', background: m.bg, border: `1px solid ${m.border}`, borderRadius: 'var(--t-r-sm)' }}>
               <span style={{ fontSize: '0.6rem', fontWeight: 900, color: m.color, fontFamily: FM }}>{m.roman}</span>
               <span style={{ fontSize: '0.44rem', letterSpacing: '0.1em', color: m.color, fontFamily: FM, opacity: 0.9 }}>{m.label}</span>
             </div>
@@ -256,7 +251,7 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
                           background: empty ? 'var(--t-s2)' : `linear-gradient(155deg, ${m.bg}, rgba(0,0,0,0.18))`,
                           border: empty ? '1px dashed var(--t-border)' : `1px solid ${m.border}`,
                           boxShadow: empty ? 'none' : `0 6px 18px -10px ${m.color}, inset 0 1px 0 rgba(255,255,255,0.05)`,
-                          borderRadius: '12px',
+                          borderRadius: 'var(--t-r)',
                           display: 'flex', flexDirection: 'column' as const, overflow: 'hidden',
                           minHeight: '56px', height: '100%',
                           transition: 'background 0.18s, border-color 0.18s, box-shadow 0.18s',
@@ -319,7 +314,7 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
         @media (min-width: 768px) {
           .pa-table       { border-spacing: 7px !important; }
           .pa-day-th      { font-size: 0.62rem !important; padding: 6px 6px !important; }
-          .pa-cell-wrap   { min-height: 74px !important; border-radius: 14px !important; }
+          .pa-cell-wrap   { min-height: 74px !important; border-radius: var(--t-r) !important; }
           .pa-roman       { font-size: 1.25rem !important; }
           .pa-sublabel    { font-size: 0.42rem !important; }
           .pa-lift-abbr   { font-size: 1.3rem !important; }
@@ -376,7 +371,7 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
       style={{
         background: 'var(--t-s1)',
         border: holding ? '1px solid rgba(239,53,53,0.45)' : '1px solid var(--t-border)',
-        borderRadius: '20px', padding: '22px 24px', marginBottom: '12px',
+        borderRadius: 'var(--t-r)', padding: '22px 24px', marginBottom: '12px',
         cursor: 'default', transition: 'border-color 0.2s',
         position: 'relative' as const,
         userSelect: 'none' as const, WebkitUserSelect: 'none' as const,
@@ -384,7 +379,7 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
       }}>
 
       {holding && (
-        <div style={{ position: 'absolute' as const, inset: 0, borderRadius: '20px', background: 'rgba(239,53,53,0.07)', pointerEvents: 'none', animation: 'pvHoldFill 0.7s linear forwards', zIndex: 0 }} />
+        <div style={{ position: 'absolute' as const, inset: 0, borderRadius: 'var(--t-r)', background: 'rgba(239,53,53,0.07)', pointerEvents: 'none', animation: 'pvHoldFill 0.7s linear forwards', zIndex: 0 }} />
       )}
       {holding && (
         <div style={{ position: 'absolute' as const, top: '12px', right: '16px', fontSize: '0.46rem', letterSpacing: '0.18em', color: 'rgba(239,53,53,0.75)', fontFamily: FM, fontWeight: 700, zIndex: 2, animation: 'pvFadeIn 0.15s ease' }}>
@@ -401,7 +396,7 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
             {DAYS.filter(d => LIFTS.some(l => config[l.key][d.key].priority !== 'none')).map(d => (
-              <div key={d.key} className="pv-day-badge" style={{ padding: '3px 7px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '5px', fontSize: '0.42rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, letterSpacing: '0.1em' }}>
+              <div key={d.key} className="pv-day-badge" style={{ padding: '3px 7px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r-sm)', fontSize: '0.42rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, letterSpacing: '0.1em' }}>
                 {d.label}
               </div>
             ))}
@@ -442,7 +437,7 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
                           background: empty ? 'var(--t-s2)' : `linear-gradient(155deg, ${m.bg}, rgba(0,0,0,0.18))`,
                           border: empty ? '1px dashed var(--t-border)' : `1px solid ${m.border}`,
                           boxShadow: empty ? 'none' : `0 6px 18px -10px ${m.color}, inset 0 1px 0 rgba(255,255,255,0.04)`,
-                          borderRadius: '11px', overflow: 'hidden',
+                          borderRadius: 'var(--t-r)', overflow: 'hidden',
                           display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center',
                         }}>
                           {empty ? (
@@ -485,7 +480,7 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
             {usedPriorities.map(p => {
               const m = PRIORITY_META[p]
               return (
-                <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: m.bg, border: `1px solid ${m.border}`, borderRadius: '5px' }}>
+                <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: m.bg, border: `1px solid ${m.border}`, borderRadius: 'var(--t-r-sm)' }}>
                   <span style={{ fontSize: '0.52rem', fontWeight: 900, color: m.color, fontFamily: FM }}>{m.roman}</span>
                   <span style={{ fontSize: '0.4rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{m.label}</span>
                 </div>
@@ -507,7 +502,7 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
           .pv-day-badge        { font-size: 0.5rem !important; padding: 4px 10px !important; }
           .pv-table            { border-spacing: 7px !important; }
           .pv-day-th           { font-size: 0.58rem !important; padding: 6px 4px !important; }
-          .pv-cell             { border-radius: 13px !important; min-height: 72px !important; }
+          .pv-cell             { border-radius: var(--t-r) !important; min-height: 72px !important; }
           .pv-cell-top         { padding: 11px 4px 8px !important; }
           .pv-roman            { font-size: 1.15rem !important; }
           .pv-ex               { font-size: 0.5rem !important; padding: 6px 7px !important; }

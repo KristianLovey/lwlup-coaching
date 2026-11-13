@@ -31,12 +31,24 @@
   --t-border:    #232323;
   --t-border-hi: #3a3a3a;
 
+  /* ── Brand paneli (admin + trening) ─────────────────────────────
+     Oštriji rubovi = ozbiljniji, manje "SaaS" dojam. Ništa u panelima
+     nema veći radius od --t-r; iznimke su samo krugovi (50%) i pilule (999px).
+     --fb = tekst u panelima (Barlow); javne stranice ostaju na --fm (Inter). */
+  --t-r:         6px;   /* kartice, sekcije, modali */
+  --t-r-sm:      4px;   /* polja, gumbi, chipovi, retci */
+  --fb: var(--font-bw), Barlow, system-ui, sans-serif;
+
   /* Layered surfaces — blago podignut ugljen (bolja vidljivost oblika/teksta) */
   --bg-0: #131317;   /* page / sections base (podignut ugljen) */
   --bg-1: #1a1a20;   /* alternating section */
   --surface-1: #202027; /* cards / frames (clear step above bg) */
   --surface-2: #26262e; /* card headers / hover */
 }
+
+/* Lifterov trening panel: --fm (tekst) prelazi na Barlow samo unutar panela.
+   display: contents — omotač ne stvara kutiju, pa ne mijenja layout. */
+.lwl-panel { display: contents; --fm: var(--fb); }
 
 html { scroll-behavior: smooth; font-size: 110%; }
 body { margin: 0; background: #131317; color: #fff; }

@@ -1,5 +1,7 @@
 'use client'
 // LWL UP · ADMIN OS — per-athlete analytics dashboard (real Supabase data)
+import { Num } from '@/components/ui/num'
+import { Collapse } from '@/components/ui/collapse'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Minus, Plus, ChevronDown, X, RotateCcw, Eye, EyeOff } from 'lucide-react'
@@ -63,7 +65,7 @@ function DashCard({ id, title, head, children, cards, setCard }: {
           </button>
         </div>
       </div>
-      {!st.collapsed && children}
+      <Collapse open={!st.collapsed}>{children}</Collapse>
     </div>
   )
 }
@@ -523,7 +525,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
                           <div key={li} style={{ position: 'relative', height: 40 }}>
                             {lane.map(b => (
                               <div key={b.id} title={`${b.label} · ${shortDate(b.start)} – ${shortDate(b.end)}`}
-                                style={{ position: 'absolute', left: `${b.l * 100}%`, width: `${b.w * 100}%`, top: 0, height: 26, background: b.color, borderRadius: 5, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', overflow: 'hidden', zIndex: 2 }}>
+                                style={{ position: 'absolute', left: `${b.l * 100}%`, width: `${b.w * 100}%`, top: 0, height: 26, background: b.color, borderRadius: 'var(--t-r-sm)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', overflow: 'hidden', zIndex: 2 }}>
                                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.7)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', padding: '0 6px' }}>{b.label}</span>
                               </div>
                             ))}
@@ -737,7 +739,7 @@ function MacroCard({ data, cards, setCard }: { data: any; cards: DashCards; setC
           <button className="card-min" onClick={() => setCard('macro', { collapsed: !st.collapsed })}>{st.collapsed ? <Plus size={13} /> : <Minus size={13} />}</button>
         </div>
       </div>
-      {!st.collapsed && (!m ? <div className="os-empty">Nema unosa prehrane</div> : hist ? (
+      <Collapse open={!st.collapsed}>{(!m ? <div className="os-empty">Nema unosa prehrane</div> : hist ? (
         <div style={{ maxHeight: 320, overflowY: 'auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 1fr 1fr 1fr', gap: 4, fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-muted)', textTransform: 'uppercase', padding: '0 4px 8px', borderBottom: '1px solid var(--border)' }}>
             <span>Datum</span><span style={{ textAlign: 'right' }}>kcal</span><span style={{ textAlign: 'right' }}>P</span><span style={{ textAlign: 'right' }}>UH</span><span style={{ textAlign: 'right' }}>M</span>
@@ -770,7 +772,7 @@ function MacroCard({ data, cards, setCard }: { data: any; cards: DashCards; setC
             </div>
           </div>
         )
-      })())}
+      })())}</Collapse>
     </div>
   )
 }
@@ -793,7 +795,7 @@ function RecentTraining({ athleteId, onViewAll }: { athleteId: string; onViewAll
     <div>
       <div style={{ maxHeight: 420, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, paddingRight: 2 }}>
         {rows.map((wo: any) => (
-          <div key={wo.id} style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '11px 13px' }}>
+          <div key={wo.id} style={{ border: '1px solid var(--border)', borderRadius: 'var(--t-r)', padding: '11px 13px' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
               <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13 }}>{wo.day_name || 'Trening'}</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--text-muted)', marginLeft: 'auto' }}>{fmtDate(wo.workout_date)}</span>
@@ -827,14 +829,14 @@ function KpiCard({ label, num, unit, sub, data, accent, open, onClick, detail }:
     <div className="kpi" style={{ textAlign: 'left', borderColor: open ? 'var(--border-strong)' : undefined }}>
       <div {...(onClick ? clickable(onClick, { expanded: open }) : {})} style={{ cursor: onClick ? 'pointer' : 'default' }}>
         <div className="top"><span className="label">{label}</span>{onClick && <ChevronDown size={13} style={{ color: 'var(--text-muted)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />}</div>
-        <div className="num">{num}<span className="unit">{unit}</span></div>
+        <div className="num"><Num value={num} /><span className="unit">{unit}</span></div>
         <div className={'delta ' + (accent ? 'up' : 'flat')}>{sub}</div>
         {/* sve KPI kartice iste visine — prazan slot kad nema sparklinea */}
         {data.length > 1
           ? <div className="spark-slot"><Spark data={data} accent={accent} height={40} /></div>
           : <div className="spark-slot" style={{ height: 40 }} />}
       </div>
-      {open && detail && <div className="os-fade" style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 8 }}>{detail}</div>}
+      <Collapse open={!!(open && detail)}><div style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 8 }}>{detail}</div></Collapse>
     </div>
   )
 }

@@ -1,7 +1,8 @@
 'use client'
 import { ChevronDown, Eye, EyeOff, Minus, Plus, RotateCcw, X } from 'lucide-react'
 import { CARD_META, type CardId, type CardState, type DashCards } from './dashboard-settings'
-import { useEscapeKey } from '@/lib/a11y'
+import { Drawer } from 'vaul'
+import { useMediaQuery } from '@/components/ui/use-media-query'
 
 export function RangeSelect({ id, value, onChange }: { id: CardId; value: number; onChange: (value: number) => void }) {
   const byBlocks = id === 'progress'
@@ -20,15 +21,19 @@ export function RangeSelect({ id, value, onChange }: { id: CardId; value: number
 export function SettingsDrawer({ open, onClose, cards, setCard, onReset }: {
   open: boolean; onClose: () => void; cards: DashCards; setCard: (id: CardId, patch: Partial<CardState>) => void; onReset: () => void
 }) {
-  useEscapeKey(onClose, open)
+  // Vaul: desktop lijevo kao prije, mobitel bottom sheet; oba se zatvaraju potezom, Escapeom i klikom na scrim
+  const sheet = useMediaQuery('(max-width: 768px)')
 
   return (
-    <>
-      <aside className={'settings-drawer' + (open ? ' open' : '')}>
+    <Drawer.Root open={open} onOpenChange={o => { if (!o) onClose() }} direction={sheet ? 'bottom' : 'left'}>
+      {/* bez portala: renderira se u korijenu .lwl-admin-os pa nasljeđuje tokene */}
+      <Drawer.Overlay className="sd-scrim" />
+      <Drawer.Content className={'settings-drawer' + (sheet ? ' sd-sheet' : '')} aria-describedby={undefined}>
+        {sheet && <div className="sd-handle" aria-hidden />}
         <div className="sd-head">
           <div>
             <div className="eyebrow" style={{ marginBottom: 6 }}>Postavke</div>
-            <div className="sd-title">Dashboard</div>
+            <Drawer.Title className="sd-title">Dashboard</Drawer.Title>
           </div>
           <button className="icon-sm" onClick={onClose} aria-label="zatvori"><X size={16} /></button>
         </div>
@@ -57,8 +62,7 @@ export function SettingsDrawer({ open, onClose, cards, setCard, onReset }: {
           </div>
           <button className="sd-reset" onClick={onReset}><RotateCcw size={15} /> Vrati zadano</button>
         </div>
-      </aside>
-      {open && <div className="sd-scrim" onClick={onClose} />}
-    </>
+      </Drawer.Content>
+    </Drawer.Root>
   )
 }

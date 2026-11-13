@@ -23,7 +23,7 @@
 
   --font-display: var(--font-os), Oswald, system-ui, sans-serif;
   --font-mono:    var(--font-jb), 'JetBrains Mono', ui-monospace, monospace;
-  --font-body:    var(--font-in), Inter, system-ui, sans-serif;
+  --font-body:    var(--fb);
 
   /* Remap the app's embedded-component font vars so reused admin/trainer screens
      (AthleteOverview, training editor) adopt the OS typography automatically. */
@@ -41,11 +41,12 @@
   --t-border: var(--border);
   --t-border-hi: var(--border-strong);
 
-  --radius-xs: 8px;
-  --radius-sm: 12px;
-  --radius-md: 18px;
-  --radius-lg: 24px;
-  --radius-xl: 32px;
+  /* jedna skala za cijeli projekt: globals.css --t-r-sm (4px) / --t-r (6px) */
+  --radius-xs: var(--t-r-sm);
+  --radius-sm: var(--t-r-sm);
+  --radius-md: var(--t-r);
+  --radius-lg: var(--t-r);
+  --radius-xl: var(--t-r);
 
   position: relative;
   min-height: 100vh;
@@ -73,9 +74,12 @@
 }
 
 .lwl-admin-os * { box-sizing: border-box; }
-.lwl-admin-os button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
-.lwl-admin-os input, .lwl-admin-os select, .lwl-admin-os textarea { font: inherit; color: inherit; }
-.lwl-admin-os a { color: inherit; text-decoration: none; }
+/* Reset elemenata bez specifičnosti (:where): klase komponenti ugrađenih u admin (meet card,
+   ui.css, trening editor) ga uvijek nadjačaju. Prije je `.lwl-admin-os button` (0,1,1) brisao
+   font, pozadinu i rub npr. tabovima i gumbu SPREMI na meet cardu. */
+:where(.lwl-admin-os) button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+:where(.lwl-admin-os) :is(input, select, textarea) { font: inherit; color: inherit; }
+:where(.lwl-admin-os) a { color: inherit; text-decoration: none; }
 
 .lwl-admin-os .eyebrow {
   font-family: var(--font-mono);
@@ -116,12 +120,12 @@
 .lwl-admin-os .nav-logo { display: flex; align-items: center; gap: 12px; padding: 4px 8px 24px; }
 .lwl-admin-os .nav-collapse {
   margin-left: auto; width: 30px; height: 30px;
-  display: grid; place-items: center; border-radius: 8px;
+  display: grid; place-items: center; border-radius: var(--t-r-sm);
   color: var(--text-muted); transition: all 0.16s; flex: 0 0 30px;
 }
 .lwl-admin-os .nav-collapse:hover { background: var(--surface-2); color: var(--text); }
 .lwl-admin-os .nav-logo .mark {
-  width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px;
+  width: 38px; height: 38px; display: grid; place-items: center; border-radius: var(--t-r);
   background: var(--text); color: var(--bg);
   font-family: var(--font-display); font-weight: 800; font-size: 19px; letter-spacing: -0.05em;
 }
@@ -136,7 +140,7 @@
 }
 .lwl-admin-os .nav-items { display: flex; flex-direction: column; gap: 2px; }
 .lwl-admin-os .nav-item {
-  display: flex; align-items: center; gap: 13px; padding: 11px 12px; border-radius: 11px;
+  display: flex; align-items: center; gap: 13px; padding: 11px 12px; border-radius: var(--t-r);
   color: var(--text-dim); font-size: 14px; font-weight: 500; transition: all 0.18s;
   position: relative; text-align: left; width: 100%;
 }
@@ -158,7 +162,7 @@
 .lwl-admin-os .nav-top .nav-coach .meta { min-width: 0; text-align: left; }
 .lwl-admin-os .nav-top .nav-coach .meta .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lwl-admin-os .nav-coach {
-  display: flex; align-items: center; gap: 11px; padding: 10px; border-radius: 12px;
+  display: flex; align-items: center; gap: 11px; padding: 10px; border-radius: var(--t-r);
   border: 1px solid var(--border); background: var(--surface-2);
 }
 .lwl-admin-os .nav-coach .avatar {
@@ -184,7 +188,7 @@
 .lwl-admin-os .topbar h1 .dim { color: var(--text-dim); font-weight: 500; }
 .lwl-admin-os .topbar-controls { display: flex; align-items: center; gap: 10px; }
 .lwl-admin-os .ctrl {
-  display: inline-flex; align-items: center; gap: 9px; padding: 10px 15px; border-radius: 12px;
+  display: inline-flex; align-items: center; gap: 9px; padding: 10px 15px; border-radius: var(--t-r);
   border: 1px solid var(--border); background: var(--surface-1);
   font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; color: var(--text-dim);
   transition: all 0.18s; white-space: nowrap;
@@ -231,7 +235,7 @@
 .lwl-admin-os .card-head .r { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); letter-spacing: 0.04em; }
 .lwl-admin-os .card-tools { display: flex; align-items: center; gap: 8px; }
 .lwl-admin-os .card-min {
-  width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+  width: 28px; height: 28px; border-radius: var(--t-r-sm); display: grid; place-items: center;
   border: 1px solid var(--border); color: var(--text-dim); transition: all 0.16s; flex: 0 0 28px;
 }
 .lwl-admin-os .card-min:hover { border-color: var(--border-strong); color: var(--text); background: var(--surface-2); }
@@ -240,7 +244,7 @@
 
 .lwl-admin-os .range-select { position: relative; display: inline-flex; align-items: center; }
 .lwl-admin-os .range-select select {
-  appearance: none; -webkit-appearance: none; padding: 6px 26px 6px 12px; border-radius: 9px;
+  appearance: none; -webkit-appearance: none; padding: 6px 26px 6px 12px; border-radius: var(--t-r);
   border: 1px solid var(--border); background: var(--surface-3);
   font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
   color: var(--text-dim); cursor: pointer; outline: none; transition: all 0.16s;
@@ -251,7 +255,7 @@
 /* larger select (treneri / tim) */
 .lwl-admin-os .os-select { position: relative; display: inline-flex; align-items: center; }
 .lwl-admin-os .os-select select {
-  appearance: none; -webkit-appearance: none; padding: 11px 36px 11px 14px; border-radius: 10px;
+  appearance: none; -webkit-appearance: none; padding: 11px 36px 11px 14px; border-radius: var(--t-r);
   border: 1px solid var(--border-strong); background: var(--surface-2);
   font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--text);
   cursor: pointer; outline: none; min-width: 210px; transition: border-color 0.16s, box-shadow 0.16s;
@@ -259,18 +263,31 @@
 }
 .lwl-admin-os .os-select select:hover { border-color: var(--text-muted); }
 .lwl-admin-os .os-select select:focus { border-color: var(--accent); }
+/* odabir liftera u sidebaru (Popover + cmdk) — okidač izgleda kao .os-select */
+.lwl-admin-os .lifter-pick { width: 100%; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 11px 12px 11px 14px; border-radius: var(--t-r); border: 1px solid var(--border-strong); background: var(--surface-2); font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; outline: none; text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: border-color 0.16s; }
+.lwl-admin-os .lifter-pick:hover { border-color: var(--text-muted); }
+.lwl-admin-os .lifter-pick:focus-visible, .lwl-admin-os .lifter-pick[data-state="open"] { border-color: var(--accent); }
+.lwl-admin-os .lifter-pick .lp-val { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lwl-admin-os .lifter-pick .lp-cr { flex-shrink: 0; color: var(--text-muted); transition: transform 0.2s; }
+.lwl-admin-os .lifter-pick[data-state="open"] .lp-cr { transform: rotate(180deg); }
+.lwl-admin-os .lp-input { width: 100%; box-sizing: border-box; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--border); background: transparent; color: var(--text); font-family: var(--font-body); font-size: 14px; outline: none; }
+.lwl-admin-os .lp-input::placeholder { color: var(--text-faint); }
+.lwl-admin-os .lp-list { max-height: min(320px, var(--radix-popover-content-available-height)); overflow-y: auto; padding: 6px; }
+.lwl-admin-os .lp-list .ui-cmd-item { border-radius: var(--t-r-sm); padding: 8px 10px; font-family: var(--font-body); font-size: 14px; }
+.lwl-admin-os .lp-av { width: 26px; height: 26px; flex: 0 0 26px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-3); font-family: var(--font-display); font-size: 11px; font-weight: 700; color: var(--text); }
+.lwl-admin-os .lp-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lwl-admin-os .os-select .cr { position: absolute; right: 12px; pointer-events: none; color: var(--text-muted); display: grid; place-items: center; }
 
-.lwl-admin-os .seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--surface-3); border: 1px solid var(--border); }
+.lwl-admin-os .seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--t-r); background: var(--surface-3); border: 1px solid var(--border); }
 .lwl-admin-os .seg button {
-  padding: 6px 14px; border-radius: 8px; font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  padding: 6px 14px; border-radius: var(--t-r-sm); font-family: var(--font-mono); font-size: 11px; font-weight: 600;
   letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); transition: all 0.18s;
 }
 .lwl-admin-os .seg button.on { background: var(--text); color: var(--bg); }
 
 .lwl-admin-os .readout {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-top: 18px;
-  border-radius: 12px; overflow: hidden; background: var(--border); border: 1px solid var(--border);
+  border-radius: var(--t-r); overflow: hidden; background: var(--border); border: 1px solid var(--border);
 }
 .lwl-admin-os .readout .cell { background: var(--surface-1); padding: 12px 14px; }
 .lwl-admin-os .readout .cell .k { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px; }
@@ -292,7 +309,7 @@
 .lwl-admin-os .macro-legend .dot { width: 9px; height: 9px; border-radius: 3px; flex: 0 0 9px; }
 .lwl-admin-os .macro-legend .row .nm { color: var(--text-dim); }
 .lwl-admin-os .macro-legend .row .vv { margin-left: auto; font-family: var(--font-mono); font-size: 12px; }
-.lwl-admin-os .macro-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; border-radius: 12px; overflow: hidden; background: var(--border); border: 1px solid var(--border); }
+.lwl-admin-os .macro-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; border-radius: var(--t-r); overflow: hidden; background: var(--border); border: 1px solid var(--border); }
 .lwl-admin-os .macro-foot .cell { background: var(--surface-1); padding: 14px; }
 .lwl-admin-os .macro-foot .cell .k { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
 .lwl-admin-os .macro-foot .cell .v { font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: -0.02em; }
@@ -383,12 +400,12 @@
 }
 .lwl-admin-os .rail-head { padding: 24px 22px 14px; }
 .lwl-admin-os .rail-head .t { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
-.lwl-admin-os .rail-search { display: flex; align-items: center; gap: 9px; padding: 10px 13px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface-2); }
+.lwl-admin-os .rail-search { display: flex; align-items: center; gap: 9px; padding: 10px 13px; border-radius: var(--t-r); border: 1px solid var(--border); background: var(--surface-2); }
 .lwl-admin-os .rail-search input { background: none; border: none; outline: none; width: 100%; font-size: 13px; color: var(--text); }
 .lwl-admin-os .rail-search input::placeholder { color: var(--text-muted); }
 .lwl-admin-os .rail-search .ico { color: var(--text-muted); }
 .lwl-admin-os .rail-list { flex: 1; overflow-y: auto; padding: 8px 14px 14px; display: flex; flex-direction: column; gap: 4px; }
-.lwl-admin-os .rail-athlete { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 12px; transition: all 0.16s; text-align: left; width: 100%; border: 1px solid transparent; }
+.lwl-admin-os .rail-athlete { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: var(--t-r); transition: all 0.16s; text-align: left; width: 100%; border: 1px solid transparent; }
 .lwl-admin-os .rail-athlete:hover { background: var(--surface-2); }
 .lwl-admin-os .rail-athlete.active { background: var(--surface-3); border-color: var(--border-strong); }
 .lwl-admin-os .rail-athlete .a-avatar { width: 36px; height: 36px; flex: 0 0 36px; position: relative; }
@@ -404,19 +421,19 @@
 .lwl-admin-os .rail-foot { padding: 14px; border-top: 1px solid var(--border); }
 .lwl-admin-os .rail-cta {
   display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; padding: 13px;
-  border-radius: 12px; background: var(--text); color: var(--bg);
+  border-radius: var(--t-r); background: var(--text); color: var(--bg);
   font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; transition: all 0.18s;
 }
 .lwl-admin-os .rail-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 24px -10px var(--text); }
 
 /* ── SECTION SUB-PAGES ── */
 .lwl-admin-os .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
-.lwl-admin-os .search-box { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 240px; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-1); }
+.lwl-admin-os .search-box { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 240px; padding: 12px 16px; border-radius: var(--t-r); border: 1px solid var(--border); background: var(--surface-1); }
 .lwl-admin-os .search-box input { background: none; border: none; outline: none; width: 100%; font-size: 14px; color: var(--text); }
 .lwl-admin-os .search-box input::placeholder { color: var(--text-muted); }
 .lwl-admin-os .search-box .ico { color: var(--text-muted); }
 .lwl-admin-os .btn-a {
-  display: inline-flex; align-items: center; gap: 9px; padding: 12px 18px; border-radius: 12px;
+  display: inline-flex; align-items: center; gap: 9px; padding: 12px 18px; border-radius: var(--t-r);
   font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
   border: 1px solid var(--border); background: var(--surface-1); color: var(--text); transition: all 0.18s; white-space: nowrap;
 }
@@ -446,7 +463,7 @@
 .lwl-admin-os .tmpl-cell:hover { border-color: var(--border-strong); transform: translateY(-2px); box-shadow: var(--shadow-card); }
 .lwl-admin-os .tmpl-top { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .lwl-admin-os .tmpl-ic {
-  width: 42px; height: 42px; border-radius: 11px; flex: 0 0 42px; display: grid; place-items: center;
+  width: 42px; height: 42px; border-radius: var(--t-r); flex: 0 0 42px; display: grid; place-items: center;
   color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
 }
@@ -467,7 +484,7 @@
 .lwl-admin-os .field-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .lwl-admin-os .field { display: flex; flex-direction: column; gap: 6px; }
 .lwl-admin-os .field label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
-.lwl-admin-os .field input, .lwl-admin-os .field select { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); font-family: var(--font-mono); font-size: 14px; color: var(--text); outline: none; font-variant-numeric: tabular-nums; width: 100%; }
+.lwl-admin-os .field input, .lwl-admin-os .field select { padding: 10px 12px; border-radius: var(--t-r); border: 1px solid var(--border); background: var(--surface-2); font-family: var(--font-mono); font-size: 14px; color: var(--text); outline: none; font-variant-numeric: tabular-nums; width: 100%; }
 .lwl-admin-os .field input:focus, .lwl-admin-os .field select:focus { border-color: var(--accent); }
 .lwl-admin-os .field.wide { grid-column: 1 / -1; }
 .lwl-admin-os .saved-flash { font-family: var(--font-mono); font-size: 10px; color: var(--accent); letter-spacing: 0.08em; opacity: 0; transition: opacity 0.3s; }
@@ -476,7 +493,7 @@
 .lwl-admin-os .comp-list { display: flex; flex-direction: column; gap: 10px; }
 .lwl-admin-os .comp-card { display: grid; grid-template-columns: 48px 1fr auto auto; gap: 18px; align-items: center; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface-1); padding: 16px 20px; transition: all 0.18s; }
 .lwl-admin-os .comp-card:hover { border-color: var(--border-strong); }
-.lwl-admin-os .comp-date { display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; background: var(--surface-3); border: 1px solid var(--border); padding: 8px 6px; }
+.lwl-admin-os .comp-date { display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: var(--t-r); background: var(--surface-3); border: 1px solid var(--border); padding: 8px 6px; }
 .lwl-admin-os .comp-date .d { font-family: var(--font-display); font-weight: 800; font-size: 18px; line-height: 1; }
 .lwl-admin-os .comp-date .mo { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-top: 3px; }
 .lwl-admin-os .comp-info .nm { font-family: var(--font-display); font-weight: 600; font-size: 15px; }
@@ -484,7 +501,7 @@
 .lwl-admin-os .comp-status { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border-strong); color: var(--text-dim); }
 .lwl-admin-os .comp-status.otvoreno { background: var(--accent); color: #fff; border-color: var(--accent); }
 .lwl-admin-os .comp-actions { display: flex; gap: 6px; }
-.lwl-admin-os .icon-sm { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; border: 1px solid var(--border); color: var(--text-dim); transition: all 0.16s; }
+.lwl-admin-os .icon-sm { width: 34px; height: 34px; border-radius: var(--t-r); display: grid; place-items: center; border: 1px solid var(--border); color: var(--text-dim); transition: all 0.16s; }
 .lwl-admin-os .icon-sm:hover { border-color: var(--border-strong); color: var(--text); }
 .lwl-admin-os .icon-sm.danger:hover { border-color: var(--accent); color: var(--accent); }
 
@@ -493,14 +510,14 @@
 .lwl-admin-os .compose textarea:focus { border-color: var(--accent); }
 .lwl-admin-os .compose-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
 .lwl-admin-os .recipients { display: flex; flex-direction: column; gap: 4px; max-height: 360px; overflow-y: auto; }
-.lwl-admin-os .recipient { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 11px; transition: background 0.15s; cursor: pointer; width: 100%; text-align: left; }
+.lwl-admin-os .recipient { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: var(--t-r); transition: background 0.15s; cursor: pointer; width: 100%; text-align: left; }
 .lwl-admin-os .recipient:hover { background: var(--surface-2); }
 .lwl-admin-os .recipient.on { background: var(--accent-soft); }
 .lwl-admin-os .compose textarea { box-shadow: inset 0 2px 8px rgba(0,0,0,0.35); }
 .lwl-admin-os .notif-layout .card { background: linear-gradient(160deg, var(--surface-2) 0%, var(--surface-1) 55%); }
 .lwl-admin-os .recipient .a-avatar { width: 32px; height: 32px; flex: 0 0 32px; font-size: 12px; }
 .lwl-admin-os .recipient .nm { font-size: 14px; font-weight: 500; flex: 1; }
-.lwl-admin-os .checkbox { width: 22px; height: 22px; border-radius: 7px; flex: 0 0 22px; border: 1.5px solid var(--border-strong); display: grid; place-items: center; color: transparent; transition: all 0.16s; }
+.lwl-admin-os .checkbox { width: 22px; height: 22px; border-radius: var(--t-r-sm); flex: 0 0 22px; border: 1.5px solid var(--border-strong); display: grid; place-items: center; color: transparent; transition: all 0.16s; }
 .lwl-admin-os .checkbox.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 .lwl-admin-os .recipient.all { border-bottom: 1px solid var(--border); border-radius: 0; margin-bottom: 6px; padding-bottom: 16px; }
 .lwl-admin-os .recipient.all .nm { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
@@ -512,38 +529,47 @@
 .lwl-admin-os .nav-mobile-scrim { display: none; }
 .lwl-admin-os .rail-head-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .lwl-admin-os .rail-head-top .t { margin-bottom: 0; }
-.lwl-admin-os .rail-hide { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: var(--text-muted); transition: all 0.16s; flex: 0 0 30px; }
+.lwl-admin-os .rail-hide { width: 30px; height: 30px; border-radius: var(--t-r-sm); display: grid; place-items: center; color: var(--text-muted); transition: all 0.16s; flex: 0 0 30px; }
 .lwl-admin-os .rail-hide:hover { background: var(--surface-2); color: var(--text); }
 
 /* ── SETTINGS DRAWER (left overlay) ── */
+/* drawer postavki (Vaul): animaciju i povlačenje vodi Vaul, ovdje nema transforma */
 .lwl-admin-os .settings-drawer {
   position: fixed; top: 0; left: 0; bottom: 0; width: 360px; max-width: 90vw; z-index: 1210;
   background: var(--surface-1); border-right: 1px solid var(--border);
-  display: flex; flex-direction: column; transform: translateX(-100%);
-  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1); box-shadow: 24px 0 60px -20px rgba(0,0,0,0.55);
+  display: flex; flex-direction: column; outline: none;
+  box-shadow: 24px 0 60px -20px rgba(0,0,0,0.55);
 }
-.lwl-admin-os .settings-drawer.open { transform: translateX(0); }
+/* mobitel: bottom sheet s ručkom za povlačenje */
+.lwl-admin-os .settings-drawer.sd-sheet {
+  top: auto; right: 0; width: 100%; max-width: none; max-height: 85vh;
+  border-right: 0; border-top: 1px solid var(--border-strong); border-radius: var(--t-r) var(--t-r) 0 0;
+  box-shadow: 0 -24px 60px -20px rgba(0,0,0,0.7);
+}
+.lwl-admin-os .sd-handle { width: 40px; height: 4px; margin: 10px auto 0; border-radius: 999px; background: var(--border-strong); flex-shrink: 0; }
+.lwl-admin-os .sd-sheet .sd-head { padding-top: 14px; }
 .lwl-admin-os .sd-scrim { position: fixed; inset: 0; z-index: 1200; background: rgba(0,0,0,0.5); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
 .lwl-admin-os .sd-head { display: flex; align-items: flex-start; justify-content: space-between; padding: 24px 24px 18px; border-bottom: 1px solid var(--border); }
-.lwl-admin-os .sd-title { font-family: var(--font-display); font-weight: 800; font-size: 26px; letter-spacing: -0.03em; line-height: 1; }
+.lwl-admin-os .sd-title { margin: 0; color: var(--text); font-family: var(--font-display); font-weight: 800; font-size: 26px; letter-spacing: -0.03em; line-height: 1; }
 .lwl-admin-os .sd-scroll { flex: 1; overflow-y: auto; padding: 22px 24px 28px; }
 .lwl-admin-os .sd-section { margin-bottom: 26px; }
 .lwl-admin-os .sd-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; }
 .lwl-admin-os .sd-cards { display: flex; flex-direction: column; gap: 4px; }
-.lwl-admin-os .sd-card-row { display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 11px; transition: background 0.15s; }
+.lwl-admin-os .sd-card-row { display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: var(--t-r); transition: background 0.15s; }
 .lwl-admin-os .sd-card-row:hover { background: var(--surface-2); }
 .lwl-admin-os .sd-card-row.off { opacity: 0.5; }
 .lwl-admin-os .sd-card-name { flex: 1; font-size: 14px; font-weight: 500; }
-.lwl-admin-os .sd-eye, .lwl-admin-os .sd-min { width: 30px; height: 30px; border-radius: 8px; flex: 0 0 30px; display: grid; place-items: center; color: var(--text-dim); border: 1px solid transparent; transition: all 0.16s; }
+.lwl-admin-os .sd-eye, .lwl-admin-os .sd-min { width: 30px; height: 30px; border-radius: var(--t-r-sm); flex: 0 0 30px; display: grid; place-items: center; color: var(--text-dim); border: 1px solid transparent; transition: all 0.16s; }
 .lwl-admin-os .sd-eye:hover, .lwl-admin-os .sd-min:hover { background: var(--surface-3); color: var(--text); }
 .lwl-admin-os .sd-card-row.off .sd-eye { color: var(--text-muted); }
 .lwl-admin-os .sd-na { font-family: var(--font-mono); font-size: 12px; color: var(--text-faint); width: 56px; text-align: center; }
-.lwl-admin-os .sd-reset { display: inline-flex; align-items: center; gap: 9px; padding: 12px 16px; border-radius: 12px; width: 100%; justify-content: center; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim); font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; transition: all 0.16s; }
+.lwl-admin-os .sd-reset { display: inline-flex; align-items: center; gap: 9px; padding: 12px 16px; border-radius: var(--t-r); width: 100%; justify-content: center; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim); font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; transition: all 0.16s; }
 .lwl-admin-os .sd-reset:hover { border-color: var(--accent); color: var(--accent); }
 
 /* profile dropdown menu items */
-.lwl-admin-os .os-menu-item { width: 100%; display: flex; align-items: center; gap: 11px; padding: 9px 12px; background: transparent; border: none; color: var(--text-dim); font-size: 14px; font-family: var(--font-body); font-weight: 500; cursor: pointer; border-radius: 9px; transition: background 0.15s, color 0.15s; text-align: left; }
-.lwl-admin-os .os-menu-item:hover { background: var(--surface-2); color: var(--text); }
+.lwl-admin-os .os-menu-item { width: 100%; display: flex; align-items: center; gap: 11px; padding: 9px 12px; background: transparent; border: none; color: var(--text-dim); font-size: 14px; font-family: var(--font-body); font-weight: 500; cursor: pointer; border-radius: var(--t-r); transition: background 0.15s, color 0.15s; text-align: left; }
+.lwl-admin-os .os-menu-item:hover, .lwl-admin-os .os-menu-item[data-highlighted] { background: var(--surface-2); color: var(--text); }
+.lwl-admin-os .os-menu-item:focus { outline: none; }
 .lwl-admin-os .os-menu-logout { color: #f87171; }
 .lwl-admin-os .os-menu-logout:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
 
@@ -644,6 +670,8 @@
     box-shadow: 24px 0 60px -20px rgba(0,0,0,0.7);
   }
   .lwl-admin-os .nav.mobile-open { transform: translateX(0); }
+  /* Vaul drawer: otvaranje/zatvaranje animira Vaul (keyframes), povlačenje inline transform */
+  .lwl-admin-os .nav.nav-vaul { outline: none; touch-action: pan-y; }
   /* clean, scrollable column — children keep their height, foot pinned to bottom */
   .lwl-admin-os .nav { gap: 0; justify-content: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .lwl-admin-os .nav > * { flex-shrink: 0; }

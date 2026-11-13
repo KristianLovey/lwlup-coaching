@@ -193,7 +193,7 @@ async function loadBlockShape(athleteId: string, blockId: string): Promise<Block
 
 // ── stilovi ───────────────────────────────────────────────────────
 const eyebrow: CSSProperties = { fontSize: '0.5rem', letterSpacing: '0.22em', color: '#777', fontWeight: 700, textTransform: 'uppercase', whiteSpace: 'nowrap' }
-const inputBase: CSSProperties = { background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '8px', padding: '7px 9px', color: '#f0f0f0', fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.9rem', outline: 'none', minWidth: 0, width: '100%', boxSizing: 'border-box' }
+const inputBase: CSSProperties = { background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r-sm)', padding: '7px 9px', color: '#f0f0f0', fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.9rem', outline: 'none', minWidth: 0, width: '100%', boxSizing: 'border-box' }
 const th: CSSProperties = { fontSize: '0.5rem', letterSpacing: '0.16em', color: '#777', fontWeight: 700, padding: '6px 8px', whiteSpace: 'nowrap', textAlign: 'center' }
 const td: CSSProperties = { padding: '7px 8px', textAlign: 'center', whiteSpace: 'nowrap', fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.8rem', color: '#e8e8e8', fontVariantNumeric: 'tabular-nums' }
 const tdLabel: CSSProperties = { ...td, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--t-s1)', zIndex: 1, fontSize: '0.5rem', letterSpacing: '0.12em', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis' }
@@ -256,7 +256,7 @@ function DirToggle({ pct, onChange }: { pct: number; onChange: (v: number) => vo
   const delta = Math.abs(100 - pct) || 7.5
   const btn = (on: boolean): CSSProperties => ({
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px',
-    padding: '6px 9px', borderRadius: '7px', cursor: 'pointer', flex: 1, minWidth: 0,
+    padding: '6px 9px', borderRadius: 'var(--t-r-sm)', cursor: 'pointer', flex: 1, minWidth: 0,
     background: on ? 'var(--t-s3)' : 'transparent',
     border: `1px solid ${on ? GOLD : 'var(--t-border)'}`,
     color: on ? GOLD : '#888',
@@ -281,7 +281,7 @@ function DirToggle({ pct, onChange }: { pct: number; onChange: (v: number) => vo
 function Stepper({ label, value, onChange, min = 0, max = 10 }: {
   label: string; value: number; onChange: (v: number) => void; min?: number; max?: number
 }) {
-  const btn: CSSProperties = { width: '26px', height: '30px', display: 'grid', placeItems: 'center', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: '7px', color: '#ccc', cursor: 'pointer', flexShrink: 0 }
+  const btn: CSSProperties = { width: '26px', height: '30px', display: 'grid', placeItems: 'center', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r-sm)', color: '#ccc', cursor: 'pointer', flexShrink: 0 }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
       <span style={{ ...eyebrow, fontSize: '0.45rem', letterSpacing: '0.12em', whiteSpace: 'normal', lineHeight: 1.3 }}>{label}</span>
@@ -311,14 +311,14 @@ function TopSetsEditor({ main, tops, onTops }: { main: MainTop; tops: ExtraTop[]
   const cols = '50px 54px minmax(0,1fr) minmax(0,1fr) 72px'
   const iconBtn = (disabled = false): CSSProperties => ({
     width: '22px', height: '26px', display: 'grid', placeItems: 'center', background: 'transparent',
-    border: '1px solid var(--t-border)', borderRadius: '6px', color: disabled ? '#3a3a3a' : '#999',
+    border: '1px solid var(--t-border)', borderRadius: 'var(--t-r-sm)', color: disabled ? '#3a3a3a' : '#999',
     cursor: disabled ? 'default' : 'pointer', padding: 0, flexShrink: 0,
   })
   const patchTop = (i: number, patch: Partial<ExtraTop>) => onTops(tops.map((t, j) => (j === i ? { ...t, ...patch } : t)))
   const full = tops.length + 1 >= MAX_TOPS
 
   return (
-    <div style={{ border: '1px solid var(--t-border)', borderRadius: '10px', overflow: 'hidden' }}>
+    <div style={{ border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', overflow: 'hidden' }}>
       <div style={{ display: 'grid', gridTemplateColumns: cols, gap: '6px', padding: '7px 9px', background: 'var(--t-s2)', alignItems: 'center' }}>
         {['SERIJA', 'PON.', 'POČETAK', 'KRAJ', ''].map((h, i) => (
           <span key={i} style={{ ...eyebrow, fontSize: '0.44rem', letterSpacing: '0.14em' }}>{h}</span>
@@ -377,7 +377,7 @@ function BackoffRow({ sets, pct, onSets, onPct, tops, from, onFrom }: {
   const order = topOrder(tops)
   const active = backoffBaseIndex(tops, from)
   const chip = (on: boolean): CSSProperties => ({
-    minWidth: '30px', height: '30px', padding: '0 6px', borderRadius: '7px', cursor: 'pointer',
+    minWidth: '30px', height: '30px', padding: '0 6px', borderRadius: 'var(--t-r-sm)', cursor: 'pointer',
     background: on ? 'rgba(107,140,255,0.16)' : 'transparent',
     border: `1px solid ${on ? '#6b8cff' : 'var(--t-border)'}`, color: on ? '#9db0ff' : '#888',
     fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '0.72rem',
@@ -574,11 +574,11 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
         const oneRm = e.oneRm ?? auto
         const varPct = pctForExercise(e.exerciseName)
         return (
-          <div key={e.id} style={{ border: '1px solid var(--t-border)', borderRadius: '12px', padding: '12px', marginTop: '16px', background: 'rgba(0,0,0,0.18)' }}>
+          <div key={e.id} style={{ border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', padding: '12px', marginTop: '16px', background: 'rgba(0,0,0,0.18)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '10px' }}>
               <span style={{ ...eyebrow, color: '#f0f0f0', fontSize: '0.56rem' }}>{extraLabel(i)} · {label}</span>
               <button type="button" onClick={() => removeExtra(e.id)} aria-label="Ukloni lift"
-                style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 9px', borderRadius: '7px', background: 'transparent', border: '1px solid var(--t-border)', color: '#888', cursor: 'pointer', fontFamily: 'var(--fm)', fontSize: '0.5rem', letterSpacing: '0.14em', fontWeight: 700 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 9px', borderRadius: 'var(--t-r-sm)', background: 'transparent', border: '1px solid var(--t-border)', color: '#888', cursor: 'pointer', fontFamily: 'var(--fm)', fontSize: '0.5rem', letterSpacing: '0.14em', fontWeight: 700 }}>
                 <Trash2 size={11} /> UKLONI
               </button>
             </div>
@@ -618,7 +618,7 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
         )
       })}
       <button type="button" onClick={addExtra}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', width: '100%', marginTop: '14px', padding: '11px', borderRadius: '10px', background: 'transparent', border: '1px dashed var(--t-border-hi)', color: '#aaa', cursor: 'pointer', fontFamily: 'var(--fm)', fontSize: '0.58rem', letterSpacing: '0.18em', fontWeight: 700 }}>
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', width: '100%', marginTop: '14px', padding: '11px', borderRadius: 'var(--t-r)', background: 'transparent', border: '1px dashed var(--t-border-hi)', color: '#aaa', cursor: 'pointer', fontFamily: 'var(--fm)', fontSize: '0.58rem', letterSpacing: '0.18em', fontWeight: 700 }}>
         <Plus size={13} /> DODAJ {extraLabel(plan.extras.length)} LIFT
       </button>
 
@@ -627,7 +627,7 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
       {plan.weeks === 0 ? (
         <div style={{ fontSize: '0.66rem', color: '#666' }}>Blok još nema tjedana.</div>
       ) : (
-        <div style={{ overflowX: 'auto', border: '1px solid var(--t-border)', borderRadius: '10px' }}>
+        <div style={{ overflowX: 'auto', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)' }}>
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead>
               <tr style={{ background: 'var(--t-s2)' }}>
@@ -706,7 +706,7 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
       )}
 
       {/* PREGLED UPISA — uživo; projekcija ima prednost pred onim što je u bloku */}
-      <div style={{ marginTop: '14px', padding: '11px 12px', borderRadius: '10px', border: `1px solid ${canApply ? '#4ade8044' : 'var(--t-border)'}`, background: canApply ? 'rgba(74,222,128,0.04)' : 'transparent' }}>
+      <div style={{ marginTop: '14px', padding: '11px 12px', borderRadius: 'var(--t-r)', border: `1px solid ${canApply ? '#4ade8044' : 'var(--t-border)'}`, background: canApply ? 'rgba(74,222,128,0.04)' : 'transparent' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}>
           <span style={{ ...eyebrow, fontSize: '0.5rem', color: shapeError ? '#f87171' : !ready.ok ? GOLD : canApply ? GREEN : '#888', whiteSpace: 'normal' }}>
             {shapeError ? 'BLOK SE NE MOŽE UČITATI'
@@ -717,7 +717,7 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
               : 'NEMA ŠTO UPISATI'}
           </span>
           <button type="button" onClick={() => reloadShape()}
-            style={{ background: 'transparent', border: '1px solid var(--t-border)', borderRadius: '7px', color: '#aaa', cursor: 'pointer', padding: '4px 9px', fontFamily: 'var(--fm)', fontSize: '0.48rem', letterSpacing: '0.14em', fontWeight: 700, flexShrink: 0 }}>
+            style={{ background: 'transparent', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r-sm)', color: '#aaa', cursor: 'pointer', padding: '4px 9px', fontFamily: 'var(--fm)', fontSize: '0.48rem', letterSpacing: '0.14em', fontWeight: 700, flexShrink: 0 }}>
             OSVJEŽI
           </button>
         </div>
@@ -750,12 +750,12 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
       {/* akcije */}
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginTop: '12px' }}>
         <button type="button" onClick={() => { save() }} disabled={status === 'saving'}
-          style={{ padding: '10px 16px', borderRadius: '9px', background: 'var(--t-s3)', border: '1px solid var(--t-border-hi)', color: '#e8e8e8', fontFamily: 'var(--fm)', fontSize: '0.62rem', letterSpacing: '0.16em', fontWeight: 700, cursor: 'pointer' }}>
+          style={{ padding: '10px 16px', borderRadius: 'var(--t-r)', background: 'var(--t-s3)', border: '1px solid var(--t-border-hi)', color: '#e8e8e8', fontFamily: 'var(--fm)', fontSize: '0.62rem', letterSpacing: '0.16em', fontWeight: 700, cursor: 'pointer' }}>
           {status === 'saving' ? 'SPREMAM…' : 'SPREMI PLAN'}
         </button>
         <button type="button" onClick={applyToBlock} disabled={!canApply || apply === 'busy'}
           title={!canApply ? (ready.reason ?? 'Pričekaj da se blok učita') : undefined}
-          style={{ padding: '10px 16px', borderRadius: '9px', background: canApply ? '#1a3a26' : 'transparent', border: `1px solid ${canApply ? GREEN : 'var(--t-border)'}`, color: canApply ? GREEN : '#555', fontFamily: 'var(--fm)', fontSize: '0.62rem', letterSpacing: '0.16em', fontWeight: 700, cursor: canApply ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '7px' }}>
+          style={{ padding: '10px 16px', borderRadius: 'var(--t-r)', background: canApply ? '#1a3a26' : 'transparent', border: `1px solid ${canApply ? GREEN : 'var(--t-border)'}`, color: canApply ? GREEN : '#555', fontFamily: 'var(--fm)', fontSize: '0.62rem', letterSpacing: '0.16em', fontWeight: 700, cursor: canApply ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '7px' }}>
           {apply === 'busy' && <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />}
           UPIŠI U BLOK
         </button>
@@ -791,7 +791,7 @@ function LiftPlanner({ lift, label, data, compEx, variations, blockId, onPlan, o
                   <div style={{ ...eyebrow, margin: '10px 0 7px' }}>
                     {e.exerciseName ?? 'varijacija'} · 1RM {fmtKg(oneRm)} kg
                   </div>
-                  <div style={{ overflowX: 'auto', border: '1px solid var(--t-border)', borderRadius: '10px' }}>
+                  <div style={{ overflowX: 'auto', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)' }}>
                     <table style={{ borderCollapse: 'collapse', width: '100%' }}>
                       <thead>
                         <tr style={{ background: 'var(--t-s2)' }}>
@@ -914,7 +914,7 @@ function LiftCard({ label, data, totalWeeks }: { label: string; data: LiftData; 
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', alignItems: 'end', gap: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--t-border)', borderRadius: '9px', padding: '8px 11px', marginTop: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', alignItems: 'end', gap: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', padding: '8px 11px', marginTop: '12px' }}>
         <RowStat label="1. tj" value={first != null ? fmtKg(first) : '—'} />
         <RowStat label={lastW ? `Zadnje · tj ${lastW.week}` : 'Zadnje'} value={last != null ? fmtKg(last) : '—'} />
         <RowStat label="Preostalo" tone={reached ? '#4ade80' : undefined}
@@ -934,7 +934,7 @@ function LiftCard({ label, data, totalWeeks }: { label: string; data: LiftData; 
               const planTxt = pLo != null && pHi != null ? rng(pLo, pHi) : null
               const kg = doneW ? fmtKg(doneW.kg) : planTxt
               return (
-                <div key={w} style={{ background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: '10px', padding: '9px 10px', minWidth: 0 }}>
+                <div key={w} style={{ background: 'var(--t-s2)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', padding: '9px 10px', minWidth: 0 }}>
                   <div style={{ ...eyebrow, fontSize: '0.45rem' }}>TJ {w}</div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', marginTop: '3px' }}>
                     <span style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: !doneW && pLo !== pHi ? '0.9rem' : '1.05rem', lineHeight: 1.1, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', color: kg == null ? '#555' : doneW ? '#f0f0f0' : '#4ade80' }}>
@@ -1014,7 +1014,7 @@ export function BlockProjectionsModal({ athleteId, blockId, blockName, canEdit, 
     <div onClick={onClose}
       style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', animation: 'fadeIn 0.15s ease' }}>
       <div onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Planer kilaža bloka"
-        style={{ width: '100%', maxWidth: canEdit ? '760px' : '620px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 32px 100px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.07)', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)', fontFamily: 'var(--fm)', color: '#e0e0e0' }}>
+        style={{ width: '100%', maxWidth: canEdit ? '760px' : '620px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', overflow: 'hidden', boxShadow: '0 32px 100px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.07)', animation: 'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)', fontFamily: 'var(--fm)', color: '#e0e0e0' }}>
 
         <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--t-border)', background: 'var(--t-s2)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexShrink: 0 }}>
           <div style={{ minWidth: 0 }}>
@@ -1038,7 +1038,7 @@ export function BlockProjectionsModal({ athleteId, blockId, blockName, canEdit, 
               const on = tab === key
               return (
                 <button key={key} onClick={() => setTab(key)}
-                  style={{ padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontFamily: 'var(--fm)', fontSize: '0.62rem', letterSpacing: '0.16em', fontWeight: 700,
+                  style={{ padding: '8px 16px', borderRadius: 'var(--t-r-sm)', cursor: 'pointer', fontFamily: 'var(--fm)', fontSize: '0.62rem', letterSpacing: '0.16em', fontWeight: 700,
                     background: on ? '#f0f0f0' : 'var(--t-s2)', color: on ? '#0a0a0a' : '#aaa', border: `1px solid ${on ? '#f0f0f0' : 'var(--t-border)'}` }}>
                   {l.label}
                 </button>

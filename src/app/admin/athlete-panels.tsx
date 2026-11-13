@@ -1,4 +1,7 @@
 'use client'
+import * as Popover from '@radix-ui/react-popover'
+import { toast } from '@/components/ui/toast'
+import { confirmDialog } from '@/components/ui/confirm'
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/client'
@@ -53,7 +56,7 @@ export type AthleteProfile = {
 // Izvan AthleteOverview: definirana unutra dobiva novi tip pri svakom renderu, pa bi
 // svaki padajući izbornik u pregledu iznova montirao sadržaj i pokretao animacije.
 const Section = ({ title, open, onToggle, children, accent = 'rgba(255,255,255,0.4)' }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode; accent?: string }) => (
-  <div style={{ background: 'var(--surface-1)', border: `1px solid var(--border)`, borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
+  <div style={{ background: 'var(--surface-1)', border: `1px solid var(--border)`, borderRadius: 'var(--t-r)', marginBottom: '12px', overflow: 'hidden' }}>
     <button onClick={onToggle} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', color: '#fff' }}>
       <span style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: accent, fontFamily: 'var(--fm)', fontWeight: 700 }}>{title}</span>
       <ChevronDown size={14} color={accent} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
@@ -213,7 +216,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
 
   const updatePhase = async (id: string, patch: Partial<TrainingPhase>) => {
     const { error } = await supabase.from('athlete_training_phases').update(patch).eq('id', id)
-    if (error) { alert(`Greška pri spremanju faze: ${error.message}`); return }
+    if (error) { toast.error(`Greška pri spremanju faze: ${error.message}`); return }
     setPhases(p => p.map(ph => ph.id === id ? { ...ph, ...patch } : ph).sort((a, b) => a.start_date.localeCompare(b.start_date)))
   }
 
@@ -262,7 +265,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
   const hasWb      = (d: string) => wbLogs.some((l: any) => String(l.log_date).slice(0, 10) === d)
 
   const FreqGrid = () => (
-    <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px 16px', marginBottom: '12px' }}>
+    <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', padding: '14px 16px', marginBottom: '12px' }}>
       <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginBottom: '12px', fontWeight: 700 }}>FREKVENCIJA LOGIRANJA</div>
       <div style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', gap: '2px', marginBottom: '6px' }}>
         <div />
@@ -303,7 +306,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
     <div style={{ padding: '20px 28px', maxWidth: '1140px', margin: '0 auto', paddingBottom: '60px' }}>
 
       {/* ── Hero header ── */}
-      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '22px 24px', marginBottom: '0', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' as const }}>
+      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--t-r)', padding: '22px 24px', marginBottom: '0', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' as const }}>
         <div style={{ width: '68px', height: '68px', borderRadius: '50%', background: roleColor + '18', border: `2px solid ${roleColor}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', fontWeight: 900, color: '#f0f0f0', fontFamily: FD, flexShrink: 0 }}>{initials}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: '1.85rem', fontWeight: 900, color: '#fff', fontFamily: FD, lineHeight: 1, letterSpacing: '-0.02em' }}>{athlete.full_name}</div>
@@ -312,7 +315,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
             {athlete.email && <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{athlete.email}</span>}
           </div>
         </div>
-        <div style={{ display: 'flex', background: '#060609', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', overflow: 'hidden', flexShrink: 0 }}>
+        <div style={{ display: 'flex', background: '#060609', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 'var(--t-r)', overflow: 'hidden', flexShrink: 0 }}>
           {[
             { label: 'SQ', val: e1rms.sq, color: '#a78bfa' },
             { label: 'BP', val: e1rms.bp, color: '#f472b6' },
@@ -347,7 +350,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
       ) : tab === 'opcenito' ? (
         <>
           {/* Today stats — horizontal strip */}
-          <div style={{ display: 'flex', background: '#09090f', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', background: '#09090f', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--t-r)', overflow: 'hidden', marginBottom: '10px' }}>
             {[
               { label: 'BW',     val: todayBw !== '—' ? `${todayBw}kg` : '—',      color: '#a78bfa' },
               { label: 'KCAL',   val: todayCal !== '—' ? `${todayCal}` : '—',       color: '#f59e0b' },
@@ -364,7 +367,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
           </div>
 
           {/* 7-day activity grid */}
-          <div style={{ background: '#09090f', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '16px 18px', marginBottom: '10px' }}>
+          <div style={{ background: '#09090f', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--t-r)', padding: '16px 18px', marginBottom: '10px' }}>
             <div style={{ fontSize: '0.44rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, marginBottom: '14px' }}>AKTIVNOST OVAJ TJEDAN</div>
             <div style={{ display: 'grid', gridTemplateColumns: '52px repeat(7, 1fr)', gap: '3px', marginBottom: '6px' }}>
               <div />
@@ -386,7 +389,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                   const isToday = weekDates[i] === todayStr
                   return (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <div style={{ width: '24px', height: '24px', borderRadius: '7px', background: ok ? row.color + '22' : 'transparent', border: ok ? `1px solid ${row.color}55` : `1px solid ${isToday ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: '24px', height: '24px', borderRadius: 'var(--t-r-sm)', background: ok ? row.color + '22' : 'transparent', border: ok ? `1px solid ${row.color}55` : `1px solid ${isToday ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {ok && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: row.color, boxShadow: `0 0 5px ${row.color}80` }} />}
                       </div>
                     </div>
@@ -417,7 +420,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                       {([['SQ', sq, '#a78bfa'], ['BP', bp, '#f472b6'], ['DL', dl, '#fb923c'], ['TOTAL', total, '#22c55e']] as const).map(([label, val, color]) => (
-                        <div key={label} style={{ background: val ? color + '10' : 'rgba(255,255,255,0.03)', border: `1px solid ${val ? color + '30' : 'rgba(255,255,255,0.05)'}`, borderRadius: '8px', padding: '8px 4px', textAlign: 'center' }}>
+                        <div key={label} style={{ background: val ? color + '10' : 'rgba(255,255,255,0.03)', border: `1px solid ${val ? color + '30' : 'rgba(255,255,255,0.05)'}`, borderRadius: 'var(--t-r-sm)', padding: '8px 4px', textAlign: 'center' }}>
                           <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.15em', marginBottom: '4px', fontFamily: FM }}>{label}</div>
                           <div style={{ fontSize: '0.96rem', color: val ? color : 'rgba(255,255,255,0.15)', fontFamily: FD, fontWeight: 800 }}>{val ?? '—'}</div>
                         </div>
@@ -462,15 +465,15 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
 
             return (
               <>
-                <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px', marginBottom: '12px' }}>
+                <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', padding: '14px', marginBottom: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                     <button onClick={() => setCalViewDate(({ y, m }) => m === 0 ? { y: y-1, m: 11 } : { y, m: m-1 })}
-                      style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+                      style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: 'var(--t-r-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
                     <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#e0e0f0', fontFamily: FM, letterSpacing: '0.1em' }}>
                       {monthNames[m]} {y}
                     </span>
                     <button onClick={() => setCalViewDate(({ y, m }) => m === 11 ? { y: y+1, m: 0 } : { y, m: m+1 })}
-                      style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+                      style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: 'var(--t-r-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '2px', marginBottom: '4px' }}>
@@ -500,12 +503,12 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                           style={{
                             background: isSelected ? 'rgba(239,53,53,0.15)' : dayPhases.length > 0 ? `${dayPhases[0].color}18` : 'transparent',
                             border: isSelected ? '1px solid rgba(239,53,53,0.5)' : isToday ? '1px solid rgba(255,255,255,0.2)' : dayPhases.length > 0 ? `1px solid ${dayPhases[0].color}40` : '1px solid transparent',
-                            borderRadius: '7px', cursor: 'pointer', padding: '4px 2px',
+                            borderRadius: 'var(--t-r-sm)', cursor: 'pointer', padding: '4px 2px',
                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
                             transition: 'all 0.15s', position: 'relative' as const,
                           }}>
                           {dayPhases.length > 0 && (
-                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', borderRadius: '7px 7px 0 0', background: dayPhases[0].color, opacity: 0.8 }} />
+                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', borderRadius: 'var(--t-r-sm) var(--t-r-sm) 0 0', background: dayPhases[0].color, opacity: 0.8 }} />
                           )}
                           <span style={{ fontSize: '0.7rem', fontWeight: isToday ? 800 : 500, color: isToday ? '#fff' : 'rgba(255,255,255,0.6)', fontFamily: FM, lineHeight: 1, marginTop: '2px' }}>{dayNum}</span>
                           <div style={{ display: 'flex', gap: '2px', flexWrap: 'wrap', justifyContent: 'center', minHeight: '7px' }}>
@@ -550,7 +553,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                 </div>
 
                 {selectedDay && (
-                  <div style={{ background: 'var(--surface-1)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '14px', marginBottom: '12px', animation: 'fadeUp 0.2s ease' }}>
+                  <div style={{ background: 'var(--surface-1)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--t-r)', padding: '14px', marginBottom: '12px', animation: 'fadeUp 0.2s ease' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                       <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, letterSpacing: '0.2em' }}>{selectedDay}</span>
                       <div style={{ display: 'flex', gap: '6px' }}>
@@ -634,7 +637,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                                         {we.actual_note && (
                                           <tr>
                                             <td colSpan={maxSets + 2} style={{ padding: '2px 0 8px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', background: 'rgba(255,255,255,0.04)', borderRadius: '6px', padding: '5px 8px' }}>
+                                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', background: 'rgba(255,255,255,0.04)', borderRadius: 'var(--t-r-sm)', padding: '5px 8px' }}>
                                                 <span style={{ fontSize: '0.65rem', flexShrink: 0, marginTop: '1px' }}>💬</span>
                                                 <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, lineHeight: 1.4 }}>{we.actual_note}</span>
                                               </div>
@@ -657,19 +660,19 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                         <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, marginBottom: '8px' }}>WELLBEING</div>
                         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                           {selWb.sleep_hours != null && (
-                            <div style={{ background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.2)', borderRadius: '8px', padding: '6px 10px', textAlign: 'center' as const }}>
+                            <div style={{ background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.2)', borderRadius: 'var(--t-r-sm)', padding: '6px 10px', textAlign: 'center' as const }}>
                               <div style={{ fontSize: '0.42rem', color: 'rgba(96,165,250,0.6)', fontFamily: FM, letterSpacing: '0.15em', marginBottom: '2px' }}>SAN</div>
                               <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#60a5fa', fontFamily: FD }}>{selWb.sleep_hours}h</div>
                             </div>
                           )}
                           {selWb.stress_level != null && (
-                            <div style={{ background: `rgba(${selWb.stress_level > 7 ? '248,113,113' : selWb.stress_level > 4 ? '245,158,11' : '74,222,128'},0.08)`, border: `1px solid rgba(${selWb.stress_level > 7 ? '248,113,113' : selWb.stress_level > 4 ? '245,158,11' : '74,222,128'},0.2)`, borderRadius: '8px', padding: '6px 10px', textAlign: 'center' as const }}>
+                            <div style={{ background: `rgba(${selWb.stress_level > 7 ? '248,113,113' : selWb.stress_level > 4 ? '245,158,11' : '74,222,128'},0.08)`, border: `1px solid rgba(${selWb.stress_level > 7 ? '248,113,113' : selWb.stress_level > 4 ? '245,158,11' : '74,222,128'},0.2)`, borderRadius: 'var(--t-r-sm)', padding: '6px 10px', textAlign: 'center' as const }}>
                               <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, letterSpacing: '0.15em', marginBottom: '2px' }}>STRES</div>
                               <div style={{ fontSize: '0.9rem', fontWeight: 800, color: selWb.stress_level > 7 ? '#f87171' : selWb.stress_level > 4 ? '#f59e0b' : '#4ade80', fontFamily: FD }}>{selWb.stress_level}/10</div>
                             </div>
                           )}
                           {selWb.caffeine_mg != null && (
-                            <div style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: '8px', padding: '6px 10px', textAlign: 'center' as const }}>
+                            <div style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 'var(--t-r-sm)', padding: '6px 10px', textAlign: 'center' as const }}>
                               <div style={{ fontSize: '0.42rem', color: 'rgba(251,191,36,0.6)', fontFamily: FM, letterSpacing: '0.15em', marginBottom: '2px' }}>KOFEIN</div>
                               <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fbbf24', fontFamily: FD }}>{selWb.caffeine_mg}mg</div>
                             </div>
@@ -684,7 +687,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                         <div style={{ fontSize: '0.46rem', letterSpacing: '0.25em', color: '#10b981', fontFamily: FM, fontWeight: 700, marginBottom: '6px' }}>SUPLEMENTI</div>
                         <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '5px' }}>
                           {selSupps.map((s: any) => (
-                            <span key={s.id} style={{ fontSize: '0.65rem', color: '#a7f3d0', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '6px', padding: '3px 8px', fontFamily: FM }}>
+                            <span key={s.id} style={{ fontSize: '0.65rem', color: '#a7f3d0', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 'var(--t-r-sm)', padding: '3px 8px', fontFamily: FM }}>
                               {s.name}{s.amount != null ? ` · ${s.amount}${s.unit}` : ''}
                             </span>
                           ))}
@@ -702,7 +705,8 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
           })()}
         </>
       ) : tab === 'meetday' ? (
-        <MeetDayTab userId={athlete.id} isAdmin={true} showAthleteSelector={true} />
+        // key: novi lifter iz sidebara = svježe stanje (athleteId u MeetDayTab se postavlja samo pri mountu)
+        <MeetDayTab key={athlete.id} userId={athlete.id} isAdmin={true} showAthleteSelector={true} />
       ) : tab === 'prioriteti' ? (
         <LiftPriorityAdmin athleteId={athlete.id} />
       ) : tab === 'planiranje' ? (
@@ -766,11 +770,11 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
     setSavingComp(true); setSelCompId(id)
     if (!id) {
       const { error } = await supabase.from('athlete_competition_selection').delete().eq('athlete_id', athleteId)
-      if (error) alert(`Greška: ${error.message}`); else onCompetitionChange(null)
+      if (error) toast.error(`Greška: ${error.message}`); else onCompetitionChange(null)
     } else {
       const { error } = await supabase.from('athlete_competition_selection').upsert({ athlete_id: athleteId, competition_id: id }, { onConflict: 'athlete_id' })
       const c = comps.find(x => x.id === id)
-      if (error) alert(`Greška pri spremanju natjecanja: ${error.message}`)
+      if (error) toast.error(`Greška pri spremanju natjecanja: ${error.message}`)
       else if (c) onCompetitionChange({ name: c.name, date: c.date, location: c.location ?? undefined })
     }
     setSavingComp(false)
@@ -793,13 +797,13 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
   return (
     <div>
       {/* Mini calendar */}
-      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px', marginBottom: '16px' }}>
+      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', padding: '14px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <button onClick={() => setCalViewDate(({ y, m }) => m === 0 ? { y: y-1, m: 11 } : { y, m: m-1 })}
-            style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+            style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: 'var(--t-r-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
           <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#e0e0f0', fontFamily: FM, letterSpacing: '0.1em' }}>{monthNames[m]} {y}</span>
           <button onClick={() => setCalViewDate(({ y, m }) => m === 11 ? { y: y+1, m: 0 } : { y, m: m+1 })}
-            style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+            style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: 'var(--t-r-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '2px', marginBottom: '4px' }}>
           {['P','U','S','Č','P','S','N'].map((d, i) => (
@@ -820,11 +824,11 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
                 position: 'relative' as const,
                 background: dayPhases.length > 0 ? `${dayPhases[0].color}18` : 'transparent',
                 border: isToday ? '1px solid rgba(255,255,255,0.2)' : dayPhases.length > 0 ? `1px solid ${dayPhases[0].color}30` : '1px solid transparent',
-                borderRadius: '7px', padding: '5px 2px',
+                borderRadius: 'var(--t-r-sm)', padding: '5px 2px',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
               }}>
                 {dayPhases.length > 0 && (
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', borderRadius: '7px 7px 0 0', background: dayPhases[0].color, opacity: 0.85 }} />
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', borderRadius: 'var(--t-r-sm) var(--t-r-sm) 0 0', background: dayPhases[0].color, opacity: 0.85 }} />
                 )}
                 <span style={{ fontSize: '0.68rem', fontWeight: isToday ? 800 : 400, color: isToday ? '#fff' : 'rgba(255,255,255,0.55)', fontFamily: FM, lineHeight: 1, marginTop: '2px' }}>{dayNum}</span>
                 {isCompDate && <Trophy size={7} color="#fbbf24" />}
@@ -850,7 +854,7 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
       </div>
 
       {/* Phases list */}
-      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
+      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', padding: '16px', marginBottom: '12px' }}>
         <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, marginBottom: '12px' }}>FAZE TRENINGA</div>
         {phases.length === 0 ? (
           <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.7rem', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema unesenih faza</div>
@@ -858,12 +862,12 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {phases.map(ph => editId === ph.id ? (
               // Inline edit — bez brisanja i ponovnog dodavanja
-              <div key={ph.id} style={{ padding: '12px', background: `${editColor}12`, border: `1px solid ${editColor}45`, borderRadius: '8px', borderLeft: `3px solid ${editColor}` }}>
+              <div key={ph.id} style={{ padding: '12px', background: `${editColor}12`, border: `1px solid ${editColor}45`, borderRadius: 'var(--t-r-sm)', borderLeft: `3px solid ${editColor}` }}>
                 <input value={editLabel} onChange={e => setEditLabel(e.target.value)} placeholder="Naziv faze"
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', fontSize: '0.82rem', outline: 'none', fontFamily: FM, borderRadius: '6px', boxSizing: 'border-box', marginBottom: '8px' }} />
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', fontSize: '0.82rem', outline: 'none', fontFamily: FM, borderRadius: 'var(--t-r-sm)', boxSizing: 'border-box', marginBottom: '8px' }} />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                  <input type="date" value={editStart} onChange={e => setEditStart(e.target.value)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '7px 9px', fontSize: '0.76rem', outline: 'none', fontFamily: FM, borderRadius: '6px', boxSizing: 'border-box', colorScheme: 'dark' }} />
-                  <input type="date" value={editEnd} onChange={e => setEditEnd(e.target.value)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '7px 9px', fontSize: '0.76rem', outline: 'none', fontFamily: FM, borderRadius: '6px', boxSizing: 'border-box', colorScheme: 'dark' }} />
+                  <input type="date" value={editStart} onChange={e => setEditStart(e.target.value)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '7px 9px', fontSize: '0.76rem', outline: 'none', fontFamily: FM, borderRadius: 'var(--t-r-sm)', boxSizing: 'border-box', colorScheme: 'dark' }} />
+                  <input type="date" value={editEnd} onChange={e => setEditEnd(e.target.value)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '7px 9px', fontSize: '0.76rem', outline: 'none', fontFamily: FM, borderRadius: 'var(--t-r-sm)', boxSizing: 'border-box', colorScheme: 'dark' }} />
                 </div>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
                   {PHASE_COLORS.map(c => (
@@ -871,12 +875,12 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
                   ))}
                 </div>
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                  <button onClick={() => setEditId(null)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', padding: '7px 14px', fontSize: '0.62rem', letterSpacing: '0.15em', fontFamily: FM, fontWeight: 700, borderRadius: '6px', cursor: 'pointer' }}>ODUSTANI</button>
-                  <button onClick={saveEdit} disabled={!editLabel.trim() || !editStart || !editEnd} style={{ background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.4)', color: '#4ade80', padding: '7px 14px', fontSize: '0.62rem', letterSpacing: '0.15em', fontFamily: FM, fontWeight: 700, borderRadius: '6px', cursor: 'pointer' }}>SPREMI</button>
+                  <button onClick={() => setEditId(null)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', padding: '7px 14px', fontSize: '0.62rem', letterSpacing: '0.15em', fontFamily: FM, fontWeight: 700, borderRadius: 'var(--t-r-sm)', cursor: 'pointer' }}>ODUSTANI</button>
+                  <button onClick={saveEdit} disabled={!editLabel.trim() || !editStart || !editEnd} style={{ background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.4)', color: '#4ade80', padding: '7px 14px', fontSize: '0.62rem', letterSpacing: '0.15em', fontFamily: FM, fontWeight: 700, borderRadius: 'var(--t-r-sm)', cursor: 'pointer' }}>SPREMI</button>
                 </div>
               </div>
             ) : (
-              <div key={ph.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: `${ph.color}10`, border: `1px solid ${ph.color}30`, borderRadius: '8px', borderLeft: `3px solid ${ph.color}` }}>
+              <div key={ph.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: `${ph.color}10`, border: `1px solid ${ph.color}30`, borderRadius: 'var(--t-r-sm)', borderLeft: `3px solid ${ph.color}` }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f0f0f0', fontFamily: FM }}>{ph.label}</div>
                   <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginTop: '2px' }}>{formatDate(ph.start_date)} → {formatDate(ph.end_date)}</div>
@@ -900,10 +904,10 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
       </div>
 
       {/* Natjecanje u planu — odabir + prikaz */}
-      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
+      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', padding: '16px', marginBottom: '12px' }}>
         <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, marginBottom: '12px' }}>NATJECANJE U PLANU</div>
         {competitionSel && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: '8px', borderLeft: '3px solid #fbbf24', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 'var(--t-r-sm)', borderLeft: '3px solid #fbbf24', marginBottom: '10px' }}>
             <Trophy size={14} color="#fbbf24" />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f0f0f0', fontFamily: FM }}>{competitionSel.name}</div>
@@ -916,7 +920,7 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
           </div>
         )}
         <select value={selCompId} onChange={e => pickComp(e.target.value)} disabled={savingComp}
-          style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '9px 12px', fontSize: '0.8rem', outline: 'none', fontFamily: FM, borderRadius: '8px', boxSizing: 'border-box' as const }}>
+          style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '9px 12px', fontSize: '0.8rem', outline: 'none', fontFamily: FM, borderRadius: 'var(--t-r-sm)', boxSizing: 'border-box' as const }}>
           <option value="">— odaberi natjecanje —</option>
           {comps.map(c => <option key={c.id} value={c.id}>{c.name} · {formatDate(c.date)}{c.location ? ` · ${c.location}` : ''}</option>)}
         </select>
@@ -924,25 +928,25 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
       </div>
 
       {/* Add phase form */}
-      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px' }}>
+      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', padding: '16px' }}>
         <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, marginBottom: '14px' }}>DODAJ FAZU</div>
         <div style={{ marginBottom: '10px' }}>
           <input
             value={newPhaseLabel} onChange={e => setNewPhaseLabel(e.target.value)}
             placeholder="Naziv faze (npr. Volumen, Deload...)"
-            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '9px 12px', fontSize: '0.84rem', outline: 'none', fontFamily: FM, borderRadius: '8px', boxSizing: 'border-box' as const }}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '9px 12px', fontSize: '0.84rem', outline: 'none', fontFamily: FM, borderRadius: 'var(--t-r-sm)', boxSizing: 'border-box' as const }}
           />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
           <div>
             <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginBottom: '5px' }}>OD</div>
             <input type="date" value={newPhaseStart} onChange={e => setNewPhaseStart(e.target.value)}
-              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', fontSize: '0.8rem', outline: 'none', fontFamily: FM, borderRadius: '8px', boxSizing: 'border-box' as const, colorScheme: 'dark' }} />
+              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', fontSize: '0.8rem', outline: 'none', fontFamily: FM, borderRadius: 'var(--t-r-sm)', boxSizing: 'border-box' as const, colorScheme: 'dark' }} />
           </div>
           <div>
             <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginBottom: '5px' }}>DO</div>
             <input type="date" value={newPhaseEnd} onChange={e => setNewPhaseEnd(e.target.value)}
-              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', fontSize: '0.8rem', outline: 'none', fontFamily: FM, borderRadius: '8px', boxSizing: 'border-box' as const, colorScheme: 'dark' }} />
+              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', fontSize: '0.8rem', outline: 'none', fontFamily: FM, borderRadius: 'var(--t-r-sm)', boxSizing: 'border-box' as const, colorScheme: 'dark' }} />
           </div>
         </div>
         <div style={{ marginBottom: '14px' }}>
@@ -955,7 +959,7 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
           </div>
         </div>
         <button onClick={onAdd} disabled={savingPhase || !newPhaseLabel.trim() || !newPhaseStart || !newPhaseEnd}
-          style={{ width: '100%', padding: '10px', background: newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? 'rgba(129,140,248,0.4)' : 'transparent'}`, color: newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? '#a5b4fc' : 'rgba(255,255,255,0.2)', cursor: newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? 'pointer' : 'not-allowed', fontSize: '0.68rem', letterSpacing: '0.2em', fontFamily: FM, fontWeight: 700, borderRadius: '8px', transition: 'all 0.2s' }}>
+          style={{ width: '100%', padding: '10px', background: newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? 'rgba(129,140,248,0.4)' : 'transparent'}`, color: newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? '#a5b4fc' : 'rgba(255,255,255,0.2)', cursor: newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? 'pointer' : 'not-allowed', fontSize: '0.68rem', letterSpacing: '0.2em', fontFamily: FM, fontWeight: 700, borderRadius: 'var(--t-r-sm)', transition: 'all 0.2s' }}>
           {savingPhase ? 'SPREMA...' : '+ DODAJ FAZU'}
         </button>
       </div>
@@ -984,7 +988,6 @@ export function AthletePanel({
   const [duplicateTarget, setDuplicateTarget] = useState('')
   const [duplicateName, setDuplicateName] = useState('')
   const [showDupModal, setShowDupModal] = useState(false)
-  const blockSelectorRef = useRef<HTMLDivElement>(null)
   const addingWorkout = useRef(false)
   const blockRef = useRef(block)
   useEffect(() => { blockRef.current = block }, [block])
@@ -994,14 +997,6 @@ export function AthletePanel({
   const currentBlock = currentBlockOf(allBlocks)
   const viewingCurrent = !!block && currentBlock?.id === block.id
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (blockSelectorRef.current && !blockSelectorRef.current.contains(e.target as Node))
-        setShowBlockSelector(false)
-    }
-    if (showBlockSelector) document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [showBlockSelector])
 
   useEffect(() => { loadData() }, [athlete.id])
 
@@ -1029,7 +1024,7 @@ export function AthletePanel({
       .from('blocks')
       .select('*, weeks(*, workouts(*, workout_exercises(*, exercise:exercises(*))))')
       .eq('id', blockId).maybeSingle()
-    if (error) { alert(`Greška pri učitavanju bloka: ${error.message}`); return }
+    if (error) { toast.error(`Greška pri učitavanju bloka: ${error.message}`); return }
     if (data) {
       data.weeks?.sort((a: Week, b: Week) => a.week_number - b.week_number)
       data.weeks?.forEach((w: Week) => {
@@ -1052,7 +1047,7 @@ export function AthletePanel({
   /** Kvačica: blok postaje trenutni — lifter trenira po njemu, projekcije se odnose na njega. */
   const makeCurrent = async (blockId: string) => {
     const err = await setCurrentBlock(supabase, blockId, allBlocks)
-    if (err) { alert(`Greška pri postavljanju trenutnog bloka: ${err}`); return }
+    if (err) { toast.error(`Greška pri postavljanju trenutnog bloka: ${err}`); return }
     setAllBlocks(bs => withCurrent(bs, blockId))
     setBlock(b => b ? { ...b, status: b.id === blockId ? 'active' : (b.status === 'active' ? 'planned' : b.status) } : b)
     onRefresh() // sidebar/dashboard odmah prate novi trenutni blok
@@ -1066,7 +1061,7 @@ export function AthletePanel({
     const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
     // novi blok ne postaje trenutni sam — trener ga označi kvačicom kad želi (osim prvog bloka)
     const prep = await prepareNewBlock(supabase, allBlocks)
-    if (prep.error) { alert(`Greška pri zaključavanju trenutnog bloka: ${prep.error}`); setSaving(false); return }
+    if (prep.error) { toast.error(`Greška pri zaključavanju trenutnog bloka: ${prep.error}`); setSaving(false); return }
     if (prep.pinnedId) setAllBlocks(bs => withCurrent(bs, prep.pinnedId!))
     const { data, error } = await supabase.from('blocks').insert({
       athlete_id: athlete.id, name: name.trim(),
@@ -1075,7 +1070,7 @@ export function AthletePanel({
       status: prep.status,
       ...(goalFilter ? { goal: goalFilter } : {}),
     }).select('id, name, status, start_date, end_date').single()
-    if (error) alert(`Greška pri kreiranju bloka: ${error.message}`)
+    if (error) toast.error(`Greška pri kreiranju bloka: ${error.message}`)
     if (data) {
       setAllBlocks(bs => [data as BlockSummary, ...bs])
       setBlock({ ...data, weeks: [] } as unknown as Block)
@@ -1093,7 +1088,7 @@ export function AthletePanel({
     const endDate = new Date(today); endDate.setDate(today.getDate() + 84)
     // kopija je novi blok → ne postaje trenutna sama
     const prep = await prepareNewBlock(supabase, allBlocks)
-    if (prep.error) { alert(`Greška pri zaključavanju trenutnog bloka: ${prep.error}`); setSaving(false); return }
+    if (prep.error) { toast.error(`Greška pri zaključavanju trenutnog bloka: ${prep.error}`); setSaving(false); return }
     if (prep.pinnedId) setAllBlocks(bs => withCurrent(bs, prep.pinnedId!))
     const { data: nb } = await supabase.from('blocks').insert({
       athlete_id: athlete.id, name: name.trim(),
@@ -1142,7 +1137,7 @@ export function AthletePanel({
 
   const deleteBlock = async () => {
     if (!block) return
-    if (!confirm(`Briši blok "${block.name}"? Ova radnja je nepovratna.`)) return
+    if (!(await confirmDialog({ title: `Obrisati blok "${block.name}"?`, description: 'Ova radnja je nepovratna.', confirmLabel: 'Obriši', destructive: true }))) return
     setSaving(true)
     const { data: { session } } = await supabase.auth.getSession()
     await fetch('/api/admin/delete-block', {
@@ -1156,7 +1151,7 @@ export function AthletePanel({
     if (next && wasCurrent) {
       // obrisan je trenutni → trenutni postaje zadnji kreirani
       const err = await setCurrentBlock(supabase, next.id, remaining)
-      if (err) alert(`Greška pri postavljanju trenutnog bloka: ${err}`)
+      if (err) toast.error(`Greška pri postavljanju trenutnog bloka: ${err}`)
       setAllBlocks(withCurrent(remaining, next.id))
     } else {
       setAllBlocks(remaining)
@@ -1203,7 +1198,7 @@ export function AthletePanel({
     }
     setSaving(false)
     setShowDupModal(false)
-    alert('Blok uspješno dupliciran!')
+    toast.success('Blok dupliciran')
     onRefresh()
   }
 
@@ -1483,7 +1478,7 @@ export function AthletePanel({
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '28px', flexWrap: 'wrap' }}>
         <button onClick={onBack}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', padding: '8px 16px', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', borderRadius: '8px', transition: 'all 0.2s' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', padding: '8px 16px', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', fontFamily: 'var(--fm)', borderRadius: 'var(--t-r-sm)', transition: 'all 0.2s' }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = '#fff'; e.currentTarget.style.color = '#fff' }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}>
           <ChevronLeft size={13} /> NAZAD
@@ -1496,7 +1491,7 @@ export function AthletePanel({
           </div>
         </div>
         {block && (
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', overflow: 'hidden' }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '1px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--t-r)', overflow: 'hidden' }}>
             {[
               { val: allBlocks.length, label: 'BLOKOVA' },
               { val: totalWorkouts, label: 'TRENINGA' },
@@ -1511,11 +1506,15 @@ export function AthletePanel({
         )}
       </div>
 
-      <div style={{ position: 'relative', marginBottom: '24px' }} ref={blockSelectorRef}>
-        <div className="block-bar-inner" style={{ display: 'flex', alignItems: 'stretch', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.3)' }}>
+      {/* lista blokova se otvara ispod cijele trake (Anchor), okidač je samo lijevi gumb */}
+      <Popover.Root open={showBlockSelector} onOpenChange={setShowBlockSelector}>
+      <Popover.Anchor asChild>
+      <div style={{ position: 'relative', marginBottom: '24px' }}>
+        <div className="block-bar-inner" style={{ display: 'flex', alignItems: 'stretch', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.3)' }}>
 
           <div className="block-bar-top" style={{ display: 'flex', alignItems: 'stretch', flex: 1 }}>
-            <button onClick={() => setShowBlockSelector(!showBlockSelector)}
+            <Popover.Trigger asChild>
+            <button
               className="block-bar-switcher"
               style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', background: showBlockSelector ? '#111113' : 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', flex: 1, textAlign: 'left', transition: 'background 0.15s' }}
               onMouseEnter={e => { if (!showBlockSelector) e.currentTarget.style.background = '#111113' }}
@@ -1529,6 +1528,7 @@ export function AthletePanel({
               </div>
               <ChevronDown size={12} color="#444" style={{ marginLeft: 'auto', transform: showBlockSelector ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
+            </Popover.Trigger>
 
             {block && (
               <div className="block-bar-name" style={{ padding: '12px 16px', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '8px', minWidth: '160px' }}>
@@ -1610,8 +1610,9 @@ export function AthletePanel({
           </div>
         </div>
 
-        {showBlockSelector && allBlocks.length > 0 && (
-          <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, background: '#09090e', border: '1px solid var(--border)', borderRadius: '10px', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', maxHeight: '280px', overflowY: 'auto', animation: 'dropDown 0.18s ease' }}>
+        {allBlocks.length > 0 && (
+          <Popover.Content className="ui-pop" side="bottom" align="start" sideOffset={4} collisionPadding={12}
+            style={{ width: 'var(--radix-popover-trigger-width)', background: '#09090e', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', maxHeight: 'min(280px, var(--radix-popover-content-available-height))', overflowY: 'auto' }}>
             {allBlocks.map(b => {
               const isCurrent = currentBlock?.id === b.id
               const isOpen = b.id === block?.id
@@ -1646,9 +1647,11 @@ export function AthletePanel({
                 </div>
               )
             })}
-          </div>
+          </Popover.Content>
         )}
       </div>
+      </Popover.Anchor>
+      </Popover.Root>
 
       {loadingBlock ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '60px 0', color: '#444' }}>
@@ -1660,7 +1663,7 @@ export function AthletePanel({
           <div style={{ fontFamily: 'var(--fd)', fontSize: '3rem', opacity: 0.1, marginBottom: '12px', color: '#fff' }}>—</div>
           <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '24px', fontFamily: 'var(--fm)' }}>NEMA BLOKA</div>
           <button onClick={createBlock}
-            style={{ padding: '12px 28px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.18)', color: '#f0f0f0', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '8px' }}>
+            style={{ padding: '12px 28px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.18)', color: '#f0f0f0', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.25em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: 'var(--t-r-sm)' }}>
             + KREIRAJ PRVI BLOK
           </button>
         </div>
@@ -1697,7 +1700,7 @@ export function AthletePanel({
           ))}
           </BlockSuggestionsProvider>
           <button onClick={addWeek}
-            style={{ width: '100%', padding: '14px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '0.68rem', letterSpacing: '0.3em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', borderRadius: '8px' }}
+            style={{ width: '100%', padding: '14px', background: 'transparent', border: '1px dashed rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '0.68rem', letterSpacing: '0.3em', fontFamily: 'var(--fm)', fontWeight: 700, transition: 'all 0.2s', borderRadius: 'var(--t-r-sm)' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'; e.currentTarget.style.color = '#f0f0f0' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)' }}>
             <Plus size={13} /> DODAJ TJEDAN {(block.weeks?.length ?? 0) + 1}
@@ -1708,21 +1711,21 @@ export function AthletePanel({
       {showDupModal && block && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
           onClick={() => setShowDupModal(false)}>
-          <div style={{ width: '100%', maxWidth: '460px', background: '#0d0d16', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', padding: '28px', animation: 'slideUp 0.25s ease' }}
+          <div style={{ width: '100%', maxWidth: '460px', background: '#0d0d16', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--t-r)', padding: '28px', animation: 'slideUp 0.25s ease' }}
             onClick={e => e.stopPropagation()}>
             <div style={{ fontSize: '0.55rem', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.55)', marginBottom: '6px', fontFamily: 'var(--fm)' }}>DUPLICIRAJ BLOK</div>
             <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--fd)', marginBottom: '24px' }}>{block.name}</div>
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '0.58rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>NAZIV KOPIJE</div>
               <input value={duplicateName} onChange={e => setDuplicateName(e.target.value)}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 14px', fontSize: '0.88rem', outline: 'none', fontFamily: 'var(--fm)', borderRadius: '8px', boxSizing: 'border-box' as const }} />
+                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 14px', fontSize: '0.88rem', outline: 'none', fontFamily: 'var(--fm)', borderRadius: 'var(--t-r-sm)', boxSizing: 'border-box' as const }} />
             </div>
             <div style={{ marginBottom: '24px' }}>
               <div style={{ fontSize: '0.58rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', marginBottom: '8px', fontFamily: 'var(--fm)' }}>KOPIRAJ NA KORISNIKA</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
                 {allAthletes.filter(a => a.id !== athlete.id).map(a => (
                   <button key={a.id} onClick={() => setDuplicateTarget(a.id)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: duplicateTarget === a.id ? 'rgba(239,53,53,0.08)' : 'transparent', border: `1px solid ${duplicateTarget === a.id ? 'rgba(239,53,53,0.35)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '8px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: duplicateTarget === a.id ? 'rgba(239,53,53,0.08)' : 'transparent', border: `1px solid ${duplicateTarget === a.id ? 'rgba(239,53,53,0.35)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 'var(--t-r-sm)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
                     <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 800, color: '#fff', flexShrink: 0 }}>
                       {a.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase()}
                     </div>
@@ -1737,11 +1740,11 @@ export function AthletePanel({
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={() => setShowDupModal(false)}
-                style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', fontSize: '0.68rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', borderRadius: '8px' }}>
+                style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', fontSize: '0.68rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', borderRadius: 'var(--t-r-sm)' }}>
                 ODUSTANI
               </button>
               <button onClick={duplicateBlockTo} disabled={!duplicateTarget || !duplicateName || saving}
-                style={{ flex: 1, padding: '10px', background: duplicateTarget && duplicateName ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', border: `1px solid ${duplicateTarget && duplicateName ? 'rgba(99,102,241,0.5)' : 'transparent'}`, color: duplicateTarget && duplicateName ? '#a5b4fc' : 'rgba(255,255,255,0.2)', cursor: duplicateTarget && duplicateName ? 'pointer' : 'not-allowed', fontSize: '0.68rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: '8px', transition: 'all 0.2s' }}>
+                style={{ flex: 1, padding: '10px', background: duplicateTarget && duplicateName ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', border: `1px solid ${duplicateTarget && duplicateName ? 'rgba(99,102,241,0.5)' : 'transparent'}`, color: duplicateTarget && duplicateName ? '#a5b4fc' : 'rgba(255,255,255,0.2)', cursor: duplicateTarget && duplicateName ? 'pointer' : 'not-allowed', fontSize: '0.68rem', letterSpacing: '0.15em', fontFamily: 'var(--fm)', fontWeight: 700, borderRadius: 'var(--t-r-sm)', transition: 'all 0.2s' }}>
                 {saving ? 'DUPLICIRA...' : 'DUPLICIRAJ'}
               </button>
             </div>
@@ -1752,11 +1755,11 @@ export function AthletePanel({
       <style>{`
         @keyframes dropDown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:none } }
         @keyframes slideUp  { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:none } }
-        .add-btn { display:flex; align-items:center; gap:6px; width:100%; padding:10px 14px; background:transparent; border:1px dashed rgba(255,255,255,0.15); color:rgba(255,255,255,0.55); cursor:pointer; font-size:0.65rem; letter-spacing:0.2em; font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:7px; justify-content:center; margin-top:6px; }
+        .add-btn { display:flex; align-items:center; gap:6px; width:100%; padding:10px 14px; background:transparent; border:1px dashed rgba(255,255,255,0.15); color:rgba(255,255,255,0.55); cursor:pointer; font-size:0.65rem; letter-spacing:0.2em; font-family:var(--fm); font-weight:700; transition:all 0.2s; border-radius:var(--t-r-sm); justify-content:center; margin-top:6px; }
         .add-btn:hover { border-color:rgba(255,255,255,0.4); color:#f0f0f0; background:rgba(255,255,255,0.04); }
-        .icon-btn-danger { background:transparent; border:none; cursor:pointer; color:rgba(255,255,255,0.55); padding:6px; display:flex; align-items:center; justify-content:center; border-radius:6px; transition:all 0.15s; }
+        .icon-btn-danger { background:transparent; border:none; cursor:pointer; color:rgba(255,255,255,0.55); padding:6px; display:flex; align-items:center; justify-content:center; border-radius:var(--t-r-sm); transition:all 0.15s; }
         .icon-btn-danger:hover { color:#ef4444; background:rgba(239,68,68,0.08); }
-        .cat-btn { padding:4px 12px; font-size:0.62rem; letter-spacing:0.1em; font-weight:700; cursor:pointer; font-family:var(--fm); background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.55); border:1px solid var(--border); border-radius:6px; transition:all 0.15s; }
+        .cat-btn { padding:4px 12px; font-size:0.62rem; letter-spacing:0.1em; font-weight:700; cursor:pointer; font-family:var(--fm); background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.55); border:1px solid var(--border); border-radius:var(--t-r-sm); transition:all 0.15s; }
         .cat-btn-active, .cat-btn:hover { background:rgba(255,255,255,0.08); color:#f0f0f0; border-color:rgba(255,255,255,0.2); }
         @keyframes fadeUp { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
         @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }

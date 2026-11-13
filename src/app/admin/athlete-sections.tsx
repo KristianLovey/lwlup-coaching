@@ -2,6 +2,8 @@
 // LWL UP · ADMIN OS — samostalne sekcije po lifteru za novi sidebar:
 // Bilješke, Tjelesna težina, Unos tekućine, Prehrana & kalorije, Wellbeing.
 // Sve čitaju stvarne podatke koje lifter upisuje u /training.
+import { toast } from '@/components/ui/toast'
+import { confirmDialog } from '@/components/ui/confirm'
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Plus, Trash2, ChevronDown, Pencil, Check } from 'lucide-react'
@@ -38,20 +40,20 @@ export function NotesSection({ athleteId, adminId }: { athleteId: string; adminI
     setBusy(true)
     const { error } = await supabase.from('athlete_notes').insert({ athlete_id: athleteId, admin_id: adminId, title: title.trim(), content: txt.trim() })
     setBusy(false)
-    if (error) { alert(`Greška pri spremanju bilješke: ${error.message}`); return }
+    if (error) { toast.error(`Greška pri spremanju bilješke: ${error.message}`); return }
     setTitle(''); setTxt(''); reload()
   }
   const startEdit = (n: any) => { setEditId(n.id); setEditTitle(n.title ?? ''); setEditTxt(n.content ?? '') }
   const saveEdit = async () => {
     if (!editId) return
     const { error } = await supabase.from('athlete_notes').update({ title: editTitle.trim() || null, content: editTxt.trim() }).eq('id', editId)
-    if (error) { alert(`Greška pri spremanju: ${error.message}`); return }
+    if (error) { toast.error(`Greška pri spremanju: ${error.message}`); return }
     setEditId(null); reload()
   }
   const del = async (id: string) => {
-    if (!confirm('Obrisati bilješku?')) return
+    if (!(await confirmDialog({ title: 'Obrisati bilješku?', confirmLabel: 'Obriši', destructive: true }))) return
     const { error } = await supabase.from('athlete_notes').delete().eq('id', id)
-    if (error) { alert(`Greška: ${error.message}`); return }
+    if (error) { toast.error(`Greška: ${error.message}`); return }
     reload()
   }
   // stare bilješke bez naslova: prva linija sadržaja kao naslov
@@ -61,9 +63,9 @@ export function NotesSection({ athleteId, adminId }: { athleteId: string; adminI
       <div className="card">
         <div className="card-head"><span className="t">Nova bilješka</span></div>
         <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Naslov bilješke"
-          style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', padding: '11px 14px', fontSize: 14, fontWeight: 600, outline: 'none', marginBottom: 8, boxSizing: 'border-box' }} />
+          style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', color: 'var(--text)', padding: '11px 14px', fontSize: 14, fontWeight: 600, outline: 'none', marginBottom: 8, boxSizing: 'border-box' }} />
         <textarea value={txt} onChange={e => setTxt(e.target.value)} placeholder="Zapiši opažanje o lifteru — tehnika, plan, dogovor s treninga…"
-          style={{ width: '100%', minHeight: 90, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', padding: '12px 14px', fontSize: 14, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
+          style={{ width: '100%', minHeight: 90, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', color: 'var(--text)', padding: '12px 14px', fontSize: 14, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
           <button className="btn-a accent" disabled={busy || !title.trim() || !txt.trim()} onClick={add}><Plus size={14} /> {busy ? 'Spremam…' : 'Spremi bilješku'}</button>
         </div>
@@ -77,9 +79,9 @@ export function NotesSection({ athleteId, adminId }: { athleteId: string; adminI
               if (editId === n.id) return (
                 <div key={n.id} style={{ borderTop: '1px solid var(--border)', padding: '12px 2px' }}>
                   <input value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="Naslov bilješke"
-                    style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', padding: '9px 12px', fontSize: 14, fontWeight: 600, outline: 'none', marginBottom: 8, boxSizing: 'border-box' }} />
+                    style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', color: 'var(--text)', padding: '9px 12px', fontSize: 14, fontWeight: 600, outline: 'none', marginBottom: 8, boxSizing: 'border-box' }} />
                   <textarea value={editTxt} onChange={e => setEditTxt(e.target.value)}
-                    style={{ width: '100%', minHeight: 80, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', padding: '10px 12px', fontSize: 14, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
+                    style={{ width: '100%', minHeight: 80, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', color: 'var(--text)', padding: '10px 12px', fontSize: 14, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
                     <button className="btn-a" onClick={() => setEditId(null)}>Odustani</button>
                     <button className="btn-a accent" disabled={!editTxt.trim()} onClick={saveEdit}><Check size={13} /> Spremi</button>

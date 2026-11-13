@@ -4,10 +4,18 @@
 // Reskins the admin into the "Claude design" layout. All data is real
 // (Supabase). Deep per-athlete features reuse the existing components.
 // ───────────────────────────────────────────────────────────
+import { toast } from '@/components/ui/toast'
+import { confirmDialog } from '@/components/ui/confirm'
+import { UiHosts } from '@/components/ui/ui-hosts'
 import './admin-os.css'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import * as Popover from '@radix-ui/react-popover'
+import { Command } from 'cmdk'
+import { Drawer } from 'vaul'
+import { useMediaQuery } from '@/components/ui/use-media-query'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -91,14 +99,13 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
   const [error, setError] = useState<string | null>(null)
   const [adminName, setAdminName] = useState(isTrener ? 'Trener' : 'Admin')
   const [adminId, setAdminId] = useState('')
+  // profilni izbornik: Radix DropdownMenu sam pozicionira (gore/dolje) i zatvara
   const [profileOpen, setProfileOpen] = useState(false)
-  // Izbornik je position:fixed (rail ima overflow, apsolutni bi bio odrezan), pa mu
-  // poziciju mjerimo iz pločice. Fiksni "bottom" je radio samo na desktopu gdje je
-  // rail visok 100vh; u mobilnom draweru pločica nije na dnu ekrana pa je izbornik
-  // odlijetao gore.
-  const [profilePos, setProfilePos] = useState<{ left: number; top?: number; bottom?: number }>({ left: 14, bottom: 78 })
-  const profileOpenRef = useRef(false)
-  const profileRef = useRef<HTMLDivElement>(null)
+  // Korijen .lwl-admin-os kao cilj portala: izbornici iz sidebara ne smiju ostati u njemu
+  // (na mobitelu ima transform + overflow pa bi ih odrezao), a ovdje i dalje nasljeđuju tokene.
+  const [osRoot, setOsRoot] = useState<HTMLDivElement | null>(null)
+  // ispod 900px sidebar je Vaul drawer (isti prag kao CSS u admin-os.css)
+  const mobileNav = useMediaQuery('(max-width: 900px)')
 
   const [athletes, setAthletes] = useState<AthleteProfile[]>([])
   const [coaches, setCoaches] = useState<Coach[]>([])
@@ -132,34 +139,6 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
   useEffect(() => { localStorage.setItem('adminos:navCollapsed', navCollapsed ? '1' : '0') }, [navCollapsed])
   useEffect(() => { localStorage.setItem('adminos:railHidden', railHidden ? '1' : '0') }, [railHidden])
 
-  const placeProfile = useCallback(() => {
-    const el = profileRef.current
-    if (!el) return
-    const r = el.getBoundingClientRect()
-    const W = 224, GAP = 8, MENU_H = 300
-    const left = Math.max(8, Math.min(r.left, window.innerWidth - W - 8))
-    // ako iznad pločice nema mjesta (drawer skrolan pri vrhu), otvori prema dolje
-    setProfilePos(r.top > MENU_H + GAP
-      ? { left, bottom: Math.round(window.innerHeight - r.top + GAP) }
-      : { left, top: Math.round(r.bottom + GAP) })
-  }, [])
-
-  // close profile dropdown on outside click
-  useEffect(() => {
-    profileOpenRef.current = profileOpen
-    if (!profileOpen) return
-    placeProfile()
-    const h = (e: MouseEvent) => { if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false) }
-    const reposition = () => { if (profileOpenRef.current) placeProfile() }
-    document.addEventListener('mousedown', h)
-    window.addEventListener('resize', reposition)
-    window.addEventListener('scroll', reposition, true) // true: hvata i scroll unutar raila
-    return () => {
-      document.removeEventListener('mousedown', h)
-      window.removeEventListener('resize', reposition)
-      window.removeEventListener('scroll', reposition, true)
-    }
-  }, [profileOpen, placeProfile])
 
   // ── Load athletes — 2 parallel round-trips, userId avoids extra getUser() call ──
   const ATHLETES_CACHE_KEY = 'adminos:athletes:v2'
@@ -310,22 +289,22 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
   }
   const isLifterSection = LIFTER_SECTIONS.includes(section)
 
-  return (
-    <div className={shellClass}>
-      <div className="admin-shell">
-        {/* ── NAV ── */}
-        <aside className={'nav' + (navCollapsed ? ' nav--collapsed' : '') + (navMobileOpen ? ' mobile-open' : '')}>
-          {/* ── Profil + izbornik na vrhu (umjesto loga); gumb za sklapanje ostaje desno.
-                 placeProfile() otvara izbornik prema dolje kad iznad nema mjesta — ovdje uvijek. ── */}
+  // Sadržaj sidebara: isti JSX za desktop <aside> i mobilni Vaul drawer (renderira se samo na jednom mjestu)
+  const navBody = (
+        <>
+          {/* ── Profil + izbornik na vrhu (umjesto loga); gumb za sklapanje ostaje desno. ── */}
           <div className="nav-logo nav-top">
-            <div className="nav-profile" ref={profileRef}>
-              <button className="nav-coach" onClick={() => setProfileOpen(v => !v)} title="Izbornik" style={{ width: '100%', cursor: 'pointer' }}>
-                <div className="avatar">{initials(adminName)}</div>
-                <div className="meta"><div className="n">{adminName}</div><div className="r">{isTrener ? 'Trener' : 'Administrator'}</div></div>
-                <ChevronDown size={14} style={{ marginLeft: 'auto', flexShrink: 0, color: 'var(--text-muted)', transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-              </button>
-              {profileOpen && (
-                <div style={{ position: 'fixed', left: profilePos.left, ...(profilePos.top != null ? { top: profilePos.top } : { bottom: profilePos.bottom }), width: 224, maxWidth: 'calc(100vw - 24px)', maxHeight: 'calc(100vh - 24px)', overflowY: 'auto', background: 'var(--surface-1)', border: '1px solid var(--border-strong)', borderRadius: 14, boxShadow: '0 24px 64px rgba(0,0,0,0.7)', zIndex: 120, overflow: 'hidden', animation: profilePos.top != null ? 'dropDown 0.18s ease' : 'os-fadeUp 0.18s ease' }}>
+            <DropdownMenu.Root open={profileOpen} onOpenChange={setProfileOpen} modal={false}>
+            <div className="nav-profile">
+              <DropdownMenu.Trigger asChild>
+                <button className="nav-coach" title="Izbornik" style={{ width: '100%', cursor: 'pointer' }}>
+                  <div className="avatar">{initials(adminName)}</div>
+                  <div className="meta"><div className="n">{adminName}</div><div className="r">{isTrener ? 'Trener' : 'Administrator'}</div></div>
+                  <ChevronDown size={14} style={{ marginLeft: 'auto', flexShrink: 0, color: 'var(--text-muted)', transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                </button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal container={osRoot}>
+                <DropdownMenu.Content className="ui-menu" data-vaul-no-drag="" side="bottom" align="start" sideOffset={8} collisionPadding={12} style={{ width: 224 }}>
                   <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div className="avatar" style={{ width: 36, height: 36 }}>{initials(adminName)}</div>
                     <div>
@@ -340,30 +319,26 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
                       { href: '/training', icon: <Activity size={15} />, label: 'Trening' },
                       { href: '/exercises', icon: <Dumbbell size={15} />, label: 'Baza vježbi' },
                     ].map(it => (
-                      <Link key={it.href} href={it.href} onClick={() => setProfileOpen(false)} style={{ textDecoration: 'none' }}>
-                        <button className="os-menu-item">{it.icon}<span>{it.label}</span></button>
-                      </Link>
+                      <DropdownMenu.Item key={it.href} asChild>
+                        <Link href={it.href} className="os-menu-item" style={{ textDecoration: 'none' }}>{it.icon}<span>{it.label}</span></Link>
+                      </DropdownMenu.Item>
                     ))}
                   </div>
                   <div style={{ padding: 6, borderTop: '1px solid var(--border)' }}>
-                    <button className="os-menu-item os-menu-logout" onClick={() => { setProfileOpen(false); handleLogout() }}><LogOut size={15} /><span>Odjava</span></button>
+                    <DropdownMenu.Item className="os-menu-item os-menu-logout" onSelect={() => { handleLogout() }}><LogOut size={15} /><span>Odjava</span></DropdownMenu.Item>
                   </div>
-                </div>
-              )}
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
             </div>
+            </DropdownMenu.Root>
             <button className="nav-collapse" onClick={() => setNavCollapsed(v => !v)} aria-label="Skupi izbornik"><PanelLeft size={18} /></button>
           </div>
           {/* ── Odabir liftera — sve sekcije ispod odnose se na njega ── */}
           {!navCollapsed && (
             <div style={{ padding: '2px 14px 6px' }}>
               <div className="nav-section" style={{ paddingLeft: 0 }}>Lifter</div>
-              <div className="os-select" style={{ width: '100%' }}>
-                <select value={selectedId ?? ''} onChange={e => { setSelectedId(e.target.value || null); setNavMobileOpen(false) }} style={{ width: '100%', minWidth: 0 }}>
-                  <option value="">— odaberi liftera —</option>
-                  {athletes.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
-                </select>
-                <span className="cr"><ChevronDown size={14} /></span>
-              </div>
+              <LifterPicker athletes={athletes} selectedId={selectedId} container={osRoot}
+                onPick={id => { setSelectedId(id); setNavMobileOpen(false) }} />
             </div>
           )}
           {/* ── Sekcije liftera, grupirane (razdjelnice = kategorije) ── */}
@@ -399,7 +374,27 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
               <span className="nav-label">Postavke</span>
             </button>
           </nav>
-        </aside>
+        </>
+  )
+
+  return (
+    <div className={shellClass} ref={setOsRoot}>
+      <div className="admin-shell">
+        {/* ── NAV ── */}
+        {/* ── NAV ── desktop: stalni sidebar; mobitel (≤900px): Vaul drawer, zatvara se potezom ulijevo */}
+        {mobileNav ? (
+          <Drawer.Root open={navMobileOpen} onOpenChange={setNavMobileOpen} direction="left">
+            <Drawer.Portal container={osRoot}>
+              <Drawer.Overlay className="nav-mobile-scrim" />
+              <Drawer.Content className={'nav mobile-open nav-vaul' + (navCollapsed ? ' nav--collapsed' : '')} aria-describedby={undefined}>
+                <Drawer.Title className="ui-sr-only">Izbornik</Drawer.Title>
+                {navBody}
+              </Drawer.Content>
+            </Drawer.Portal>
+          </Drawer.Root>
+        ) : (
+          <aside className={'nav' + (navCollapsed ? ' nav--collapsed' : '')}>{navBody}</aside>
+        )}
 
         {/* ── MAIN ── */}
         <main className="main">
@@ -498,9 +493,52 @@ export default function AdminOS({ role = 'admin' }: { role?: 'admin' | 'trener' 
         </aside>
       </div>
       {railOpen && <div className="rail-scrim" onClick={() => setRailOpen(false)} />}
-      {navMobileOpen && <div className="nav-mobile-scrim" onClick={() => setNavMobileOpen(false)} />}
       <SettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)} cards={cards} setCard={setCard} onReset={() => setCards(defaultCards())} />
+      <UiHosts />
     </div>
+  )
+}
+
+// ── Odabir liftera u sidebaru: combobox s pretragom (Popover + cmdk), prije nativni <select> ──
+function LifterPicker({ athletes, selectedId, onPick, container }: {
+  athletes: AthleteProfile[]; selectedId: string | null; onPick: (id: string | null) => void; container: HTMLElement | null
+}) {
+  const [open, setOpen] = useState(false)
+  const selected = athletes.find(a => a.id === selectedId) ?? null
+  const pick = (id: string | null) => { onPick(id); setOpen(false) }
+  // pretraga po imenu (podniz), ne po id-u koji je vrijednost stavke
+  const byName = (_value: string, search: string, keywords?: string[]) =>
+    (keywords ?? []).join(' ').toLowerCase().includes(search.trim().toLowerCase()) ? 1 : 0
+  return (
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>
+        <button className="lifter-pick" aria-label="Odaberi liftera">
+          <span className="lp-val">{selected?.full_name ?? '— odaberi liftera —'}</span>
+          <ChevronDown size={14} className="lp-cr" />
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal container={container}>
+        <Popover.Content className="ui-menu" data-vaul-no-drag="" side="bottom" align="start" sideOffset={6} collisionPadding={12}
+          style={{ width: 'max(var(--radix-popover-trigger-width), 240px)' }}>
+          <Command loop label="Lifteri" filter={byName}>
+            <Command.Input className="lp-input" placeholder="Pretraži liftere…" autoFocus />
+            <Command.List className="lp-list">
+              <Command.Empty className="ui-cmd-empty">Nema liftera s tim imenom.</Command.Empty>
+              <Command.Item value="__bez_liftera__" keywords={['bez liftera']} onSelect={() => pick(null)}
+                className={'ui-cmd-item' + (!selectedId ? ' is-current' : '')}>— bez liftera —</Command.Item>
+              {athletes.map(a => (
+                <Command.Item key={a.id} value={a.id} keywords={[a.full_name ?? '']} onSelect={() => pick(a.id)}
+                  className={'ui-cmd-item' + (a.id === selectedId ? ' is-current' : '')}>
+                  <span className="lp-av">{initials(a.full_name)}</span>
+                  <span className="lp-name">{a.full_name}</span>
+                  {a.id === selectedId && <Check size={13} style={{ marginLeft: 'auto', flexShrink: 0 }} />}
+                </Command.Item>
+              ))}
+            </Command.List>
+          </Command>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   )
 }
 
@@ -653,7 +691,7 @@ function AddLifterModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
           <div className="field"><label>Lozinka (min. 8 znakova)</label><input type="text" value={pass} onChange={e => setPass(e.target.value)} placeholder="prazno = generiraj automatski" autoComplete="new-password" /></div>
           {err && <div style={{ color: 'var(--accent)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>{err}</div>}
           {ok && (
-            <div style={{ color: '#6fcf7e', fontSize: 12, fontFamily: 'var(--font-mono)', userSelect: 'text', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, padding: '10px 12px', lineHeight: 1.6 }}>
+            <div style={{ color: '#6fcf7e', fontSize: 12, fontFamily: 'var(--font-mono)', userSelect: 'text', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 'var(--t-r-sm)', padding: '10px 12px', lineHeight: 1.6 }}>
               {ok}
               <div style={{ color: 'var(--text-muted)', fontSize: 10, marginTop: 4 }}>Prepiši lozinku prije zatvaranja — prikazuje se samo jednom.</div>
             </div>
@@ -696,7 +734,7 @@ function ResetPasswordModal({ athlete, onClose }: { athlete: AthleteProfile; onC
           <div className="field"><label>Nova lozinka (min. 8 znakova)</label><input type="text" value={pass} onChange={e => setPass(e.target.value)} placeholder="prazno = generiraj automatski" autoComplete="new-password" /></div>
           {err && <div style={{ color: 'var(--accent)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>{err}</div>}
           {ok && (
-            <div style={{ color: '#6fcf7e', fontSize: 12, fontFamily: 'var(--font-mono)', userSelect: 'text', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, padding: '10px 12px', lineHeight: 1.6 }}>
+            <div style={{ color: '#6fcf7e', fontSize: 12, fontFamily: 'var(--font-mono)', userSelect: 'text', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 'var(--t-r-sm)', padding: '10px 12px', lineHeight: 1.6 }}>
               {ok}
               <div style={{ color: 'var(--text-muted)', fontSize: 10, marginTop: 4 }}>Prepiši lozinku prije zatvaranja — prikazuje se samo jednom.</div>
             </div>
@@ -740,7 +778,7 @@ function TimSection() {
     const value = field === 'category' ? val : (val === '' ? null : parseFloat(val))
     const { error } = await supabase.from('lwlup_members')
       .update({ [field]: value, updated_at: new Date().toISOString() }).eq('id', id)
-    if (error) { alert(`Greška pri spremanju: ${error.message}`); return }
+    if (error) { toast.error(`Greška pri spremanju: ${error.message}`); return }
     setSavedId(id); setTimeout(() => setSavedId(s => s === id ? null : s), 1400)
   }
   const set = (id: string, field: keyof TeamMember, val: string) => setMembers(ms => ms.map(m => m.id === id ? { ...m, [field]: val } : m))
@@ -749,7 +787,7 @@ function TimSection() {
     setMembers(ms => ms.map(x => x.id === m.id ? { ...x, is_active: next } : x))
     const { error } = await supabase.from('lwlup_members')
       .update({ is_active: next, updated_at: new Date().toISOString() }).eq('id', m.id)
-    if (error) { alert(`Greška: ${error.message}`); setMembers(ms => ms.map(x => x.id === m.id ? { ...x, is_active: !next } : x)) }
+    if (error) { toast.error(`Greška: ${error.message}`); setMembers(ms => ms.map(x => x.id === m.id ? { ...x, is_active: !next } : x)) }
   }
 
   if (loading) return <div className="os-empty" style={{ display: 'flex', justifyContent: 'center' }}><Loader2 size={20} className="os-spin" /></div>
@@ -867,16 +905,16 @@ function PredlosciSection({ athletes, adminId, exercises }: { athletes: AthleteP
   useEffect(() => { load() }, [load])
 
   const delTemplate = async (id: string) => {
-    if (!confirm('Obrisati ovaj predložak?')) return
+    if (!(await confirmDialog({ title: 'Obrisati ovaj predložak?', confirmLabel: 'Obriši', destructive: true }))) return
     const res = await postApi('/api/admin/delete-block', { blockId: id })
-    if (res?.error) alert(`Greška pri brisanju: ${res.error}`)
+    if (res?.error) toast.error(`Greška pri brisanju: ${res.error}`)
     load()
   }
   const copyToLifter = async (templateId: string, athleteId: string, name: string) => {
     setBusy(true)
     const res = await postApi('/api/admin/copy-block', { sourceBlockId: templateId, targetAthleteId: athleteId, name, asTemplate: false })
     setBusy(false); setCopyId(null)
-    if (res?.error) alert(`Greška pri kopiranju: ${res.error}`)
+    if (res?.error) toast.error(`Greška pri kopiranju: ${res.error}`)
   }
 
   // Build mode: full block editor scoped to template blocks
@@ -965,7 +1003,7 @@ function ImportTemplateModal({ athletes, adminId, onClose, onDone }: { athletes:
     // template is owned by the admin so it never pollutes a lifter's plan
     const res = await postApi('/api/admin/copy-block', { sourceBlockId: blockId, targetAthleteId: adminId, name, asTemplate: true })
     setBusy(false)
-    if (res?.error) { alert(`Greška pri spremanju predloška: ${res.error}`); return }
+    if (res?.error) { toast.error(`Greška pri spremanju predloška: ${res.error}`); return }
     onDone()
   }
   return (
