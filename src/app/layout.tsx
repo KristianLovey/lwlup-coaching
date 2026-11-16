@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Oswald, Inter, JetBrains_Mono, Barlow } from 'next/font/google'
+import { Oswald, Inter, JetBrains_Mono, Archivo } from 'next/font/google'
 import './globals.css'
 import { LanguageProvider } from '@/context/LanguageContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -24,14 +24,15 @@ const inter = Inter({
   variable: '--font-in',
 })
 
-// Tekst u admin i trening panelu (globals.css: --fb, .lwl-panel; admin-os.css: --font-body).
-// Javne stranice ostaju na Interu. Bez preloada: javne stranice ga ne trebaju.
-const barlow = Barlow({
+// Tekst i podaci u admin i trening panelu (globals.css: --fb, .lwl-panel; admin-os.css: --font-body).
+// Archivo (Omnibus-Type): čvrst groteskni font, visoka x-visina za male veličine, tablične brojke (tnum),
+// sva hrvatska slova; varijabilan (jedna datoteka za sve debljine). Javne stranice ostaju na Interu,
+// pa bez preloada.
+const archivo = Archivo({
   subsets: ['latin', 'latin-ext'],
-  weight: ['400', '500', '600', '700', '800'],
   preload: false,
   display: 'swap',
-  variable: '--font-bw',
+  variable: '--font-ar',
 })
 
 // Mono — used by the admin "OS" design for labels / tabular numbers
@@ -74,7 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     // data-scroll-behavior: Next privremeno gasi glatko skrolanje (globals.css) dok mijenja stranicu
     // suppressHydrationWarning: data-perf postavlja skripta ispod prije Reacta
-    <html lang="hr" data-scroll-behavior="smooth" suppressHydrationWarning className={`${oswald.variable} ${inter.variable} ${jetbrainsMono.variable} ${barlow.variable}`}>
+    <html lang="hr" data-scroll-behavior="smooth" suppressHydrationWarning className={`${oswald.variable} ${inter.variable} ${jetbrainsMono.variable} ${archivo.variable}`}>
       <head>
         {/* način za slabije uređaje — mora prije prvog iscrtavanja, inače animacije bljesnu */}
         <script dangerouslySetInnerHTML={{ __html: PERF_BOOT_SCRIPT }} />

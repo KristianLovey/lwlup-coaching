@@ -9,7 +9,7 @@ import {
   Plus, Trash2, ChevronDown, Check, Pencil,
   Loader2,
   FolderOpen, Copy,
-  ChevronLeft, Trophy, History as HistoryIcon, TrendingUp, } from 'lucide-react'
+  ChevronLeft, ChevronRight, Trophy, History as HistoryIcon, TrendingUp, } from 'lucide-react'
 import { WeekPanel, EditableField } from '../training/training-components'
 import { estimate1RM } from '../training/training-setplan'
 import { PrevBlockLiftsModal } from '../training/PrevBlockLifts'
@@ -56,7 +56,7 @@ export type AthleteProfile = {
 // Izvan AthleteOverview: definirana unutra dobiva novi tip pri svakom renderu, pa bi
 // svaki padajući izbornik u pregledu iznova montirao sadržaj i pokretao animacije.
 const Section = ({ title, open, onToggle, children, accent = 'rgba(255,255,255,0.4)' }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode; accent?: string }) => (
-  <div style={{ background: 'var(--surface-1)', border: `1px solid var(--border)`, borderRadius: 'var(--t-r)', marginBottom: '12px', overflow: 'hidden' }}>
+  <div className="os-panel" style={{ marginBottom: '12px', overflow: 'hidden' }}>
     <button onClick={onToggle} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', color: '#fff' }}>
       <span style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: accent, fontFamily: 'var(--fm)', fontWeight: 700 }}>{title}</span>
       <ChevronDown size={14} color={accent} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
@@ -265,7 +265,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
   const hasWb      = (d: string) => wbLogs.some((l: any) => String(l.log_date).slice(0, 10) === d)
 
   const FreqGrid = () => (
-    <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', padding: '14px 16px', marginBottom: '12px' }}>
+    <div className="os-panel" style={{ padding: '14px 16px', marginBottom: '12px' }}>
       <div style={{ fontSize: '0.5rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginBottom: '12px', fontWeight: 700 }}>FREKVENCIJA LOGIRANJA</div>
       <div style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', gap: '2px', marginBottom: '6px' }}>
         <div />
@@ -305,26 +305,22 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
   return (
     <div style={{ padding: '20px 28px', maxWidth: '1140px', margin: '0 auto', paddingBottom: '60px' }}>
 
-      {/* ── Hero header ── */}
-      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--t-r)', padding: '22px 24px', marginBottom: '0', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' as const }}>
-        <div style={{ width: '68px', height: '68px', borderRadius: '50%', background: roleColor + '18', border: `2px solid ${roleColor}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', fontWeight: 900, color: '#f0f0f0', fontFamily: FD, flexShrink: 0 }}>{initials}</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '1.85rem', fontWeight: 900, color: '#fff', fontFamily: FD, lineHeight: 1, letterSpacing: '-0.02em' }}>{athlete.full_name}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px', flexWrap: 'wrap' as const }}>
-            <span style={{ fontSize: '0.47rem', letterSpacing: '0.3em', color: roleColor, fontFamily: FM, fontWeight: 700, background: roleColor + '15', padding: '3px 8px', borderRadius: '4px', border: `1px solid ${roleColor}40` }}>{(athlete.role ?? 'LIFTER').toUpperCase()}</span>
-            {athlete.email && <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{athlete.email}</span>}
+      {/* ── Hero header ── (brojevi bijeli kao KPI; boja samo za ulogu) */}
+      <div className="os-panel ath-hero" style={{ '--rc': roleColor } as React.CSSProperties}>
+        <div className="av">{initials}</div>
+        <div className="who">
+          <div className="nm">{athlete.full_name}</div>
+          <div className="meta">
+            <span className="role">{athlete.role ?? 'lifter'}</span>
+            {athlete.email && <span className="mail">{athlete.email}</span>}
           </div>
         </div>
-        <div style={{ display: 'flex', background: '#060609', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 'var(--t-r)', overflow: 'hidden', flexShrink: 0 }}>
-          {[
-            { label: 'SQ', val: e1rms.sq, color: '#a78bfa' },
-            { label: 'BP', val: e1rms.bp, color: '#f472b6' },
-            { label: 'DL', val: e1rms.dl, color: '#fb923c' },
-          ].map((s, i) => (
-            <div key={s.label} style={{ padding: '14px 20px', textAlign: 'center', borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-              <div style={{ fontSize: '0.41rem', letterSpacing: '0.3em', color: s.color + '80', fontFamily: FM, fontWeight: 700, marginBottom: '6px' }}>{s.label}</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: s.val ? s.color : 'rgba(255,255,255,0.12)', fontFamily: FD, lineHeight: 1 }}>{s.val ?? '—'}</div>
-              {s.val && <div style={{ fontSize: '0.41rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginTop: '3px' }}>kg e1RM</div>}
+        <div className="ath-e1rm os-well">
+          {([['SQ', e1rms.sq], ['BP', e1rms.bp], ['DL', e1rms.dl]] as const).map(([k, v]) => (
+            <div key={k}>
+              <div className="k">{k}</div>
+              <div className={'v' + (v ? '' : ' none')}>{v ?? '—'}</div>
+              <div className="u">{v ? 'kg e1RM' : '\u00a0'}</div>
             </div>
           ))}
         </div>
@@ -465,7 +461,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
 
             return (
               <>
-                <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', padding: '14px', marginBottom: '12px' }}>
+                <div className="os-panel" style={{ padding: '14px', marginBottom: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                     <button onClick={() => setCalViewDate(({ y, m }) => m === 0 ? { y: y-1, m: 11 } : { y, m: m-1 })}
                       style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: 'var(--t-r-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
@@ -553,7 +549,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
                 </div>
 
                 {selectedDay && (
-                  <div style={{ background: 'var(--surface-1)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--t-r)', padding: '14px', marginBottom: '12px', animation: 'fadeUp 0.2s ease' }}>
+                  <div className="os-panel" style={{ padding: '14px', marginBottom: '12px', animation: 'fadeUp 0.2s ease' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                       <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, letterSpacing: '0.2em' }}>{selectedDay}</span>
                       <div style={{ display: 'flex', gap: '6px' }}>
@@ -794,175 +790,174 @@ function PlaningTab({ phases, competitionSel, athleteId, onCompetitionChange, ne
     return `${parseInt(day)}.${parseInt(mo)}.`
   }
 
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const MONTH_SHORT = ['SIJ', 'VEL', 'OŽU', 'TRA', 'SVI', 'LIP', 'SRP', 'KOL', 'RUJ', 'LIS', 'STU', 'PRO']
+  const phVar = (c: string) => ({ '--ph': c }) as React.CSSProperties
+  // trajanje faze (uključivo): cijeli tjedni kao "N tj.", inače dani
+  const span = (a: string, b: string) => {
+    const days = Math.round((new Date(b + 'T12:00:00').getTime() - new Date(a + 'T12:00:00').getTime()) / 86400000) + 1
+    if (!Number.isFinite(days) || days < 1) return ''
+    return days % 7 === 0 ? `${days / 7} tj.` : `${days} d`
+  }
+  const daysTo = (d: string) => Math.round((new Date(d + 'T12:00:00').getTime() - new Date(todayStr + 'T12:00:00').getTime()) / 86400000)
+  const dana = (n: number) => (n % 10 === 1 && n % 100 !== 11 ? 'dan' : 'dana')
+  const canAdd = !!(newPhaseLabel.trim() && newPhaseStart && newPhaseEnd)
+
   return (
-    <div>
-      {/* Mini calendar */}
-      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', padding: '14px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <button onClick={() => setCalViewDate(({ y, m }) => m === 0 ? { y: y-1, m: 11 } : { y, m: m-1 })}
-            style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: 'var(--t-r-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
-          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#e0e0f0', fontFamily: FM, letterSpacing: '0.1em' }}>{monthNames[m]} {y}</span>
-          <button onClick={() => setCalViewDate(({ y, m }) => m === 11 ? { y: y+1, m: 0 } : { y, m: m+1 })}
-            style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', width: '28px', height: '28px', borderRadius: 'var(--t-r-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '2px', marginBottom: '4px' }}>
-          {['P','U','S','Č','P','S','N'].map((d, i) => (
-            <div key={i} style={{ textAlign: 'center', fontSize: '0.44rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, padding: '2px 0' }}>{d}</div>
-          ))}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '3px' }}>
-          {Array.from({ length: Math.ceil(cells / 7) * 7 }, (_, ci) => {
-            const dayNum = ci - startOffset + 1
-            if (dayNum < 1 || dayNum > daysInMonth) return <div key={ci} />
-            const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`
-            const dayPhases = phasesForDate(dateStr)
-            const isCompDate = competitionSel?.date === dateStr
-            const todayStr = new Date().toISOString().slice(0, 10)
-            const isToday = dateStr === todayStr
-            return (
-              <div key={ci} style={{
-                position: 'relative' as const,
-                background: dayPhases.length > 0 ? `${dayPhases[0].color}18` : 'transparent',
-                border: isToday ? '1px solid rgba(255,255,255,0.2)' : dayPhases.length > 0 ? `1px solid ${dayPhases[0].color}30` : '1px solid transparent',
-                borderRadius: 'var(--t-r-sm)', padding: '5px 2px',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-              }}>
-                {dayPhases.length > 0 && (
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', borderRadius: 'var(--t-r-sm) var(--t-r-sm) 0 0', background: dayPhases[0].color, opacity: 0.85 }} />
-                )}
-                <span style={{ fontSize: '0.68rem', fontWeight: isToday ? 800 : 400, color: isToday ? '#fff' : 'rgba(255,255,255,0.55)', fontFamily: FM, lineHeight: 1, marginTop: '2px' }}>{dayNum}</span>
-                {isCompDate && <Trophy size={7} color="#fbbf24" />}
-              </div>
-            )
-          })}
-        </div>
-        {/* Legend */}
-        <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
-          {phases.map(ph => (
-            <div key={ph.id} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <div style={{ width: '12px', height: '3px', borderRadius: '2px', background: ph.color }} />
-              <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{ph.label}</span>
-            </div>
-          ))}
-          {competitionSel && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Trophy size={6} color="#fbbf24" />
-              <span style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{competitionSel.name}</span>
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="plan">
+      <div className="plan-grid">
 
-      {/* Phases list */}
-      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', padding: '16px', marginBottom: '12px' }}>
-        <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, marginBottom: '12px' }}>FAZE TRENINGA</div>
-        {phases.length === 0 ? (
-          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.7rem', fontFamily: FM, textAlign: 'center', padding: '12px 0' }}>Nema unesenih faza</div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {phases.map(ph => editId === ph.id ? (
-              // Inline edit — bez brisanja i ponovnog dodavanja
-              <div key={ph.id} style={{ padding: '12px', background: `${editColor}12`, border: `1px solid ${editColor}45`, borderRadius: 'var(--t-r-sm)', borderLeft: `3px solid ${editColor}` }}>
-                <input value={editLabel} onChange={e => setEditLabel(e.target.value)} placeholder="Naziv faze"
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', fontSize: '0.82rem', outline: 'none', fontFamily: FM, borderRadius: 'var(--t-r-sm)', boxSizing: 'border-box', marginBottom: '8px' }} />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                  <input type="date" value={editStart} onChange={e => setEditStart(e.target.value)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '7px 9px', fontSize: '0.76rem', outline: 'none', fontFamily: FM, borderRadius: 'var(--t-r-sm)', boxSizing: 'border-box', colorScheme: 'dark' }} />
-                  <input type="date" value={editEnd} onChange={e => setEditEnd(e.target.value)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '7px 9px', fontSize: '0.76rem', outline: 'none', fontFamily: FM, borderRadius: 'var(--t-r-sm)', boxSizing: 'border-box', colorScheme: 'dark' }} />
+        {/* ── Kalendar ── */}
+        <section className="os-panel">
+          <div className="os-panel-head">
+            <div>
+              <div className="os-panel-t">Kalendar</div>
+              <div className="plan-month">{monthNames[m]} <span>{y}</span></div>
+            </div>
+            <div className="plan-nav">
+              <button className="icon-sm" aria-label="Prethodni mjesec"
+                onClick={() => setCalViewDate(({ y, m }) => m === 0 ? { y: y - 1, m: 11 } : { y, m: m - 1 })}><ChevronLeft size={15} /></button>
+              <button className="btn-a plan-today" onClick={() => { const d = new Date(); setCalViewDate({ y: d.getFullYear(), m: d.getMonth() }) }}>Danas</button>
+              <button className="icon-sm" aria-label="Sljedeći mjesec"
+                onClick={() => setCalViewDate(({ y, m }) => m === 11 ? { y: y + 1, m: 0 } : { y, m: m + 1 })}><ChevronRight size={15} /></button>
+            </div>
+          </div>
+          <div className="plan-wd" aria-hidden>
+            {['Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub', 'Ned'].map(d => <span key={d}>{d}</span>)}
+          </div>
+          <div className="plan-days os-well">
+            {Array.from({ length: Math.ceil(cells / 7) * 7 }, (_, ci) => {
+              const dayNum = ci - startOffset + 1
+              if (dayNum < 1 || dayNum > daysInMonth) return <div key={ci} className="plan-day empty" aria-hidden />
+              const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`
+              const ph = phasesForDate(dateStr)[0]
+              const isComp = competitionSel?.date === dateStr
+              const isToday = dateStr === todayStr
+              const weekday = ci % 7 // 0 = ponedjeljak
+              // naziv faze: na njenom prvom danu, prvom danu mjeseca i na početku svakog tjedna
+              const showLbl = !!ph && (dateStr === ph.start_date || dayNum === 1 || weekday === 0)
+              return (
+                <div key={ci} style={ph ? phVar(ph.color) : undefined}
+                  className={'plan-day' + (ph ? ' in' : '') + (weekday >= 5 ? ' we' : '') + (isToday ? ' today' : '') + (isComp ? ' comp' : '')}
+                  title={[ph?.label, isComp ? competitionSel?.name : null].filter(Boolean).join(' · ') || undefined}>
+                  <span className="d">{dayNum}</span>
+                  {isComp && <Trophy size={12} className="cup" />}
+                  {showLbl && ph && <span className="lbl">{ph.label}</span>}
                 </div>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                  {PHASE_COLORS.map(c => (
-                    <button key={c} onClick={() => setEditColor(c)} style={{ width: '22px', height: '22px', borderRadius: '50%', background: c, border: editColor === c ? '3px solid #fff' : '2px solid transparent', cursor: 'pointer', flexShrink: 0 }} />
-                  ))}
-                </div>
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                  <button onClick={() => setEditId(null)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', padding: '7px 14px', fontSize: '0.62rem', letterSpacing: '0.15em', fontFamily: FM, fontWeight: 700, borderRadius: 'var(--t-r-sm)', cursor: 'pointer' }}>ODUSTANI</button>
-                  <button onClick={saveEdit} disabled={!editLabel.trim() || !editStart || !editEnd} style={{ background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.4)', color: '#4ade80', padding: '7px 14px', fontSize: '0.62rem', letterSpacing: '0.15em', fontFamily: FM, fontWeight: 700, borderRadius: 'var(--t-r-sm)', cursor: 'pointer' }}>SPREMI</button>
-                </div>
-              </div>
+              )
+            })}
+          </div>
+          <div className="plan-cal-foot">
+            <span className="k"><span className="sq" />Danas</span>
+            {competitionSel && <span className="k"><Trophy size={11} color="#fbbf24" />{competitionSel.name}</span>}
+          </div>
+        </section>
+
+        <div className="plan-side">
+
+          {/* ── Faze + dodavanje ── */}
+          <section className="os-panel">
+            <div className="os-panel-head">
+              <div className="os-panel-t">Faze treninga</div>
+              {phases.length > 0 && <div className="os-panel-t" style={{ color: 'var(--text-faint)' }}>{phases.length}</div>}
+            </div>
+            {phases.length === 0 ? (
+              <div className="plan-empty">Nema faza. Dodaj prvu ispod.</div>
             ) : (
-              <div key={ph.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: `${ph.color}10`, border: `1px solid ${ph.color}30`, borderRadius: 'var(--t-r-sm)', borderLeft: `3px solid ${ph.color}` }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f0f0f0', fontFamily: FM }}>{ph.label}</div>
-                  <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginTop: '2px' }}>{formatDate(ph.start_date)} → {formatDate(ph.end_date)}</div>
-                </div>
-                <button onClick={() => startEdit(ph)} title="Uredi fazu"
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', padding: '4px', display: 'flex', alignItems: 'center', borderRadius: '4px' }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#a5b4fc' }}
-                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.25)' }}>
-                  <Pencil size={12} />
-                </button>
-                <button onClick={() => onDelete(ph.id)}
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', padding: '4px', display: 'flex', alignItems: 'center', borderRadius: '4px', transition: 'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)' }}
-                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent' }}>
-                  <Trash2 size={13} />
-                </button>
+              <div className="plan-phases">
+                {phases.map(ph => editId === ph.id ? (
+                  // uređivanje na mjestu — bez brisanja i ponovnog dodavanja
+                  <div key={ph.id} className="plan-phase editing" style={phVar(editColor)}>
+                    <div className="plan-form">
+                      <div className="field"><label>Naziv</label>
+                        <input value={editLabel} onChange={e => setEditLabel(e.target.value)} placeholder="Naziv faze" aria-label="Naziv faze" /></div>
+                      <div className="plan-dates">
+                        <div className="field"><label>Od</label><input type="date" value={editStart} onChange={e => setEditStart(e.target.value)} aria-label="Početak faze" /></div>
+                        <div className="field"><label>Do</label><input type="date" value={editEnd} onChange={e => setEditEnd(e.target.value)} aria-label="Kraj faze" /></div>
+                      </div>
+                      <div className="field"><label>Boja</label><PhaseSwatches colors={PHASE_COLORS} value={editColor} onChange={setEditColor} /></div>
+                      <div className="plan-actions">
+                        <button className="btn-a" onClick={() => setEditId(null)}>Odustani</button>
+                        <button className="btn-a primary" onClick={saveEdit} disabled={!editLabel.trim() || !editStart || !editEnd}>Spremi</button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div key={ph.id} className="plan-phase" style={phVar(ph.color)}>
+                    <div className="info">
+                      <div className="nm">{ph.label}</div>
+                      <div className="dt">{formatDate(ph.start_date)} – {formatDate(ph.end_date)}{span(ph.start_date, ph.end_date) ? ` · ${span(ph.start_date, ph.end_date)}` : ''}</div>
+                    </div>
+                    <button className="icon-sm" onClick={() => startEdit(ph)} title="Uredi fazu" aria-label={`Uredi fazu ${ph.label}`}><Pencil size={13} /></button>
+                    <button className="icon-sm danger" onClick={() => onDelete(ph.id)} title="Obriši fazu" aria-label={`Obriši fazu ${ph.label}`}><Trash2 size={13} /></button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            )}
 
-      {/* Natjecanje u planu — odabir + prikaz */}
-      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', padding: '16px', marginBottom: '12px' }}>
-        <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, marginBottom: '12px' }}>NATJECANJE U PLANU</div>
-        {competitionSel && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 'var(--t-r-sm)', borderLeft: '3px solid #fbbf24', marginBottom: '10px' }}>
-            <Trophy size={14} color="#fbbf24" />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f0f0f0', fontFamily: FM }}>{competitionSel.name}</div>
-              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginTop: '2px' }}>{formatDate(competitionSel.date)}{competitionSel.location ? ` · ${competitionSel.location}` : ''}</div>
+            <div className="plan-sep" />
+            <div className="plan-form">
+              <div className="os-panel-t">Dodaj fazu</div>
+              <div className="field"><label>Naziv</label>
+                <input value={newPhaseLabel} onChange={e => setNewPhaseLabel(e.target.value)} placeholder="npr. Volumen, Deload…" aria-label="Naziv nove faze" /></div>
+              <div className="plan-dates">
+                <div className="field"><label>Od</label><input type="date" value={newPhaseStart} onChange={e => setNewPhaseStart(e.target.value)} aria-label="Početak nove faze" /></div>
+                <div className="field"><label>Do</label><input type="date" value={newPhaseEnd} onChange={e => setNewPhaseEnd(e.target.value)} aria-label="Kraj nove faze" /></div>
+              </div>
+              <div className="field"><label>Boja</label><PhaseSwatches colors={PHASE_COLORS} value={newPhaseColor} onChange={setNewPhaseColor} /></div>
+              <button className="btn-a primary plan-add-btn" onClick={onAdd} disabled={savingPhase || !canAdd}>
+                <Plus size={14} /> {savingPhase ? 'Sprema…' : 'Dodaj fazu'}
+              </button>
             </div>
-            <button onClick={() => pickComp('')} disabled={savingComp} title="Makni natjecanje iz plana"
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', padding: '4px', display: 'flex' }}>
-              <Trash2 size={13} />
-            </button>
-          </div>
-        )}
-        <select value={selCompId} onChange={e => pickComp(e.target.value)} disabled={savingComp}
-          style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '9px 12px', fontSize: '0.8rem', outline: 'none', fontFamily: FM, borderRadius: 'var(--t-r-sm)', boxSizing: 'border-box' as const }}>
-          <option value="">— odaberi natjecanje —</option>
-          {comps.map(c => <option key={c.id} value={c.id}>{c.name} · {formatDate(c.date)}{c.location ? ` · ${c.location}` : ''}</option>)}
-        </select>
-        <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginTop: '8px' }}>Nova natjecanja dodaju se u sekciji Natjecanja; ovdje ih pridružuješ lifteru.</div>
-      </div>
+          </section>
 
-      {/* Add phase form */}
-      <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--t-r)', padding: '16px' }}>
-        <div style={{ fontSize: '0.52rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, marginBottom: '14px' }}>DODAJ FAZU</div>
-        <div style={{ marginBottom: '10px' }}>
-          <input
-            value={newPhaseLabel} onChange={e => setNewPhaseLabel(e.target.value)}
-            placeholder="Naziv faze (npr. Volumen, Deload...)"
-            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '9px 12px', fontSize: '0.84rem', outline: 'none', fontFamily: FM, borderRadius: 'var(--t-r-sm)', boxSizing: 'border-box' as const }}
-          />
+          {/* ── Natjecanje u planu ── */}
+          <section className="os-panel">
+            <div className="os-panel-head"><div className="os-panel-t">Natjecanje u planu</div></div>
+            {competitionSel ? (() => {
+              const [, cm, cd] = competitionSel.date.split('-')
+              const n = daysTo(competitionSel.date)
+              return (
+                <div className="plan-comp">
+                  <div className="comp-date"><div className="d">{parseInt(cd)}</div><div className="mo">{MONTH_SHORT[parseInt(cm) - 1]}</div></div>
+                  <div className="info">
+                    <div className="nm">{competitionSel.name}</div>
+                    <div className="meta">
+                      {competitionSel.location ? `${competitionSel.location} · ` : ''}
+                      {n > 0 ? <>za <b>{n}</b> {dana(n)}</> : n === 0 ? <b>danas</b> : `prije ${-n} ${dana(-n)}`}
+                    </div>
+                  </div>
+                  <button className="icon-sm danger" onClick={() => pickComp('')} disabled={savingComp}
+                    title="Makni natjecanje iz plana" aria-label="Makni natjecanje iz plana"><Trash2 size={13} /></button>
+                </div>
+              )
+            })() : (
+              <div className="plan-empty" style={{ paddingTop: 0 }}>Lifter nema natjecanje u planu.</div>
+            )}
+            <div className="plan-form">
+              <div className="field"><label>{competitionSel ? 'Promijeni natjecanje' : 'Odaberi natjecanje'}</label>
+                <select value={selCompId} onChange={e => pickComp(e.target.value)} disabled={savingComp} aria-label="Natjecanje u planu">
+                  <option value="">— bez natjecanja —</option>
+                  {comps.map(c => <option key={c.id} value={c.id}>{c.name} · {formatDate(c.date)}{c.location ? ` · ${c.location}` : ''}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="plan-hint">Nova natjecanja dodaju se u sekciji Natjecanja; ovdje ih pridružuješ lifteru.</div>
+          </section>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-          <div>
-            <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginBottom: '5px' }}>OD</div>
-            <input type="date" value={newPhaseStart} onChange={e => setNewPhaseStart(e.target.value)}
-              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', fontSize: '0.8rem', outline: 'none', fontFamily: FM, borderRadius: 'var(--t-r-sm)', boxSizing: 'border-box' as const, colorScheme: 'dark' }} />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginBottom: '5px' }}>DO</div>
-            <input type="date" value={newPhaseEnd} onChange={e => setNewPhaseEnd(e.target.value)}
-              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 10px', fontSize: '0.8rem', outline: 'none', fontFamily: FM, borderRadius: 'var(--t-r-sm)', boxSizing: 'border-box' as const, colorScheme: 'dark' }} />
-          </div>
-        </div>
-        <div style={{ marginBottom: '14px' }}>
-          <div style={{ fontSize: '0.48rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginBottom: '8px' }}>BOJA</div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {PHASE_COLORS.map(c => (
-              <button key={c} onClick={() => setNewPhaseColor(c)}
-                style={{ width: '26px', height: '26px', borderRadius: '50%', background: c, border: newPhaseColor === c ? `3px solid #fff` : '2px solid transparent', cursor: 'pointer', transition: 'border 0.15s', outline: 'none', flexShrink: 0 }} />
-            ))}
-          </div>
-        </div>
-        <button onClick={onAdd} disabled={savingPhase || !newPhaseLabel.trim() || !newPhaseStart || !newPhaseEnd}
-          style={{ width: '100%', padding: '10px', background: newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? 'rgba(129,140,248,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? 'rgba(129,140,248,0.4)' : 'transparent'}`, color: newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? '#a5b4fc' : 'rgba(255,255,255,0.2)', cursor: newPhaseLabel.trim() && newPhaseStart && newPhaseEnd ? 'pointer' : 'not-allowed', fontSize: '0.68rem', letterSpacing: '0.2em', fontFamily: FM, fontWeight: 700, borderRadius: 'var(--t-r-sm)', transition: 'all 0.2s' }}>
-          {savingPhase ? 'SPREMA...' : '+ DODAJ FAZU'}
-        </button>
       </div>
+    </div>
+  )
+}
+
+// Odabir boje faze (krugovi); odabrana ima prsten
+function PhaseSwatches({ colors, value, onChange }: { colors: string[]; value: string; onChange: (c: string) => void }) {
+  return (
+    <div className="plan-sws" role="radiogroup" aria-label="Boja faze">
+      {colors.map(c => (
+        <button key={c} type="button" role="radio" aria-checked={value === c} aria-label={`Boja ${c}`}
+          className={'plan-sw' + (value === c ? ' on' : '')} style={{ '--ph': c } as React.CSSProperties} onClick={() => onChange(c)} />
+      ))}
     </div>
   )
 }

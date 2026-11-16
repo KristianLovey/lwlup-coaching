@@ -23,12 +23,19 @@ Ovdje su pravila koja vrijede uvijek.
 | Rubovi | `--t-border`, `--t-border-hi` | `#232323`, `#3a3a3a` |
 | Akcent | `--accent` (meet card `--acc`) | `#ef3535`, štedljivo: signal, glavna akcija, ključni broj |
 | Naslovi, veliki brojevi | `--fd`, `--font-display` | Oswald |
-| Tekst u panelima | `--fb`, `--font-body` (u `.lwl-panel` i `--fm`) | Barlow |
-| Labele, tablični brojevi | `--font-mono` (u adminu i `--fm`) | JetBrains Mono |
+| Tekst i podaci u panelima | `--fb`, `--font-body`, `--fm` (u adminu i `.lwl-panel`) | Archivo, brojke tablične |
+| Male oznake velikim slovima (eyebrow, KPI oznaka, oznaka polja) | `--font-mono` | JetBrains Mono |
 | Radius: kartice, sekcije, modali | `--t-r` (admin `--radius-md/lg/xl`) | 6px |
 | Radius: polja, gumbi, chipovi | `--t-r-sm` (admin `--radius-xs/sm`) | 4px |
 
 - **Ništa u panelima nema veći radius od `--t-r`.** Iznimke su samo krugovi (`50%`) i pilule (`999px`).
+- **Dubina u adminu** (tokeni u `admin-os.css`, tamna i svijetla tema): kartica = `.os-panel` ili
+  `background: var(--card-bg); box-shadow: var(--card-shadow)` (hover `--card-shadow-hi`); udubljenje unutar
+  kartice (kalendar, polja, statistike) = `.os-well` / `var(--well-bg)` + `var(--well-shadow)`.
+  Dubinu nose svijetli gornji rub i razine svjetline, ne obojeni sjaj. Zrno postoji samo na pozadini ljuske
+  (`.lwl-admin-os::before`) i gasi se u `html[data-perf]`. Ne dodaji nove inline kartice sa `surface-1` + `border`.
+- Monospace **samo** za male oznake velikim slovima i gumbe; tekst, vrijednosti i tablice idu u Archivo
+  (`font-variant-numeric: tabular-nums` je već uključen na korijenu panela).
 - Bez ljubičasto-indigo gradijenata i bez novih fontova. Plava i ljubičasta postoje samo kao boje blokova
   (`BLOCK_COLORS`), tj. kao podatkovne boje, ne kao ukras.
 - Dojam: **snažno, sportski, ozbiljno, powerlifting klub.** Mono eyebrow labele velikim slovima, veliki Oswald brojevi,
@@ -68,6 +75,10 @@ Zamke koje su se već dogodile:
 - `globals.css` boji sve `h1–h5` u bijelo. Radix/Vaul `Title` je `<h2>`: daj mu `margin: 0; color: …` (svijetla tema).
 - Popover/izbornik unutar Vaul drawera dobiva `data-vaul-no-drag=""`, inače povlačenje liste pomiče drawer.
 - Sidebar admina na ≤900px ima `transform` i `overflow`: popoveri iz njega idu kroz `Portal container={osRoot}`.
+- Radix izbornik bez portala ostaje u slojevima roditelja: ako mu je predak `position` + `z-index` (ili `transform`,
+  `isolation`), izbornik ne može iznad elemenata koji slijede. Ne stavljaj `z-index` na omotače oko mreža s izbornicima.
+- Globalni `:focus-visible` prsten (`globals.css`, `!important`) uokviruje i sam Radix kontejner kad dobije fokus;
+  `.ui-menu` / `.ui-pop` ga gase u `ui.css`. Nove kontejnere stiliziraj tim klasama.
 - Prije instalacije provjeri da biblioteka podržava React 18 (peer dependencies).
 - Portali (Radix, Vaul, Sonner) moraju naslijediti tokene panela: montiraj ih unutar `.lwl-admin-os` odnosno
   `.lwl-panel` (prop `container`), inače dobiju font i boje javnih stranica.

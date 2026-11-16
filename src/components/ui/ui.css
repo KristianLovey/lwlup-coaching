@@ -43,6 +43,10 @@
 .ui-menu { box-sizing: border-box; max-height: var(--radix-dropdown-menu-content-available-height); overflow-y: auto; background: var(--t-s1); border: 1px solid var(--t-border-hi); border-radius: var(--t-r); box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7); color: var(--text, #f5f4f1); }
 .ui-pop { max-height: var(--radix-popover-content-available-height); }
 .ui-menu:focus, .ui-pop:focus { outline: none; }
+/* Radix fokusira sam izbornik/popover pri otvaranju; globalni :focus-visible prsten (globals.css, !important)
+   ga je uokvirivao bijelo. Prsten nose istaknute stavke unutra, ne kontejner. */
+.ui-menu:focus-visible { outline: none !important; box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7) !important; }
+.ui-pop:focus-visible { outline: none !important; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8) !important; }
 .ui-menu[data-side="bottom"], .ui-pop[data-side="bottom"] { animation: ui-drop 0.16s cubic-bezier(0.16, 1, 0.3, 1); }
 .ui-menu[data-side="top"], .ui-pop[data-side="top"] { animation: ui-rise 0.16s cubic-bezier(0.16, 1, 0.3, 1); }
 .ui-item { display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; padding: 7px 14px; border: 0; background: none; color: var(--text-dim, rgba(255, 255, 255, 0.7)); font-family: var(--fm); font-size: 0.72rem; letter-spacing: 0.1em; white-space: nowrap; text-align: left; cursor: pointer; outline: none; user-select: none; }

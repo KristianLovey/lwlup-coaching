@@ -2230,11 +2230,12 @@ export function WeekPanel({ week, exercises, isAdmin, userId, onDeleteWeek, onCo
     }}>
 
       {/* ── Week header ── */}
-      <div style={{ background: allDone ? 'rgba(34,197,94,0.04)' : 'var(--t-s2)', cursor: 'pointer', borderBottom: open ? '1px solid var(--t-border)' : 'none' }}
+      <div style={{ background: allDone ? 'linear-gradient(180deg, rgba(34,197,94,0.07), rgba(34,197,94,0.02))' : 'linear-gradient(180deg, var(--t-s3), var(--t-s2) 70%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)', cursor: 'pointer', borderBottom: open ? '1px solid var(--t-border)' : 'none' }}
         onClick={() => { const next = !open; setOpen(next); try { sessionStorage.setItem(ssKey, String(next)) } catch {} }}>
 
         {/* Top: large week label row */}
-        <div className="week-header-top" style={{ padding: 'clamp(14px,3vw,20px) clamp(16px,4vw,24px) 0', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+        {/* donji padding samo kad ispod nema trake dana (prazan ili otvoren tjedan), inače W1 sjedne na rub */}
+        <div className="week-header-top" style={{ padding: `clamp(14px,3vw,20px) clamp(16px,4vw,24px) ${total > 0 && !open ? '0' : 'clamp(14px,3vw,20px)'}`, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div>
               {/* Overline label — profile page style */}

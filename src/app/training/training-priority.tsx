@@ -2,7 +2,7 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, ChevronDown } from 'lucide-react'
+import { Loader2, ChevronDown, Check } from 'lucide-react'
 
 const supabase = createClient()
 
@@ -13,13 +13,15 @@ type PriorityConfig = Record<LiftKey, Record<string, CellConfig>>
 
 const PRIORITY_ORDER: Priority[] = ['none', 'primary', 'secondary', 'tertiary', 'quaternary', 'quinary']
 
-const PRIORITY_META: Record<Priority, { label: string; roman: string; color: string; bg: string; border: string }> = {
-  none:       { label: '—',           roman: '—',   color: 'rgba(255,255,255,0.55)',  bg: 'rgba(255,255,255,0.04)',    border: 'var(--t-border)' },
-  primary:    { label: 'PRIMARNI',    roman: 'I',   color: '#ef3535',               bg: 'rgba(239,53,53,0.22)',     border: 'rgba(239,53,53,0.5)' },
-  secondary:  { label: 'SEKUNDARNI', roman: 'II',  color: '#f97316',               bg: 'rgba(249,115,22,0.22)',    border: 'rgba(249,115,22,0.45)' },
-  tertiary:   { label: 'TERCIJARNI', roman: 'III', color: '#f59e0b',               bg: 'rgba(245,158,11,0.22)',    border: 'rgba(245,158,11,0.45)' },
-  quaternary: { label: 'KVARTARNI',  roman: 'IV',  color: '#6b8cff',               bg: 'rgba(107,140,255,0.22)',  border: 'rgba(107,140,255,0.45)' },
-  quinary:    { label: 'KVINTARNI',  roman: 'V',   color: '#a78bfa',               bg: 'rgba(167,139,250,0.22)', border: 'rgba(167,139,250,0.45)' },
+// Prioritet je redoslijed, pa se kodira jačinom (level 1 = najjače), ne bojom: I puna crvena,
+// II crveni ton, III–V sive sve tamnije. Izgled je u PR_CSS ([data-p]).
+const PRIORITY_META: Record<Priority, { label: string; roman: string; level: number }> = {
+  none:       { label: 'Bez prioriteta', roman: '—',   level: 0 },
+  primary:    { label: 'Primarni',       roman: 'I',   level: 1 },
+  secondary:  { label: 'Sekundarni',     roman: 'II',  level: 2 },
+  tertiary:   { label: 'Tercijarni',     roman: 'III', level: 3 },
+  quaternary: { label: 'Kvartarni',      roman: 'IV',  level: 4 },
+  quinary:    { label: 'Kvintarni',      roman: 'V',   level: 5 },
 }
 
 const DAYS = [
@@ -32,13 +34,11 @@ const DAYS = [
   { key: '7', label: 'NED' },
 ]
 
-const LIFTS: { key: LiftKey; label: string; abbr: string; color: string }[] = [
-  { key: 'squat',    label: 'SQUAT',    abbr: 'S', color: '#ef3535' },
-  { key: 'bench',    label: 'BENCH',    abbr: 'B', color: '#f59e0b' },
-  { key: 'deadlift', label: 'DEADLIFT', abbr: 'D', color: '#a78bfa' },
+const LIFTS: { key: LiftKey; label: string }[] = [
+  { key: 'squat',    label: 'Squat' },
+  { key: 'bench',    label: 'Bench' },
+  { key: 'deadlift', label: 'Deadlift' },
 ]
-
-const FM = 'var(--fm)'
 
 function emptyConfig(): PriorityConfig {
   return {
@@ -131,10 +131,9 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
     }, 500)
   }, [athleteId])
 
-  const cyclePriority = useCallback((lift: LiftKey, day: string) => {
+  const setPriority = useCallback((lift: LiftKey, day: string, next: Priority) => {
     if (!config || !selectedBlockId) return
-    const cur = config[lift][day].priority
-    const next = PRIORITY_ORDER[(PRIORITY_ORDER.indexOf(cur) + 1) % PRIORITY_ORDER.length]
+    if (config[lift][day].priority === next) return
     const nc: PriorityConfig = { ...config, [lift]: { ...config[lift], [day]: { ...config[lift][day], priority: next } } }
     setConfig(nc)
     scheduleSave(nc, selectedBlockId)
@@ -150,178 +149,121 @@ export function LiftPriorityAdmin({ athleteId }: { athleteId: string }) {
   const selectedBlock = blocks.find(b => b.id === selectedBlockId)
 
   if (blocks.length === 0 && !selectedBlockId) return (
-    <div style={{ textAlign: 'center', padding: '48px', color: 'rgba(255,255,255,0.55)', fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: FM }}>
-      Nema blokova za ovog atletičara.
-    </div>
+    <div className="pr"><div className="pr-empty">Lifter nema blokova. Prioriteti se postavljaju po bloku.</div><style>{PR_CSS}</style></div>
   )
 
   return (
-    <div style={{ animation: 'panelSlideIn 0.3s cubic-bezier(0.16,1,0.3,1)' }}>
-
-      {/* ── Blok selector ── */}
-      <DropdownMenu.Root open={blockOpen} onOpenChange={setBlockOpen} modal={false}>
-      <div style={{ position: 'relative', display: 'inline-block', marginBottom: '20px' }}>
-        <DropdownMenu.Trigger asChild>
-        <button
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: 'var(--t-s3)', border: '1px solid var(--t-border-hi)', borderRadius: 'var(--t-r)', cursor: 'pointer', color: '#f0f0f0', transition: 'all 0.15s' }}>
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: selectedBlock?.status === 'active' ? '#ef3535' : 'var(--t-border-hi)', flexShrink: 0, boxShadow: selectedBlock?.status === 'active' ? '0 0 6px rgba(239,53,53,0.5)' : 'none' }} />
-          <span style={{ fontSize: '0.72rem', fontFamily: FM, fontWeight: 600, letterSpacing: '-0.01em' }}>{selectedBlock?.name ?? '—'}</span>
-          <ChevronDown size={12} color="rgba(255,255,255,0.4)" style={{ transform: blockOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-        </button>
-        </DropdownMenu.Trigger>
-          <DropdownMenu.Content className="ui-pop" side="bottom" align="start" sideOffset={5} collisionPadding={12}
-            style={{ background: 'var(--t-s1)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r)', overflowY: 'auto', boxShadow: '0 20px 50px rgba(0,0,0,0.8)', minWidth: '220px' }}>
-            {blocks.map((b, i) => (
-              <DropdownMenu.Item key={b.id} asChild onSelect={() => setSelectedBlockId(b.id)}>
-              <button
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 14px', background: b.id === selectedBlockId ? 'var(--t-s3)' : 'transparent', border: 'none', borderBottom: i < blocks.length - 1 ? '1px solid var(--t-border)' : 'none', cursor: 'pointer', textAlign: 'left' as const, transition: 'background 0.12s' }}
-                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'}
-                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = b.id === selectedBlockId ? 'rgba(255,255,255,0.06)' : 'transparent'}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: b.status === 'active' ? '#ef3535' : 'var(--t-border-hi)', flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: '0.72rem', color: '#e0e0e0', fontFamily: FM, fontWeight: 500 }}>{b.name}</div>
-                  <div style={{ fontSize: '0.46rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginTop: '1px' }}>{b.start_date}</div>
-                </div>
-              </button>
-              </DropdownMenu.Item>
-            ))}
-          </DropdownMenu.Content>
-      </div>
-      </DropdownMenu.Root>
-
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-        <div>
-          <div style={{ fontSize: '0.46rem', letterSpacing: '0.28em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginBottom: '3px' }}>PRIORITETNA TABLICA</div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>
-            Klikni rimski broj za promjenu · upiši naziv vježbe ispod
+    <div className="pr pr-in">
+      <div className="pr-card">
+        {/* ── zaglavlje: naslov + blok ── */}
+        <div className="pr-head">
+          <div>
+            <div className="pr-eyebrow">Prioritetna tablica</div>
+            <div className="pr-title">Prioriteti liftova</div>
+          </div>
+          <div className="pr-tools">
+            {saving && <span className="pr-saving"><Loader2 size={12} className="pr-spin" /> Spremam…</span>}
+            <DropdownMenu.Root open={blockOpen} onOpenChange={setBlockOpen} modal={false}>
+              <DropdownMenu.Trigger asChild>
+                <button className="pr-block" aria-label="Odaberi blok">
+                  <span className={'dot' + (selectedBlock?.status === 'active' ? ' on' : '')} />
+                  <span className="nm">{selectedBlock?.name ?? '—'}</span>
+                  <ChevronDown size={13} className="cr" />
+                </button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content className="ui-menu pr-menu" side="bottom" align="end" sideOffset={6} collisionPadding={12}>
+                {blocks.map(b => (
+                  <DropdownMenu.Item key={b.id} className="ui-item pr-item" onSelect={() => setSelectedBlockId(b.id)}>
+                    <span className={'dot' + (b.status === 'active' ? ' on' : '')} />
+                    <span className="txt"><b>{b.name}</b><small>{b.start_date}{b.status === 'active' ? ' · aktivni' : ''}</small></span>
+                    {b.id === selectedBlockId && <Check size={13} className="ck" />}
+                  </DropdownMenu.Item>
+                ))}
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
           </div>
         </div>
-        {saving && <Loader2 size={13} color="rgba(255,255,255,0.3)" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />}
-      </div>
 
-      {/* ── Legend ── */}
-      <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' as const, marginBottom: '18px' }}>
-        {PRIORITY_ORDER.filter(p => p !== 'none').map(p => {
-          const m = PRIORITY_META[p]
-          return (
-            <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 9px', background: m.bg, border: `1px solid ${m.border}`, borderRadius: 'var(--t-r-sm)' }}>
-              <span style={{ fontSize: '0.6rem', fontWeight: 900, color: m.color, fontFamily: FM }}>{m.roman}</span>
-              <span style={{ fontSize: '0.44rem', letterSpacing: '0.1em', color: m.color, fontFamily: FM, opacity: 0.9 }}>{m.label}</span>
-            </div>
-          )
-        })}
-      </div>
+        <PriorityLegend />
 
-      {/* ── Table ── */}
-      {!config ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.55)' }}>
-          <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }} />
-        </div>
-      ) : (
-        <div style={{ overflowX: 'auto' as const }}>
-          <table className="pa-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '4px', minWidth: '400px' }}>
-            <thead>
-              <tr>
-                <th style={{ width: '52px', padding: '4px 0' }} />
-                {DAYS.map(d => (
-                  <th key={d.key} className="pa-day-th" style={{ padding: '4px 4px', fontSize: '0.46rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, textAlign: 'center' as const }}>
-                    {d.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
+        {!config ? (
+          <div className="pr-loading"><Loader2 size={16} className="pr-spin" /></div>
+        ) : (
+          <div className="pr-scroll">
+            <div className="pr-grid" role="grid" aria-label="Prioriteti po danima">
+              <span />
+              {DAYS.map((d, i) => <span key={d.key} className={'pr-dh' + (i >= 5 ? ' we' : '')}>{d.label}</span>)}
               {LIFTS.map(lift => (
-                <tr key={lift.key}>
-                  <td style={{ padding: '3px 10px 3px 0', verticalAlign: 'top' as const, paddingTop: '8px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '2px' }}>
-                      <span className="pa-lift-abbr" style={{ fontSize: '1rem', fontWeight: 900, color: lift.color, fontFamily: FM, lineHeight: 1 }}>{lift.abbr}</span>
-                      <span className="pa-lift-name" style={{ fontSize: '0.38rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{lift.label}</span>
-                    </div>
-                  </td>
+                <PriorityRow key={lift.key} label={lift.label}>
                   {DAYS.map(day => {
                     const cell = config[lift.key][day.key]
-                    const pri  = cell.priority
-                    const m    = PRIORITY_META[pri]
-                    const empty = pri === 'none'
+                    const m = PRIORITY_META[cell.priority]
+                    const empty = cell.priority === 'none'
                     return (
-                      <td key={day.key} style={{ padding: '3px', verticalAlign: 'stretch' as const }}>
-                        <div className="pa-cell-wrap" style={{
-                          background: empty ? 'var(--t-s2)' : `linear-gradient(155deg, ${m.bg}, rgba(0,0,0,0.18))`,
-                          border: empty ? '1px dashed var(--t-border)' : `1px solid ${m.border}`,
-                          boxShadow: empty ? 'none' : `0 6px 18px -10px ${m.color}, inset 0 1px 0 rgba(255,255,255,0.05)`,
-                          borderRadius: 'var(--t-r)',
-                          display: 'flex', flexDirection: 'column' as const, overflow: 'hidden',
-                          minHeight: '56px', height: '100%',
-                          transition: 'background 0.18s, border-color 0.18s, box-shadow 0.18s',
-                        }}>
-                          {/* Priority cycle button */}
-                          <button
-                            onClick={() => cyclePriority(lift.key, day.key)}
-                            title={m.label}
-                            style={{
-                              width: '100%', background: 'transparent', border: 'none', cursor: 'pointer',
-                              padding: empty ? '0' : '9px 4px 6px',
-                              flex: empty ? 1 : 'unset',
-                              display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: '3px',
-                              transition: 'opacity 0.12s',
-                            }}
-                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity = '0.65'}
-                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.opacity = '1'}>
-                            <span className="pa-roman" style={{ fontSize: '0.95rem', fontWeight: 900, color: empty ? 'rgba(255,255,255,0.16)' : m.color, fontFamily: FM, lineHeight: 1, textShadow: empty ? 'none' : `0 0 14px ${m.color}66` }}>
-                              {empty ? '+' : m.roman}
-                            </span>
+                      <div key={day.key} className="pr-tile" data-p={m.level || undefined}>
+                        <DropdownMenu.Root modal={false}>
+                          <DropdownMenu.Trigger asChild>
+                            <button className="pr-pick" aria-label={`${lift.label}, ${day.label}: ${m.label}`}>
+                              {empty ? <span className="pr-plus" aria-hidden>+</span> : <><span className="r">{m.roman}</span><span className="l">{m.label}</span></>}
+                            </button>
+                          </DropdownMenu.Trigger>
+                          <DropdownMenu.Content className="ui-menu pr-menu" side="bottom" align="center" sideOffset={4} collisionPadding={12}>
+                            {PRIORITY_ORDER.filter(p => p !== 'none').map(p => {
+                              const pm = PRIORITY_META[p]
+                              return (
+                                <DropdownMenu.Item key={p} className="ui-item pr-item" onSelect={() => setPriority(lift.key, day.key, p)}>
+                                  <span className="sw" data-p={pm.level}>{pm.roman}</span>
+                                  <span className="txt"><b>{pm.label}</b></span>
+                                  {cell.priority === p && <Check size={13} className="ck" />}
+                                </DropdownMenu.Item>
+                              )
+                            })}
+                            {!empty && <DropdownMenu.Separator className="pr-sep" />}
                             {!empty && (
-                              <span className="pa-sublabel" style={{ fontSize: '0.34rem', color: m.color, opacity: 0.7, fontFamily: FM, letterSpacing: '0.12em', fontWeight: 700 }}>
-                                {m.label.slice(0, 4)}
-                              </span>
+                              <DropdownMenu.Item className="ui-item pr-item danger" onSelect={() => setPriority(lift.key, day.key, 'none')}>
+                                <span className="txt"><b>Ukloni prioritet</b></span>
+                              </DropdownMenu.Item>
                             )}
-                          </button>
-                          {/* Exercise name input — only for non-none days */}
-                          {!empty && (
-                            <input
-                              value={cell.exercise}
-                              onChange={e => setExercise(lift.key, day.key, e.target.value)}
-                              placeholder="vježba…"
-                              className="pa-ex-input"
-                              onMouseDown={e => e.stopPropagation()}
-                              style={{
-                                width: '100%', background: 'rgba(0,0,0,0.32)',
-                                border: 'none', borderTop: `1px solid ${m.border}`,
-                                color: m.color, fontFamily: FM, fontSize: '0.46rem', fontWeight: 600,
-                                padding: '6px 6px', outline: 'none',
-                                textAlign: 'center' as const, letterSpacing: '0.03em',
-                                boxSizing: 'border-box' as const,
-                              }}
-                            />
-                          )}
-                        </div>
-                      </td>
+                          </DropdownMenu.Content>
+                        </DropdownMenu.Root>
+                        {/* naziv vježbe: samo kad dan ima prioritet; pločica je iste visine u oba slučaja */}
+                        {!empty && (
+                          <input className="pr-ex" value={cell.exercise} placeholder="vježba…" aria-label={`Vježba: ${lift.label}, ${day.label}`}
+                            onChange={e => setExercise(lift.key, day.key, e.target.value)} />
+                        )}
+                      </div>
                     )
                   })}
-                </tr>
+                </PriorityRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            </div>
+          </div>
+        )}
+        <div className="pr-hint">Klikni polje i odaberi prioritet. Naziv vježbe upiši ispod rimskog broja.</div>
+      </div>
+      <style>{PR_CSS}</style>
+    </div>
+  )
+}
 
-      <style>{`
-        @keyframes panelSlideIn { from { opacity:0; transform:translateY(14px) } to { opacity:1; transform:translateY(0) } }
-        @keyframes dropDown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:translateY(0) } }
-        .pa-ex-input::placeholder { color: rgba(255,255,255,0.55) !important; }
-        @media (min-width: 768px) {
-          .pa-table       { border-spacing: 7px !important; }
-          .pa-day-th      { font-size: 0.62rem !important; padding: 6px 6px !important; }
-          .pa-cell-wrap   { min-height: 74px !important; border-radius: var(--t-r) !important; }
-          .pa-roman       { font-size: 1.25rem !important; }
-          .pa-sublabel    { font-size: 0.42rem !important; }
-          .pa-lift-abbr   { font-size: 1.3rem !important; }
-          .pa-lift-name   { font-size: 0.48rem !important; }
-          .pa-ex-input    { font-size: 0.56rem !important; padding: 7px 8px !important; }
-        }
-      `}</style>
+// Red liftova u mreži: naziv lijevo, pa 7 pločica (dijete)
+function PriorityRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <>
+      <span className="pr-lift">{label}</span>
+      {children}
+    </>
+  )
+}
+
+// Ljestvica I–V kao legenda (ista boja/jačina kao pločice)
+function PriorityLegend({ only }: { only?: Priority[] }) {
+  return (
+    <div className="pr-legend">
+      {PRIORITY_ORDER.filter(p => p !== 'none' && (!only || only.includes(p))).map(p => {
+        const m = PRIORITY_META[p]
+        return <span key={p} className="pr-lg"><span className="sw" data-p={m.level}>{m.roman}</span>{m.label}</span>
+      })}
     </div>
   )
 }
@@ -360,156 +302,155 @@ export function LiftPriorityView({ athleteId, blockId }: { athleteId: string; bl
   )
 
   return (
-    <div
-      className="priority-view-card"
-      onMouseDown={startHold}
-      onMouseUp={cancelHold}
-      onMouseLeave={cancelHold}
-      onTouchStart={startHold}
-      onTouchEnd={cancelHold}
-      onTouchCancel={cancelHold}
-      style={{
-        background: 'var(--t-s1)',
-        border: holding ? '1px solid rgba(239,53,53,0.45)' : '1px solid var(--t-border)',
-        borderRadius: 'var(--t-r)', padding: '22px 24px', marginBottom: '12px',
-        cursor: 'default', transition: 'border-color 0.2s',
-        position: 'relative' as const,
-        userSelect: 'none' as const, WebkitUserSelect: 'none' as const,
-        overflow: 'hidden',
-      }}>
-
-      {holding && (
-        <div style={{ position: 'absolute' as const, inset: 0, borderRadius: 'var(--t-r)', background: 'rgba(239,53,53,0.07)', pointerEvents: 'none', animation: 'pvHoldFill 0.7s linear forwards', zIndex: 0 }} />
-      )}
-      {holding && (
-        <div style={{ position: 'absolute' as const, top: '12px', right: '16px', fontSize: '0.46rem', letterSpacing: '0.18em', color: 'rgba(239,53,53,0.75)', fontFamily: FM, fontWeight: 700, zIndex: 2, animation: 'pvFadeIn 0.15s ease' }}>
-          UKLONI...
-        </div>
-      )}
-
-      <div style={{ position: 'relative' as const, zIndex: 1 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '18px', gap: '12px' }}>
+    <div className={'pr pr-view' + (holding ? ' holding' : '')}
+      onMouseDown={startHold} onMouseUp={cancelHold} onMouseLeave={cancelHold}
+      onTouchStart={startHold} onTouchEnd={cancelHold} onTouchCancel={cancelHold}>
+      <div className="pr-card">
+        {holding && <div className="pr-hold-fill" aria-hidden />}
+        <div className="pr-head">
           <div>
-            <div style={{ fontSize: '0.44rem', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, marginBottom: '4px' }}>RASPORED PRIORITETA</div>
-            <div className="pv-title" style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e0e0e0', fontFamily: FM, letterSpacing: '-0.01em' }}>Tjedni plan liftova</div>
+            <div className="pr-eyebrow">Raspored prioriteta</div>
+            <div className="pr-title">Tjedni plan liftova</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-            {DAYS.filter(d => LIFTS.some(l => config[l.key][d.key].priority !== 'none')).map(d => (
-              <div key={d.key} className="pv-day-badge" style={{ padding: '3px 7px', background: 'var(--t-s3)', border: '1px solid var(--t-border)', borderRadius: 'var(--t-r-sm)', fontSize: '0.42rem', color: 'rgba(255,255,255,0.55)', fontFamily: FM, letterSpacing: '0.1em' }}>
-                {d.label}
-              </div>
+          {holding && <span className="pr-hold-txt">Ukloni…</span>}
+        </div>
+
+        <div className="pr-scroll">
+          <div className="pr-grid view" role="grid" aria-label="Prioriteti po danima">
+            <span />
+            {DAYS.map((d, i) => <span key={d.key} className={'pr-dh' + (i >= 5 ? ' we' : '')}>{d.label}</span>)}
+            {LIFTS.map(lift => (
+              <PriorityRow key={lift.key} label={lift.label}>
+                {DAYS.map(day => {
+                  const cell = config[lift.key][day.key]
+                  const m = PRIORITY_META[cell.priority]
+                  const empty = cell.priority === 'none'
+                  return (
+                    <div key={day.key} className="pr-tile" data-p={m.level || undefined} title={empty ? undefined : `${m.label}${cell.exercise ? ` · ${cell.exercise}` : ''}`}>
+                      {empty ? <span className="pr-dash" aria-hidden /> : (
+                        <>
+                          <div className="pr-pick as-text"><span className="r">{m.roman}</span><span className="l">{m.label}</span></div>
+                          {cell.exercise && <div className="pr-ex as-text">{cell.exercise}</div>}
+                        </>
+                      )}
+                    </div>
+                  )
+                })}
+              </PriorityRow>
             ))}
           </div>
         </div>
 
-        {/* Table */}
-        <div style={{ overflowX: 'auto' as const }}>
-          <table className="pv-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '3px', minWidth: '300px' }}>
-            <thead>
-              <tr>
-                <th style={{ width: '44px', padding: '4px 0' }} />
-                {DAYS.map(d => (
-                  <th key={d.key} className="pv-day-th" style={{ padding: '4px 2px', fontSize: '0.43rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.55)', fontFamily: FM, fontWeight: 700, textAlign: 'center' as const }}>
-                    {d.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {LIFTS.map(lift => (
-                <tr key={lift.key}>
-                  <td style={{ padding: '2px 8px 2px 0', verticalAlign: 'middle' as const }}>
-                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1px' }}>
-                      <span className="pv-lift-abbr" style={{ fontSize: '0.95rem', fontWeight: 900, color: lift.color, fontFamily: FM, lineHeight: 1 }}>{lift.abbr}</span>
-                      <span className="pv-lift-name" style={{ fontSize: '0.36rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{lift.label}</span>
-                    </div>
-                  </td>
-                  {DAYS.map(day => {
-                    const cell = config[lift.key][day.key]
-                    const pri  = cell.priority
-                    const m    = PRIORITY_META[pri]
-                    const empty = pri === 'none'
-                    return (
-                      <td key={day.key} style={{ padding: '3px', verticalAlign: 'stretch' as const }}>
-                        <div className="pv-cell" style={{
-                          minWidth: '34px', minHeight: '54px', height: '100%',
-                          background: empty ? 'var(--t-s2)' : `linear-gradient(155deg, ${m.bg}, rgba(0,0,0,0.18))`,
-                          border: empty ? '1px dashed var(--t-border)' : `1px solid ${m.border}`,
-                          boxShadow: empty ? 'none' : `0 6px 18px -10px ${m.color}, inset 0 1px 0 rgba(255,255,255,0.04)`,
-                          borderRadius: 'var(--t-r)', overflow: 'hidden',
-                          display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center',
-                        }}>
-                          {empty ? (
-                            <span style={{ color: 'rgba(255,255,255,0.1)', fontSize: '0.7rem', fontFamily: FM, lineHeight: 1 }}>·</span>
-                          ) : (
-                            <>
-                              <div className="pv-cell-top" style={{ flex: 1, padding: '8px 4px 6px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '2px', width: '100%', justifyContent: 'center' }}>
-                                <span className="pv-roman" style={{ fontSize: '0.82rem', fontWeight: 900, color: m.color, fontFamily: FM, lineHeight: 1, textShadow: `0 0 12px ${m.color}55` }}>
-                                  {m.roman}
-                                </span>
-                              </div>
-                              {cell.exercise && (
-                                <div className="pv-ex" style={{
-                                  width: '100%', padding: '4px 5px',
-                                  borderTop: `1px solid ${m.border}`,
-                                  background: 'rgba(0,0,0,0.28)',
-                                  fontSize: '0.4rem', color: m.color, opacity: 0.92,
-                                  fontFamily: FM, fontWeight: 600, textAlign: 'center' as const,
-                                  letterSpacing: '0.02em', lineHeight: 1.25,
-                                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const,
-                                }}>
-                                  {cell.exercise}
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="pr-foot">
+          <PriorityLegend only={usedPriorities} />
+          <span className="pr-hold-hint">Drži za uklanjanje</span>
         </div>
-
-        {/* Legend */}
-        {usedPriorities.length > 0 && (
-          <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' as const, marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--t-border)', alignItems: 'center' }}>
-            {usedPriorities.map(p => {
-              const m = PRIORITY_META[p]
-              return (
-                <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: m.bg, border: `1px solid ${m.border}`, borderRadius: 'var(--t-r-sm)' }}>
-                  <span style={{ fontSize: '0.52rem', fontWeight: 900, color: m.color, fontFamily: FM }}>{m.roman}</span>
-                  <span style={{ fontSize: '0.4rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.55)', fontFamily: FM }}>{m.label}</span>
-                </div>
-              )
-            })}
-            <div style={{ marginLeft: 'auto', fontSize: '0.38rem', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.1)', fontFamily: FM }}>
-              DRŽI ZA UKLANJANJE
-            </div>
-          </div>
-        )}
       </div>
-
-      <style>{`
-        @keyframes pvHoldFill { from { opacity:0 } to { opacity:1 } }
-        @keyframes pvFadeIn   { from { opacity:0; transform:translateY(-4px) } to { opacity:1; transform:translateY(0) } }
-        @media (min-width: 768px) {
-          .priority-view-card { padding: 28px 32px !important; }
-          .pv-title            { font-size: 1.05rem !important; }
-          .pv-day-badge        { font-size: 0.5rem !important; padding: 4px 10px !important; }
-          .pv-table            { border-spacing: 7px !important; }
-          .pv-day-th           { font-size: 0.58rem !important; padding: 6px 4px !important; }
-          .pv-cell             { border-radius: var(--t-r) !important; min-height: 72px !important; }
-          .pv-cell-top         { padding: 11px 4px 8px !important; }
-          .pv-roman            { font-size: 1.15rem !important; }
-          .pv-ex               { font-size: 0.5rem !important; padding: 6px 7px !important; }
-          .pv-lift-abbr        { font-size: 1.3rem !important; }
-          .pv-lift-name        { font-size: 0.48rem !important; }
-        }
-      `}</style>
+      <style>{PR_CSS}</style>
     </div>
   )
 }
+
+// ── izgled (isti za admin i liftera; samo tokeni panela, pa radi u oba i u svijetloj temi admina) ──
+const PR_CSS = `
+.pr { --acc: var(--accent, #ef3535); --pr-text: var(--text, #f0f0f0); --pr-dim: var(--text-dim, rgba(255,255,255,0.7)); --pr-muted: var(--text-muted, rgba(255,255,255,0.5));
+  --pr-mono: var(--font-jb), ui-monospace, monospace; font-family: var(--fm); color: var(--pr-text); }
+.pr-in { animation: prIn 0.3s cubic-bezier(0.16,1,0.3,1); }
+@keyframes prIn { from { opacity: 0; transform: translateY(10px); } }
+.pr-card { position: relative; overflow: hidden; padding: 20px 22px; border: 1px solid var(--t-border); border-radius: var(--t-r);
+  background: var(--card-bg, linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 46%), var(--t-s1));
+  box-shadow: var(--card-shadow, inset 0 1px 0 rgba(255,255,255,0.07), 0 14px 32px -16px rgba(0,0,0,0.95)); }
+.pr-view { margin-bottom: 12px; user-select: none; -webkit-user-select: none; }
+.pr-view.holding .pr-card { border-color: color-mix(in srgb, var(--acc) 55%, transparent); }
+
+.pr-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.pr-eyebrow { font-family: var(--pr-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--pr-muted); }
+.pr-title { font-family: var(--fd); font-weight: 700; font-size: 24px; line-height: 1; letter-spacing: -0.01em; margin-top: 6px; color: var(--pr-text); }
+.pr-tools { display: flex; align-items: center; gap: 10px; }
+.pr-saving { display: inline-flex; align-items: center; gap: 6px; font-family: var(--pr-mono); font-size: 10px; letter-spacing: 0.08em; color: var(--pr-muted); }
+.pr-spin { animation: spin 1s linear infinite; }
+
+.pr-block { display: inline-flex; align-items: center; gap: 9px; height: 36px; padding: 0 12px; border-radius: var(--t-r-sm); cursor: pointer;
+  background: var(--t-s2); border: 1px solid var(--t-border-hi); color: var(--pr-text); font-family: var(--fm); font-size: 13px; font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); transition: border-color 0.15s; }
+.pr-block:hover, .pr-block[data-state="open"] { border-color: var(--pr-muted); }
+.pr-block .cr { color: var(--pr-muted); transition: transform 0.2s; }
+.pr-block[data-state="open"] .cr { transform: rotate(180deg); }
+.pr .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--t-border-hi); }
+.pr .dot.on { background: var(--acc); }
+
+.pr-menu { min-width: 210px; padding: 5px; }
+.pr-item { gap: 10px; padding: 8px 10px; border-radius: var(--t-r-sm); letter-spacing: 0; font-size: 13px; }
+.pr-item .txt { display: flex; flex-direction: column; min-width: 0; }
+.pr-item .txt b { font-weight: 600; color: var(--pr-text); }
+.pr-item .txt small { font-family: var(--pr-mono); font-size: 10px; color: var(--pr-muted); margin-top: 2px; letter-spacing: 0.04em; }
+.pr-item .ck { margin-left: auto; color: var(--pr-text); flex-shrink: 0; }
+.pr-item.danger .txt b { color: var(--acc); }
+.pr-sep { height: 1px; margin: 5px 4px; background: var(--t-border); }
+
+/* ljestvica I–V: jačina, ne boja */
+.pr .sw { display: inline-grid; place-items: center; min-width: 22px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 3px;
+  font-family: var(--fd); font-weight: 700; font-size: 11px; line-height: 1; border: 1px solid transparent; }
+.pr [data-p="1"] { --pr-bg: var(--acc); --pr-fg: #fff; --pr-bd: transparent; }
+.pr [data-p="2"] { --pr-bg: color-mix(in srgb, var(--acc) 18%, var(--t-s2)); --pr-fg: color-mix(in srgb, var(--acc) 55%, var(--pr-text)); --pr-bd: color-mix(in srgb, var(--acc) 50%, transparent); }
+.pr [data-p="3"] { --pr-bg: var(--t-hi); --pr-fg: var(--pr-text); --pr-bd: var(--t-border-hi); }
+.pr [data-p="4"] { --pr-bg: var(--t-s3); --pr-fg: var(--pr-dim); --pr-bd: var(--t-border); }
+.pr [data-p="5"] { --pr-bg: var(--t-s2); --pr-fg: var(--pr-muted); --pr-bd: var(--t-border); }
+.pr .sw[data-p] { background: var(--pr-bg); color: var(--pr-fg); border-color: var(--pr-bd); }
+
+.pr-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 16px; }
+.pr-lg { display: inline-flex; align-items: center; gap: 7px; font-family: var(--pr-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--pr-muted); }
+
+/* mreža: fiksni stupci i visina — svaka pločica jednake veličine u svakom stanju.
+   Bez transform/filter na pločici: izbornik prioriteta se otvara unutar nje (bez portala) i bio bi odrezan. */
+/* bez position/z-index: izbornik prioriteta je unutar mreže i mora moći iznad svega što slijedi */
+.pr-scroll { overflow-x: auto; margin: 0 -4px; padding: 0 4px 2px; }
+.pr-grid { display: grid; grid-template-columns: 92px repeat(7, minmax(0, 1fr)); grid-auto-rows: auto; gap: 6px; min-width: 640px; align-items: center; }
+.pr-dh { text-align: center; font-family: var(--pr-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.18em; color: var(--pr-muted); padding-bottom: 2px; }
+.pr-dh.we { color: color-mix(in srgb, var(--pr-muted) 60%, transparent); }
+.pr-lift { font-family: var(--fd); font-weight: 700; font-size: 17px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--pr-text); }
+
+.pr-tile { position: relative; height: 88px; min-width: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: var(--t-r-sm);
+  background: var(--well-bg, rgba(0,0,0,0.3)); box-shadow: var(--well-shadow, inset 0 1px 3px rgba(0,0,0,0.6)); transition: box-shadow 0.15s; }
+.pr-tile[data-p] { background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 55%), var(--pr-bg); color: var(--pr-fg);
+  box-shadow: inset 0 0 0 1px var(--pr-bd), inset 0 1px 0 rgba(255,255,255,0.12), 0 6px 14px -8px rgba(0,0,0,0.9); }
+.pr-pick { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 4px;
+  padding: 10px 10px 6px; background: none; border: 0; color: inherit; cursor: pointer; text-align: left; font: inherit; }
+.pr-pick.as-text { cursor: default; }
+.pr-pick .r { font-family: var(--fd); font-weight: 700; font-size: 24px; line-height: 0.9; letter-spacing: 0.01em; }
+.pr-pick .l { font-family: var(--pr-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.pr-plus { margin: auto; font-family: var(--fd); font-size: 20px; color: var(--pr-muted); opacity: 0; transition: opacity 0.15s; }
+.pr-tile:not([data-p]):hover .pr-plus, .pr-pick:focus-visible .pr-plus { opacity: 1; }
+.pr-tile:not([data-p]):hover { box-shadow: var(--well-shadow, inset 0 1px 3px rgba(0,0,0,0.6)), inset 0 0 0 1px var(--t-border-hi); }
+.pr-pick:focus-visible { outline: 2px solid var(--pr-text); outline-offset: -2px; border-radius: var(--t-r-sm); }
+.pr-ex { width: 100%; box-sizing: border-box; flex-shrink: 0; height: 26px; padding: 0 10px; border: 0; border-top: 1px solid color-mix(in srgb, var(--pr-fg) 22%, transparent);
+  background: rgba(0,0,0,0.22); color: inherit; font-family: var(--fm); font-size: 12px; font-weight: 600; outline: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; }
+.pr-ex::placeholder { color: inherit; opacity: 0.55; font-weight: 500; }
+.pr-ex:focus { background: rgba(0,0,0,0.38); }
+.pr-dash { margin: auto; width: 10px; height: 2px; border-radius: 1px; background: var(--t-border-hi); }
+
+.pr-hint { margin-top: 14px; font-family: var(--pr-mono); font-size: 10px; letter-spacing: 0.04em; color: var(--pr-muted); }
+.pr-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--t-border); }
+.pr-foot .pr-legend { margin-bottom: 0; }
+.pr-hold-hint { font-family: var(--pr-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: color-mix(in srgb, var(--pr-muted) 50%, transparent); }
+/* lifterova kartica (bez izbornika) ima vlastiti sloj, pa podloga za "drži" ide iza sadržaja */
+.pr-view .pr-card { isolation: isolate; }
+.pr-hold-fill { position: absolute; inset: 0; z-index: -1; background: color-mix(in srgb, var(--acc) 8%, transparent); animation: prFill 0.7s linear forwards; pointer-events: none; }
+.pr-hold-txt { font-family: var(--pr-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--acc); }
+@keyframes prFill { from { opacity: 0; } to { opacity: 1; } }
+.pr-empty, .pr-loading { padding: 40px 16px; text-align: center; font-family: var(--pr-mono); font-size: 12px; color: var(--pr-muted); }
+
+@media (max-width: 640px) {
+  .pr-card { padding: 16px 14px; }
+  .pr-title { font-size: 20px; }
+  .pr-grid { grid-template-columns: 70px repeat(7, minmax(0, 1fr)); gap: 4px; min-width: 520px; }
+  .pr-lift { font-size: 14px; }
+  .pr-tile { height: 70px; }
+  .pr-pick { padding: 8px 7px 4px; }
+  .pr-pick .r { font-size: 19px; }
+  .pr-pick .l { display: none; }
+  .pr-ex { height: 22px; padding: 0 6px; font-size: 10.5px; }
+}
+@media (prefers-reduced-motion: reduce) { .pr-in, .pr-hold-fill { animation: none; } .pr-tile { transition: none; } }
+`

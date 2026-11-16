@@ -29,7 +29,7 @@ Sav CSS je **scopan pod `.lwl-admin-os`** u `admin-os.css` — nikad globalni se
 | `--text` / `--text-dim` / `--text-muted` / `--text-faint` | `#f5f4f1/#a6a6a2/#7c7c77/#565650` | hijerarhija teksta |
 | `--accent` / `--accent-soft` / `--accent-glow` | `#ef3535` / rgba 0.12 / rgba 0.35 | signalna crvena (štedljivo!) |
 | `--radius-xs…xl` | 4/4/6/6/6px (preko `--t-r-sm` / `--t-r` iz globals.css) | zaobljenja: ništa veće od 6px osim krugova i pilula |
-| `--font-display` / `--font-mono` / `--font-body` | Oswald / JetBrains Mono / Barlow | tipografija (u adminu je `--fm` mono) |
+| `--font-display` / `--font-mono` / `--font-body` | Oswald / JetBrains Mono / Archivo | tipografija: `--fm` je u panelima Archivo; mono samo za oznake velikim slovima |
 | `--shadow-card` | inset highlight + duboka sjena | kartice |
 
 ### Tipografski obrasci
