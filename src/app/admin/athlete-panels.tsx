@@ -86,6 +86,7 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
   const [compOpen, setCompOpen] = useState(true)
   const [loading, setLoading] = useState(true)
   const initialLoadDone = useRef(false)
+  const lastLoadAll = useRef(0)
   const [phases, setPhases] = useState<TrainingPhase[]>([])
   const [competitionSel, setCompetitionSel] = useState<{ name: string; date: string; location?: string } | null>(null)
   const [newPhaseLabel, setNewPhaseLabel] = useState('')
@@ -189,10 +190,17 @@ export function AthleteOverview({ athlete, onGoTraining, fixedTab }: {
 
   useEffect(() => {
     loadAll()
+    lastLoadAll.current = Date.now()
     // Osvježi kad se trener vrati na karticu. Realtime namjerno nije ovdje. Tablice treninga nisu u Realtime publikaciji, pa
   // ova pretplata nikad nije primila nijedan događaj — a samo njezino otvaranje
   // budilo je Realtime, koji pri pokretanju radi DDL i zamrzne API na 20–30 s.
-    const onVisible = () => { if (document.visibilityState === 'visible') loadAll() }
+    // Najviše jednom u 5 min: svaki povratak na karticu (i prebacivanje aplikacija na
+    // mobitelu) inače ponovno vuče 60 treninga sa svim serijama — trošilo je disk IO.
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible' || Date.now() - lastLoadAll.current < 5 * 60_000) return
+      lastLoadAll.current = Date.now()
+      loadAll()
+    }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [loadAll, athlete.id])

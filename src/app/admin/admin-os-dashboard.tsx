@@ -81,22 +81,23 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
   const [exp, setExp] = useState<'total' | 'predicted' | 'compliance' | 'bw' | 'daysout' | null>(null)
   const [planYear, setPlanYear] = useState(() => new Date().getFullYear())
 
-  const DASH_CACHE_TTL = 90_000 // 90 s
+  // Unutar TTL-a se dashboard NE dohvaća ponovno (ni pri povratku na karticu). Prije
+  // je i uz svjež keš odmah slao svih 11 upita (među njima do 6000 serija s
+  // ugniježđenim vježbama), pa keš nije štedio bazu — a to je na besplatnom
+  // Supabaseu (Nano) trošilo disk IO budžet dok baza nije stala.
+  const DASH_CACHE_TTL = 5 * 60_000 // 5 min
   // v3: setovi nose block_id + week_number + day_name; dodani water logovi
   const dashCacheKey = `adminos:dash:v3:${athleteId}`
 
-  const load = useCallback(async (background = false) => {
-    // Serve stale cache immediately so UI renders before network
-    if (!background) {
-      try {
-        const c = JSON.parse(localStorage.getItem(dashCacheKey) ?? 'null')
-        if (c?.ts && Date.now() - c.ts < DASH_CACHE_TTL && c.raw) {
-          setRaw(c.raw); setLoading(false)
-          // Refresh in background so next view is still fresh
-          setTimeout(() => load(true), 0); return
-        }
-      } catch {}
-    }
+  const load = useCallback(async () => {
+    // Keš odmah na ekran (i kad je star); svjež keš = bez upita
+    try {
+      const c = JSON.parse(localStorage.getItem(dashCacheKey) ?? 'null')
+      if (c?.raw) {
+        setRaw(c.raw); setLoading(false)
+        if (c.ts && Date.now() - c.ts < DASH_CACHE_TTL) return
+      }
+    } catch {}
 
     const today = new Date().toISOString().slice(0, 10)
     // Two lean workouts queries instead of one huge nested query:
@@ -135,7 +136,7 @@ export function AthleteDashboard({ athleteId, athleteName, cards, setCard, onVie
     setLoading(false)
   }, [athleteId, dashCacheKey])
 
-  useEffect(() => { setLoading(true); load(false) }, [load])
+  useEffect(() => { setLoading(true); load() }, [load])
 
   // Osvježavanje kad se trener vrati na karticu — lifterovi upisi stignu bez ručnog
   // reloada. Realtime namjerno nije ovdje. Tablice treninga nisu u Realtime publikaciji, pa
